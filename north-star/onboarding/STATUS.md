@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-08-12
+Last updated: 2026-08-11
 
 ## Program state
 
@@ -20,7 +20,7 @@ Preparation execution boundary: ONB-017 runtime squash-merged through [PR #282](
 
 Durable account-import persistence: ONB-011 runtime merged through [PR #339](https://github.com/vokerg/chess_repertoir_trainer/pull/339) as `4c04d47dac40aa0ae254babbf65449b701b5c447`; persisted destructive lifecycle fences remain ONB-019-owned.
 
-Durable account-import worker/API lifecycle: ONB-012 runtime squash-merged through [PR #352](https://github.com/vokerg/chess_repertoir_trainer/pull/352) as `640018e4cd3c5528a94b9d0217e971ab2a2215b7`; completion records are reconciled through PR #354. ONB-013 is implementing the first registered provider executor for bounded Lichess imports; Chess.com remains ONB-014-owned.
+Durable account-import worker/API lifecycle: ONB-012 runtime squash-merged through [PR #352](https://github.com/vokerg/chess_repertoir_trainer/pull/352) as `640018e4cd3c5528a94b9d0217e971ab2a2215b7`; completion records are reconciled through PR #354. The provider executor registry remains intentionally empty until ONB-013/014.
 
 Destructive lifecycle: ONB-004 squash-merged through [PR #263](https://github.com/vokerg/chess_repertoir_trainer/pull/263) as `32db655a100ef1a55264b4d3739e2b7c38e72ee4`.
 
@@ -36,9 +36,9 @@ Shared-position cleanup research: ONB-006 completed through [PR #281](https://gi
 
 Lightweight experience blueprint: ONB-016 squash-merged through [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
 
-ONB-013 / #201 is `IN_PROGRESS` on `account-import/onb-013-lichess-adapter`. The next unclaimed `READY` onboarding task is ONB-014 / #202; the provider-adapter contracts remain parallelizable after ONB-012 completion.
+Next unclaimed `READY` onboarding tasks: ONB-013 / #201 and ONB-014 / #202. Their contracts permit parallel provider-adapter execution after ONB-012 completion; neither is claimed by the completion reconciliation.
 
-Latest report: `reports/ONB-013-2026-08-12-implementation-progress.md`
+Latest report: `reports/ONB-012-2026-08-11-completion-reconciliation.md`
 
 ## Completed contracts
 
@@ -240,13 +240,14 @@ Final runtime pull-request head `d9b826054748d9d891584a593954c82b65520965` passe
 
 ### Active implementation
 
-- ONB-013 / #201 — bounded Lichess import adapter — `IN_PROGRESS` on `account-import/onb-013-lichess-adapter`; implements serial 14-day half-open windows, streaming NDJSON, bounded 100-row writes, exact coverage/replay, checkpoint/retry recovery, and the existing ONB-019 admission seam.
+- None recorded by this completion reconciliation.
 
 ### Ready implementation
 
+- ONB-013 / #201 — bounded Lichess import adapter — `READY`, unclaimed; initial 14-day windows, serial access, 100-row writes, and the existing ONB-019 admission seam.
 - ONB-014 / #202 — bounded Chess.com import adapter — `READY`, unclaimed; serial calendar-month archives, cache validators, 100-row writes, and the existing ONB-019 admission seam.
 
-ONB-014 may execute in parallel after a fresh live collision check; ONB-013 remains isolated to its claimed Lichess scope.
+The provider adapters may execute in parallel after a fresh live collision check. This reconciliation claims neither task.
 
 ## Allocated implementation backlog
 
@@ -301,7 +302,7 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 ## Blockers to production implementation
 
 - ONB-007 is complete; its consumers retain implementation-specific telemetry, controlled-clock, concurrency, and canary validation responsibilities;
-- ONB-011 and ONB-012 are delivered; ONB-013 is in progress and not yet review/merge validated, ONB-014 remains ready, and ONB-015 has not delivered the cutover;
+- ONB-011 and ONB-012 are delivered; ONB-013/014 are ready but have not delivered durable provider adapters, and ONB-015 has not delivered the cutover;
 - ONB-017 delivered the preparation execution boundary; ONB-018 has not delivered preparation reconciliation/control;
 - ONB-019/020/021 have not delivered lifecycle persistence/execution/user deletion;
 - ONB-022 and ONB-023 delivered the read-only administrator API and administrator diagnostics Angular feature;
@@ -313,15 +314,6 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - Visual Transformation coordination remains required for final product-wide UI polish.
 
 ## Validation
-
-### ONB-013 implementation progress
-
-- the task branch implements bounded Lichess planning, streaming, normalization, persistence, coverage/replay, checkpoint/retry recovery, provider-safe failures, worker registration, fixtures/tests, and an opt-in canary harness;
-- focused strict TypeScript validation for the provider/config/executor/registry passed in the available execution harness;
-- focused provider and executor runtime suites passed, including 14-day boundaries, exact `perfType` mapping, chunked NDJSON, 100/100/5 writes, empty coverage, malformed/interrupted replay, duplicates, lifecycle fences, HTTP failure, 60-second 429 deferral, restart and cancellation;
-- lifecycle and retry regressions now assert checkpoint projection across pause/resume/reclaim and fresh retry denominators;
-- the execution shell cannot resolve GitHub/Lichess hosts, so the full repository checkout/dependency graph, PostgreSQL integration gates, complete API build/lint/test suite, architecture/hygiene gates, and live low-volume canary remain required before `REVIEW`;
-- no production release, merge, destructive-safety completion, or ONB-015 cutover is claimed.
 
 ### ONB-012 implementation and completion reconciliation
 
@@ -436,4 +428,4 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 
 ## Next deterministic action
 
-ONB-013 / #201 is `IN_PROGRESS` on `account-import/onb-013-lichess-adapter`. ONB-014 / #202 is the next unclaimed `READY` provider-adapter task and may proceed in parallel after a fresh live collision check. ONB-015 / #203 remains `PROPOSED` behind both adapters, and ONB-025 / #276 remains `PROPOSED` behind ONB-015.
+ONB-013 / #201 and ONB-014 / #202 are the unclaimed `READY` provider-adapter tasks after ONB-012 completion. Their contracts allow parallel execution after a fresh live collision check and explicit coordination with the existing ONB-019 admission seam. Do not infer a claim from promotion alone. ONB-015 / #203 remains `PROPOSED` behind both adapters, and ONB-025 / #276 remains `PROPOSED` behind ONB-015.

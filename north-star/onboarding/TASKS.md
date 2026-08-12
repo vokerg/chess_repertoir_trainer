@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Task Queue
 
-Last updated: 2026-08-12
+Last updated: 2026-08-11
 
 This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, and claim metadata.
 
@@ -22,7 +22,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | ONB-007/008/009; durable import/preparation; ONB-016; Visual Transformation coordination |
 | 110 | ONB-011 | [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) | P0 | DONE | Persist durable account-import runs and scope coverage | Implementation | Runtime merged through PR #339 as `4c04d47`; ONB-019 retains ownership of persisted lifecycle fences |
 | 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | DONE | Build durable account-import worker and API lifecycle | Implementation | Runtime squash-merged through PR #352 as `640018e4`; completion reconciliation PR #354 |
-| 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | IN_PROGRESS | Implement bounded Lichess import adapter | Implementation | ONB-007/011/012 complete; coordinate the existing ONB-019 admission seam |
+| 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | READY | Implement bounded Lichess import adapter | Implementation | ONB-007/011/012 complete; coordinate the existing ONB-019 admission seam |
 | 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | READY | Implement bounded Chess.com import adapter | Implementation | ONB-007/011/012 complete; coordinate the existing ONB-019 admission seam |
 | 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | PROPOSED | Cut over account sync and preparation handoff | Implementation | ONB-013/014; ONB-003/004/007/017/018; coordinates ONB-009/010/020 |
 | 155 | ONB-025 | [#276](https://github.com/vokerg/chess_repertoir_trainer/issues/276) | P1 | PROPOSED | Trigger daily stale account refresh on authenticated app bootstrap | Implementation | ONB-015; transitively ONB-011/012/013/014; coordinates ONB-010/019/020 |
@@ -185,7 +185,7 @@ ONB-023 / #273 delivered the lazy direct-link Angular administrator diagnostics 
 
 ## Deterministic next task
 
-ONB-013 / #201 is `IN_PROGRESS` on `account-import/onb-013-lichess-adapter`. ONB-014 / #202 is the next unclaimed `READY` provider-adapter task and may proceed in parallel because ONB-012 is complete. ONB-013 retains coordination with the existing ONB-019 admission seam.
+ONB-013 / #201 and ONB-014 / #202 are the unclaimed `READY` provider-adapter tasks after ONB-012 completion. Their issue contracts explicitly allow parallel execution after #200 is merged and reconciled. Claim either only after a fresh live collision check and after recording the existing ONB-019 admission-seam coordination; this reconciliation does not claim either task.
 
 ONB-015 / #203 remains `PROPOSED` behind both provider adapters. ONB-018, ONB-008 through ONB-010, ONB-019 through ONB-021, ONB-024 through ONB-026 remain `PROPOSED` until their own task-file dependencies and promotion gates are satisfied.
 
