@@ -1,6 +1,6 @@
 # GitHub Issues coordination
 
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 
 GitHub Issues is the execution layer for this north-star program. Repository documents remain the detailed planning, architecture, acceptance, and historical source.
 
@@ -46,32 +46,30 @@ GitHub Issues is the execution layer for this north-star program. Repository doc
 
 ## Current coordination state
 
-RB-026 is complete: runtime PR #311 and documentation completion PR #314 are merged, and issue #310 is closed as completed. Builder V2 planning PR #324 is squash-merged to `main`.
+RB-026 is complete through runtime PR #311 and documentation completion PR #314. Builder V2 planning PR #324 and merged-state planning reconciliation PR #326 are integrated.
 
-RB-027 runtime implementation is complete through PR #325 / squash `34dadd25`, with final exact-head CI #2392 green.
+Builder V2 execution is complete through RB-027–RB-031:
 
-RB-028 runtime implementation is complete on PR #327. Implementation head `9d0a65a5` passed full CI #2409 and Candidate Decision V4 carries factual exact-position personal evidence without adding new preset-persona ranking authority.
+- #317 / RB-027 — empirical user-move personas, `DONE`, P0; runtime PR #325 / squash `34dadd25`, final runtime CI #2392;
+- #318 / RB-028 — factual personal move evidence, `DONE`, P1; PR #327, implementation head `9d0a65a5`, CI #2409;
+- #319 / RB-029 — opponent preparation and computed coverage, `DONE`, P1; runtime PR #331 plus corrective PR #333 after the post-merge authority audit; policy `2026-08-opponent-preparation-v1`;
+- #320 / RB-030 — single-dialog setup, `DONE`, P1; PR #335, final head `621ee6abb9a311646859357f8de41d4a6c4528e7`, CI #2478, squash `9bfcf3f5`;
+- #321 / RB-031 — Cockpit evidence hierarchy, `DONE`, P1; PR #336, final head `a7ed94bdad896bc852685ad25de1dc87bee89e8f`, CI #2486, squash `e6c024af`.
 
-Builder V2 execution state:
+RB-016 / #104 remains open and `BLOCKED`. Its blocker is now only the evidence gate: enough post-V2 Builder/course use, training, and later games must exist before adoption/outcome analysis is meaningful.
 
-- #317 / RB-027 — empirical user-move personas, `DONE`, P0;
-- #318 / RB-028 — factual personal move evidence, `DONE`, P1 pending merge/issue closure of PR #327;
-- #319 / RB-029 — opponent preparation and computed coverage, `READY`, P1 and next unclaimed policy task;
-- #320 / RB-030 — single-dialog setup, `READY`, P1;
-- #321 / RB-031 — Cockpit evidence hierarchy, `PROPOSED`, P1 until RB-029 opponent semantics settle.
-
-RB-016 / #104 remains open and blocked. Its blocker includes completion of the V2 decision model plus sufficient post-V2 Builder/course use and follow-up games.
+There is no unclaimed `READY` Builder task. Do not create implementation work simply to keep the queue active.
 
 Do not create a second issue for an existing `RB-###` task. New repository tasks receive a new immutable RB ID and a new GitHub issue in the same coordination change.
 
 ## Sources of truth
 
-- `FOUNDATION.md`, `NORTH_STAR.md`, `BUILDER_V2_PLAN.md`, and `DECISIONS.md`: product direction.
+- `FOUNDATION.md`, `NORTH_STAR.md`, `BUILDER_V2_PLAN.md`, and `DECISIONS.md`: product direction and stable decisions.
 - `TASKS.md` and individual `tasks/RB-###-*.md`: ordering, dependencies, detailed scope, acceptance criteria, and claim metadata.
 - GitHub Issues: assignee, execution state, blockers, active branch, and pull-request visibility.
-- `reports/`: append-only completion evidence.
+- `reports/`: append-only completion/research evidence.
 
-When an issue and repository metadata disagree, stop and reconcile them before substantive work.
+When issue and repository metadata disagree, stop and reconcile them before substantive work.
 
 ## State mapping
 
@@ -90,15 +88,15 @@ A blocked task stays open. Its blocker must be explicit and linked.
 
 Before work:
 
-1. Read the repository task, `BUILDER_V2_PLAN.md` when relevant, and inspect current code plus relevant pull requests.
-2. Confirm the mapped GitHub issue.
+1. Read the repository task and `BUILDER_V2_PLAN.md` when relevant, then inspect current code and relevant pull requests.
+2. Confirm the mapped GitHub issue and live dependency state.
 3. Record the claimant and exact scope in the repository task file.
-4. Assign the issue when appropriate; otherwise add a comment naming the agent/session.
+4. Assign the issue when appropriate; otherwise add a claim comment.
 5. Record the branch in the issue.
-6. Prefer a branch name containing both identifiers, for example `rb-029/issue-319-opponent-preparation`.
+6. Use a short-lived branch from current `main` containing the RB ID where practical.
 7. Make the claim visible before substantive implementation or research.
 
-RB-028 now supplies settled Candidate Decision V4 factual personal evidence. RB-029 can consume exact personal encounters as separated context. RB-031 must not be claimed as if its remaining opponent semantics were already stable.
+With RB-027–RB-031 complete, a future Builder session must not treat historical V2 task ordering as a live queue. RB-016 stays blocked until its usage gate is satisfied; otherwise a genuinely new requirement needs a new task/issue.
 
 ## Pull-request protocol
 
@@ -108,25 +106,13 @@ Every implementation or review pull request must be visible from its GitHub issu
 - Use `Closes #<issue>` only when merging the pull request should complete the task; otherwise use `Refs #<issue>`.
 - Record source/target branches, scope, validation performed/pending, and review readiness.
 - Do not close an issue merely because a pull request exists or CI passed.
+- Never commit directly to `main`; merge only through the accepted squash-merge flow.
 
 ## Work-session updates
 
 Update issues on meaningful state changes: claim/transfer, implementation start, blocker, material scope/dependency change, PR creation/replacement, validation failure changing delivery risk, request for review, completion/rejection/supersession.
 
 Avoid low-value comments for every commit.
-
-## Dependency links
-
-Repository task files remain the complete dependency definition. Material execution dependencies should also be represented in issue bodies/comments using direct issue references.
-
-For the V2 queue:
-
-- RB-027 / #317 defines the integrated authoritative preset user-move ranking semantics;
-- RB-028 / #318 defines settled factual exact-position personal evidence in Candidate Decision V4 without restoring personal history as preset persona authority;
-- RB-029 / #319 owns opponent-response preparation/coverage semantics and must preserve RB-009 state behavior;
-- RB-030 / #320 owns setup after V2 target/coverage compatibility is clear;
-- RB-031 / #321 integrates the settled evidence into the Cockpit after RB-029;
-- RB-016 / #104 remains blocked behind V2 delivery plus real use.
 
 ## Completion protocol
 

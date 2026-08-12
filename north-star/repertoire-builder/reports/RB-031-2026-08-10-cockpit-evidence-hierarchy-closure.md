@@ -28,7 +28,9 @@ For `OPPONENT_RESPONSE`, the UI continues to consume RB-029's authoritative reas
 
 ## Collision review
 
-RB-030 / #320 remains active on draft PR #335. At final review, #335 changes setup, launch, target, profile and Builder page-composition files; RB-031 changes the workbench, its evidence view-model/tests and task/report files. There is no changed-file overlap, and `main` remained at the RB-031 base while this review completed.
+RB-030 / #320 was active on draft PR #335 during RB-031 final review. At that checkpoint, #335 changed setup, launch, target, profile and Builder page-composition files; RB-031 changed the workbench, its evidence view-model/tests and task/report files. There was no changed-file overlap, and `main` remained at the RB-031 base while the review completed.
+
+RB-030 subsequently passed exact-head CI #2478 and squash-merged through PR #335 as `9bfcf3f5b4337c827719f5ee170bcd5f67b6f3c2`. That later integration does not alter the RB-031 workbench boundary.
 
 ## PR review
 
@@ -42,6 +44,8 @@ No external PR reviews, review threads or PR comments were outstanding at the ti
 ## Validation
 
 Exact implementation head `9a410681b5fb9cb9c10d530e76d640b6b7e82451` passed CI run #2483 (`31421699741`) including install, lint, Angular build/template compilation, opening classification and knowledge audits, architecture guardrails, migrations, imported-game audits and the full test step.
+
+The documentation-adjusted final PR head `a7ed94bdad896bc852685ad25de1dc87bee89e8f` then passed exact-head CI #2486 (`31422515093`) before PR #336 was squash-merged to `main` as `e6c024afec1753838dec900181ca4023d6114676`.
 
 Focused view-model tests cover:
 
@@ -65,4 +69,8 @@ Source-level review nevertheless verified:
 
 ## Scope boundaries
 
-No API, contract, Prisma schema/migration, persistence, queue/job, Builder reducer/session, course-write or LLM-authority change is part of RB-031. Final RB-030 setup/context reconciliation remains owned by #320 / PR #335.
+No API, contract, Prisma schema/migration, persistence, queue/job, Builder reducer/session, course-write or LLM-authority change is part of RB-031. RB-030 setup/context work remained separate and is now integrated through PR #335.
+
+## Post-merge disposition
+
+RB-031 is fully integrated. Together with RB-027–RB-030 it completes the defined Builder V2 decision/presentation delivery chain. The remaining Builder issue RB-016 / #104 is not a V2 implementation continuation; it stays blocked until sufficient post-V2 real usage exists for adoption/outcome analysis.
