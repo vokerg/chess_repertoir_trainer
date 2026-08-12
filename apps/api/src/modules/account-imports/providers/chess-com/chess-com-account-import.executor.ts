@@ -86,10 +86,15 @@ export function createChessComAccountImportExecutor(
       if (run.windowsCompleted > coveredPrefix) {
         throw new Error('Chess.com import checkpoint exceeds proved account coverage.');
       }
-      await context.checkpoint({
+      const planCheckpointStartedAt = now();
+      await commitRepository.initializePlan({
+        userId: run.userId,
+        importRunId: run.id,
+        workKey: run.workKey,
         windowsTotal: windows.length,
         windowsCompleted: coveredPrefix,
       });
+      context.recordStageTiming('CHECKPOINT', Math.max(0, now() - planCheckpointStartedAt));
       if (coveredPrefix === windows.length) return { kind: 'COMPLETED' };
 
       let archives;
