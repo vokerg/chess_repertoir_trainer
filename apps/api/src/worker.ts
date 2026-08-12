@@ -7,6 +7,9 @@ import { createAccountImportWorker } from './modules/account-imports/account-imp
 import {
   ChessComAccountImportExecutor,
 } from './modules/account-imports/providers/chess-com/chess-com-account-import.executor';
+import {
+  createLichessAccountImportExecutor,
+} from './modules/account-imports/providers/lichess/lichess-account-import.executor';
 import { defaultJobTaskExecutorRegistry } from './modules/jobs/imported-game-job-executors';
 import { JobRunRepository } from './modules/jobs/job-run.repository.prisma';
 import { loadJobWorkerConfig } from './modules/jobs/job-worker.config';
@@ -18,6 +21,7 @@ const DAY_MS = 24 * 60 * 60_000;
 const TERMINAL_RETENTION_INTERVAL_MS = 60 * 60_000;
 
 defaultAccountImportExecutorRegistry.register(ChessComAccountImportExecutor);
+defaultAccountImportExecutorRegistry.register(createLichessAccountImportExecutor());
 
 async function bootstrap() {
   const config = loadJobWorkerConfig();

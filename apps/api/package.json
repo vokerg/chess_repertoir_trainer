@@ -35,6 +35,7 @@
     "db:seed": "ts-node prisma/seed.ts",
     "db:reset": "prisma migrate reset --force --schema prisma/schema.prisma && prisma generate --schema prisma/schema.prisma && npm run db:seed",
     "prisma:studio": "prisma studio",
+    "canary:lichess-account-import": "npm run build && node test/account-imports/account-import.lichess-canary.mjs",
     "test": "npm run build && npm run traps:validate && node test/run-all.mjs"
   },
   "dependencies": {

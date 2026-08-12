@@ -278,6 +278,26 @@ export function createAccountImportWorker(input: CreateAccountImportWorkerInput)
         return;
       }
 
+      if (outcome.result.kind === 'FAILED') {
+        const failed = await input.repository.failRun(
+          run.id,
+          run.workKey,
+          outcome.result.errorCode,
+          outcome.result.safeError,
+        );
+        if (!failed) await settleLostOrControlled(run);
+        logger.warn(
+          {
+            importRunId: run.id,
+            provider: run.provider,
+            errorCode: outcome.result.errorCode,
+            settled: failed,
+          },
+          'Account import provider execution failed',
+        );
+        return;
+      }
+
       if (outcome.result.kind === 'RETRY_AT') {
         const current = now();
         logger.info(

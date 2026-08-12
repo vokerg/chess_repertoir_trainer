@@ -49,6 +49,7 @@ export interface AccountImportProviderPlanCommitInput {
   workKey: string;
   windowsTotal: number;
   windowsCompleted: number;
+  checkpoint?: unknown;
 }
 
 export interface AccountImportProviderBatchCommitInput {
@@ -59,6 +60,8 @@ export interface AccountImportProviderBatchCommitInput {
   gamesSeenDelta: number;
   gamesSkippedOutOfScopeDelta: number;
   gamesFailedDelta?: number;
+  scopeHash?: string;
+  checkpoint?: unknown;
 }
 
 export interface AccountImportProviderBatchCommitResult {
@@ -100,6 +103,7 @@ export function createAccountImportProviderCommitRepository(
   return {
     async initializePlan(input) {
       validatePlanInput(input);
+      const checkpointSql = optionalCheckpointSql(input.checkpoint);
       await database.$transaction(async (transaction) => {
         const run = await lockWritableRun(transaction, input);
         if (run.windowsTotal !== null && run.windowsTotal !== input.windowsTotal) {
@@ -117,7 +121,8 @@ export function createAccountImportProviderCommitRepository(
 
         const updated = await transaction.$executeRaw(Prisma.sql`
           UPDATE "ImportRun"
-          SET "windowsTotal" = ${input.windowsTotal},
+          SET "checkpointJson" = ${checkpointSql},
+              "windowsTotal" = ${input.windowsTotal},
               "windowsCompleted" = ${input.windowsCompleted},
               "lastProgressAt" = NOW(),
               "updatedAt" = NOW()
@@ -132,8 +137,12 @@ export function createAccountImportProviderCommitRepository(
 
     async persistBatch(input) {
       validateBatchInput(input, maxWriteBatchSize);
+      const checkpointSql = optionalCheckpointSql(input.checkpoint);
       return database.$transaction(async (transaction) => {
         const run = await lockWritableRun(transaction, input);
+        if (input.scopeHash !== undefined && run.scopeHash !== input.scopeHash) {
+          throw new Error('Account import provider batch scope does not match the immutable run scope.');
+        }
         await lockOwnedAccount(transaction, input.userId, run.accountId);
         await admissionGuard.assertAllowed(transaction, {
           userId: input.userId,
@@ -178,7 +187,8 @@ export function createAccountImportProviderCommitRepository(
 
         const updated = await transaction.$executeRaw(Prisma.sql`
           UPDATE "ImportRun"
-          SET "gamesSeen" = "gamesSeen" + ${input.gamesSeenDelta},
+          SET "checkpointJson" = ${checkpointSql},
+              "gamesSeen" = "gamesSeen" + ${input.gamesSeenDelta},
               "gamesMatchedScope" = "gamesMatchedScope" + ${input.games.length},
               "gamesImported" = "gamesImported" + ${inserted},
               "gamesDuplicate" = "gamesDuplicate" + ${duplicate},
@@ -289,7 +299,7 @@ export function createAccountImportProviderCommitRepository(
           `);
         }
 
-        const checkpointJson = JSON.stringify(input.checkpoint);
+        const checkpointJson = serializeCheckpoint(input.checkpoint);
         const updated = await transaction.$executeRaw(Prisma.sql`
           UPDATE "ImportRun"
           SET "checkpointJson" = ${checkpointJson}::jsonb,
@@ -371,6 +381,7 @@ function validatePlanInput(input: AccountImportProviderPlanCommitInput): void {
   if (input.windowsCompleted > input.windowsTotal) {
     throw new Error('Account import completed-window progress cannot exceed its denominator.');
   }
+  if (input.checkpoint !== undefined) serializeCheckpoint(input.checkpoint);
 }
 
 function validateBatchInput(
@@ -396,6 +407,10 @@ function validateBatchInput(
   ) {
     throw new Error('Account import batch counters must exactly partition provider games seen.');
   }
+  if (input.scopeHash !== undefined && !/^[a-f0-9]{64}$/.test(input.scopeHash)) {
+    throw new Error('Account import provider batch scopeHash must be a canonical SHA-256 hash.');
+  }
+  if (input.checkpoint !== undefined) serializeCheckpoint(input.checkpoint);
 }
 
 function validateWindowInput(input: AccountImportProviderWindowCommitInput): void {
@@ -412,7 +427,26 @@ function validateWindowInput(input: AccountImportProviderWindowCommitInput): voi
   if (input.windowsCompleted > input.windowsTotal) {
     throw new Error('Account import completed-window progress cannot exceed its denominator.');
   }
-  JSON.stringify(input.checkpoint);
+  serializeCheckpoint(input.checkpoint);
+}
+
+function optionalCheckpointSql(value: unknown | undefined): Prisma.Sql {
+  return value === undefined
+    ? Prisma.sql`"checkpointJson"`
+    : Prisma.sql`${serializeCheckpoint(value)}::jsonb`;
+}
+
+function serializeCheckpoint(value: unknown): string {
+  let serialized: string | undefined;
+  try {
+    serialized = JSON.stringify(value);
+  } catch {
+    throw new Error('Account import provider checkpoint must be JSON serializable.');
+  }
+  if (serialized === undefined) {
+    throw new Error('Account import provider checkpoint must be JSON serializable.');
+  }
+  return serialized;
 }
 
 function resolveMaxWriteBatchSize(value: number | undefined): number {

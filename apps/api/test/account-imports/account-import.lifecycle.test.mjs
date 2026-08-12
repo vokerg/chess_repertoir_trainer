@@ -116,6 +116,7 @@ try {
   const monotonicProgress = await lifecycle.getRunForUser(active.userId, active.id);
   assert.equal(monotonicProgress.windowsTotal, 3);
   assert.equal(monotonicProgress.windowsCompleted, 1);
+  assert.deepEqual(monotonicProgress.checkpoint, { window: 1 });
 
   assert.equal(await lifecycle.requestPause(active.userId, active.id), true);
   const pauseRequested = await lifecycle.getRunForUser(active.userId, active.id);
@@ -139,6 +140,7 @@ try {
   assert.ok(reclaimed);
   assert.equal(reclaimed.id, active.id, 'the same highest-priority resumed run is reclaimable');
   assert.notEqual(reclaimed.workKey, active.workKey, 'a new claim gets a new fencing key');
+  assert.deepEqual(reclaimed.checkpoint, { window: 1 }, 'provider checkpoint survives pause/resume/reclaim');
 
   assert.equal(await lifecycle.requestCancel(reclaimed.userId, reclaimed.id), true);
   const cancelRequested = await lifecycle.getRunForUser(reclaimed.userId, reclaimed.id);

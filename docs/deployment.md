@@ -146,9 +146,11 @@ ACCOUNT_IMPORT_WORKER_SHUTDOWN_TIMEOUT_MS=30000
 ACCOUNT_IMPORT_WORKER_BACKLOG_RUN_THRESHOLD=20
 ACCOUNT_IMPORT_WORKER_BACKLOG_AGE_MS=300000
 ACCOUNT_IMPORT_WORKER_BACKLOG_SUSTAINED_MS=300000
+LICHESS_IMPORT_WINDOW_DAYS=14
+IMPORT_DATABASE_WRITE_BATCH_SIZE=100
 ```
 
-Account-import stale-after must also remain more than twice its heartbeat interval. Backlog telemetry warns when oldest queue age exceeds five minutes, or when more than 20 queued runs persist for five minutes. The ONB-012 worker registry is intentionally provider-neutral: until provider executors register in follow-up provider tasks, accepted durable imports remain queued and the worker performs no provider network I/O.
+Account-import stale-after must also remain more than twice its heartbeat interval. Backlog telemetry warns when oldest queue age exceeds five minutes, or when more than 20 queued runs persist for five minutes. The account-import registry now includes the bounded Lichess executor: it streams one Lichess NDJSON request at a time, plans replayable 14-day half-open windows, writes at most 100 normalized games per database batch, and defers HTTP 429 responses for at least one minute. Chess.com remains unregistered until ONB-014, so durable Chess.com imports remain queued without provider network I/O.
 
 Terminal job retention runs at worker startup and hourly. It removes only terminal imported-game jobs whose `completedAt` is older than `JOB_WORKER_TERMINAL_RETENTION_DAYS`; task rows are deleted by cascade. Active jobs and account-import history are never removed by that retention pass.
 
@@ -242,7 +244,7 @@ Worker terminal:
 npm run dev:worker
 ```
 
-To execute analysis-backed jobs locally, enable batch Stockfish and ensure the selected engine is available in the worker terminal environment. Durable account imports require a provider executor to be registered; ONB-012 itself only supplies the provider-neutral lifecycle/worker seam.
+To execute analysis-backed jobs locally, enable batch Stockfish and ensure the selected engine is available in the worker terminal environment. Durable Lichess imports are executed by the registered bounded provider adapter; durable Chess.com imports remain queued until ONB-014 registers its provider adapter.
 
 Mobile also runs separately:
 

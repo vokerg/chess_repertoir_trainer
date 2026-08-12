@@ -5,6 +5,7 @@ import {
   AccountImportInvalidRetryError,
   createAccountImportRepository,
 } from '../../dist/modules/account-imports/account-import.repository.prisma.js';
+import { AccountImportService } from '../../dist/modules/account-imports/account-import.service.js';
 
 const prisma = prismaModule.default;
 const repository = createAccountImportRepository(prisma);
@@ -70,6 +71,17 @@ try {
     (error) => error instanceof AccountImportInvalidRetryError
       && /mode/.test(error.message),
     'linked retries cannot silently change the source import mode',
+  );
+
+  const retried = await AccountImportService.retryForUser(user.id, source.id);
+  assert.equal(retried.importRun.retryOfImportRunId, source.id);
+  assert.deepEqual(retried.importRun.scope, scope);
+  assert.equal(retried.importRun.requestedFrom, requestedFrom.toISOString());
+  assert.equal(retried.importRun.requestedTo, requestedTo.toISOString());
+  assert.equal(
+    retried.importRun.windows.total,
+    null,
+    'a retry gets a fresh provider plan from current proved coverage instead of inheriting a failed-run denominator',
   );
 } finally {
   if (userId !== undefined) {

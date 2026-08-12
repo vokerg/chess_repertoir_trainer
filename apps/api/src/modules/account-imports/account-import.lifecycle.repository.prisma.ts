@@ -48,6 +48,7 @@ interface ImportRunLifecycleRow {
   gamesSkippedOutOfScope: number;
   gamesFailed: number;
   lastProgressAt: Date | null;
+  checkpointJson: unknown | null;
   workKey: string | null;
   claimedAt: Date | null;
   heartbeatAt: Date | null;
@@ -634,6 +635,7 @@ function lifecycleColumns(alias?: string): Prisma.Sql {
     Prisma.sql`${prefix}"gamesSkippedOutOfScope"`,
     Prisma.sql`${prefix}"gamesFailed"`,
     Prisma.sql`${prefix}"lastProgressAt"`,
+    Prisma.sql`${prefix}"checkpointJson"`,
     Prisma.sql`${prefix}"workKey"`,
     Prisma.sql`${prefix}"claimedAt"`,
     Prisma.sql`${prefix}"heartbeatAt"`,
@@ -675,6 +677,7 @@ function toStoredRun(row: ImportRunLifecycleRow): StoredAccountImportRun {
     gamesSkippedOutOfScope: row.gamesSkippedOutOfScope,
     gamesFailed: row.gamesFailed,
     lastProgressAt: row.lastProgressAt,
+    checkpoint: row.checkpointJson,
     workKey: row.workKey,
     claimedAt: row.claimedAt,
     heartbeatAt: row.heartbeatAt,
