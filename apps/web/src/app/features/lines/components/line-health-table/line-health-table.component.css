@@ -264,6 +264,11 @@
     border: 0;
   }
 
+  .health-table tbody > tr:not(.expanded-row) > td:nth-child(4),
+  .health-table tbody > tr:not(.expanded-row) > td:nth-child(6) {
+    display: none;
+  }
+
   .health-table tbody > tr:not(.expanded-row) > td:first-child {
     grid-column: 1;
     grid-row: 1;
