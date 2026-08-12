@@ -77,8 +77,9 @@ export const LichessImportService = {
             maxEndedAt = game.endedAt;
           }
         }
-      } catch {
+      } catch (error) {
         gamesFailed += batch.length;
+        throw error;
       }
     };
 
@@ -102,28 +103,31 @@ export const LichessImportService = {
 
       for await (const game of readLichessNdjson(response)) {
         gamesSeen += 1;
+        let data: LegacyLichessImportGame;
         try {
           const normalized = normalizeLichessGame(game, account.username);
-          const data: LegacyLichessImportGame = {
+          data = {
             userId: account.userId,
             accountId: account.id,
             provider: account.provider,
             ...normalized,
           };
-          if (!isStandardImportedGameVariant(data.variant)) {
-            gamesSkipped += 1;
-            if (data.endedAt && (!maxEndedAt || data.endedAt > maxEndedAt)) {
-              maxEndedAt = data.endedAt;
-            }
-            continue;
-          }
-
-          pendingGames.push(data);
-          if (pendingGames.length >= LEGACY_IMPORT_WRITE_BATCH_SIZE) {
-            await flushPendingGames();
-          }
         } catch {
           gamesFailed += 1;
+          continue;
+        }
+
+        if (!isStandardImportedGameVariant(data.variant)) {
+          gamesSkipped += 1;
+          if (data.endedAt && (!maxEndedAt || data.endedAt > maxEndedAt)) {
+            maxEndedAt = data.endedAt;
+          }
+          continue;
+        }
+
+        pendingGames.push(data);
+        if (pendingGames.length >= LEGACY_IMPORT_WRITE_BATCH_SIZE) {
+          await flushPendingGames();
         }
       }
       await flushPendingGames();
