@@ -1,0 +1,36 @@
+<section class="coach-read">
+  @if (strongestPool(); as pool) {
+    <div class="coach-lead">
+      <span class="coach-index">01</span>
+      <div>
+        <strong>{{ strongestText() }}</strong>
+        <p>
+          {{ formatRating(pool.current?.rating) }} current, with
+          {{ formatRating(pool.highest?.rating) }} at the top of the pool.
+        </p>
+      </div>
+    </div>
+
+    <div class="coach-list">
+      <div>
+        <span class="coach-mark positive">↗</span>
+        <span>Best time-control score</span>
+        <strong
+          >{{ bestTimeControl()?.scorePercent ?? '—' }}{{ bestTimeControl() ? '%' : '' }}</strong
+        >
+      </div>
+      <div>
+        <span class="coach-mark warning">!</span>
+        <span>{{ largestDeficit()?.label ?? 'Rating pool' }} needs attention</span>
+        <strong>{{
+          largestDeficit()
+            ? '−' +
+              formatRating(largestDeficit()!.highest!.rating - largestDeficit()!.current!.rating)
+            : '—'
+        }}</strong>
+      </div>
+    </div>
+  } @else {
+    <p class="coach-empty">No rating insights are available for this account yet.</p>
+  }
+</section>

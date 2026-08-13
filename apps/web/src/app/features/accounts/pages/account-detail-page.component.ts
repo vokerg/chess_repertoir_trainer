@@ -15,12 +15,17 @@ import {
   FactGridComponent,
   type UiFactItem,
 } from '../../../shared/ui/fact-grid/fact-grid.component';
-import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
+import {
+  PageHeaderAction,
+  PageHeaderComponent,
+} from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
-import { AccountPerformanceStatsComponent } from '../components/account-performance-stats.component';
-import { AccountRatingStatsComponent } from '../components/account-rating-stats.component';
-import { AccountYearlyHighsComponent } from '../components/account-yearly-highs.component';
+import { AccountProfileCoachReadComponent } from '../components/account-profile-coach-read.component';
+import { AccountProfileEvidenceComponent } from '../components/account-profile-evidence.component';
+import { AccountProfileGameShapeComponent } from '../components/account-profile-game-shape.component';
+import { AccountProfileProgressComponent } from '../components/account-profile-progress.component';
+import { AccountProfileSignalCardsComponent } from '../components/account-profile-signal-cards.component';
 import { RatingHistoryChartComponent } from '../components/rating-history-chart.component';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import {
@@ -43,9 +48,11 @@ import { getRatingHistoryRangeQuery } from '../helpers/rating-history-ranges';
     FactGridComponent,
     PanelComponent,
     StateMessageComponent,
-    AccountRatingStatsComponent,
-    AccountYearlyHighsComponent,
-    AccountPerformanceStatsComponent,
+    AccountProfileSignalCardsComponent,
+    AccountProfileCoachReadComponent,
+    AccountProfileGameShapeComponent,
+    AccountProfileProgressComponent,
+    AccountProfileEvidenceComponent,
     RatingHistoryChartComponent,
   ],
   providers: [AccountsApiService],
@@ -86,12 +93,15 @@ export class AccountDetailPageComponent implements OnInit {
   });
   protected readonly pageSubtitle = computed(() => {
     const account = this.account();
-    return account ? `${providerLabel(account.provider)} @${account.username}` : 'Loading account details.';
+    return account
+      ? `${providerLabel(account.provider)} @${account.username}`
+      : 'Loading account details.';
   });
   protected readonly accountOptions = computed(() =>
     [...this.accounts()].sort(
       (left, right) =>
-        Number(Boolean(right.isDefaultProgressAccount)) - Number(Boolean(left.isDefaultProgressAccount)) ||
+        Number(Boolean(right.isDefaultProgressAccount)) -
+          Number(Boolean(left.isDefaultProgressAccount)) ||
         providerLabel(left.provider).localeCompare(providerLabel(right.provider)) ||
         left.username.localeCompare(right.username),
     ),
@@ -236,15 +246,20 @@ export class AccountDetailPageComponent implements OnInit {
     this.performanceStatsError.set(null);
 
     try {
-      const stats = await firstValueFrom(this.accountsApi.getPerformanceStats(accountId, this.ratingQuery()));
+      const stats = await firstValueFrom(
+        this.accountsApi.getPerformanceStats(accountId, this.ratingQuery()),
+      );
       if (currentRequest === this.performanceStatsRequestId) this.performanceStats.set(stats);
     } catch (error) {
       if (currentRequest === this.performanceStatsRequestId) {
         this.performanceStats.set(null);
-        this.performanceStatsError.set(this.errorMessage(error, 'Unable to load performance stats.'));
+        this.performanceStatsError.set(
+          this.errorMessage(error, 'Unable to load performance stats.'),
+        );
       }
     } finally {
-      if (currentRequest === this.performanceStatsRequestId) this.performanceStatsLoading.set(false);
+      if (currentRequest === this.performanceStatsRequestId)
+        this.performanceStatsLoading.set(false);
     }
   }
 
@@ -254,7 +269,9 @@ export class AccountDetailPageComponent implements OnInit {
     this.historyError.set(null);
 
     try {
-      const history = await firstValueFrom(this.accountsApi.getRatingHistory(accountId, this.ratingQuery()));
+      const history = await firstValueFrom(
+        this.accountsApi.getRatingHistory(accountId, this.ratingQuery()),
+      );
       if (currentRequest === this.requestId) this.history.set(history);
     } catch (error) {
       if (currentRequest === this.requestId) {

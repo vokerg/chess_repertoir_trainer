@@ -1,0 +1,51 @@
+<section class="game-shape">
+  @if (stats(); as stats) {
+    <div class="shape-summary">
+      <div>
+        <strong>{{ scorePercent() === null ? '—' : scorePercent() + '%' }}</strong>
+        <span>overall score · {{ stats.gamesCount.toLocaleString() }} games</span>
+      </div>
+      <span class="range-chip">{{ range() }}</span>
+    </div>
+
+    <div class="wdl-bar" aria-label="Wins draws losses">
+      <span class="wins" [style.flex]="stats.wdl.wins || 0.01"></span>
+      <span class="draws" [style.flex]="stats.wdl.draws || 0.01"></span>
+      <span class="losses" [style.flex]="stats.wdl.losses || 0.01"></span>
+    </div>
+    <div class="wdl-labels">
+      <span><i class="win-dot"></i> {{ stats.wdl.wins.toLocaleString() }} wins</span>
+      <span><i class="draw-dot"></i> {{ stats.wdl.draws.toLocaleString() }} draws</span>
+      <span><i class="loss-dot"></i> {{ stats.wdl.losses.toLocaleString() }} losses</span>
+    </div>
+
+    <div class="opponent-inline">
+      <div>
+        <span class="opponent-label">Opponent strength</span>
+        <strong>{{ formatRating(stats.averageOpponentRating.overall) }}</strong>
+        <span class="opponent-unit">average rating</span>
+      </div>
+      <p>
+        Wins {{ formatRating(stats.averageOpponentRating.wins) }} · Draws
+        {{ formatRating(stats.averageOpponentRating.draws) }} · Losses
+        {{ formatRating(stats.averageOpponentRating.losses) }}
+      </p>
+    </div>
+
+    @if (timeControls().length > 0) {
+      <div class="time-control-list">
+        @for (bucket of timeControls(); track bucket.timeControl) {
+          <div>
+            <span>{{ bucket.timeControl }}</span>
+            <div class="time-control-bar"><i [style.width.%]="bucket.scorePercent ?? 0"></i></div>
+            <strong
+              >{{ bucket.scorePercent ?? '—' }}{{ bucket.scorePercent === null ? '' : '%' }}</strong
+            >
+          </div>
+        }
+      </div>
+    }
+  } @else {
+    <p class="shape-empty">No performance data is available for this period.</p>
+  }
+</section>

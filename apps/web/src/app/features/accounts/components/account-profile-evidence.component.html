@@ -1,0 +1,101 @@
+<section class="profile-evidence" [class.profile-evidence-loading]="loading()">
+  @if (error()) {
+    <p class="evidence-error">{{ error() }}</p>
+  }
+
+  <div class="evidence-tabs" role="tablist" aria-label="Profile evidence">
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="tab() === 'recent'"
+      [class.selected]="tab() === 'recent'"
+      (click)="selectTab('recent')"
+    >
+      Recent games
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="tab() === 'victories'"
+      [class.selected]="tab() === 'victories'"
+      (click)="selectTab('victories')"
+    >
+      Best victories
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="tab() === 'defeats'"
+      [class.selected]="tab() === 'defeats'"
+      (click)="selectTab('defeats')"
+    >
+      Embarrassing defeats
+    </button>
+  </div>
+
+  @if (tab() === 'recent') {
+    @if (recentGames().length > 0) {
+      <div class="recent-list">
+        @for (game of recentGames(); track game.gameId) {
+          <a class="recent-row" [routerLink]="['/games', game.gameId]">
+            <span class="result-badge" [class]="resultClass(game)">{{
+              game.resultForUser === 'WIN' ? 'W' : game.resultForUser === 'DRAW' ? 'D' : 'L'
+            }}</span>
+            <span class="game-copy"
+              ><strong>{{ game.opponentUsername ?? 'Unknown opponent' }}</strong
+              ><small
+                >{{ game.speed }} · {{ game.timeControl }} · {{ formatDate(game.endedAt) }}</small
+              ></span
+            >
+            <span class="game-rating">{{ ratingLabel(game.opponentRating) }}</span>
+            <span class="row-arrow">↗</span>
+          </a>
+        }
+      </div>
+    } @else if (!loading()) {
+      <p class="evidence-empty">No recent games are available for this range.</p>
+    }
+  } @else {
+    @let games = tab() === 'victories' ? victories() : defeats();
+    <section class="highlight-shell" [class.defeats-shell]="tab() === 'defeats'">
+      <div class="highlight-header">
+        <span class="highlight-mark">{{ tab() === 'victories' ? '↗' : '!' }}</span>
+        <div>
+          <h3>{{ tab() === 'victories' ? 'Best victories' : 'Most embarrassing defeats' }}</h3>
+          <p>
+            {{
+              tab() === 'victories'
+                ? 'Your strongest wins by opponent rating.'
+                : 'Losses worth remembering before the next session.'
+            }}
+          </p>
+        </div>
+        <span class="highlight-count">{{ games.length }} games</span>
+      </div>
+      @if (games.length > 0) {
+        <div class="highlight-rows">
+          @for (game of games; track game.gameId) {
+            <a class="highlight-row" [routerLink]="['/games', game.gameId]">
+              <span class="result-badge" [class]="tab() === 'victories' ? 'win' : 'loss'">{{
+                tab() === 'victories' ? 'W' : 'L'
+              }}</span>
+              <span class="game-copy"
+                ><strong>{{ opponentName(game) }}{{ ratingLabel(game.opponentRating) }}</strong
+                ><small>{{ game.speed }} · {{ formatDate(game.endedAt) }}</small></span
+              >
+              <span class="row-arrow">↗</span>
+            </a>
+          }
+        </div>
+      } @else {
+        <p class="evidence-empty">
+          No {{ tab() === 'victories' ? 'victories' : 'defeats' }} are available for this range.
+        </p>
+      }
+    </section>
+  }
+
+  @if (loading()) {
+    <p class="evidence-loading">Loading game evidence...</p>
+  }
+</section>

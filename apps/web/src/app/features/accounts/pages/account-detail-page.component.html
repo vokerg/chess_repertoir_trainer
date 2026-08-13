@@ -43,42 +43,65 @@
       }
     </app-panel>
 
-    <div class="account-metrics-grid">
-      <app-panel title="Rating stats" subtitle="Stored highs and milestones from imported games.">
-        <app-account-rating-stats
+    <app-account-profile-signal-cards
+      [stats]="ratingStats()"
+      [performance]="performanceStats()"
+      [history]="history()"
+      [selectedSpeed]="selectedSpeed()"
+      [loading]="ratingStatsLoading() || performanceStatsLoading()"
+    />
+
+    <div class="profile-main-grid">
+      <app-panel
+        title="Rating history"
+        subtitle="Daily maximum recorded rating from imported games."
+      >
+        <app-rating-history-chart
+          [history]="history()"
+          [loading]="historyLoading()"
+          [error]="historyError()"
+          [selectedRange]="selectedRange()"
+          [selectedSpeed]="selectedSpeed()"
+          (selectedRangeChange)="onSelectedRangeChange($event)"
+          (selectedSpeedChange)="onSelectedSpeedChange($event)"
+        />
+      </app-panel>
+
+      <div class="profile-side-stack">
+        <app-panel title="What stands out" subtitle="A quick read across your rating pools.">
+          <app-account-profile-coach-read
+            [stats]="ratingStats()"
+            [performance]="performanceStats()"
+          />
+        </app-panel>
+        <app-panel
+          title="Game shape"
+          subtitle="Results and opponent strength for the selected period."
+        >
+          <app-account-profile-game-shape [stats]="performanceStats()" [range]="selectedRange()" />
+        </app-panel>
+      </div>
+    </div>
+
+    <div class="profile-lower-grid">
+      <app-panel title="Your milestones" subtitle="Keep the progress that matters visible.">
+        <app-account-profile-progress
           [stats]="ratingStats()"
           [loading]="ratingStatsLoading()"
           [error]="ratingStatsError()"
         />
       </app-panel>
 
-      <app-panel title="Yearly highs" subtitle="Stored annual peak rating by speed.">
-        <app-account-yearly-highs
-          [stats]="ratingStats()"
-          [loading]="ratingStatsLoading()"
-          [error]="ratingStatsError()"
+      <app-panel
+        title="The games that tell the story"
+        subtitle="Switch between recent play and standout results."
+      >
+        <app-account-profile-evidence
+          [stats]="performanceStats()"
+          [loading]="performanceStatsLoading()"
+          [error]="performanceStatsError()"
         />
       </app-panel>
     </div>
-
-    <app-panel title="Period performance" subtitle="Results and opponent ratings for the selected graph period.">
-      <app-account-performance-stats
-        [stats]="performanceStats()"
-        [loading]="performanceStatsLoading()"
-        [error]="performanceStatsError()"
-      />
-    </app-panel>
-
-    <app-panel title="Rating history" subtitle="Daily maximum recorded rating from imported games.">
-      <app-rating-history-chart
-        [history]="history()"
-        [loading]="historyLoading()"
-        [error]="historyError()"
-        [selectedRange]="selectedRange()"
-        [selectedSpeed]="selectedSpeed()"
-        (selectedRangeChange)="onSelectedRangeChange($event)"
-        (selectedSpeedChange)="onSelectedSpeedChange($event)"
-      />
-    </app-panel>
   }
 </section>
