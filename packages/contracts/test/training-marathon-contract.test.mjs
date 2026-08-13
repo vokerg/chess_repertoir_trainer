@@ -95,10 +95,10 @@ const trainingSession = {
   accuracy: 1,
 };
 assert.deepEqual(trainingSessionResponseSchema.parse(trainingSession), trainingSession);
-assert.deepEqual(completeTrainingResponseSchema.parse(null), null);
+assert.deepEqual(completeTrainingResponseSchema.parse(trainingSession), trainingSession);
 assert.throws(() => trainingSessionResponseSchema.parse({ ...trainingSession, result: 'UNKNOWN' }));
 assert.throws(() => trainingSessionResponseSchema.parse({ ...trainingSession, startedAt: new Date() }));
-assert.throws(() => completeTrainingResponseSchema.parse({}));
+assert.throws(() => completeTrainingResponseSchema.parse(null));
 
 const moveResponse = {
   correct: true,
