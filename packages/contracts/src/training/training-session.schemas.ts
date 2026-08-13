@@ -48,7 +48,7 @@ export const trainingSessionResponseSchema = z.object({
   accuracy: z.number().nullable(),
 });
 
-export const completeTrainingResponseSchema = trainingSessionResponseSchema.nullable();
+export const completeTrainingResponseSchema = trainingSessionResponseSchema;
 
 export const trainingHistoryItemSchema = trainingSessionResponseSchema.extend({
   line: z.object({
