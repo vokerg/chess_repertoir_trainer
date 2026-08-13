@@ -9,16 +9,8 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import {
-  FactGridComponent,
-  type UiFactItem,
-} from '../../../shared/ui/fact-grid/fact-grid.component';
-import {
-  PageHeaderAction,
-  PageHeaderComponent,
-} from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
 import { AccountProfileCoachReadComponent } from '../components/account-profile-coach-read.component';
@@ -44,8 +36,7 @@ import { getRatingHistoryRangeQuery } from '../helpers/rating-history-ranges';
   selector: 'app-account-detail-page',
   standalone: true,
   imports: [
-    PageHeaderComponent,
-    FactGridComponent,
+    RouterLink,
     PanelComponent,
     StateMessageComponent,
     AccountProfileSignalCardsComponent,
@@ -91,11 +82,23 @@ export class AccountDetailPageComponent implements OnInit {
     const account = this.account();
     return account ? account.displayName || account.username : 'Account';
   });
-  protected readonly pageSubtitle = computed(() => {
-    const account = this.account();
-    return account
-      ? `${providerLabel(account.provider)} @${account.username}`
-      : 'Loading account details.';
+  protected readonly profilePeriodLabel = computed(() => {
+    const labels: Record<RatingRangeKey, string> = {
+      '1M': 'Last 30 days',
+      '3M': 'Last 3 months',
+      '6M': 'Last 6 months',
+      YTD: 'Year to date',
+      '1Y': 'Last 12 months',
+      '3Y': 'Last 3 years',
+      '5Y': 'Last 5 years',
+      ALL: 'All time',
+    };
+    return labels[this.selectedRange()];
+  });
+  protected readonly profileScopeLabel = computed(() => {
+    const speed = this.selectedSpeed();
+    if (speed === 'all') return 'all imported games';
+    return `${speed[0].toUpperCase()}${speed.slice(1)} games`;
   });
   protected readonly accountOptions = computed(() =>
     [...this.accounts()].sort(
@@ -106,41 +109,6 @@ export class AccountDetailPageComponent implements OnInit {
         left.username.localeCompare(right.username),
     ),
   );
-  protected readonly accountFacts = computed<readonly UiFactItem[]>(() => {
-    const account = this.account();
-    if (!account) return [];
-
-    return [
-      {
-        id: 'provider',
-        label: 'Provider',
-        value: providerLabel(account.provider),
-      },
-      {
-        id: 'username',
-        label: 'Username',
-        value: `@${account.username}`,
-      },
-      {
-        id: 'status',
-        label: 'Status',
-        value: account.isActive ? 'Active' : 'Inactive',
-      },
-      {
-        id: 'progress',
-        label: 'Progress',
-        value: account.isDefaultProgressAccount ? 'Default' : 'Available',
-      },
-    ];
-  });
-  protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
-    {
-      id: 'back-to-accounts',
-      label: 'Back to accounts',
-      link: '/settings/accounts',
-    },
-  ]);
-
   ngOnInit(): void {
     void this.loadAccounts();
 
@@ -185,6 +153,34 @@ export class AccountDetailPageComponent implements OnInit {
   protected accountOptionLabel(account: ExternalAccount): string {
     const label = `${providerLabel(account.provider)} @${account.username}`;
     return account.isDefaultProgressAccount ? `${label} (default)` : label;
+  }
+
+  protected providerLabel(provider: ExternalAccount['provider']): string {
+    return providerLabel(provider);
+  }
+
+  protected accountInitials(account: ExternalAccount): string {
+    const source = (account.displayName || account.username).trim();
+    const words = source.split(/\s+/).filter(Boolean);
+    return (words.length > 1 ? `${words[0][0]}${words[1][0]}` : source.slice(0, 2)).toUpperCase();
+  }
+
+  protected accountYear(createdAt: string | null | undefined): string {
+    if (!createdAt) return '—';
+    return new Intl.DateTimeFormat(undefined, { year: 'numeric' }).format(new Date(createdAt));
+  }
+
+  protected syncLabel(lastSyncAt: string | null | undefined): string {
+    if (!lastSyncAt) return 'Sync not recorded';
+
+    const elapsedMinutes = Math.max(
+      1,
+      Math.round((Date.now() - new Date(lastSyncAt).getTime()) / 60_000),
+    );
+    if (elapsedMinutes < 60) return `Synced ${elapsedMinutes}m ago`;
+    const elapsedHours = Math.round(elapsedMinutes / 60);
+    if (elapsedHours < 48) return `Synced ${elapsedHours}h ago`;
+    return `Synced ${Math.round(elapsedHours / 24)}d ago`;
   }
 
   protected onAccountSelectionChange(value: string): void {

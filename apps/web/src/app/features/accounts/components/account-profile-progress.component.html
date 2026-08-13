@@ -54,8 +54,8 @@
           @for (row of yearlyHighs(); track row.year) {
             <tr>
               <th scope="row">{{ row.year }}</th>
-              @for (speed of speeds; track speed) {
-                <td>{{ row.values[speed] ?? '—' }}</td>
+              @for (speed of speeds(); track speed.key) {
+                <td>{{ row.values[speed.key] ?? '—' }}</td>
               }
             </tr>
           }
