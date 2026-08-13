@@ -1,13 +1,10 @@
 <section class="coach-read">
-  @if (strongestPool(); as pool) {
+  @if (availablePools().length > 0) {
     <div class="coach-lead">
       <span class="coach-index">01</span>
       <div>
-        <strong>{{ strongestText() }}</strong>
-        <p>
-          {{ formatRating(pool.current?.rating) }} current, with
-          {{ formatRating(pool.highest?.rating) }} at the top of the pool.
-        </p>
+        <strong>{{ leadText() }}</strong>
+        <p>{{ leadDescription() }}</p>
       </div>
     </div>
 
@@ -21,13 +18,13 @@
       </div>
       <div>
         <span class="coach-mark warning">!</span>
-        <span>{{ largestDeficit()?.label ?? 'Rating pool' }} needs attention</span>
-        <strong>{{
-          largestDeficit()
-            ? '−' +
-              formatRating(largestDeficit()!.highest!.rating - largestDeficit()!.current!.rating)
-            : '—'
-        }}</strong>
+        @if (largestDeficit(); as deficit) {
+          <span>{{ deficit.label }} needs attention</span>
+          <strong>−{{ formatRating(deficit.highest!.rating - deficit.current!.rating) }}</strong>
+        } @else {
+          <span>No rating pool is below its peak</span>
+          <strong>✓</strong>
+        }
       </div>
     </div>
   } @else {

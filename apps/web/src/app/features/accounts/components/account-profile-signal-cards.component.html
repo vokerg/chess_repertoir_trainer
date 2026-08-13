@@ -22,11 +22,13 @@
       <span>{{ selectedSpeed() === 'all' ? '3 rating pools' : activeSpeed()?.label }}</span>
       <b>{{ selectedSpeed() === 'all' ? 'select a speed' : deltaLabel(momentum()) }}</b>
     </div>
-    <div class="mini-bars" aria-hidden="true">
-      @for (height of [32, 38, 44, 42, 54, 57, 64, 70, 67, 76, 82, 88]; track height) {
-        <i [style.height.%]="height"></i>
-      }
-    </div>
+    @if (miniBars().length > 0) {
+      <div class="mini-bars" aria-hidden="true">
+        @for (height of miniBars(); track $index) {
+          <i [style.height.%]="height"></i>
+        }
+      </div>
+    }
   </article>
 
   <article class="signal-card">
@@ -73,14 +75,32 @@
   <article class="signal-card">
     <div class="signal-top">
       <span>Recent momentum</span>
-      <span class="signal-icon positive">↗</span>
+    <span
+      class="signal-icon"
+      [class.positive]="momentumTone() === 'positive'"
+      [class.negative]="momentumTone() === 'negative'"
+      >↗</span
+    >
     </div>
-    <strong class="signal-value positive">{{ momentumLabel(momentum()) }}</strong>
+    <strong
+      class="signal-value"
+      [class.positive]="momentumTone() === 'positive'"
+      [class.negative]="momentumTone() === 'negative'"
+      >{{ momentumLabel(momentum()) }}</strong
+    >
     <div class="signal-meta">
       <span>{{ selectedSpeed() === 'all' ? 'rating points' : 'rating points in range' }}</span>
-      <b class="positive">{{ selectedSpeed() === 'all' ? 'mixed pools' : activeSpeed()?.label }}</b>
+      <b
+        [class.positive]="momentumTone() === 'positive'"
+        [class.negative]="momentumTone() === 'negative'"
+        >{{ selectedSpeed() === 'all' ? 'mixed pools' : activeSpeed()?.label }}</b
+      >
     </div>
-    <div class="momentum-track" aria-hidden="true">
+    <div
+      class="momentum-track"
+      [class.negative]="momentumTone() === 'negative'"
+      aria-hidden="true"
+    >
       <span [style.width.%]="momentumWidth(momentum())"></span>
     </div>
     <p class="signal-footnote">
@@ -99,9 +119,9 @@
     </div>
     <strong class="signal-value">{{ totalGames().toLocaleString() }}</strong>
     <div class="signal-meta">
-      <span>imported games</span>
-      <b>{{ speedViews().length }} pools</b>
+      <span>{{ scopeLabel() }}</span>
+      <b>{{ rangeLabel() }}</b>
     </div>
-    <p class="signal-footnote">Across Bullet, Blitz, and Rapid where data is available.</p>
+    <p class="signal-footnote">Games in the selected period and rating scope.</p>
   </article>
 </section>

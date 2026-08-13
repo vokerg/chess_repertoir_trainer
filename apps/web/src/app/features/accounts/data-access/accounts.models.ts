@@ -1,4 +1,17 @@
 export type { LichessConnectionStatus } from '@chess-trainer/contracts/lichess';
+export type {
+  AccountPerformanceGameHighlight,
+  AccountPerformanceRecentGame,
+  AccountPerformanceStatsResponse,
+  AccountPerformanceTimeControlWdl,
+} from '@chess-trainer/contracts/external-accounts';
+
+import type {
+  AccountPerformanceGameHighlight,
+  AccountPerformanceRecentGame,
+  AccountPerformanceStatsResponse,
+  AccountPerformanceTimeControlWdl,
+} from '@chess-trainer/contracts/external-accounts';
 
 export type AccountProvider = 'LICHESS' | 'CHESS_COM';
 
@@ -165,62 +178,6 @@ export interface AccountRatingStatsResponse {
   computedAt: string;
   gamesCount: number;
   data: AccountRatingStatsProjection;
-}
-
-export interface AccountPerformanceGameHighlight {
-  gameId: number;
-  endedAt: string;
-  speed: RatingSpeed;
-  userRating: number | null;
-  opponentRating: number | null;
-  opponentUsername: string | null;
-  providerUrl: string | null;
-}
-
-export interface AccountPerformanceRecentGame extends AccountPerformanceGameHighlight {
-  resultForUser: 'WIN' | 'DRAW' | 'LOSS';
-  timeControl: string;
-}
-
-export interface AccountPerformanceTimeControlWdl {
-  timeControl: string;
-  gamesCount: number;
-  wins: number;
-  draws: number;
-  losses: number;
-  scorePercent: number | null;
-}
-
-export interface AccountPerformanceStatsResponse {
-  account: {
-    id: number;
-    provider: AccountProvider;
-    username: string;
-    displayName?: string | null;
-  };
-  range: {
-    from?: string;
-    to?: string;
-  };
-  speeds: RatingSpeed[];
-  gamesCount: number;
-  wdl: {
-    wins: number;
-    draws: number;
-    losses: number;
-  };
-  averageOpponentRating: {
-    overall: number | null;
-    wins: number | null;
-    draws: number | null;
-    losses: number | null;
-  };
-  timeControlWdl: AccountPerformanceTimeControlWdl[];
-  recentGames: AccountPerformanceRecentGame[];
-  bestVictories: AccountPerformanceGameHighlight[];
-  mostEmbarrassingDefeats: AccountPerformanceGameHighlight[];
-  bestVictory: AccountPerformanceGameHighlight | null;
-  mostEmbarrassingDefeat: AccountPerformanceGameHighlight | null;
 }
 
 export type DashboardPeriodKey = RatingRangeKey;

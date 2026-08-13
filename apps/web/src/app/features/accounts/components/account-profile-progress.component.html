@@ -6,64 +6,88 @@
   <div class="tab-control" role="tablist" aria-label="Account progress">
     <button
       type="button"
+      id="profile-progress-tab-milestones"
       role="tab"
       [attr.aria-selected]="tab() === 'milestones'"
+      aria-controls="profile-progress-panel-milestones"
+      [attr.tabindex]="tab() === 'milestones' ? 0 : -1"
       [class.selected]="tab() === 'milestones'"
       (click)="selectTab('milestones')"
+      (keydown)="onTabKeydown($event, 'milestones')"
     >
       Milestones
     </button>
     <button
       type="button"
+      id="profile-progress-tab-yearly-highs"
       role="tab"
       [attr.aria-selected]="tab() === 'yearlyHighs'"
+      aria-controls="profile-progress-panel-yearly-highs"
+      [attr.tabindex]="tab() === 'yearlyHighs' ? 0 : -1"
       [class.selected]="tab() === 'yearlyHighs'"
       (click)="selectTab('yearlyHighs')"
+      (keydown)="onTabKeydown($event, 'yearlyHighs')"
     >
       Yearly highs
     </button>
   </div>
 
   @if (tab() === 'milestones') {
-    @if (milestones().length > 0) {
-      <div class="milestone-list">
-        @for (milestone of milestones(); track milestone.id) {
-          <div class="milestone-row">
-            <span class="milestone-check">✓</span>
-            <strong>{{ milestone.rating.toLocaleString() }}</strong>
-            <span>{{ milestone.speed }}</span>
-            <time>{{ formatDate(milestone.reachedAt) }}</time>
-          </div>
-        }
-      </div>
-    } @else if (!loading()) {
-      <p class="progress-empty">No milestones are stored for this account yet.</p>
-    }
-  } @else if (yearlyHighs().length > 0) {
-    <div class="highs-table-wrap">
-      <table class="highs-table">
-        <thead>
-          <tr>
-            <th scope="col">Year</th>
-            <th scope="col">Bullet</th>
-            <th scope="col">Blitz</th>
-            <th scope="col">Rapid</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of yearlyHighs(); track row.year) {
-            <tr>
-              <th scope="row">{{ row.year }}</th>
-              @for (speed of speeds(); track speed.key) {
-                <td>{{ row.values[speed.key] ?? '—' }}</td>
-              }
-            </tr>
+    <div
+      id="profile-progress-panel-milestones"
+      role="tabpanel"
+      tabindex="0"
+      aria-labelledby="profile-progress-tab-milestones"
+    >
+      @if (milestones().length > 0) {
+        <div class="milestone-list">
+          @for (milestone of milestones(); track milestone.id) {
+            <div class="milestone-row">
+              <span class="milestone-check">✓</span>
+              <strong>{{ milestone.rating.toLocaleString() }}</strong>
+              <span>{{ milestone.speed }}</span>
+              <time>{{ formatDate(milestone.reachedAt) }}</time>
+            </div>
           }
-        </tbody>
-      </table>
+        </div>
+      } @else if (!loading()) {
+        <p class="progress-empty">No milestones are stored for this account yet.</p>
+      }
     </div>
-  } @else if (!loading()) {
-    <p class="progress-empty">No yearly highs are stored for this account yet.</p>
+  } @else {
+    <div
+      id="profile-progress-panel-yearly-highs"
+      role="tabpanel"
+      tabindex="0"
+      aria-labelledby="profile-progress-tab-yearly-highs"
+    >
+      @if (yearlyHighs().length > 0) {
+        <div class="highs-table-wrap">
+          <table class="highs-table">
+            <thead>
+              <tr>
+                <th scope="col">Year</th>
+                @for (speed of speeds(); track speed.key) {
+                  <th scope="col">{{ speed.label }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of yearlyHighs(); track row.year) {
+                <tr>
+                  <th scope="row">{{ row.year }}</th>
+                  @for (speed of speeds(); track speed.key) {
+                    <td>{{ row.values[speed.key] ?? '—' }}</td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (!loading()) {
+        <p class="progress-empty">No yearly highs are stored for this account yet.</p>
+      }
+    </div>
   }
 
   @if (loading()) {

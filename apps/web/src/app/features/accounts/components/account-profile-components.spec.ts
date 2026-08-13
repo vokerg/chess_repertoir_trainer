@@ -49,6 +49,12 @@ describe('account profile presentation components', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.highs-table')?.textContent).toContain('2026');
+    expect(
+      fixture.nativeElement.querySelector('.highs-table thead')?.textContent,
+    ).toContain('Blitz');
+    expect(
+      fixture.nativeElement.querySelector('.highs-table thead')?.textContent,
+    ).not.toContain('Bullet');
     expect(fixture.nativeElement.querySelector('.milestone-list')).toBeNull();
   });
 
@@ -57,6 +63,12 @@ describe('account profile presentation components', () => {
     fixture.componentRef.setInput('stats', performanceStats());
     fixture.detectChanges();
 
+    expect(
+      fixture.nativeElement.querySelector('#profile-evidence-tab-recent')?.getAttribute('aria-controls'),
+    ).toBe('profile-evidence-panel-recent');
+    expect(
+      fixture.nativeElement.querySelector('#profile-evidence-panel-recent')?.getAttribute('role'),
+    ).toBe('tabpanel');
     expect(fixture.nativeElement.querySelector('.recent-list')?.textContent).toContain(
       'recent-opponent',
     );

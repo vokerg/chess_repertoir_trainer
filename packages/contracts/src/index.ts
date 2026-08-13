@@ -1,4 +1,5 @@
 export * from './account-imports';
+export * from './external-accounts';
 export * from './ai';
 export * from './board-images';
 export * from './candidate-decision';

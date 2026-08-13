@@ -3,6 +3,7 @@ import {
   AccountRatingHistoryResponse,
   AccountRatingStatsResponse,
   AccountPerformanceStatsResponse,
+  RatingRangeKey,
   RatingSpeed,
   RatingSpeedFilter,
 } from '../data-access/accounts.models';
@@ -21,6 +22,7 @@ export class AccountProfileSignalCardsComponent {
   readonly performance = input<AccountPerformanceStatsResponse | null>(null);
   readonly history = input<AccountRatingHistoryResponse | null>(null);
   readonly selectedSpeed = input<RatingSpeedFilter>('all');
+  readonly selectedRange = input<RatingRangeKey>('1Y');
   readonly loading = input(false);
 
   protected readonly speedViews = computed(() => {
@@ -47,9 +49,40 @@ export class AccountProfileSignalCardsComponent {
     return points.at(-1)!.rating - points[0].rating;
   });
 
-  protected readonly totalGames = computed(
-    () => this.stats()?.gamesCount ?? this.performance()?.gamesCount ?? 0,
+  protected readonly totalGames = computed(() => this.performance()?.gamesCount ?? 0);
+
+  protected readonly scopeLabel = computed(() =>
+    this.selectedSpeed() === 'all'
+      ? 'all speeds'
+      : `${this.activeSpeed()?.label ?? 'Selected speed'} games`,
   );
+
+  protected readonly momentumTone = computed<'positive' | 'negative' | 'neutral'>(() => {
+    const value = this.momentum();
+    if (value === null || value === 0) return 'neutral';
+    return value > 0 ? 'positive' : 'negative';
+  });
+
+  protected readonly miniBars = computed(() => {
+    const selectedSpeed = this.selectedSpeed();
+    if (selectedSpeed === 'all') return [];
+
+    const points = this.history()?.series.find((series) => series.key === selectedSpeed)?.points ?? [];
+    if (points.length < 2) return [];
+
+    const values = [...points]
+      .sort((left, right) => left.date.localeCompare(right.date))
+      .map((point) => point.rating);
+    const minimum = Math.min(...values);
+    const maximum = Math.max(...values);
+    const span = maximum - minimum;
+    const sampleCount = Math.min(12, values.length);
+
+    return Array.from({ length: sampleCount }, (_, index) => {
+      const sourceIndex = Math.round((index * (values.length - 1)) / (sampleCount - 1));
+      return span === 0 ? 55 : 28 + ((values[sourceIndex] - minimum) / span) * 72;
+    });
+  });
 
   protected formatRating(value: number | null | undefined): string {
     return value === null || value === undefined ? '—' : value.toLocaleString();
@@ -67,5 +100,19 @@ export class AccountProfileSignalCardsComponent {
 
   protected momentumWidth(value: number | null): number {
     return value === null ? 0 : Math.min(100, Math.max(8, 50 + value / 2));
+  }
+
+  protected rangeLabel(): string {
+    const labels: Record<RatingRangeKey, string> = {
+      '1M': 'Last 30 days',
+      '3M': 'Last 3 months',
+      '6M': 'Last 6 months',
+      YTD: 'Year to date',
+      '1Y': 'Last 12 months',
+      '3Y': 'Last 3 years',
+      '5Y': 'Last 5 years',
+      ALL: 'All time',
+    };
+    return labels[this.selectedRange()];
   }
 }

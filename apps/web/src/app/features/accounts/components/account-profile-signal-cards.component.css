@@ -73,6 +73,14 @@
   color: var(--ui-action);
 }
 
+.negative {
+  color: var(--ui-danger);
+}
+
+.signal-card-dark .negative {
+  color: var(--ui-danger);
+}
+
 .signal-value {
   display: block;
   margin-top: 0.35rem;
@@ -190,6 +198,10 @@
   height: 100%;
   border-radius: inherit;
   background: var(--ui-action);
+}
+
+.momentum-track.negative span {
+  background: var(--ui-danger);
 }
 
 /* Keep in sync with VIEWPORT_BREAKPOINTS.workbenchSingleColumnMaxPx (980). */

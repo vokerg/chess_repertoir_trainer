@@ -19,6 +19,10 @@ import {
 } from './legacy-route.schemas';
 import { validationErrorResponseSchema } from './api-error.schemas';
 import { importedGameSearchResponseSchema } from '@chess-trainer/contracts/imported-games';
+import {
+  accountPerformanceRatingSpeedSchema,
+  accountPerformanceStatsResponseSchema,
+} from '@chess-trainer/contracts/external-accounts';
 
 const createAccountSchema = z.object({
   provider: z.enum(['LICHESS', 'CHESS_COM']),
@@ -41,7 +45,7 @@ const listAccountGamesQuerySchema = importedGameSearchQuerySchema
     take: z.coerce.number().int().min(1).max(200).optional(),
   });
 
-const ratingSpeedSchema = z.enum(['bullet', 'blitz', 'rapid']);
+const ratingSpeedSchema = accountPerformanceRatingSpeedSchema;
 const defaultRatingSpeeds: RatingSpeed[] = ['bullet', 'blitz', 'rapid'];
 
 const ratingHistoryQuerySchema = z.object({
@@ -84,60 +88,6 @@ const ratingHistoryQuerySchema = z.object({
 });
 
 const accountPerformanceStatsQuerySchema = ratingHistoryQuerySchema;
-const performanceHighlightSchema = z.object({
-  gameId: z.number().int(),
-  endedAt: z.iso.datetime({ offset: true }),
-  speed: ratingSpeedSchema,
-  userRating: z.number().int().nullable(),
-  opponentRating: z.number().int().nullable(),
-  opponentUsername: z.string().nullable(),
-  providerUrl: z.string().nullable(),
-});
-const accountPerformanceStatsResponseSchema = z.object({
-  account: z.object({
-    id: z.number().int(),
-    provider: z.enum(['LICHESS', 'CHESS_COM']),
-    username: z.string(),
-    displayName: z.string().nullable().optional(),
-  }),
-  range: z.object({ from: z.string().optional(), to: z.string().optional() }),
-  speeds: z.array(ratingSpeedSchema),
-  gamesCount: z.number().int(),
-  wdl: z.object({ wins: z.number().int(), draws: z.number().int(), losses: z.number().int() }),
-  averageOpponentRating: z.object({
-    overall: z.number().int().nullable(),
-    wins: z.number().int().nullable(),
-    draws: z.number().int().nullable(),
-    losses: z.number().int().nullable(),
-  }),
-  timeControlWdl: z.array(
-    z.object({
-      timeControl: z.string(),
-      gamesCount: z.number().int(),
-      wins: z.number().int(),
-      draws: z.number().int(),
-      losses: z.number().int(),
-      scorePercent: z.number().nullable(),
-    }),
-  ),
-  recentGames: z.array(
-    z.object({
-      gameId: z.number().int(),
-      endedAt: z.iso.datetime({ offset: true }),
-      speed: ratingSpeedSchema,
-      userRating: z.number().int().nullable(),
-      opponentRating: z.number().int().nullable(),
-      opponentUsername: z.string().nullable(),
-      providerUrl: z.string().nullable(),
-      resultForUser: z.enum(['WIN', 'DRAW', 'LOSS']),
-      timeControl: z.string(),
-    }),
-  ),
-  bestVictories: z.array(performanceHighlightSchema),
-  mostEmbarrassingDefeats: z.array(performanceHighlightSchema),
-  bestVictory: performanceHighlightSchema.nullable(),
-  mostEmbarrassingDefeat: performanceHighlightSchema.nullable(),
-});
 const accountIdParamsSchema = z.object({ id: z.coerce.number().int().positive() });
 const accountSchema = <T extends Record<string, unknown>>(
   operationId: string,

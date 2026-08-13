@@ -30,6 +30,30 @@ export class AccountProfileEvidenceComponent {
     this.tab.set(tab);
   }
 
+  protected onTabKeydown(event: KeyboardEvent, currentTab: EvidenceTab): void {
+    const tabOrder: readonly EvidenceTab[] = ['recent', 'victories', 'defeats'];
+    const currentIndex = tabOrder.indexOf(currentTab);
+    let nextIndex: number | null = null;
+
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      nextIndex = (currentIndex + 1) % tabOrder.length;
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      nextIndex = (currentIndex - 1 + tabOrder.length) % tabOrder.length;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = tabOrder.length - 1;
+    }
+
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    const nextTab = tabOrder[nextIndex];
+    this.selectTab(nextTab);
+    const tabList = (event.currentTarget as HTMLElement).closest('[role="tablist"]');
+    tabList?.querySelector<HTMLButtonElement>(`#profile-evidence-tab-${nextTab}`)?.focus();
+  }
+
   protected formatDate(value: string): string {
     return new Intl.DateTimeFormat(undefined, {
       month: 'short',
