@@ -1,0 +1,61 @@
+name: RH-006 lockfile resync
+
+on:
+  push:
+    branches:
+      - maintenance/rh-006-tar-remediation
+
+permissions:
+  contents: write
+
+jobs:
+  sync-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v5
+        with:
+          ref: maintenance/rh-006-tar-remediation
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Refresh lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Assert bounded lockfile change
+        shell: bash
+        run: |
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const { execFileSync } = require('node:child_process');
+          const fs = require('node:fs');
+
+          const before = JSON.parse(execFileSync('git', ['show', 'HEAD:package-lock.json'], { encoding: 'utf8' }));
+          const after = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const packagePath = 'node_modules/tar';
+
+          assert.equal(before.packages?.[packagePath]?.version, '7.5.19');
+          assert.equal(after.packages?.[packagePath]?.version, '7.5.22');
+
+          const expected = structuredClone(before);
+          const generated = after.packages[packagePath];
+          expected.packages[packagePath].version = generated.version;
+          expected.packages[packagePath].resolved = generated.resolved;
+          expected.packages[packagePath].integrity = generated.integrity;
+          assert.deepEqual(after, expected, 'npm changed package-lock.json beyond tar version/resolved/integrity metadata');
+          NODE
+
+      - name: Commit generated lockfile and remove helper workflow
+        shell: bash
+        run: |
+          rm .github/workflows/rh-006-lockfile-resync.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json .github/workflows/rh-006-lockfile-resync.yml
+          git diff --cached --quiet && { echo "Expected lockfile changes were not produced." >&2; exit 1; }
+          git commit -m "chore(deps): refresh lockfile for tar 7.5.22"
+          git push origin HEAD:maintenance/rh-006-tar-remediation
