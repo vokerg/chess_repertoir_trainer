@@ -34,6 +34,7 @@
     "expo:check": "npm run expo:check --workspace=apps/mobile",
     "check:architecture": "node scripts/check-architecture-guardrails.mjs && node scripts/check-web-accessibility-contract.mjs && node scripts/check-mobile-dependency-resolution.mjs && node scripts/check-mobile-router-entry.mjs",
     "check:hygiene": "node scripts/check-repository-hygiene.mjs",
+    "audit:dependencies": "node scripts/generate-dependency-audit-report.mjs",
     "format": "npm run format --workspaces",
     "db:migrate": "npm run db:migrate --workspace=apps/api",
     "db:seed": "npm run db:seed --workspace=apps/api",
