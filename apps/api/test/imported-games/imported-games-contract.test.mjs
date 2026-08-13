@@ -4,11 +4,14 @@ import { z } from 'zod';
 import {
   importedGameDetailResponseSchema,
   importedGameFacetsResponseSchema,
+  importedGameIndexWorkflowResponseSchema,
   importedGamePgnResponseSchema,
   importedGameSearchResponseSchema,
   importedGameTagDefinitionsResponseSchema,
+  importedGameTagsRefreshResponseSchema,
 } from '@chess-trainer/contracts/imported-games';
 import prismaModule from '../../dist/prisma.js';
+import { ImportedGameIndexWorkflowService } from '../../dist/modules/imported-games/imported-game-index-workflow.service.js';
 import { ImportedGamesService } from '../../dist/modules/imported-games/imported-games.service.js';
 import { importedGameSearchQuerySchema } from '../../dist/modules/imported-games/imported-games.schemas.js';
 
@@ -80,6 +83,63 @@ try {
   });
   importedGameFacetsResponseSchema.parse(await ImportedGamesService.facets(userId));
   importedGameTagDefinitionsResponseSchema.parse(await ImportedGamesService.tagDefinitions());
+
+  const refreshedTags = await ImportedGamesService.refreshTags(userId, game.id);
+  const parsedTags = importedGameTagsRefreshResponseSchema.parse(refreshedTags);
+  assert.equal(parsedTags.importedGameId, game.id);
+  assert.deepEqual(parsedTags.tagCodes, refreshedTags.tagCodes);
+  assert.deepEqual(parsedTags.tags, refreshedTags.tags);
+
+  const skippedIndex = await ImportedGameIndexWorkflowService.indexGame(userId, game.id);
+  assert.deepEqual(importedGameIndexWorkflowResponseSchema.parse(skippedIndex), {
+    importedGameId: game.id,
+    eligible: false,
+    speedCategory: null,
+    skippedReason: 'UNSUPPORTED_SPEED_CATEGORY',
+  });
+
+  const indexedResponse = {
+    importedGameId: game.id,
+    eligible: true,
+    speedCategory: 'blitz',
+    plyIndex: {
+      importedGameId: game.id,
+      status: 'INDEXED',
+      pliesIndexed: 42,
+      plyIndexedAt: '2026-03-04T05:07:08.000Z',
+    },
+    openingAssignment: {
+      importedGameId: game.id,
+      status: 'ASSIGNED',
+      openingEco: 'B20',
+      openingName: 'Sicilian Defence',
+    },
+  };
+  assert.deepEqual(importedGameIndexWorkflowResponseSchema.parse(indexedResponse), indexedResponse);
+  assert.equal(importedGameIndexWorkflowResponseSchema.safeParse({
+    importedGameId: game.id,
+    eligible: false,
+    speedCategory: 'rapid',
+    skippedReason: 'UNSUPPORTED_VARIANT',
+  }).success, true);
+  assert.equal(importedGameIndexWorkflowResponseSchema.safeParse({
+    ...indexedResponse,
+    plyIndex: { ...indexedResponse.plyIndex, plyIndexedAt: new Date('2026-03-04T05:07:08.000Z') },
+  }).success, false);
+  assert.equal(importedGameIndexWorkflowResponseSchema.safeParse({
+    importedGameId: game.id,
+    eligible: false,
+    skippedReason: 'UNSUPPORTED_SPEED_CATEGORY',
+  }).success, false);
+  assert.equal(importedGameIndexWorkflowResponseSchema.safeParse({
+    ...indexedResponse,
+    plyIndex: { ...indexedResponse.plyIndex, pliesIndexed: null },
+  }).success, false);
+  assert.equal(importedGameTagsRefreshResponseSchema.safeParse({
+    importedGameId: game.id,
+    tagCodes: [1, 'bad'],
+    tags: [],
+  }).success, false);
 
   assert.equal(importedGameSearchResponseSchema.safeParse({
     pageInfo: parsedSearch.pageInfo,
