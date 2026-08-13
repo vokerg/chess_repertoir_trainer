@@ -1,3 +1,4 @@
+import type { MonthlyGamesResponse } from '@chess-trainer/contracts/lab';
 import { Prisma } from '@prisma/client';
 import prisma from '../../../prisma';
 
@@ -31,7 +32,10 @@ function excludeBulletSql(excludeBullet: boolean) {
   return excludeBullet ? Prisma.sql`AND lower(coalesce("speedCategory", '')) <> 'bullet'` : Prisma.empty;
 }
 
-export async function getMonthlyGames(userId: number, options: { excludeBullet: boolean }) {
+export async function getMonthlyGames(
+  userId: number,
+  options: { excludeBullet: boolean },
+): Promise<MonthlyGamesResponse> {
   const rows = await prisma.$queryRaw<MonthlyGamesRow[]>(Prisma.sql`
     WITH games AS (
       SELECT
@@ -75,7 +79,7 @@ export async function getMonthlyGames(userId: number, options: { excludeBullet: 
       return {
         year: row.year,
         month: row.month,
-        monthStart: row.monthStart,
+        monthStart: row.monthStart.toISOString(),
         games,
         wins,
         draws,
