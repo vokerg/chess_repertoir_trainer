@@ -177,6 +177,11 @@ export interface AccountPerformanceGameHighlight {
   providerUrl: string | null;
 }
 
+export interface AccountPerformanceRecentGame extends AccountPerformanceGameHighlight {
+  resultForUser: 'WIN' | 'DRAW' | 'LOSS';
+  timeControl: string;
+}
+
 export interface AccountPerformanceTimeControlWdl {
   timeControl: string;
   gamesCount: number;
@@ -205,11 +210,13 @@ export interface AccountPerformanceStatsResponse {
     losses: number;
   };
   averageOpponentRating: {
+    overall: number | null;
     wins: number | null;
     draws: number | null;
     losses: number | null;
   };
   timeControlWdl: AccountPerformanceTimeControlWdl[];
+  recentGames: AccountPerformanceRecentGame[];
   bestVictories: AccountPerformanceGameHighlight[];
   mostEmbarrassingDefeats: AccountPerformanceGameHighlight[];
   bestVictory: AccountPerformanceGameHighlight | null;

@@ -1,0 +1,107 @@
+<section class="signal-grid" aria-label="Profile signals" [class.signal-grid-loading]="loading()">
+  <article class="signal-card signal-card-dark">
+    <div class="signal-top">
+      <span>{{ selectedSpeed() === 'all' ? 'Current ratings' : 'Current rating' }}</span>
+      <span class="signal-icon">↗</span>
+    </div>
+
+    @if (selectedSpeed() === 'all') {
+      <div class="rating-pools">
+        @for (speed of speedViews(); track speed.key) {
+          <span
+            ><b>{{ formatRating(speed.current?.rating) }}</b
+            ><small>{{ speed.label }}</small></span
+          >
+        }
+      </div>
+    } @else {
+      <strong class="signal-value">{{ formatRating(activeSpeed()?.current?.rating) }}</strong>
+    }
+
+    <div class="signal-meta">
+      <span>{{ selectedSpeed() === 'all' ? '3 rating pools' : activeSpeed()?.label }}</span>
+      <b>{{ selectedSpeed() === 'all' ? 'select a speed' : deltaLabel(momentum()) }}</b>
+    </div>
+    <div class="mini-bars" aria-hidden="true">
+      @for (height of [32, 38, 44, 42, 54, 57, 64, 70, 67, 76, 82, 88]; track height) {
+        <i [style.height.%]="height"></i>
+      }
+    </div>
+  </article>
+
+  <article class="signal-card">
+    <div class="signal-top">
+      <span>{{ selectedSpeed() === 'all' ? 'Pool highs' : 'All-time high' }}</span>
+      <span class="signal-icon positive">★</span>
+    </div>
+
+    @if (selectedSpeed() === 'all') {
+      <div class="rating-pools">
+        @for (speed of speedViews(); track speed.key) {
+          <span
+            ><b>{{ formatRating(speed.highest?.rating) }}</b
+            ><small>{{ speed.label }}</small></span
+          >
+        }
+      </div>
+    } @else {
+      <strong class="signal-value">{{ formatRating(activeSpeed()?.highest?.rating) }}</strong>
+    }
+
+    <div class="signal-meta">
+      <span>{{ selectedSpeed() === 'all' ? 'Bullet · Blitz · Rapid' : activeSpeed()?.label }}</span>
+      <b class="positive">{{ selectedSpeed() === 'all' ? 'by speed' : 'peak' }}</b>
+    </div>
+    <p class="signal-footnote">
+      @if (selectedSpeed() === 'all') {
+        Each time control keeps its own <strong>peak</strong>.
+      } @else if (activeSpeed()?.highest && activeSpeed()?.current) {
+        You are
+        <strong
+          >{{
+            formatRating(activeSpeed()!.highest!.rating - activeSpeed()!.current!.rating)
+          }}
+          points</strong
+        >
+        from your peak.
+      } @else {
+        No peak is stored for this speed yet.
+      }
+    </p>
+  </article>
+
+  <article class="signal-card">
+    <div class="signal-top">
+      <span>Recent momentum</span>
+      <span class="signal-icon positive">↗</span>
+    </div>
+    <strong class="signal-value positive">{{ momentumLabel(momentum()) }}</strong>
+    <div class="signal-meta">
+      <span>{{ selectedSpeed() === 'all' ? 'rating points' : 'rating points in range' }}</span>
+      <b class="positive">{{ selectedSpeed() === 'all' ? 'mixed pools' : activeSpeed()?.label }}</b>
+    </div>
+    <div class="momentum-track" aria-hidden="true">
+      <span [style.width.%]="momentumWidth(momentum())"></span>
+    </div>
+    <p class="signal-footnote">
+      {{
+        selectedSpeed() === 'all'
+          ? 'Choose a speed to read one rating line.'
+          : 'Change across the selected history range.'
+      }}
+    </p>
+  </article>
+
+  <article class="signal-card">
+    <div class="signal-top">
+      <span>Games in evidence</span>
+      <span class="signal-icon">◫</span>
+    </div>
+    <strong class="signal-value">{{ totalGames().toLocaleString() }}</strong>
+    <div class="signal-meta">
+      <span>imported games</span>
+      <b>{{ speedViews().length }} pools</b>
+    </div>
+    <p class="signal-footnote">Across Bullet, Blitz, and Rapid where data is available.</p>
+  </article>
+</section>

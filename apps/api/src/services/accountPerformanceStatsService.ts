@@ -19,6 +19,11 @@ export interface AccountPerformanceGameHighlight {
   providerUrl: string | null;
 }
 
+export interface AccountPerformanceRecentGame extends AccountPerformanceGameHighlight {
+  resultForUser: 'WIN' | 'DRAW' | 'LOSS';
+  timeControl: string;
+}
+
 export interface AccountPerformanceTimeControlWdl {
   timeControl: string;
   gamesCount: number;
@@ -47,11 +52,13 @@ export interface AccountPerformanceStatsResponse {
     losses: number;
   };
   averageOpponentRating: {
+    overall: number | null;
     wins: number | null;
     draws: number | null;
     losses: number | null;
   };
   timeControlWdl: AccountPerformanceTimeControlWdl[];
+  recentGames: AccountPerformanceRecentGame[];
   bestVictories: AccountPerformanceGameHighlight[];
   mostEmbarrassingDefeats: AccountPerformanceGameHighlight[];
   bestVictory: AccountPerformanceGameHighlight | null;
@@ -80,7 +87,9 @@ export type PerformanceGame = {
 const HIGHLIGHT_LIMIT = 5;
 const TIME_CONTROL_WDL_LIMIT = 8;
 
-export function buildPerformanceEndedAtRange(query: Pick<AccountPerformanceStatsQuery, 'from' | 'to'>) {
+export function buildPerformanceEndedAtRange(
+  query: Pick<AccountPerformanceStatsQuery, 'from' | 'to'>,
+) {
   return {
     not: null,
     ...(query.from ? { gte: new Date(query.from) } : {}),
@@ -98,7 +107,9 @@ function getUserRating(game: Pick<PerformanceGame, 'userColor' | 'whiteRating' |
   return null;
 }
 
-function getOpponentRating(game: Pick<PerformanceGame, 'userColor' | 'whiteRating' | 'blackRating'>) {
+function getOpponentRating(
+  game: Pick<PerformanceGame, 'userColor' | 'whiteRating' | 'blackRating'>,
+) {
   if (game.userColor === 'WHITE') return game.blackRating;
   if (game.userColor === 'BLACK') return game.whiteRating;
   return null;
@@ -118,12 +129,25 @@ function toHighlight(game: PerformanceGame): AccountPerformanceGameHighlight | n
   };
 }
 
+function toRecentGame(game: PerformanceGame): AccountPerformanceRecentGame | null {
+  const highlight = toHighlight(game);
+  if (!highlight || !isScoredResult(game.resultForUser)) return null;
+
+  return {
+    ...highlight,
+    resultForUser: game.resultForUser,
+    timeControl: normalizeTimeControl(game),
+  };
+}
+
 function isRatingSpeed(value: string | null): value is RatingSpeed {
   return value === 'bullet' || value === 'blitz' || value === 'rapid';
 }
 
 function average(values: number[]) {
-  return values.length > 0 ? Math.round(values.reduce((total, value) => total + value, 0) / values.length) : null;
+  return values.length > 0
+    ? Math.round(values.reduce((total, value) => total + value, 0) / values.length)
+    : null;
 }
 
 function formatInitialMinutes(initialSeconds: number): string {
@@ -132,7 +156,10 @@ function formatInitialMinutes(initialSeconds: number): string {
   return Number.isInteger(minutes) ? String(minutes) : String(Number(minutes.toFixed(1)));
 }
 
-function formatStructuredTimeControl(initial: number | null, increment: number | null): string | null {
+function formatStructuredTimeControl(
+  initial: number | null,
+  increment: number | null,
+): string | null {
   if (typeof initial !== 'number' || typeof increment !== 'number') return null;
   return `${formatInitialMinutes(initial)}+${increment}`;
 }
@@ -147,7 +174,9 @@ function normalizeRawTimeControl(raw: string | null): string | null {
   return `${Number(match[1])}+${Number(match[2])}`;
 }
 
-function normalizeTimeControl(game: Pick<PerformanceGame, 'timeControlRaw' | 'timeControlInitial' | 'timeControlIncrement'>): string {
+function normalizeTimeControl(
+  game: Pick<PerformanceGame, 'timeControlRaw' | 'timeControlInitial' | 'timeControlIncrement'>,
+): string {
   return (
     formatStructuredTimeControl(game.timeControlInitial, game.timeControlIncrement) ??
     normalizeRawTimeControl(game.timeControlRaw) ??
@@ -156,7 +185,11 @@ function normalizeTimeControl(game: Pick<PerformanceGame, 'timeControlRaw' | 'ti
 }
 
 function isScoredGame(game: PerformanceGame) {
-  return game.resultForUser === 'WIN' || game.resultForUser === 'DRAW' || game.resultForUser === 'LOSS';
+  return isScoredResult(game.resultForUser);
+}
+
+function isScoredResult(value: string | null): value is 'WIN' | 'DRAW' | 'LOSS' {
+  return value === 'WIN' || value === 'DRAW' || value === 'LOSS';
 }
 
 function compareEndedAtDesc(left: PerformanceGame, right: PerformanceGame) {
@@ -193,6 +226,24 @@ function toHighlights(games: PerformanceGame[]) {
     .slice(0, HIGHLIGHT_LIMIT);
 }
 
+function toRecentGames(games: PerformanceGame[]) {
+  return games
+    .sort(compareEndedAtDesc)
+    .map(toRecentGame)
+    .filter((game): game is AccountPerformanceRecentGame => game !== null)
+    .slice(0, HIGHLIGHT_LIMIT);
+}
+
+function weightedAverage(parts: Array<{ average: number | null; count: number }>) {
+  const included = parts.filter(
+    (part): part is { average: number; count: number } => part.average !== null && part.count > 0,
+  );
+  const count = included.reduce((total, part) => total + part.count, 0);
+  return count > 0
+    ? Math.round(included.reduce((total, part) => total + part.average * part.count, 0) / count)
+    : null;
+}
+
 function buildTimeControlWdl(scoredGames: PerformanceGame[]): AccountPerformanceTimeControlWdl[] {
   const buckets = new Map<string, { wins: number; draws: number; losses: number }>();
 
@@ -216,14 +267,28 @@ function buildTimeControlWdl(scoredGames: PerformanceGame[]): AccountPerformance
         wins: bucket.wins,
         draws: bucket.draws,
         losses: bucket.losses,
-        scorePercent: gamesCount > 0 ? Math.round(((bucket.wins + bucket.draws * 0.5) / gamesCount) * 100) : null,
+        scorePercent:
+          gamesCount > 0
+            ? Math.round(((bucket.wins + bucket.draws * 0.5) / gamesCount) * 100)
+            : null,
       };
     })
-    .sort((left, right) => right.gamesCount - left.gamesCount || left.timeControl.localeCompare(right.timeControl))
+    .sort(
+      (left, right) =>
+        right.gamesCount - left.gamesCount || left.timeControl.localeCompare(right.timeControl),
+    )
     .slice(0, TIME_CONTROL_WDL_LIMIT);
 }
 
-function buildTimeControlWdlFromGroups(groups: Array<{ timeControlRaw: string | null; timeControlInitial: number | null; timeControlIncrement: number | null; resultForUser: string | null; _count: { _all: number } }>) {
+function buildTimeControlWdlFromGroups(
+  groups: Array<{
+    timeControlRaw: string | null;
+    timeControlInitial: number | null;
+    timeControlIncrement: number | null;
+    resultForUser: string | null;
+    _count: { _all: number };
+  }>,
+) {
   const buckets = new Map<string, { wins: number; draws: number; losses: number }>();
   for (const group of groups) {
     const timeControl = normalizeTimeControl(group);
@@ -233,10 +298,20 @@ function buildTimeControlWdlFromGroups(groups: Array<{ timeControlRaw: string | 
     if (group.resultForUser === 'LOSS') bucket.losses += group._count._all;
     buckets.set(timeControl, bucket);
   }
-  return [...buckets.entries()].map(([timeControl, bucket]) => {
-    const gamesCount = bucket.wins + bucket.draws + bucket.losses;
-    return { timeControl, gamesCount, ...bucket, scorePercent: gamesCount ? Math.round(((bucket.wins + bucket.draws * .5) / gamesCount) * 100) : null };
-  }).sort((a, b) => b.gamesCount - a.gamesCount || a.timeControl.localeCompare(b.timeControl)).slice(0, TIME_CONTROL_WDL_LIMIT);
+  return [...buckets.entries()]
+    .map(([timeControl, bucket]) => {
+      const gamesCount = bucket.wins + bucket.draws + bucket.losses;
+      return {
+        timeControl,
+        gamesCount,
+        ...bucket,
+        scorePercent: gamesCount
+          ? Math.round(((bucket.wins + bucket.draws * 0.5) / gamesCount) * 100)
+          : null,
+      };
+    })
+    .sort((a, b) => b.gamesCount - a.gamesCount || a.timeControl.localeCompare(b.timeControl))
+    .slice(0, TIME_CONTROL_WDL_LIMIT);
 }
 
 export function buildAccountPerformanceStatsData(
@@ -274,6 +349,7 @@ export function buildAccountPerformanceStatsData(
   const timeControlWdl = buildTimeControlWdl(scoredGames);
   const bestVictories = toHighlights([...wins].sort(compareBestVictories));
   const mostEmbarrassingDefeats = toHighlights([...losses].sort(compareMostEmbarrassingDefeats));
+  const recentGames = toRecentGames([...scoredGames]);
 
   return {
     range: {
@@ -283,13 +359,20 @@ export function buildAccountPerformanceStatsData(
     speeds: query.speeds,
     gamesCount: scoredGames.length,
     wdl,
-    scorePercent: decidedGames > 0 ? Math.round(((wdl.wins + wdl.draws * 0.5) / decidedGames) * 100) : null,
+    scorePercent:
+      decidedGames > 0 ? Math.round(((wdl.wins + wdl.draws * 0.5) / decidedGames) * 100) : null,
     averageOpponentRating: {
+      overall: average([
+        ...opponentRatings.wins,
+        ...opponentRatings.draws,
+        ...opponentRatings.losses,
+      ]),
       wins: average(opponentRatings.wins),
       draws: average(opponentRatings.draws),
       losses: average(opponentRatings.losses),
     },
     timeControlWdl,
+    recentGames,
     bestVictories,
     mostEmbarrassingDefeats,
     bestVictory: bestVictories[0] ?? null,
@@ -307,10 +390,20 @@ export const AccountPerformanceStatsService = {
     if (!account) return null;
 
     const endedAt = buildPerformanceEndedAtRange(query);
-    const where = { userId, accountId, endedAt, speedCategory: { in: query.speeds }, userColor: { in: ['WHITE', 'BLACK'] }, resultForUser: { in: ['WIN', 'DRAW', 'LOSS'] } };
-    const [results, timeGroups, highlights] = await Promise.all([
-      prisma.$queryRaw<Array<{ result: string; games: bigint; averageOpponent: number | null }>>(Prisma.sql`
+    const where = {
+      userId,
+      accountId,
+      endedAt,
+      speedCategory: { in: query.speeds },
+      userColor: { in: ['WHITE', 'BLACK'] },
+      resultForUser: { in: ['WIN', 'DRAW', 'LOSS'] },
+    };
+    const [results, timeGroups, highlights, recentGames] = await Promise.all([
+      prisma.$queryRaw<
+        Array<{ result: string; games: bigint; ratedGames: bigint; averageOpponent: number | null }>
+      >(Prisma.sql`
         SELECT "resultForUser" AS result, COUNT(*) AS games,
+          COUNT(CASE WHEN (CASE WHEN "userColor" = 'WHITE' THEN "blackRating" ELSE "whiteRating" END) IS NOT NULL THEN 1 END) AS "ratedGames",
           AVG(CASE WHEN "userColor" = 'WHITE' THEN "blackRating" ELSE "whiteRating" END) AS "averageOpponent"
         FROM "ImportedGame"
         WHERE "userId" = ${userId} AND "accountId" = ${accountId}
@@ -321,7 +414,11 @@ export const AccountPerformanceStatsService = {
           AND "userColor" IN ('WHITE','BLACK') AND "resultForUser" IN ('WIN','DRAW','LOSS')
         GROUP BY "resultForUser"
       `),
-      prisma.importedGame.groupBy({ by: ['timeControlRaw', 'timeControlInitial', 'timeControlIncrement', 'resultForUser'], where, _count: { _all: true } }),
+      prisma.importedGame.groupBy({
+        by: ['timeControlRaw', 'timeControlInitial', 'timeControlIncrement', 'resultForUser'],
+        where,
+        _count: { _all: true },
+      }),
       prisma.$queryRaw<PerformanceGame[]>(Prisma.sql`
         (SELECT id, "endedAt", "speedCategory", "userColor", "whiteRating", "blackRating", "opponentUsername", "resultForUser", "providerUrl", "timeControlRaw", "timeControlInitial", "timeControlIncrement"
          FROM "ImportedGame" WHERE "userId"=${userId} AND "accountId"=${accountId} AND "resultForUser"='WIN'
@@ -337,18 +434,56 @@ export const AccountPerformanceStatsService = {
            AND "speedCategory" IN (${Prisma.join(query.speeds)}) AND "userColor" IN ('WHITE','BLACK')
          ORDER BY CASE WHEN "userColor"='WHITE' THEN "blackRating" ELSE "whiteRating" END ASC NULLS LAST, "endedAt" DESC, id DESC LIMIT 5)
       `),
+      prisma.$queryRaw<PerformanceGame[]>(Prisma.sql`
+        SELECT id, "endedAt", "speedCategory", "userColor", "whiteRating", "blackRating", "opponentUsername", "resultForUser", "providerUrl", "timeControlRaw", "timeControlInitial", "timeControlIncrement"
+        FROM "ImportedGame"
+        WHERE "userId"=${userId} AND "accountId"=${accountId}
+          AND "endedAt" IS NOT NULL
+          ${query.from ? Prisma.sql`AND "endedAt" >= ${new Date(query.from)}` : Prisma.empty}
+          ${query.to ? Prisma.sql`AND "endedAt" ${/^\d{4}-\d{2}-\d{2}$/.test(query.to) ? Prisma.sql`< ${new Date(Date.parse(query.to) + 86400000)}` : Prisma.sql`<= ${new Date(query.to)}`}` : Prisma.empty}
+          AND "speedCategory" IN (${Prisma.join(query.speeds)})
+          AND "userColor" IN ('WHITE','BLACK') AND "resultForUser" IN ('WIN','DRAW','LOSS')
+        ORDER BY "endedAt" DESC, id DESC
+        LIMIT 5
+      `),
     ]);
     const counts = new Map(results.map((row) => [row.result, Number(row.games)]));
-    const averageByResult = new Map(results.map((row) => [row.result, row.averageOpponent === null ? null : Math.round(Number(row.averageOpponent))]));
+    const averageByResult = new Map(
+      results.map((row) => [
+        row.result,
+        row.averageOpponent === null ? null : Math.round(Number(row.averageOpponent)),
+      ]),
+    );
     const bestVictories = toHighlights(highlights.filter((game) => game.resultForUser === 'WIN'));
-    const mostEmbarrassingDefeats = toHighlights(highlights.filter((game) => game.resultForUser === 'LOSS'));
+    const mostEmbarrassingDefeats = toHighlights(
+      highlights.filter((game) => game.resultForUser === 'LOSS'),
+    );
     const performance = {
-      range: { from: query.from, to: query.to }, speeds: query.speeds,
+      range: { from: query.from, to: query.to },
+      speeds: query.speeds,
       gamesCount: [...counts.values()].reduce((sum, count) => sum + count, 0),
-      wdl: { wins: counts.get('WIN') ?? 0, draws: counts.get('DRAW') ?? 0, losses: counts.get('LOSS') ?? 0 },
-      averageOpponentRating: { wins: averageByResult.get('WIN') ?? null, draws: averageByResult.get('DRAW') ?? null, losses: averageByResult.get('LOSS') ?? null },
-      timeControlWdl: buildTimeControlWdlFromGroups(timeGroups), bestVictories, mostEmbarrassingDefeats,
-      bestVictory: bestVictories[0] ?? null, mostEmbarrassingDefeat: mostEmbarrassingDefeats[0] ?? null,
+      wdl: {
+        wins: counts.get('WIN') ?? 0,
+        draws: counts.get('DRAW') ?? 0,
+        losses: counts.get('LOSS') ?? 0,
+      },
+      averageOpponentRating: {
+        overall: weightedAverage(
+          results.map((row) => ({
+            average: row.averageOpponent === null ? null : Math.round(Number(row.averageOpponent)),
+            count: Number(row.ratedGames),
+          })),
+        ),
+        wins: averageByResult.get('WIN') ?? null,
+        draws: averageByResult.get('DRAW') ?? null,
+        losses: averageByResult.get('LOSS') ?? null,
+      },
+      timeControlWdl: buildTimeControlWdlFromGroups(timeGroups),
+      recentGames: toRecentGames(recentGames),
+      bestVictories,
+      mostEmbarrassingDefeats,
+      bestVictory: bestVictories[0] ?? null,
+      mostEmbarrassingDefeat: mostEmbarrassingDefeats[0] ?? null,
     };
 
     return {
