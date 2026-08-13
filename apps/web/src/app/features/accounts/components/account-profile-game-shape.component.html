@@ -8,11 +8,19 @@
       <span class="range-chip">{{ range() }}</span>
     </div>
 
-    <div class="wdl-bar" aria-label="Wins draws losses">
-      <span class="wins" [style.flex]="stats.wdl.wins || 0.01"></span>
-      <span class="draws" [style.flex]="stats.wdl.draws || 0.01"></span>
-      <span class="losses" [style.flex]="stats.wdl.losses || 0.01"></span>
-    </div>
+    @if (decisiveGames() > 0) {
+      <div class="wdl-bar" aria-label="Wins draws losses">
+        @if (stats.wdl.wins > 0) {
+          <span class="wins" [style.flex]="stats.wdl.wins"></span>
+        }
+        @if (stats.wdl.draws > 0) {
+          <span class="draws" [style.flex]="stats.wdl.draws"></span>
+        }
+        @if (stats.wdl.losses > 0) {
+          <span class="losses" [style.flex]="stats.wdl.losses"></span>
+        }
+      </div>
+    }
     <div class="wdl-labels">
       <span><i class="win-dot"></i> {{ stats.wdl.wins.toLocaleString() }} wins</span>
       <span><i class="draw-dot"></i> {{ stats.wdl.draws.toLocaleString() }} draws</span>

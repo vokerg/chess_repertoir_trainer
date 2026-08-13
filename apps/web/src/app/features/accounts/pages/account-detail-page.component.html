@@ -82,6 +82,7 @@
       [performance]="performanceStats()"
       [history]="history()"
       [selectedSpeed]="selectedSpeed()"
+      [selectedRange]="selectedRange()"
       [loading]="ratingStatsLoading() || performanceStatsLoading()"
     />
 
@@ -106,6 +107,7 @@
           <app-account-profile-coach-read
             [stats]="ratingStats()"
             [performance]="performanceStats()"
+            [selectedSpeed]="selectedSpeed()"
           />
         </app-panel>
         <app-panel

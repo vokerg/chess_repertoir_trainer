@@ -96,7 +96,12 @@ function build(games) {
 
   assert.equal(stats.gamesCount, 3);
   assert.deepEqual(stats.wdl, { wins: 1, draws: 1, losses: 1 });
-  assert.deepEqual(stats.averageOpponentRating, { wins: 1000, draws: 1100, losses: 1200 });
+  assert.deepEqual(stats.averageOpponentRating, {
+    overall: 1100,
+    wins: 1000,
+    draws: 1100,
+    losses: 1200,
+  });
   assert.deepEqual(
     stats.bestVictories.map((highlight) => highlight.gameId),
     [30],
@@ -310,7 +315,12 @@ function build(games) {
     assert.ok(stats);
     assert.equal(stats.gamesCount, 13);
     assert.deepEqual(stats.wdl, { wins: 6, draws: 1, losses: 6 });
-    assert.deepEqual(stats.averageOpponentRating, { wins: 1617, draws: 1300, losses: 983 });
+    assert.deepEqual(stats.averageOpponentRating, {
+      overall: 1300,
+      wins: 1617,
+      draws: 1300,
+      losses: 983,
+    });
     assert.deepEqual(stats.bestVictories.map((item) => item.opponentUsername), ['w1', 'w3', 'w2', 'w4', 'w5']);
     assert.deepEqual(stats.mostEmbarrassingDefeats.map((item) => item.opponentUsername), ['l1', 'l3', 'l2', 'l4', 'l5']);
     assert.deepEqual(stats.timeControlWdl, [{

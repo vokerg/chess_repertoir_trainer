@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {
+  accountPerformanceStatsResponseSchema,
   accountImportCoverageSchema,
   accountImportRunSchema,
   accountImportScopeSchema,
@@ -17,6 +18,39 @@ import {
   positionAnalysisLineSchema,
   serializableTrainingSessionSchema,
 } from '../dist/index.js';
+
+const accountPerformanceStats = {
+  account: { id: 7, provider: 'LICHESS', username: 'profile-user', displayName: null },
+  range: { from: '2026-07-01', to: '2026-08-01' },
+  speeds: ['bullet', 'blitz', 'rapid'],
+  gamesCount: 3,
+  wdl: { wins: 2, draws: 0, losses: 1 },
+  averageOpponentRating: { overall: 1500, wins: 1750, draws: null, losses: 1000 },
+  timeControlWdl: [
+    { timeControl: '5+0', gamesCount: 3, wins: 2, draws: 0, losses: 1, scorePercent: 67 },
+  ],
+  recentGames: [
+    {
+      gameId: 1,
+      endedAt: '2026-08-01T06:42:00.000Z',
+      speed: 'blitz',
+      userRating: 1500,
+      opponentRating: 1600,
+      opponentUsername: 'recent-opponent',
+      providerUrl: null,
+      resultForUser: 'WIN',
+      timeControl: '5+0',
+    },
+  ],
+  bestVictories: [],
+  mostEmbarrassingDefeats: [],
+  bestVictory: null,
+  mostEmbarrassingDefeat: null,
+};
+assert.deepEqual(
+  accountPerformanceStatsResponseSchema.parse(accountPerformanceStats),
+  accountPerformanceStats,
+);
 
 const durableImportScope = {
   variant: 'STANDARD',
