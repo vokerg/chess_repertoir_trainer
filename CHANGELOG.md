@@ -4,11 +4,61 @@ This changelog was reconstructed retrospectively from the repository commit hist
 
 Versions `0.0.x` are daily development snapshots: each version represents a calendar day on which project work was committed, not a separately published package release. Snapshot numbering continues independently of package versions; the current repository version remains `1.0.0`.
 
+## [0.0.78] - 2026-08-13
+
+- Eliminated Angular CommonJS workspace bailouts by resolving shared workspace imports through ESM sources for the webpack build path.
+- Added a report-only dependency-audit baseline with workspace ownership, runtime/development reachability classification, npm deprecation evidence, CI artifacts and summaries, and reporter regression coverage.
+
+## [0.0.77] - 2026-08-12
+
+- Added bounded durable Chess.com and Lichess account-import adapters with restart-safe provider planning, guarded duplicate-safe commits, conservative coverage advancement, cancellation/fence handling, provider-specific retry behavior, and focused PostgreSQL coverage.
+- Redesigned the course workspace and chapter-line management experience, including prototype-aligned course overview presentation, streamlined line operations, recoverable catalog load errors, and compact-layout health data preservation.
+- Updated GitHub Actions to Node 24 runtimes and reconciled the completed Repertoire Builder V2 delivery records.
+
+## [0.0.76] - 2026-08-11
+
+- Added provider-neutral durable account-import persistence, exact contiguous coverage, lifecycle fencing, a shared worker/API lifecycle with pause/cancel/retry/stale recovery, monotonic progress, and bounded shutdown behavior.
+- Converged Lichess and repertoire-coverage API responses onto shared runtime-validated contracts reused by Angular, while adding repository hygiene guardrails and CI enforcement for incremental contract cleanup.
+- Completed the Visual Transformation source-verifiable closeout by standardizing remaining route states, fixing training-shell recovery, removing obsolete presentation namespaces, strengthening accessibility/architecture ratchets, and closing the program with explicit residual manual-evidence boundaries.
+- Simplified Repertoire Builder setup to one focused dialog with bounded/manual starting scopes while preserving exact course-position launches and compatibility snapshots.
+
+## [0.0.75] - 2026-08-10
+
+- Completed the Repertoire Builder V2 decision-model runtime: empirical persona ranking, exact-position personal move evidence, opponent-preparation priority and computed coverage, authority-gap corrections, and a Cockpit hierarchy centered on engine, target-population, and Masters evidence.
+- Fixed authenticated web redirect loops and local development startup orchestration, including deterministic API/web teardown, shared-package build reuse, occupied-port failure handling, and regression coverage.
+- Polished rating/game-evaluation charts and aligned opening-explorer evidence rows, while removing remaining Home-local visual-token compatibility aliases.
+
+## [0.0.74] - 2026-08-09
+
+- Planned the Repertoire Builder V2 decision model and reintegrated the Builder Cockpit, then reconciled the resulting task, queue, and completion state.
+- Standardized shared loading, empty, and error presentation across guarded surfaces, decoupled line training from Library-owned presentation, and added Course Review async accessibility semantics with regression guardrails.
+- Reconciled administrator-diagnostics completion records; excluded a typography-only landing-page punctuation fix from the snapshot.
+
+## [0.0.73] - 2026-08-08
+
+- Added the authenticated administrator diagnostics UI with typed feature-local access, stale-response protection, bounded cursor pagination, explicit partial/forbidden/unavailable states, warning evidence, accessibility coverage, and failed-page retry.
+- Refined the opening-analysis evidence workbench and completed the workbench visual-semantic token migration to production `--ui-*` roles.
+- Fixed Repertoire Builder opening-knowledge inheritance for non-exact child positions and reconciled completed opening-knowledge coverage records.
+
+## [0.0.72] - 2026-08-07
+
+- Completed Repertoire Builder opening-knowledge coverage across the pinned generated book, with coverage/editorial tooling, full strategic-knowledge availability, runtime-rule audits, and preserved ranking/eligibility authority boundaries.
+- Hardened Visual Transformation accessibility and recovery foundations with contrast-safe focus indicators, keyboard graph semantics, native Games analysis actions, reduced-motion/responsive polish, and recoverable repertoire-detail route states.
+- Reconciled onboarding implementation records and removed an insufficient Builder engine evidence item after review.
+
+## [0.0.71] - 2026-08-06
+
+- Completed Activity Feed delivery with provider-neutral played-game reconciliation, serialized aggregate updates, bounded historical backfill, a signed-in Home Today checklist, time-zone synchronization, accessible daily-goal progress, and final program closure.
+- Added Repertoire Builder engine-impact evidence and a more compact workbench presentation.
+- Completed ONB-017 preparation-execution acceptance with explicit default-capacity coverage and canonical onboarding reconciliation.
+
 ## [0.0.70] - 2026-08-05
 
-- Added the ACT-001 Activity Feed foundation with typed contracts, a daily aggregate ledger, IANA time-zone preferences, transaction-aware increment and reconciliation services, authenticated history/today/preferences APIs, migration, OpenAPI coverage, and focused tests.
-- Modernized and reconciled the Settings routes with clearer account workflow hierarchy, complete Lichess scope guidance, improved Appearance semantics, accessibility fixes, and rendered regression coverage.
-- Refreshed repository, product, program, and agent documentation; added the exact `update changelog` command workflow; corrected stale mobile and program entry points; and established short-lived branches with required squash merge into `main`.
+- Added the ACT-001 Activity Feed foundation and authoritative in-app completion producers with typed contracts, a daily aggregate ledger, IANA time-zone preferences, transaction-safe updates, authenticated APIs, migration, OpenAPI coverage, and focused tests.
+- Added server-authoritative administrator authorization and bounded read-only diagnostics, including failure containment and queue-age evidence.
+- Modernized and reconciled the Settings routes and authenticated navigation identity with clearer workflow hierarchy, complete Lichess scope guidance, improved Appearance semantics, accessibility fixes, and rendered regression coverage.
+- Simplified Repertoire Builder candidate evidence and draft/setup interactions while keeping course-derived influence neutral.
+- Completed the authenticated-route Visual Transformation inventory and refreshed repository, product, program, and agent documentation, including the exact `update changelog` workflow and required squash merges into `main`.
 
 ## [0.0.69] - 2026-08-04
 
