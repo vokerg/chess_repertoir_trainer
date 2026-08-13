@@ -182,7 +182,7 @@ assert.deepEqual(report.deprecations[0].examplePath, [
 const markdown = renderMarkdown(report);
 assert.match(markdown, /api-runtime@1\.0\.0 → vuln-runtime@1\.0\.0/);
 assert.match(markdown, /@internal\/shared@2\.0\.0 \(major\)/);
-assert.match(markdown, /legacy \\| warning/);
+assert.match(markdown, /legacy \\\| warning/);
 assert.match(markdown, /Unresolved vulnerability ownership: unowned\./);
 
 assert.throws(
