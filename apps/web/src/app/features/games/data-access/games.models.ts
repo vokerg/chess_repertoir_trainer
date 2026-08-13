@@ -1,9 +1,12 @@
 import type {
   ImportedGameAnalysisSummary,
   ImportedGameDetail,
+  ImportedGameIndexWorkflowResult,
+  ImportedGameOpeningAssignmentResult,
   ImportedGameSearchItem,
   ImportedGamePageInfo,
   ImportedGamePly,
+  ImportedGamePlyIndexResult,
   ImportedGamePlyIndexSummary,
   ImportedGamePlayer,
   ImportedGameProvider,
@@ -11,6 +14,7 @@ import type {
   ImportedGameSearchResponse,
   ImportedGameTag,
   ImportedGameTagDefinitionsResponse,
+  ImportedGameTagsRefreshResponse,
   ImportedGameTimeControl,
   ImportedGameUserColor,
 } from '@chess-trainer/contracts/imported-games';
@@ -22,13 +26,17 @@ export type {
   ImportedGameAnalysisSummary,
   ImportedGameDetail,
   ImportedGameFacetsResponse,
+  ImportedGameIndexWorkflowResult,
+  ImportedGameOpeningAssignmentResult,
   ImportedGameSearchItem,
   ImportedGamePageInfo,
   ImportedGamePly,
+  ImportedGamePlyIndexResult,
   ImportedGamePlyIndexSummary,
   ImportedGamePlayer,
   ImportedGameSearchResponse,
   ImportedGameTag,
+  ImportedGameTagsRefreshResponse,
   ImportedGameTimeControl,
   PositionAnalysisCache,
   PositionAnalysisLine,
@@ -40,31 +48,6 @@ export type UserColor = ImportedGameUserColor;
 export type { AnalysisStatus, FacetValue, PlyIndexStatus } from '../../../shared/games/game.models';
 
 export type GameTagDefinitionsResponse = ImportedGameTagDefinitionsResponse;
-
-export interface ImportedGamePlyIndexResult {
-  importedGameId: number;
-  status: 'INDEXED' | 'ALREADY_INDEXED' | 'FAILED';
-  pliesIndexed?: number | null;
-  plyIndexedAt?: string | null;
-  error?: string;
-}
-
-export interface ImportedGameOpeningAssignmentResult {
-  importedGameId: number;
-  status: 'ASSIGNED' | 'SKIPPED' | 'FAILED';
-  openingEco?: string | null;
-  openingName?: string | null;
-  reason?: string | null;
-}
-
-export interface ImportedGameIndexWorkflowResult {
-  importedGameId: number;
-  eligible: boolean;
-  speedCategory?: string | null;
-  skippedReason?: 'UNSUPPORTED_SPEED_CATEGORY';
-  plyIndex?: ImportedGamePlyIndexResult;
-  openingAssignment?: ImportedGameOpeningAssignmentResult;
-}
 
 export interface BatchAnalysisConfig {
   enabled: boolean;
@@ -116,12 +99,6 @@ export interface ImportedGameAnalysisRun {
 
 export interface ImportedGameAnalysisResponse {
   run: ImportedGameAnalysisRun;
-}
-
-export interface ImportedGameTagsRefreshResponse {
-  importedGameId: number;
-  tagCodes: number[];
-  tags: ImportedGameTag[];
 }
 
 export interface ImportedGameFullRefreshAcceptedResponse {
