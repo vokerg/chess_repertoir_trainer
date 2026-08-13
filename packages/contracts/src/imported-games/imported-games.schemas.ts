@@ -138,11 +138,11 @@ export const importedGameListItemSchema = z.object({
   speedCategory: z.string().nullable(),
   rated: z.boolean().nullable(),
   variant: z.string().nullable(),
-  timeControl: z.object({
+  timeControl: {
     raw: z.string().nullable(),
     initial: z.number().int().nullable(),
     increment: z.number().int().nullable(),
-  }),
+  },
   white: z.object({ username: z.string().nullable(), rating: z.number().int().nullable() }),
   black: z.object({ username: z.string().nullable(), rating: z.number().int().nullable() }),
   userColor: importedGameUserColorSchema.nullable(),
@@ -241,6 +241,42 @@ export const importedGameTagDefinitionsResponseSchema = z.object({
   items: z.array(importedGameTagSchema),
 });
 
+export const importedGameTagsRefreshResponseSchema = z.object({
+  importedGameId: z.number().int().positive(),
+  tagCodes: z.array(z.number().int()),
+  tags: z.array(importedGameTagSchema),
+});
+
+export const importedGamePlyIndexResultSchema = z.object({
+  importedGameId: z.number().int().positive(),
+  status: z.enum(['INDEXED', 'ALREADY_INDEXED', 'FAILED']),
+  pliesIndexed: z.number().int().nonnegative().optional(),
+  plyIndexedAt: z.iso.datetime({ offset: true }).nullable().optional(),
+  error: z.string().optional(),
+});
+
+export const importedGameOpeningAssignmentResultSchema = z.object({
+  importedGameId: z.number().int().positive(),
+  status: z.enum(['ASSIGNED', 'SKIPPED', 'FAILED']),
+  openingEco: z.string().nullable().optional(),
+  openingName: z.string().nullable().optional(),
+  reason: z.string().optional(),
+});
+
+export const importedGameIndexWorkflowSkipReasonSchema = z.enum([
+  'UNSUPPORTED_SPEED_CATEGORY',
+  'UNSUPPORTED_VARIANT',
+]);
+
+export const importedGameIndexWorkflowResponseSchema = z.object({
+  importedGameId: z.number().int().positive(),
+  eligible: z.boolean(),
+  speedCategory: z.string().nullable(),
+  skippedReason: importedGameIndexWorkflowSkipReasonSchema.optional(),
+  plyIndex: importedGamePlyIndexResultSchema.optional(),
+  openingAssignment: importedGameOpeningAssignmentResultSchema.optional(),
+});
+
 export type ImportedGameProvider = z.output<typeof importedGameProviderSchema>;
 export type ImportedGameResultForUser = z.output<typeof importedGameResultForUserSchema>;
 export type ImportedGameUserColor = z.output<typeof importedGameUserColorSchema>;
@@ -264,3 +300,8 @@ export type ImportedGamePgnResponse = z.output<typeof importedGamePgnResponseSch
 export type ImportedGameFacetsResponse = z.output<typeof importedGameFacetsResponseSchema>;
 export type ImportedGameTag = z.output<typeof importedGameTagSchema>;
 export type ImportedGameTagDefinitionsResponse = z.output<typeof importedGameTagDefinitionsResponseSchema>;
+export type ImportedGameTagsRefreshResponse = z.output<typeof importedGameTagsRefreshResponseSchema>;
+export type ImportedGamePlyIndexResult = z.output<typeof importedGamePlyIndexResultSchema>;
+export type ImportedGameOpeningAssignmentResult = z.output<typeof importedGameOpeningAssignmentResultSchema>;
+export type ImportedGameIndexWorkflowSkipReason = z.output<typeof importedGameIndexWorkflowSkipReasonSchema>;
+export type ImportedGameIndexWorkflowResult = z.output<typeof importedGameIndexWorkflowResponseSchema>;
