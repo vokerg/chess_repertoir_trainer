@@ -3,6 +3,13 @@
   "compilerOptions": {
     "outDir": "../../dist/out-tsc/apps/web",
     "moduleResolution": "bundler",
+    "paths": {
+      "@chess-trainer/contracts/player-chess-profile": ["../../packages/contracts/src/player-chess-profile/index.ts"],
+      "@chess-trainer/contracts/courses": ["../../packages/contracts/src/courses/index.ts"],
+      "@chess-trainer/contracts/imported-games": ["../../packages/contracts/src/imported-games/index.ts"],
+      "@chess-trainer/contracts/repertoire-target": ["../../packages/contracts/src/repertoire-target/index.ts"],
+      "chess-domain": ["../../packages/chess-domain/src/index.ts"]
+    },
     "types": []
   },
   "files": [],
