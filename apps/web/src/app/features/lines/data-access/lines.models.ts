@@ -1,6 +1,9 @@
 import type {
   ActiveTrainingStatsDto,
   SublineTrainingStatusDto,
+  TrainingMarathonModeDto,
+  TrainingMarathonNextResponseDto,
+  TrainingMarathonScopeDto,
   TrainingStatusValue,
 } from '@chess-trainer/contracts/training';
 
@@ -176,8 +179,8 @@ export interface CopyLinePayload {
   name?: string;
 }
 
-export type MarathonScopeType = 'CHAPTER' | 'COURSE';
-export type MarathonMode = 'ALL' | 'WEAK_SUBLINES' | 'UNTRAINED_SUBLINES' | 'MIXED_WEAK_UNTRAINED';
+export type MarathonScopeType = TrainingMarathonScopeDto['type'];
+export type MarathonMode = TrainingMarathonModeDto;
 
 export type LineTrainingStatusValue = TrainingStatusValue;
 
@@ -191,31 +194,4 @@ export interface MarathonNextRequest {
 export interface MarathonRunResponse { runId: string }
 
 export type SublineTrainingStatus = SublineTrainingStatusDto;
-
-export interface MarathonNextResponse {
-  scope?: { type: MarathonScopeType; id: number } | null;
-  mode: MarathonMode;
-  line: {
-    id: number;
-    name: string;
-    sideToTrain: RepertoireColor;
-    startingFen: string;
-    chapterId: number;
-    chapterName: string;
-    courseId: number;
-  };
-  subline: {
-    hash: string;
-    canonicalKeyVersion: number;
-    moveText: string;
-    leafNodeId: number;
-    moves: {
-      nodeId: number;
-      moveUci: string;
-      moveSan: string;
-      plyNumber: number;
-      sortOrder: number;
-    }[];
-  };
-  session: LineTrainingSession;
-}
+export type MarathonNextResponse = TrainingMarathonNextResponseDto;
