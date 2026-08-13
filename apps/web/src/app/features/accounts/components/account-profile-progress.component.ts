@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
-import { AccountRatingStatsResponse, RatingSpeed } from '../data-access/accounts.models';
+import {
+  AccountRatingStatsResponse,
+  RatingSpeed,
+  RatingSpeedFilter,
+} from '../data-access/accounts.models';
 
 type ProgressTab = 'milestones' | 'yearlyHighs';
 
@@ -15,8 +19,6 @@ interface YearlyHighRow {
   values: Partial<Record<RatingSpeed, number>>;
 }
 
-const SPEEDS: readonly RatingSpeed[] = ['bullet', 'blitz', 'rapid'];
-
 @Component({
   selector: 'app-account-profile-progress',
   standalone: true,
@@ -26,14 +28,22 @@ const SPEEDS: readonly RatingSpeed[] = ['bullet', 'blitz', 'rapid'];
 })
 export class AccountProfileProgressComponent {
   readonly stats = input<AccountRatingStatsResponse | null>(null);
+  readonly selectedSpeed = input<RatingSpeedFilter>('all');
   readonly loading = input(false);
   readonly error = input<string | null>(null);
 
   protected readonly tab = signal<ProgressTab>('milestones');
-  protected readonly speeds = SPEEDS;
+  protected readonly speeds = computed(() => {
+    const selectedSpeed = this.selectedSpeed();
+    const availableSpeeds = this.stats()?.data.speeds ?? [];
+
+    return availableSpeeds.filter(
+      (speed) => selectedSpeed === 'all' || speed.key === selectedSpeed,
+    );
+  });
 
   protected readonly milestones = computed<MilestoneRow[]>(() =>
-    (this.stats()?.data.speeds ?? [])
+    this.speeds()
       .flatMap((speed) =>
         speed.milestones.map((milestone) => ({
           id: `${speed.key}-${milestone.rating}`,
@@ -51,7 +61,7 @@ export class AccountProfileProgressComponent {
 
   protected readonly yearlyHighs = computed<YearlyHighRow[]>(() => {
     const rows = new Map<number, YearlyHighRow>();
-    for (const speed of this.stats()?.data.speeds ?? []) {
+    for (const speed of this.speeds()) {
       for (const high of speed.yearlyHighs) {
         const row = rows.get(high.year) ?? { year: high.year, values: {} };
         row.values[speed.key] = high.rating;

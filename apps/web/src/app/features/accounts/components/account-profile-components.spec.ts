@@ -33,9 +33,14 @@ describe('account profile presentation components', () => {
   it('switches between milestones and yearly highs', async () => {
     const fixture = await createFixture(AccountProfileProgressComponent);
     fixture.componentRef.setInput('stats', ratingStats());
+    fixture.componentRef.setInput('selectedSpeed', 'blitz');
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.milestone-list')?.textContent).toContain('1,400');
+    expect(fixture.nativeElement.querySelector('.milestone-list')?.textContent).toContain('Blitz');
+    expect(fixture.nativeElement.querySelector('.milestone-list')?.textContent).not.toContain(
+      'Bullet',
+    );
 
     const yearlyHighsButton = fixture.nativeElement.querySelectorAll(
       '.tab-control button',

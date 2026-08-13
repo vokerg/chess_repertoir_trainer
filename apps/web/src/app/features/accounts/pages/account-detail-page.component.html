@@ -1,6 +1,4 @@
 <section class="account-detail-page stack">
-  <app-page-header [title]="pageTitle()" [subtitle]="pageSubtitle()" [actions]="headerActions()" />
-
   @if (accountsError(); as error) {
     <app-state-message tone="error" [message]="error" />
   }
@@ -10,38 +8,74 @@
       <app-state-message tone="error" [message]="error" />
     </app-panel>
   } @else {
-    <app-panel title="Account overview" subtitle="Imported account metadata.">
-      @if (accountLoading() && !account()) {
-        <app-state-message tone="loading" message="Loading account..." />
-      }
+    @if (accountLoading() && !account()) {
+      <app-state-message tone="loading" message="Loading account..." />
+    }
 
-      @if (account(); as account) {
-        <div class="account-overview-content">
-          <app-fact-grid
-            [items]="accountFacts()"
-            ariaLabel="Account summary"
-            [columns]="4"
-            [compactColumns]="1"
-          />
-
-          <label class="account-switcher">
-            <span>Account</span>
-            <select
-              [value]="accountId() ?? ''"
-              (change)="onAccountSelectionChange($any($event.target).value)"
-              [disabled]="accountsLoading() || accounts().length === 0"
-            >
-              @if (accountsLoading()) {
-                <option value="">Loading accounts...</option>
-              }
-              @for (option of accountOptions(); track option.id) {
-                <option [value]="option.id">{{ accountOptionLabel(option) }}</option>
-              }
-            </select>
-          </label>
+    @if (account(); as account) {
+      <div class="profile-route-meta">
+        <nav aria-label="Breadcrumb">
+          <a routerLink="/progress">Progress</a>
+          <span aria-hidden="true">/</span>
+          <strong>Player profile</strong>
+        </nav>
+        <div class="profile-sync">
+          <span class="sync-dot" aria-hidden="true"></span>
+          <span>{{ syncLabel(account.lastSyncAt) }}</span>
+          <a routerLink="/settings/accounts">Back to accounts</a>
         </div>
-      }
-    </app-panel>
+      </div>
+
+      <section class="profile-hero" aria-labelledby="profile-hero-title">
+        <div class="profile-identity">
+          <span class="profile-avatar" aria-hidden="true">{{ accountInitials(account) }}</span>
+          <div class="profile-identity-copy">
+            <p class="profile-kicker">Your chess, in focus</p>
+            <h1 id="profile-hero-title">{{ pageTitle() }}</h1>
+            <p class="profile-account-line">
+              {{ providerLabel(account.provider) }} · @{{ account.username }}
+            </p>
+            <div class="profile-chips" aria-label="Account metadata">
+              <span class="profile-chip profile-chip-active">
+                <i aria-hidden="true"></i>{{ account.isActive ? 'Active' : 'Inactive' }}
+              </span>
+              <span class="profile-chip">Imported profile</span>
+              <span class="profile-chip">Since {{ accountYear(account.createdAt) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-viewing">
+          <label for="profile-account-select">Viewing account</label>
+          <select
+            id="profile-account-select"
+            [value]="accountId() ?? ''"
+            (change)="onAccountSelectionChange($any($event.target).value)"
+            [disabled]="accountsLoading() || accounts().length === 0"
+          >
+            @if (accountsLoading()) {
+              <option value="">Loading accounts...</option>
+            }
+            @for (option of accountOptions(); track option.id) {
+              <option [value]="option.id">{{ accountOptionLabel(option) }}</option>
+            }
+          </select>
+          <a class="profile-compare" routerLink="/settings/accounts">
+            Manage accounts <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </section>
+
+      <div class="profile-section-heading">
+        <div>
+          <p class="profile-kicker">At a glance</p>
+          <h2>The shape of your chess</h2>
+        </div>
+        <p>
+          {{ profilePeriodLabel() }} <span aria-hidden="true">·</span> {{ profileScopeLabel() }}
+        </p>
+      </div>
+    }
 
     <app-account-profile-signal-cards
       [stats]="ratingStats()"
@@ -87,6 +121,7 @@
       <app-panel title="Your milestones" subtitle="Keep the progress that matters visible.">
         <app-account-profile-progress
           [stats]="ratingStats()"
+          [selectedSpeed]="selectedSpeed()"
           [loading]="ratingStatsLoading()"
           [error]="ratingStatsError()"
         />
