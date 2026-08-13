@@ -1,5 +1,6 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
+import { trainingMarathonNextResponseSchema } from '@chess-trainer/contracts/training';
 import { requireAuth } from '../../auth/request-auth';
 import {
   buildMarathonNextResponse,
@@ -8,7 +9,7 @@ import {
   pickMarathonSubline,
   resolveMarathonCandidates,
 } from './training-marathon-candidates.service';
-import { apiErrorResponseSchema, legacyOpaqueResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
+import { apiErrorResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 import { performanceDebug } from '../../utils/performance-debug';
 import { MarathonRunStaleError, TrainingMarathonRunService } from './training-marathon-runs.service';
@@ -49,7 +50,7 @@ const trainingMarathonsModule: FastifyPluginAsyncZod = async (app) => {
   app.post('/api/training-marathons/:runId/next', {
     schema: { operationId: 'getNextTrainingMarathonRunLine', tags: ['Training'], summary: 'Start the next prepared candidate in a marathon run',
       description: 'The run id selects the prepared marathon state.',
-      params: z.object({ runId: z.string().uuid() }), response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema } },
+      params: z.object({ runId: z.string().uuid() }), response: { 200: trainingMarathonNextResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema } },
   }, async (request, reply) => {
     const auth = requireAuth(request, reply); if (!auth) return;
     try {
@@ -69,7 +70,7 @@ const trainingMarathonsModule: FastifyPluginAsyncZod = async (app) => {
       summary: 'Select the next line for a training marathon',
       body: nextLineSchema,
       response: {
-        200: legacyOpaqueResponseSchema,
+        200: trainingMarathonNextResponseSchema,
         400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]),
         401: unauthorizedResponseSchema,
         404: apiErrorResponseSchema,
