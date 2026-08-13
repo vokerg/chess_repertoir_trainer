@@ -138,11 +138,11 @@ export const importedGameListItemSchema = z.object({
   speedCategory: z.string().nullable(),
   rated: z.boolean().nullable(),
   variant: z.string().nullable(),
-  timeControl: {
+  timeControl: z.object({
     raw: z.string().nullable(),
     initial: z.number().int().nullable(),
     increment: z.number().int().nullable(),
-  },
+  }),
   white: z.object({ username: z.string().nullable(), rating: z.number().int().nullable() }),
   black: z.object({ username: z.string().nullable(), rating: z.number().int().nullable() }),
   userColor: importedGameUserColorSchema.nullable(),
