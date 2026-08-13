@@ -165,7 +165,8 @@ const trainingModule: FastifyPluginAsyncZod = async (app) => {
     if (!auth) return;
     try {
       const session = await TrainingService.complete(auth.userId, request.params.sessionId);
-      reply.send(session ? toTrainingSessionResponse(session) : null);
+      if (!session) return reply.status(404).send({ error: 'Training session not found' });
+      reply.send(toTrainingSessionResponse(session));
     } catch (err: any) {
       reply.status(isNotFound(err) ? 404 : 400).send({ error: err.message });
     }
