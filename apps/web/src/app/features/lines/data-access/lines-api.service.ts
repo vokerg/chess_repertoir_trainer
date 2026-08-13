@@ -108,8 +108,8 @@ export class LinesApiService {
     return this.api.post<TrainingMoveResult>(`/training/${sessionId}/move`, { moveUci });
   }
 
-  completeTraining(sessionId: number): Observable<TrainingSessionResult> {
-    return this.api.post<TrainingSessionResult>(`/training/${sessionId}/complete`, {});
+  completeTraining(sessionId: number): Observable<TrainingSessionResult | null> {
+    return this.api.post<TrainingSessionResult | null>(`/training/${sessionId}/complete`, {});
   }
 
   getTrainingReview(sessionId: number): Observable<TrainingReview> {

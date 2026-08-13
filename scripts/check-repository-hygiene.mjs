@@ -15,7 +15,6 @@ const expectedLegacyOpaqueResponseOccurrences = new Map([
   ['apps/api/src/modules/imported-games/imported-games.routes.ts', 6],
   ['apps/api/src/modules/lab/lab.routes.ts', 5],
   ['apps/api/src/modules/scenario-training/scenario-training.routes.ts', 8],
-  ['apps/api/src/modules/training/training.routes.ts', 8],
   ['apps/api/src/routes/externalAccounts.ts', 13],
 ]);
 
