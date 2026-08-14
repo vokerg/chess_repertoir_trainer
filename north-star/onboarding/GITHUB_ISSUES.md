@@ -1,6 +1,6 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-08-07
+Last updated: 2026-08-14
 
 GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the detailed product, architecture, acceptance, and historical source.
 
@@ -115,6 +115,8 @@ ONB-001 allocated ONB-008 through ONB-010 as bounded lifecycle/readiness/Angular
 
 ONB-002 allocated ONB-011 through ONB-015 as bounded import persistence, worker, provider-adapter, and cutover tasks. Coordination umbrella #257 packages those existing tasks without changing their canonical states and records preparation, lifecycle, operations, Activity Feed, and throughput handoffs.
 
+Current account-import execution state: ONB-011/#199 and ONB-012/#200 are `DONE`; ONB-013/#201 has merged runtime PR #357 and completion reconciliation PR #376; ONB-014/#202 remains `REVIEW` after merged runtime PR #356 because its required real low-volume Chess.com canary is still outstanding; ONB-015/#203 remains `PROPOSED` until both provider adapters are completed.
+
 ONB-025 / #276 is the bounded post-cutover follow-up for automatic stale forward refresh on authenticated application bootstrap. It depends on ONB-015 and must not invoke the legacy synchronous provider path.
 
 ONB-003 allocated:
@@ -136,7 +138,7 @@ ONB-005 allocated:
 - ONB-023 / #273 — lazy direct-link Angular administrator diagnostics with server authority and no required static navigation entry;
 - ONB-024 / #274 — capability-gated preview/execute/status/audit adapters over ONB-019/020/021, with signed recent factor age and one-use reverification binding.
 
-ONB-005 completed through squash-merged PR #275 after three adversarial self-review rounds. ONB-022 is `DONE` through runtime PR #284 and completion reconciliation PR #298. ONB-023 is `READY`; ONB-024 remains `PROPOSED` behind ONB-023, the applicable lifecycle services, and proven signed reverification.
+ONB-005 completed through squash-merged PR #275 after three adversarial self-review rounds. ONB-022 is `DONE` through runtime PR #284 and completion reconciliation PR #298. ONB-023 is `DONE` through runtime PR #307 and completion reconciliation PR #312. ONB-024 remains `PROPOSED` behind the applicable lifecycle services and proven signed reverification.
 
 ONB-006 allocated:
 
@@ -159,7 +161,7 @@ ONB-007 supplies operational defaults and validation gates to existing owners ra
 
 ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without taking implementation ownership from the other programs.
 
-ONB-007 is `DONE` through squash-merged PR #266. ONB-005 is `DONE` through squash-merged PR #275. ONB-006 is `DONE` through squash-merged PR #281. ONB-017 is `DONE` through runtime PR #282 and completion reconciliation PR #293; issue #253 is closed completed. ONB-022 is `DONE` through runtime PR #284 and completion reconciliation PR #298; issue #272 is closed completed. The next unclaimed `READY` onboarding task is ONB-023 / #273. ONB-025 / #276 and ONB-026 / #280 remain `PROPOSED`, as do the other dependency-blocked implementation tasks. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
+ONB-007 is `DONE` through squash-merged PR #266. ONB-005 is `DONE` through squash-merged PR #275. ONB-006 is `DONE` through squash-merged PR #281. ONB-017 is `DONE` through runtime PR #282 and completion reconciliation PR #293; issue #253 is closed completed. ONB-022 is `DONE` through runtime PR #284 and completion reconciliation PR #298; issue #272 is closed completed. ONB-023 is `DONE` through runtime PR #307 and completion reconciliation PR #312; issue #273 is closed completed. ONB-013 is being reconciled to `DONE` through PR #376 while issue #201 remains open until that reconciliation merges. ONB-014 remains `REVIEW` on issue #202. No onboarding implementation task is currently unclaimed `READY`; ONB-015, ONB-025, ONB-026, and the other dependency-blocked implementation tasks remain `PROPOSED` until their task-file gates are satisfied. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
 
 ## Completion
 

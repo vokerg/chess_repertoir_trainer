@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Open Questions
 
-Last updated: 2026-08-11
+Last updated: 2026-08-14
 
 Every material question has one owning task. Other tasks may contribute evidence but must not silently finalize it.
 
@@ -277,19 +277,16 @@ No ONB-012-owned implementation question remains open. Provider traversal, provi
 
 ## ONB-013 / #201 — Lichess adapter
 
-Resolved numeric/provider policy from ONB-007:
+Resolved by merged PR #357, `reports/ONB-013-2026-08-12-implementation-progress.md`, and the low-volume Lichess canary:
 
-- initial 14-day half-open windows;
-- serial requests and full-minute cooldown after HTTP 429;
-- 100-row-or-smaller duplicate-safe writes;
-- one low-volume canary before general release.
+- deterministic configurable 14-day half-open provider windows and canonical `perfType`/rated mapping;
+- serial streaming NDJSON traversal with `AbortSignal`, failed-stream cancellation, and incomplete-window replay on malformed/failed traversal;
+- duplicate-safe 100-row-or-smaller persistence with exact empty-window coverage and no per-game existence N+1;
+- bounded provider-safe failure handling, including minimum one-minute HTTP 429 deferral and no raw personal payloads in telemetry;
+- restart-stable persisted window planning plus lifecycle-fence/cancellation coverage preventing stale completion;
+- low-volume canary workflow run #2665 (`31566377590`) passed before general release evidence was recorded.
 
-Still owned by ONB-013:
-
-- Optional OAuth use for documented higher rate while preserving anonymous support.
-- Bounded malformed-NDJSON error context.
-- Exact canary account/fixture procedure.
-- Fence/abort behavior during account/user lifecycle operations.
+No ONB-013-owned implementation question remains open. Optional authenticated Lichess access for higher provider limits was not required by the accepted task and would need a new bounded owner if pursued. Persisted destructive lifecycle fences remain ONB-019-owned; ONB-013 only consumes the provider-neutral admission/commit seam.
 
 ## ONB-014 / #202 — Chess.com adapter
 
