@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import Fastify from 'fastify';
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
   importedGameDetailResponseSchema,
@@ -11,6 +13,7 @@ import {
   importedGameTagsRefreshResponseSchema,
 } from '@chess-trainer/contracts/imported-games';
 import prismaModule from '../../dist/prisma.js';
+import importedGamesModule from '../../dist/modules/imported-games/imported-games.routes.js';
 import { ImportedGameIndexWorkflowService } from '../../dist/modules/imported-games/imported-game-index-workflow.service.js';
 import { ImportedGamesService } from '../../dist/modules/imported-games/imported-games.service.js';
 import { importedGameSearchQuerySchema } from '../../dist/modules/imported-games/imported-games.schemas.js';
@@ -18,6 +21,7 @@ import { importedGameSearchQuerySchema } from '../../dist/modules/imported-games
 const prisma = prismaModule.default;
 const suffix = randomUUID();
 let userId;
+let app;
 
 try {
   const user = await prisma.appUser.create({
@@ -141,6 +145,56 @@ try {
     tags: [],
   }).success, false);
 
+  const failedGame = await prisma.importedGame.create({
+    data: {
+      userId,
+      accountId: account.id,
+      provider: 'LICHESS',
+      providerGameId: `contract-failed-index-${suffix}`,
+      pgn: null,
+      variant: 'standard',
+      speedCategory: 'blitz',
+      userColor: 'WHITE',
+      resultForUser: 'LOSS',
+      status: 'finished',
+    },
+  });
+
+  app = Fastify();
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+  app.decorateRequest('auth', null);
+  app.addHook('onRequest', async (request) => {
+    request.auth = {
+      userId,
+      provider: 'dev',
+      externalSubject: `contract-${suffix}`,
+    };
+  });
+  await app.register(importedGamesModule);
+
+  const failedIndexResponse = await app.inject({
+    method: 'POST',
+    url: `/api/imported-games/${failedGame.id}/ply-index`,
+    payload: {},
+  });
+  assert.equal(failedIndexResponse.statusCode, 400);
+  assert.deepEqual(failedIndexResponse.json(), {
+    importedGameId: failedGame.id,
+    eligible: true,
+    speedCategory: 'blitz',
+    plyIndex: {
+      importedGameId: failedGame.id,
+      status: 'FAILED',
+      error: 'Imported game has no PGN to index',
+    },
+    openingAssignment: {
+      importedGameId: failedGame.id,
+      status: 'SKIPPED',
+      reason: 'PGN_MISSING',
+    },
+  });
+
   assert.equal(importedGameSearchResponseSchema.safeParse({
     pageInfo: parsedSearch.pageInfo,
     appliedFilters: parsedSearch.appliedFilters,
@@ -148,6 +202,7 @@ try {
 
   console.log('Imported games contract tests passed.');
 } finally {
+  if (app) await app.close();
   if (userId) await prisma.appUser.delete({ where: { id: userId } });
   await prisma.$disconnect();
 }
