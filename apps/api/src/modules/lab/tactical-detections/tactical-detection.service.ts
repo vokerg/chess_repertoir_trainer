@@ -1,4 +1,8 @@
 import { createHash } from 'node:crypto';
+import type {
+  TacticalDetectionListResponse,
+  TacticalDetectionRunResponse,
+} from '@chess-trainer/contracts/lab';
 import { tacticalDetectionThresholds } from './tactical-detection.constants';
 import { getTacticalDetectionGameState } from './tactical-detection-game.repository.prisma';
 import { TacticalDetectionListQuery, TacticalDetectionRunInput } from './tactical-detection.schema';
@@ -94,7 +98,10 @@ async function processTacticalDetectionGames(
   };
 }
 
-export async function runTacticalDetection(userId: number, input: TacticalDetectionRunInput) {
+export async function runTacticalDetection(
+  userId: number,
+  input: TacticalDetectionRunInput,
+): Promise<TacticalDetectionRunResponse> {
   const range = normalizeRange(input);
   const force = input.force ?? false;
   const hash = currentTacticalDetectionThresholdsHash();
@@ -184,7 +191,10 @@ export async function refreshTacticalDetectionsForGame(
   }
 }
 
-export async function getTacticalDetections(userId: number, query: TacticalDetectionListQuery) {
+export async function getTacticalDetections(
+  userId: number,
+  query: TacticalDetectionListQuery,
+): Promise<TacticalDetectionListResponse> {
   const range = query.gameId
     ? { from: query.from, to: query.to }
     : normalizeRange(query);
@@ -196,10 +206,13 @@ export async function getTacticalDetections(userId: number, query: TacticalDetec
     detectionVersion: currentTacticalDetectionVersion(),
   });
   return {
-    from: range.from ?? null,
-    to: range.to ?? null,
+    from: range.from?.toISOString() ?? null,
+    to: range.to?.toISOString() ?? null,
     limit: query.limit,
     kind: query.kind ?? null,
-    items,
+    items: items.map((item) => ({
+      ...item,
+      endedAt: item.endedAt?.toISOString() ?? null,
+    })),
   };
 }
