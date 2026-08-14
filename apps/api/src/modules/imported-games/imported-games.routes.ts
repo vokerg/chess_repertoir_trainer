@@ -11,7 +11,11 @@ import {
   importedGameTagsRefreshResponseSchema,
   legacyApiErrorResponseSchema,
   legacyMessageResponseSchema,
+  openingAnalysisCoreResponseSchema,
+  openingAnalysisPerformanceResponseSchema,
+  openingAnalysisTopGamesResponseSchema,
   type ImportedGameIndexWorkflowResult,
+  type OpeningAnalysisAppliedFilters,
 } from '@chess-trainer/contracts/imported-games';
 import { requireAuth } from '../../auth/request-auth';
 import { ImportedGamesService } from './imported-games.service';
@@ -23,29 +27,38 @@ import {
 import { ImportedGameIndexWorkflowService } from './imported-game-index-workflow.service';
 import { OpeningAnalysisService } from './opening-analysis.service';
 import { z } from 'zod';
-import {
-  legacyOpaqueResponseSchema,
-  unauthorizedResponseSchema,
-} from '../../routes/legacy-route.schemas';
+import { unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import { apiErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const forceSchema = z.object({ force: z.boolean().optional() });
-const openingTopGamesResponseSchema = z.object({
-  fen: z.string(), normalizedFen: z.string(),
-  topGames: z.array(z.object({
-    id: z.number().int(), provider: z.string(), endedAt: z.iso.datetime({ offset: true }).nullable(), speedCategory: z.string().nullable(),
-    white: z.object({ username: z.string().nullable(), rating: z.number().int().nullable() }),
-    black: z.object({ username: z.string().nullable(), rating: z.number().int().nullable() }),
-    resultForUser: z.string().nullable(), opening: z.object({ eco: z.string().nullable(), name: z.string().nullable() }),
-    moveNumber: z.number().int(), nextMoveUci: z.string(), nextMoveSan: z.string().nullable(),
-  })),
-  appliedFilters: z.record(z.string(), z.unknown()),
-});
 const importedGamesRouteSchema = <T extends Record<string, unknown>>(operationId: string, extra: T) => ({
   operationId,
   tags: ['Imported games'],
   ...extra,
 });
+
+type OpeningAnalysisServiceAppliedFilters = Awaited<
+  ReturnType<typeof OpeningAnalysisService.getPosition>
+>['appliedFilters'];
+
+function toOpeningAnalysisAppliedFilters(
+  filters: OpeningAnalysisServiceAppliedFilters,
+): OpeningAnalysisAppliedFilters {
+  const { from, to, ...rest } = filters;
+  return {
+    ...rest,
+    rated: filters.rated ?? true,
+    ...(from ? { from: from.toISOString() } : {}),
+    ...(to ? { to: to.toISOString() } : {}),
+  };
+}
+
+function toOpeningAnalysisWireResponse<T extends { appliedFilters: OpeningAnalysisServiceAppliedFilters }>(response: T) {
+  return {
+    ...response,
+    appliedFilters: toOpeningAnalysisAppliedFilters(response.appliedFilters),
+  };
+}
 
 function toImportedGameIndexWorkflowResponse(
   result: Awaited<ReturnType<typeof ImportedGameIndexWorkflowService.indexGame>>,
@@ -104,17 +117,20 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
       summary: 'Get core opening analysis for one board position',
       description: 'Returns position WDL, next moves, and opening-book lookup for the current user filters.',
       querystring: openingAnalysisQuerySchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: openingAnalysisCoreResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
+
+      let response;
       try {
-        return await OpeningAnalysisService.getPosition(auth.userId, request.query, request.log);
+        response = await OpeningAnalysisService.getPosition(auth.userId, request.query, request.log);
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };
       }
+      return openingAnalysisCoreResponseSchema.parse(toOpeningAnalysisWireResponse(response));
     },
   });
 
@@ -125,17 +141,20 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
       summary: 'Get opening-position performance',
       description: 'Returns bounded database-backed performance buckets for games reaching the position.',
       querystring: openingAnalysisQuerySchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: openingAnalysisPerformanceResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
+
+      let response;
       try {
-        return await OpeningAnalysisService.getPerformance(auth.userId, request.query, request.log);
+        response = await OpeningAnalysisService.getPerformance(auth.userId, request.query, request.log);
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };
       }
+      return openingAnalysisPerformanceResponseSchema.parse(toOpeningAnalysisWireResponse(response));
     },
   });
 
@@ -145,17 +164,20 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
     schema: importedGamesRouteSchema('getOpeningAnalysisTopGames', {
       summary: 'Get recent games reaching an opening position',
       querystring: openingAnalysisTopGamesQuerySchema,
-      response: { 200: openingTopGamesResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: openingAnalysisTopGamesResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
+
+      let response;
       try {
-        return await OpeningAnalysisService.getTopGames(auth.userId, request.query, request.query.limit, request.log);
+        response = await OpeningAnalysisService.getTopGames(auth.userId, request.query, request.query.limit, request.log);
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };
       }
+      return openingAnalysisTopGamesResponseSchema.parse(toOpeningAnalysisWireResponse(response));
     },
   });
 
