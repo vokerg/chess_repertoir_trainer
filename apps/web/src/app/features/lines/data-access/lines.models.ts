@@ -1,9 +1,15 @@
 import type {
   ActiveTrainingStatsDto,
+  LineTrainingSessionDto,
+  PlayedTrainingMoveDto,
   SublineTrainingStatusDto,
   TrainingMarathonModeDto,
   TrainingMarathonNextResponseDto,
   TrainingMarathonScopeDto,
+  TrainingMoveResponseDto,
+  TrainingReviewItemDto,
+  TrainingReviewResponseDto,
+  TrainingSessionResponseDto,
   TrainingStatusValue,
 } from '@chess-trainer/contracts/training';
 
@@ -113,62 +119,12 @@ export interface UpdateLineNodePayload {
   annotation?: string | null;
 }
 
-export interface LineTrainingSession {
-  sessionId: number;
-  fen: string;
-  expectedMove?: string | null;
-  completed: boolean;
-  sublineHash?: string;
-  sublineMoveText?: string | null;
-}
-
-export interface PlayedTrainingMove {
-  moveUci: string;
-  moveSan: string;
-  isUserMove: boolean;
-}
-
-export interface TrainingMoveResult {
-  correct: boolean;
-  expectedMove: string | null;
-  playedMoves: PlayedTrainingMove[];
-  fen: string;
-  nextExpectedMove: string | null;
-  completed: boolean;
-  result: 'PASSED' | 'FAILED' | null;
-  accuracy: number | null;
-  mistakesCount: number;
-  correctMoves: number;
-  totalExpectedMoves: number;
-}
-
-export interface TrainingSessionResult {
-  id: number;
-  lineId: number;
-  result: 'IN_PROGRESS' | 'PASSED' | 'FAILED' | 'ABANDONED';
-  mistakesCount: number;
-  correctMoves: number;
-  totalExpectedMoves: number;
-  accuracy: number | null;
-  completedAt?: string | null;
-}
-
-export interface TrainingReviewItem {
-  id: number;
-  moveNodeId: number | null;
-  fenBefore: string;
-  expectedMoveUci: string | null;
-  playedMoveUci: string | null;
-  moveSan: string | null;
-  comment: string | null;
-  annotation: string | null;
-  branchLabel: string | null;
-  createdAt: string;
-}
-
-export interface TrainingReview {
-  mistakes: TrainingReviewItem[];
-}
+export type LineTrainingSession = LineTrainingSessionDto;
+export type PlayedTrainingMove = PlayedTrainingMoveDto;
+export type TrainingMoveResult = TrainingMoveResponseDto;
+export type TrainingSessionResult = TrainingSessionResponseDto;
+export type TrainingReviewItem = TrainingReviewItemDto;
+export type TrainingReview = TrainingReviewResponseDto;
 
 export interface MoveLinePayload {
   chapterId: number;
