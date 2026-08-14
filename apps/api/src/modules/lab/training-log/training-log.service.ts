@@ -1,27 +1,7 @@
+import { trainingLogResultSchema, type TrainingLogResponse } from '@chess-trainer/contracts/lab';
 import prisma from '../../../prisma';
 import { getAvailableSublineRows } from '../../courses/sublines.service';
-import { TrainingLogQuery } from './training-log.schema';
-
-export interface TrainingLogItem {
-  id: number;
-  startedAt: Date;
-  completedAt: Date | null;
-  result: string;
-  courseId: number;
-  courseName: string;
-  chapterId: number;
-  chapterName: string;
-  lineId: number;
-  lineName: string;
-  sequence: string | null;
-  isActiveSubline: boolean;
-  accuracy: number | null;
-  mistakesCount: number;
-}
-
-export interface TrainingLogResponse {
-  items: TrainingLogItem[];
-}
+import type { TrainingLogQuery } from './training-log.schema';
 
 export async function getTrainingLog(userId: number, query: TrainingLogQuery): Promise<TrainingLogResponse> {
   const attempts = await prisma.trainingSublineAttempt.findMany({
@@ -70,9 +50,9 @@ export async function getTrainingLog(userId: number, query: TrainingLogQuery): P
   return {
     items: attempts.map((attempt) => ({
       id: attempt.id,
-      startedAt: attempt.startedAt,
-      completedAt: attempt.completedAt,
-      result: attempt.result,
+      startedAt: attempt.startedAt.toISOString(),
+      completedAt: attempt.completedAt?.toISOString() ?? null,
+      result: trainingLogResultSchema.parse(attempt.result),
       courseId: attempt.line.chapter.course.id,
       courseName: attempt.line.chapter.course.name,
       chapterId: attempt.line.chapter.id,

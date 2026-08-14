@@ -5,7 +5,10 @@ import {
   monthlyGamesResponseSchema,
   performanceByRatingQuerySchema,
   performanceByRatingResponseSchema,
+  tacticalDetectionListResponseSchema,
+  tacticalDetectionRunResponseSchema,
   topOpponentsResponseSchema,
+  trainingLogResponseSchema,
 } from '@chess-trainer/contracts/lab';
 import { requireAuth } from '../../auth/request-auth';
 import { courseExtensionCandidatesQuerySchema } from './course-extension-candidates/course-extension-candidates.schema';
@@ -23,7 +26,7 @@ import {
 import { trainingLogQuerySchema } from './training-log/training-log.schema';
 import { getTrainingLog } from './training-log/training-log.service';
 import { getTopOpponents } from './top-opponents/top-opponents.service';
-import { legacyOpaqueResponseSchema, messageResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
+import { messageResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const limitQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(200).default(50) });
@@ -93,7 +96,7 @@ const labModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/lab/training-log', {
     schema: labSchema('getTrainingLog', 'Get the training activity log', {
       querystring: trainingLogQuerySchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: trainingLogResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -104,7 +107,7 @@ const labModule: FastifyPluginAsyncZod = async (app) => {
   app.post('/api/lab/tactical-detections/run', {
     schema: labSchema('runTacticalDetection', 'Run tactical detection over imported games', {
       body: tacticalDetectionRunSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: tacticalDetectionRunResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -115,7 +118,7 @@ const labModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/lab/tactical-detections', {
     schema: labSchema('listTacticalDetections', 'List detected tactical opportunities', {
       querystring: tacticalDetectionListSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: tacticalDetectionListResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);

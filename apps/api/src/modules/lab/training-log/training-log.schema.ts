@@ -1,6 +1,7 @@
+import { trainingLogResultSchema } from '@chess-trainer/contracts/lab';
 import { z } from 'zod';
 
-export const trainingLogResultSchema = z.enum(['IN_PROGRESS', 'PASSED', 'FAILED', 'ABANDONED']);
+export { trainingLogResultSchema };
 
 export const trainingLogQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(100),
