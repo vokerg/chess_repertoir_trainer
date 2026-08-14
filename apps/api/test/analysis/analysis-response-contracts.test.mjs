@@ -83,11 +83,20 @@ try {
     { positionAnalysis: lookedUp },
   );
 
+  await prisma.positionAnalysis.update({
+    where: { positionId: stored.positionId },
+    data: {
+      lines: [{
+        multipv: 1,
+        depth: 18,
+        moveUci: 'e4e5',
+        scoreCpWhite: 12,
+      }],
+    },
+  });
   const bulkLookedUp = await PositionAnalysisService.getPositionAnalyses([fen]);
-  assert.deepEqual(
-    positionAnalysisBulkResponseSchema.parse({ positionAnalyses: bulkLookedUp }),
-    { positionAnalyses: bulkLookedUp },
-  );
+  const parsedBulkLookup = positionAnalysisBulkResponseSchema.parse({ positionAnalyses: bulkLookedUp });
+  assert.deepEqual(parsedBulkLookup.positionAnalyses[0]?.lines[0]?.pvUci, ['e4e5']);
 
   const bulkStored = await PositionAnalysisService.storePositionSearches([{
     fen,
