@@ -7,6 +7,9 @@ const expectedOperations = new Map([
   ['GET /api/imported-games/tag-definitions', 'getImportedGameTagDefinitions'],
   ['GET /api/imported-games/{gameId}', 'getImportedGame'],
   ['GET /api/imported-games/{gameId}/pgn', 'getImportedGamePgn'],
+  ['GET /api/opening-analysis', 'getOpeningAnalysis'],
+  ['GET /api/opening-analysis/performance', 'getOpeningAnalysisPerformance'],
+  ['GET /api/opening-analysis/top-games', 'getOpeningAnalysisTopGames'],
 ]);
 
 async function generatedDocument() {
@@ -45,5 +48,14 @@ for (const operationId of expectedOperations.values()) assert.ok(operationIds.in
 assert.ok(first.paths['/api/imported-games'].get.responses['200']);
 assert.ok(first.paths['/api/imported-games'].get.responses['400']);
 assert.ok(first.paths['/api/imported-games/{gameId}'].get.responses['404']);
+for (const path of [
+  '/api/opening-analysis',
+  '/api/opening-analysis/performance',
+  '/api/opening-analysis/top-games',
+]) {
+  assert.ok(first.paths[path].get.responses['200']);
+  assert.ok(first.paths[path].get.responses['400']);
+  assert.ok(first.paths[path].get.responses['401']);
+}
 
 console.log('Imported games OpenAPI tests passed.');
