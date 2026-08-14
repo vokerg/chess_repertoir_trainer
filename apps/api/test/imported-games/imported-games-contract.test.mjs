@@ -11,12 +11,19 @@ import {
   importedGameSearchResponseSchema,
   importedGameTagDefinitionsResponseSchema,
   importedGameTagsRefreshResponseSchema,
+  openingAnalysisCoreResponseSchema,
+  openingAnalysisPerformanceResponseSchema,
+  openingAnalysisTopGamesResponseSchema,
 } from '@chess-trainer/contracts/imported-games';
 import prismaModule from '../../dist/prisma.js';
 import importedGamesModule from '../../dist/modules/imported-games/imported-games.routes.js';
 import { ImportedGameIndexWorkflowService } from '../../dist/modules/imported-games/imported-game-index-workflow.service.js';
 import { ImportedGamesService } from '../../dist/modules/imported-games/imported-games.service.js';
-import { importedGameSearchQuerySchema } from '../../dist/modules/imported-games/imported-games.schemas.js';
+import {
+  importedGameSearchQuerySchema,
+  openingAnalysisQuerySchema,
+} from '../../dist/modules/imported-games/imported-games.schemas.js';
+import { OpeningAnalysisService } from '../../dist/modules/imported-games/opening-analysis.service.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
@@ -77,6 +84,20 @@ try {
   assert.equal('tags' in parsedSearch.items[0], false);
   assert.equal('tagCodes' in parsedSearch.items[0], false);
   assert.equal('summary' in parsedSearch.items[0].analysis, false);
+
+  const openingQuery = openingAnalysisQuerySchema.parse({ fen: 'startpos' });
+  const openingCore = await OpeningAnalysisService.getPosition(userId, openingQuery);
+  const parsedOpeningCore = openingAnalysisCoreResponseSchema.parse(openingCore);
+  assert.equal(parsedOpeningCore.sideToMove, 'WHITE');
+  assert.equal(parsedOpeningCore.ratedOnly, true);
+
+  const openingPerformance = await OpeningAnalysisService.getPerformance(userId, openingQuery);
+  const parsedOpeningPerformance = openingAnalysisPerformanceResponseSchema.parse(openingPerformance);
+  assert.equal(parsedOpeningPerformance.performance.sample.games, 0);
+
+  const openingTopGames = await OpeningAnalysisService.getTopGames(userId, openingQuery, 10);
+  const parsedOpeningTopGames = openingAnalysisTopGamesResponseSchema.parse(openingTopGames);
+  assert.deepEqual(parsedOpeningTopGames.topGames, []);
 
   const detail = await ImportedGamesService.get(userId, game.id);
   assert.ok(detail);
