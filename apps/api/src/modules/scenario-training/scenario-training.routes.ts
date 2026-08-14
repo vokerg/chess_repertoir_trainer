@@ -1,5 +1,11 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
+import {
+  scenarioAttemptResultResponseSchema,
+  scenarioTrainingDislikeResponseSchema,
+  scenarioTrainingHistoryResponseSchema,
+  scenarioTrainingSessionResponseSchema,
+} from '@chess-trainer/contracts/scenario-training';
 import { requireAuth } from '../../auth/request-auth';
 import {
   currentTacticalDetectionThresholdsHash,
@@ -21,7 +27,7 @@ import {
   scenarioTrainingAttemptSchema,
   tacticalScenarioStartSchema,
 } from './scenario-training.schema';
-import { apiErrorResponseSchema, legacyOpaqueResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
+import { apiErrorResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const sessionIdParamsSchema = z.object({ sessionId: z.coerce.number().int().positive() });
@@ -68,38 +74,42 @@ const scenarioTrainingModule: FastifyPluginAsyncZod = async (app) => {
   app.post('/api/scenario-training/tactical-missed-shot/start', {
     schema: scenarioSchema('startMissedShotScenarioTraining', 'Start missed-shot scenario training', {
       body: tacticalScenarioStartSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+      response: { 200: scenarioTrainingSessionResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
+    let session;
     try {
       const input = await gameScopedInput(auth.userId, request.body, {
         detectionKind: 'MISSED_SHOT',
         scenarioType: 'MISSED_OPPORTUNITY',
         emptyMessage: 'No more missed shots in this game',
       });
-      return await startTacticalMissedShotScenario(auth.userId, input);
+      session = await startTacticalMissedShotScenario(auth.userId, input);
     } catch (error) {
       reply.code(statusFor(error));
       return { error: error instanceof Error ? error.message : 'Could not start scenario training' };
     }
+    return scenarioTrainingSessionResponseSchema.parse(session);
   });
 
   app.get('/api/scenario-training/history', {
     schema: scenarioSchema('listScenarioTrainingHistory', 'List scenario-training history', {
-      response: { 200: legacyOpaqueResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: scenarioTrainingHistoryResponseSchema, 401: unauthorizedResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    return getScenarioTrainingHistory(auth.userId);
+    return scenarioTrainingHistoryResponseSchema.parse(
+      await getScenarioTrainingHistory(auth.userId),
+    );
   });
 
   app.get('/api/scenario-training/:sessionId', {
     schema: scenarioSchema('getScenarioTrainingSession', 'Get one scenario-training session', {
       params: sessionIdParamsSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+      response: { 200: scenarioTrainingSessionResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -109,79 +119,87 @@ const scenarioTrainingModule: FastifyPluginAsyncZod = async (app) => {
       reply.code(404);
       return { error: 'Scenario training session not found' };
     }
-    return session;
+    return scenarioTrainingSessionResponseSchema.parse(session);
   });
 
   app.post('/api/scenario-training/:sessionId/attempt', {
     schema: scenarioSchema('submitScenarioTrainingAttempt', 'Submit an attempt for a scenario-training session', {
       params: sessionIdParamsSchema,
       body: scenarioTrainingAttemptSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+      response: { 200: scenarioAttemptResultResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
+    let result;
     try {
-      return await submitScenarioTrainingAttempt(auth.userId, request.params.sessionId, request.body);
+      result = await submitScenarioTrainingAttempt(auth.userId, request.params.sessionId, request.body);
     } catch (error) {
       reply.code(statusFor(error));
       return { error: error instanceof Error ? error.message : 'Could not save scenario attempt' };
     }
+    return scenarioAttemptResultResponseSchema.parse(result);
   });
 
   app.post('/api/scenario-training/:sessionId/complete', {
     schema: scenarioSchema('completeScenarioTrainingSession', 'Complete a scenario-training session', {
       description: 'Bodyless action: completion uses the persisted session attempt state.',
       params: sessionIdParamsSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+      response: { 200: scenarioTrainingSessionResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
+    let session;
     try {
-      return await completeScenarioTraining(auth.userId, request.params.sessionId);
+      session = await completeScenarioTraining(auth.userId, request.params.sessionId);
     } catch (error) {
       reply.code(statusFor(error));
       return { error: error instanceof Error ? error.message : 'Could not complete scenario training' };
     }
+    return scenarioTrainingSessionResponseSchema.parse(session);
   });
 
   app.post('/api/scenario-training/tactical-blunder/start', {
     schema: scenarioSchema('startBlunderScenarioTraining', 'Start tactical-blunder scenario training', {
       body: tacticalScenarioStartSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+      response: { 200: scenarioTrainingSessionResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
+    let session;
     try {
       const input = await gameScopedInput(auth.userId, request.body, {
         detectionKind: 'USER_BLUNDER',
         scenarioType: 'BLUNDER_AVOIDANCE',
         emptyMessage: 'No more blunders in this game',
       });
-      return await startTacticalBlunderScenario(auth.userId, input);
+      session = await startTacticalBlunderScenario(auth.userId, input);
     } catch (error) {
       reply.code(statusFor(error));
       return { error: error instanceof Error ? error.message : 'Could not start scenario training' };
     }
+    return scenarioTrainingSessionResponseSchema.parse(session);
   });
 
   app.post('/api/scenario-training/:sessionId/dislike', {
     schema: scenarioSchema('dislikeScenarioTrainingSource', 'Hide a scenario source from future training', {
       params: sessionIdParamsSchema,
       body: scenarioTrainingDislikeSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+      response: { 200: scenarioTrainingDislikeResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
+    let result;
     try {
-      return await dislikeScenarioTrainingSource(auth.userId, request.params.sessionId, request.body);
+      result = await dislikeScenarioTrainingSource(auth.userId, request.params.sessionId, request.body);
     } catch (error) {
       reply.code(statusFor(error));
       return { error: error instanceof Error ? error.message : 'Could not dislike scenario source' };
     }
+    return scenarioTrainingDislikeResponseSchema.parse(result);
   });
 };
 

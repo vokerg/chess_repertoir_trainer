@@ -9,6 +9,7 @@ export * from './courses';
 export * from './training';
 export * from './mobile-sync';
 export * from './lab';
+export * from './scenario-training';
 export * from './opening-struggles';
 export * from './opening-explorer';
 export * from './player-chess-profile';
