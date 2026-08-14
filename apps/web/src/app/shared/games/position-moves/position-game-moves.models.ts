@@ -1,101 +1,28 @@
-import type { Provider, ResultForUser, UserColor } from '../game.models';
+import type {
+  OpeningAnalysisBookMatch as OpeningBookMatchDto,
+  OpeningAnalysisCoreResponse as OpeningAnalysisResponseDto,
+  OpeningAnalysisGame as OpeningAnalysisGameDto,
+  OpeningAnalysisNextMove as OpeningNextMoveDto,
+  OpeningAnalysisPerformance as OpeningPositionPerformanceDto,
+  OpeningAnalysisPerformanceBucket as OpeningPositionPerformanceBucketDto,
+  OpeningAnalysisPerformanceResponse as OpeningAnalysisPerformanceResponseDto,
+  OpeningAnalysisPerformanceTagStat as OpeningPositionPerformanceTagStatDto,
+  OpeningAnalysisTopGamesResponse as OpeningAnalysisTopGamesResponseDto,
+  OpeningAnalysisWdl as OpeningWdlDto,
+} from '@chess-trainer/contracts/imported-games';
 
 export type { Provider, ResultForUser, UserColor } from '../game.models';
 
-export interface OpeningWdl {
-  total: number;
-  wins: number;
-  draws: number;
-  losses: number;
-  scorePct: number | null;
-}
-
-export interface OpeningPositionPerformanceTagStat {
-  code: number;
-  name: string;
-  games: number;
-  ratePct: number;
-  wdl: OpeningWdl;
-}
-
-export interface OpeningPositionPerformanceBucket {
-  key: string;
-  label: string;
-  games: number;
-  ratePct: number;
-  tags: OpeningPositionPerformanceTagStat[];
-}
-
-export interface OpeningPositionPerformance {
-  sample: {
-    games: number;
-    taggedGames: number;
-  };
-  wdl: OpeningWdl;
-  tags: OpeningPositionPerformanceTagStat[];
-  buckets: OpeningPositionPerformanceBucket[];
-}
-
-export interface OpeningBookMatch {
-  eco: string;
-  name: string;
-  pgn: string;
-  uci: string;
-  epd: string;
-  ply: number;
-  source: 'ECO' | 'FEN' | 'MOVES';
-}
-
-export interface OpeningNextMove {
-  moveUci: string;
-  moveSan?: string | null;
-  fenAfter: string;
-  side: UserColor;
-  moveNumber: number;
-  occurrences: number;
-  games: OpeningWdl;
-}
-
-export interface OpeningAnalysisGame {
-  id: number;
-  provider: Provider;
-  endedAt: string | null;
-  speedCategory: string | null;
-  white: { username: string | null; rating: number | null };
-  black: { username: string | null; rating: number | null };
-  resultForUser: ResultForUser | null;
-  opening: { eco: string | null; name: string | null };
-  moveNumber: number;
-  nextMoveUci: string;
-  nextMoveSan: string | null;
-}
-
-export interface OpeningAnalysisResponse {
-  fen: string;
-  normalizedFen: string;
-  bookOpening: OpeningBookMatch | null;
-  sideToMove: UserColor;
-  fullMoveNumber: number;
-  ratedOnly: boolean;
-  occurrences: number;
-  games: OpeningWdl;
-  nextMoves: OpeningNextMove[];
-  appliedFilters: Record<string, unknown>;
-}
-
-export interface OpeningAnalysisPerformanceResponse {
-  fen: string;
-  normalizedFen: string;
-  performance: OpeningPositionPerformance;
-  appliedFilters: Record<string, unknown>;
-}
-
-export interface OpeningAnalysisTopGamesResponse {
-  fen: string;
-  normalizedFen: string;
-  topGames: OpeningAnalysisGame[];
-  appliedFilters: Record<string, unknown>;
-}
+export type OpeningWdl = OpeningWdlDto;
+export type OpeningPositionPerformanceTagStat = OpeningPositionPerformanceTagStatDto;
+export type OpeningPositionPerformanceBucket = OpeningPositionPerformanceBucketDto;
+export type OpeningPositionPerformance = OpeningPositionPerformanceDto;
+export type OpeningBookMatch = OpeningBookMatchDto;
+export type OpeningNextMove = OpeningNextMoveDto;
+export type OpeningAnalysisGame = OpeningAnalysisGameDto;
+export type OpeningAnalysisResponse = OpeningAnalysisResponseDto;
+export type OpeningAnalysisPerformanceResponse = OpeningAnalysisPerformanceResponseDto;
+export type OpeningAnalysisTopGamesResponse = OpeningAnalysisTopGamesResponseDto;
 
 export interface OpeningAnalysisOpeningBreakdown {
   name: string;
