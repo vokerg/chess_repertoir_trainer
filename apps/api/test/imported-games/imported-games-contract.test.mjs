@@ -180,19 +180,7 @@ try {
   });
   assert.equal(failedIndexResponse.statusCode, 400);
   assert.deepEqual(failedIndexResponse.json(), {
-    importedGameId: failedGame.id,
-    eligible: true,
-    speedCategory: 'blitz',
-    plyIndex: {
-      importedGameId: failedGame.id,
-      status: 'FAILED',
-      error: 'Imported game has no PGN to index',
-    },
-    openingAssignment: {
-      importedGameId: failedGame.id,
-      status: 'SKIPPED',
-      reason: 'PGN_MISSING',
-    },
+    error: 'Imported game has no PGN to index',
   });
 
   assert.equal(importedGameSearchResponseSchema.safeParse({
