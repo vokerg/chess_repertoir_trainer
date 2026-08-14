@@ -234,8 +234,18 @@ function coreResponse(fen: string, id: number): OpeningAnalysisResponse {
       moveNumber: 1,
       occurrences: id,
       games: { total: id, wins: id, draws: 0, losses: 0, scorePct: 100 },
+      gameCount: id,
+      moveSharePercent: 100,
+      scoreDeltaVsPositionPercent: 0,
+      lastPlayedAt: null,
+      personalContext: {
+        policyVersion: '2026-08-personal-move-v1',
+        familiarity: 'RARE',
+        resultContext: 'INSUFFICIENT',
+        resultSampleQualified: false,
+      },
     }],
-    appliedFilters: {},
+    appliedFilters: appliedFilters(fen),
   };
 }
 
@@ -249,7 +259,7 @@ function performanceResponse(fen: string, games: number): OpeningAnalysisPerform
       tags: [],
       buckets: [],
     },
-    appliedFilters: {},
+    appliedFilters: appliedFilters(fen),
   };
 }
 
@@ -270,7 +280,17 @@ function topGamesResponse(fen: string, id: number): OpeningAnalysisTopGamesRespo
       nextMoveUci: 'e2e4',
       nextMoveSan: 'e4',
     }],
-    appliedFilters: {},
+    appliedFilters: appliedFilters(fen, 10),
+  };
+}
+
+function appliedFilters(fen: string, limit = 50): OpeningAnalysisResponse['appliedFilters'] {
+  return {
+    fen,
+    normalizedFen: fen,
+    rated: true,
+    sort: 'endedAtDesc',
+    limit,
   };
 }
 
