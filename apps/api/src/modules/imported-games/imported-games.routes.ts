@@ -3,12 +3,15 @@ import {
   importedGameDetailResponseSchema,
   importedGameFacetsResponseSchema,
   importedGameIdParamsSchema,
+  importedGameIndexWorkflowResponseSchema,
   importedGamePgnResponseSchema,
   importedGameSearchQuerySchema,
   importedGameSearchResponseSchema,
   importedGameTagDefinitionsResponseSchema,
+  importedGameTagsRefreshResponseSchema,
   legacyApiErrorResponseSchema,
   legacyMessageResponseSchema,
+  type ImportedGameIndexWorkflowResult,
 } from '@chess-trainer/contracts/imported-games';
 import { requireAuth } from '../../auth/request-auth';
 import { ImportedGamesService } from './imported-games.service';
@@ -43,6 +46,31 @@ const importedGamesRouteSchema = <T extends Record<string, unknown>>(operationId
   tags: ['Imported games'],
   ...extra,
 });
+
+function toImportedGameIndexWorkflowResponse(
+  result: Awaited<ReturnType<typeof ImportedGameIndexWorkflowService.indexGame>>,
+): ImportedGameIndexWorkflowResult {
+  const plyIndex = result.plyIndex
+    ? {
+        importedGameId: result.plyIndex.importedGameId,
+        status: result.plyIndex.status,
+        ...(result.plyIndex.pliesIndexed !== undefined ? { pliesIndexed: result.plyIndex.pliesIndexed } : {}),
+        ...(result.plyIndex.plyIndexedAt !== undefined
+          ? { plyIndexedAt: result.plyIndex.plyIndexedAt?.toISOString() ?? null }
+          : {}),
+        ...(result.plyIndex.error !== undefined ? { error: result.plyIndex.error } : {}),
+      }
+    : undefined;
+
+  return {
+    importedGameId: result.importedGameId,
+    eligible: result.eligible,
+    speedCategory: result.speedCategory,
+    ...(result.skippedReason !== undefined ? { skippedReason: result.skippedReason } : {}),
+    ...(plyIndex ? { plyIndex } : {}),
+    ...(result.openingAssignment ? { openingAssignment: result.openingAssignment } : {}),
+  };
+}
 
 const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/imported-games', {
@@ -194,7 +222,7 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
       summary: 'Refresh derived tags for one imported game',
       description: 'Bodyless action: tags are recalculated from the persisted game and analysis.',
       params: importedGameIdParamsSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+      response: { 200: importedGameTagsRefreshResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
@@ -248,8 +276,8 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
       params: importedGameIdParamsSchema,
       body: forceSchema,
       response: {
-        200: legacyOpaqueResponseSchema,
-        201: legacyOpaqueResponseSchema,
+        200: importedGameIndexWorkflowResponseSchema,
+        201: importedGameIndexWorkflowResponseSchema,
         400: apiErrorResponseSchema,
         401: unauthorizedResponseSchema,
         404: apiErrorResponseSchema,
@@ -264,9 +292,12 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
         const result = await ImportedGameIndexWorkflowService.indexGame(auth.userId, gameId, {
           force: request.body.force === true,
         });
+        if (result.plyIndex?.status === 'FAILED') {
+          reply.code(400);
+          return { error: result.plyIndex.error ?? 'Imported game indexing failed' };
+        }
         if (result.plyIndex?.status === 'INDEXED') reply.code(201);
-        if (result.plyIndex?.status === 'FAILED') reply.code(400);
-        return result;
+        return toImportedGameIndexWorkflowResponse(result);
       } catch (err: any) {
         const message = err?.message ?? String(err);
         if (message === 'Imported game not found') {
