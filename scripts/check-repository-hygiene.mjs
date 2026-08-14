@@ -10,7 +10,6 @@ const apiSourceRoot = new URL('../apps/api/src/', import.meta.url);
 // Keep this map exact: contract migrations must reduce the relevant count in the same change.
 // This is a debt-count ratchet, not an identity-level allowlist for individual route usages.
 const expectedLegacyOpaqueResponseOccurrences = new Map([
-  ['apps/api/src/modules/analysis/analysis.routes.ts', 8],
   ['apps/api/src/modules/courses/courses.routes.ts', 19],
   ['apps/api/src/modules/imported-games/imported-games.routes.ts', 3],
   ['apps/api/src/modules/scenario-training/scenario-training.routes.ts', 8],

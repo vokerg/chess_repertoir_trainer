@@ -1,4 +1,13 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import {
+  importedGameAnalysisResponseSchema,
+  importedGameClientAnalysisResponseSchema,
+  importedGamePlyAnalysisClearResponseSchema,
+  importedGamePlyAnalysisUpdateResponseSchema,
+  positionAnalysisBulkResponseSchema,
+  positionAnalysisLookupResponseSchema,
+  positionAnalysisStoreResponseSchema,
+} from '@chess-trainer/contracts/analysis';
 import { requireAuth } from '../../auth/request-auth';
 import { z } from 'zod';
 import {
@@ -13,28 +22,10 @@ import { GameAnalysisService } from './game-analysis.service';
 import { ImportedGameAnalysisWorkflowService } from './imported-game-analysis-workflow.service';
 import { PositionAnalysisService } from './position-analysis.service';
 import { clearImportedGamePlyAnalysis, updateImportedGamePlyAnalysis } from './analysis.repository.prisma';
-import {
-  legacyOpaqueResponseSchema,
-  unauthorizedResponseSchema,
-} from '../../routes/legacy-route.schemas';
+import { unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import { apiErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const importedGameParamsSchema = z.object({ gameId: z.coerce.number().int().positive() });
-const importedGameAnalysisMoveResponseSchema = z.object({
-  plyNumber: z.number().int(), moveNumber: z.number().int(), side: z.enum(['WHITE', 'BLACK']),
-  playedMoveUci: z.string(), playedMoveSan: z.string().nullable(), classificationCode: z.number().int().nullable(),
-  classification: z.string(), scoreLossCp: z.number().nullable(), bestMoveUci: z.string().nullable(),
-  bestScoreCpWhite: z.number().nullable(), playedScoreCpWhite: z.number().nullable(), bestMateWhite: z.number().nullable(),
-  positionAnalysisId: z.number().int().nullable(),
-});
-const importedGameAnalysisResponseSchema = z.object({ run: z.object({
-  id: z.number().int(), importedGameId: z.number().int(), status: z.string(), positionsTotal: z.number().int().nullable(),
-  positionsDone: z.number().int().nullable(), accuracyVersion: z.string().nullable(), whiteAccuracy: z.number().nullable(),
-  blackAccuracy: z.number().nullable(), whiteAverageCentipawnLoss: z.number().nullable(), blackAverageCentipawnLoss: z.number().nullable(),
-  whiteMovesAnalyzed: z.number().int().nullable(), blackMovesAnalyzed: z.number().int().nullable(), summary: z.unknown().nullable(),
-  error: z.string().nullable(), startedAt: z.iso.datetime({ offset: true }).nullable(), completedAt: z.iso.datetime({ offset: true }).nullable(),
-  createdAt: z.iso.datetime({ offset: true }).nullable(), moves: z.array(importedGameAnalysisMoveResponseSchema),
-}) });
 const analysisRouteSchema = <T extends Record<string, unknown>>(operationId: string, extra: T) => ({
   operationId,
   tags: ['Analysis'],
@@ -48,7 +39,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
     schema: analysisRouteSchema('getPositionAnalysis', {
       summary: 'Look up cached analysis for one position',
       querystring: positionAnalysisLookupSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: positionAnalysisLookupResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
@@ -69,7 +60,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
     schema: analysisRouteSchema('bulkLookupPositionAnalysis', {
       summary: 'Look up cached analysis for multiple positions',
       body: bulkPositionAnalysisLookupSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: positionAnalysisBulkResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
@@ -90,7 +81,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
     schema: analysisRouteSchema('storePositionAnalysis', {
       summary: 'Store analysis for one position',
       body: storePositionAnalysisSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: positionAnalysisStoreResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
@@ -112,7 +103,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
     schema: analysisRouteSchema('bulkStorePositionAnalysis', {
       summary: 'Store analysis for multiple positions',
       body: bulkStorePositionAnalysisSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: positionAnalysisBulkResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
@@ -167,7 +158,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
       params: importedGameParamsSchema,
       body: clientGameAnalysisRunSchema,
       response: {
-        201: legacyOpaqueResponseSchema,
+        201: importedGameClientAnalysisResponseSchema,
         400: apiErrorResponseSchema,
         401: unauthorizedResponseSchema,
         404: apiErrorResponseSchema,
@@ -206,7 +197,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
       params: importedGameParamsSchema,
       body: updatePlyAnalysisSchema,
       response: {
-        200: legacyOpaqueResponseSchema,
+        200: importedGamePlyAnalysisUpdateResponseSchema,
         400: apiErrorResponseSchema,
         401: unauthorizedResponseSchema,
         404: apiErrorResponseSchema,
@@ -239,7 +230,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
       description: 'Bodyless action: the imported game id fully identifies the analysis rows to clear.',
       params: importedGameParamsSchema,
       response: {
-        200: legacyOpaqueResponseSchema,
+        200: importedGamePlyAnalysisClearResponseSchema,
         400: apiErrorResponseSchema,
         401: unauthorizedResponseSchema,
         404: apiErrorResponseSchema,

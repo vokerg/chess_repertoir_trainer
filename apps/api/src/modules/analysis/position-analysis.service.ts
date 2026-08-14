@@ -9,12 +9,18 @@ import {
   upsertPositionAnalysesBulk,
 } from './analysis.repository.prisma';
 
+function withNormalizedLines<T extends StoredPositionAnalysis>(analysis: T): T {
+  return {
+    ...analysis,
+    lines: normalizeStoredEngineLines(analysis.lines),
+  } as T;
+}
+
 function withRequestedFen<T extends StoredPositionAnalysis | null>(analysis: T, fen: string): T {
   if (!analysis) return analysis;
   return {
-    ...analysis,
+    ...withNormalizedLines(analysis),
     fen,
-    lines: normalizeStoredEngineLines(analysis.lines),
   } as T;
 }
 
@@ -25,7 +31,7 @@ export const PositionAnalysisService = {
   },
 
   getPositionAnalyses: async (fens: string[]): Promise<StoredPositionAnalysis[]> => {
-    return getPositionAnalysesByFens(fens);
+    return (await getPositionAnalysesByFens(fens)).map(withNormalizedLines);
   },
 
   getStoredPositionSearch: async (input: { fen: string }): Promise<StoredPositionAnalysis | null> => {
@@ -47,8 +53,9 @@ export const PositionAnalysisService = {
 
     const rows = await upsertPositionAnalysesBulk(inputs);
     return rows.map((row) => {
+      const normalizedRow = withNormalizedLines(row);
       const requestedFen = requestedFenByNormalizedFen.get(row.normalizedFen);
-      return requestedFen ? withRequestedFen(row, requestedFen) : row;
+      return requestedFen ? withRequestedFen(normalizedRow, requestedFen) : normalizedRow;
     });
   },
 };
