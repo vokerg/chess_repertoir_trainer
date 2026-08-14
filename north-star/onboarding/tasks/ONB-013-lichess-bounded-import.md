@@ -1,6 +1,6 @@
 # ONB-013 — Implement bounded Lichess import adapter
 
-Status: REVIEW
+Status: DONE
 
 Priority: P0
 
@@ -13,6 +13,10 @@ Planning maturity: Researched; initial operational defaults supplied by ONB-007
 GitHub issue: [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201)
 
 Pull request: [#357](https://github.com/vokerg/chess_repertoir_trainer/pull/357)
+
+Completion branch: `account-import/onb-013-completion-reconciliation`
+
+Completion pull request: [#376](https://github.com/vokerg/chess_repertoir_trainer/pull/376)
 
 Claimed by: ChatGPT / chess trainer implementation session
 
@@ -87,8 +91,20 @@ Provider network, streaming, and normalization remain outside database transacti
 
 ## Completion
 
-Report: `../reports/ONB-013-2026-08-12-implementation-progress.md`
+Runtime review-ready: 2026-08-12.
 
-Review evidence: PR #357; low-volume Lichess canary workflow run #2665 (`31566377590`) passed; full repository CI run #2684 (`31571213970`) passed on reviewed runtime head `9d1bde8e563e60ab1c233d88123b675f419c5d74` before final metadata-only reconciliation.
+Final runtime pull-request head: `2f53e81fba2386c1c2b3638c24a1450184497f78`.
 
-Completed at: none; pending squash merge of PR #357.
+Runtime validation: reviewed runtime head `9d1bde8e563e60ab1c233d88123b675f419c5d74` passed normal full CI #2684 (`31571213970`); the final PR head `2f53e81fba2386c1c2b3638c24a1450184497f78` passed CI #2687 (`31580120124`). The low-volume Lichess canary passed in workflow run #2665 (`31566377590`) before the temporary canary workflow hook was removed from the production diff.
+
+Runtime integration: PR #357 squash-merged into `main` as `e276e3820acbd8361feae99d8a0e15a9cf412e53` on 2026-08-12.
+
+Completion evidence:
+
+- [ONB-013 implementation and review evidence](../reports/ONB-013-2026-08-12-implementation-progress.md)
+- [ONB-013 completion reconciliation](../reports/ONB-013-2026-08-14-completion-reconciliation.md)
+- completion PR #376 synchronizes this task, `TASKS.md`, `STATUS.md`, final runtime evidence, and issue closure after merge.
+
+Residual risks: ONB-015 still owns removal of synchronous provider traversal from the account HTTP route and the durable cutover/preparation handoff; ONB-019 still owns persisted destructive lifecycle fences. ONB-014 remains `REVIEW` pending its real low-volume Chess.com canary and completion reconciliation. No public production ETA or throughput guarantee is implied by CI/provider-canary evidence.
+
+Completed at: 2026-08-14
