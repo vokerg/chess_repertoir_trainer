@@ -278,7 +278,7 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
       response: {
         200: importedGameIndexWorkflowResponseSchema,
         201: importedGameIndexWorkflowResponseSchema,
-        400: z.union([apiErrorResponseSchema, importedGameIndexWorkflowResponseSchema]),
+        400: apiErrorResponseSchema,
         401: unauthorizedResponseSchema,
         404: apiErrorResponseSchema,
       },
@@ -292,8 +292,11 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
         const result = await ImportedGameIndexWorkflowService.indexGame(auth.userId, gameId, {
           force: request.body.force === true,
         });
+        if (result.plyIndex?.status === 'FAILED') {
+          reply.code(400);
+          return { error: result.plyIndex.error ?? 'Imported game indexing failed' };
+        }
         if (result.plyIndex?.status === 'INDEXED') reply.code(201);
-        if (result.plyIndex?.status === 'FAILED') reply.code(400);
         return toImportedGameIndexWorkflowResponse(result);
       } catch (err: any) {
         const message = err?.message ?? String(err);
