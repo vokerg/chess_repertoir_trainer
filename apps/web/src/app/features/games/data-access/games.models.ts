@@ -24,7 +24,6 @@ import type {
   ImportedGameUserColor,
 } from '@chess-trainer/contracts/imported-games';
 import type { PositionAnalysisCache, PositionAnalysisLine } from '../../../shared/chess/engine/position-analysis-cache.service';
-import type { AnalysisStatus, PlyIndexStatus } from '../../../shared/games/game.models';
 import type { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
 
 export type {
