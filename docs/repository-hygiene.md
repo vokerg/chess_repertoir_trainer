@@ -22,6 +22,8 @@ This is intentionally a debt-count ratchet rather than a parser or identity-leve
 
 The statistics routes are no longer part of that baseline. Their aggregate summary, line/chapter/course statistics, and subline-status responses use schemas from `@chess-trainer/contracts/training`, and the Angular Lines client consumes the inferred DTOs instead of duplicate handwritten response interfaces.
 
+Lab monthly-games now follows the same cross-workspace ownership rule: `@chess-trainer/contracts/lab` owns the serialized monthly response schema and inferred DTOs, the API explicitly serializes `monthStart` to the ISO date-time wire representation, and Angular consumes the shared types instead of maintaining a duplicate model.
+
 CI runs the hygiene guard independently from the architecture guardrails so cleanup-specific constraints stay visible and can expand without turning the architecture script into a general lint bucket.
 
 ## Cleanup sequence

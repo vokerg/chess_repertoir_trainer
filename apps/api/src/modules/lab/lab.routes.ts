@@ -2,6 +2,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
   courseExtensionCandidatesResponseSchema,
+  monthlyGamesResponseSchema,
   performanceByRatingQuerySchema,
   performanceByRatingResponseSchema,
   topOpponentsResponseSchema,
@@ -46,7 +47,7 @@ const labModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/lab/monthly-games', {
     schema: labSchema('getMonthlyGames', 'Get imported-game counts by month', {
       querystring: monthlyGamesQuerySchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: monthlyGamesResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
