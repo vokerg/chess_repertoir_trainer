@@ -170,9 +170,9 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
       },
     },
   }, async (request, reply) => {
-    const auth = requireAuth(request, reply);
-    if (!auth) return;
-    return ImportedGamesService.facets(auth.userId);
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      return ImportedGamesService.facets(auth.userId);
   });
 
   app.get('/api/imported-games/tag-definitions', {
@@ -186,9 +186,9 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
       },
     },
   }, async (request, reply) => {
-    const auth = requireAuth(request, reply);
-    if (!auth) return;
-    return ImportedGamesService.tagDefinitions();
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      return ImportedGamesService.tagDefinitions();
   });
 
   app.get('/api/imported-games/:gameId', {
@@ -278,7 +278,7 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
       response: {
         200: importedGameIndexWorkflowResponseSchema,
         201: importedGameIndexWorkflowResponseSchema,
-        400: apiErrorResponseSchema,
+        400: z.union([apiErrorResponseSchema, importedGameIndexWorkflowResponseSchema]),
         401: unauthorizedResponseSchema,
         404: apiErrorResponseSchema,
       },
