@@ -1,4 +1,9 @@
 import type {
+  ImportedGameAnalysisMove,
+  ImportedGameAnalysisResponse,
+  ImportedGameAnalysisRun,
+} from '@chess-trainer/contracts/analysis';
+import type {
   ImportedGameAnalysisSummary,
   ImportedGameDetail,
   ImportedGameIndexWorkflowResult,
@@ -23,6 +28,9 @@ import type { AnalysisStatus, PlyIndexStatus } from '../../../shared/games/game.
 import type { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
 
 export type {
+  ImportedGameAnalysisMove,
+  ImportedGameAnalysisResponse,
+  ImportedGameAnalysisRun,
   ImportedGameAnalysisSummary,
   ImportedGameDetail,
   ImportedGameFacetsResponse,
@@ -56,49 +64,6 @@ export interface BatchAnalysisConfig {
 export interface BatchAnalysisAcceptedResponse {
   accepted: boolean;
   gameIds: number[];
-}
-
-export type GameMoveClassification = 'BEST' | 'GOOD' | 'INACCURACY' | 'MISTAKE' | 'BLUNDER' | 'BOOK' | 'MISS';
-
-export interface ImportedGameAnalysisMove {
-  plyNumber: number;
-  moveNumber: number;
-  side: UserColor;
-  playedMoveUci: string;
-  playedMoveSan: string | null;
-  classification: GameMoveClassification | string | null;
-  classificationCode: number | null;
-  scoreLossCp: number | null;
-  bestMoveUci: string | null;
-  bestScoreCpWhite: number | null;
-  playedScoreCpWhite: number | null;
-  bestMateWhite: number | null;
-  positionAnalysisId: number | null;
-}
-
-export interface ImportedGameAnalysisRun {
-  id: number;
-  importedGameId: number;
-  status: AnalysisStatus;
-  positionsTotal: number | null;
-  positionsDone: number | null;
-  accuracyVersion: string | null;
-  whiteAccuracy: number | null;
-  blackAccuracy: number | null;
-  whiteAverageCentipawnLoss: number | null;
-  blackAverageCentipawnLoss: number | null;
-  whiteMovesAnalyzed: number | null;
-  blackMovesAnalyzed: number | null;
-  summary: Record<string, unknown> | null;
-  error: string | null;
-  startedAt: string | null;
-  completedAt: string | null;
-  createdAt: string | null;
-  moves: ImportedGameAnalysisMove[];
-}
-
-export interface ImportedGameAnalysisResponse {
-  run: ImportedGameAnalysisRun;
 }
 
 export interface ImportedGameFullRefreshAcceptedResponse {

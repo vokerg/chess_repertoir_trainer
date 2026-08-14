@@ -20,6 +20,8 @@ The guard currently ratchets use of `legacyOpaqueResponseSchema`. `scripts/check
 
 This is intentionally a debt-count ratchet rather than a parser or identity-level route allowlist. A one-for-one replacement of one legacy response with another inside the same file would leave the count unchanged, so code review must still reject newly introduced opaque responses. The guard prevents unnoticed growth; it does not replace route-level review.
 
+The Analysis routes are no longer part of that baseline. `@chess-trainer/contracts/analysis` owns position-analysis cache responses plus imported-game analysis read/create/ply-mutation responses; the API preserves the existing service outputs and error behavior, and Angular consumes the shared imported-game analysis DTOs while retaining its broader local position-cache state model.
+
 The statistics routes are no longer part of that baseline. Their aggregate summary, line/chapter/course statistics, and subline-status responses use schemas from `@chess-trainer/contracts/training`, and the Angular Lines client consumes the inferred DTOs instead of duplicate handwritten response interfaces.
 
 Lab routes are no longer part of the opaque-response baseline. `@chess-trainer/contracts/lab` owns the shared Lab wire DTOs, including monthly games, training log, and tactical-detection responses; the API explicitly serializes persistence dates to ISO date-time strings, and Angular consumes the shared types instead of maintaining duplicate response models.
