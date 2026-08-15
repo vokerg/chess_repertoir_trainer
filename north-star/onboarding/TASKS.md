@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Task Queue
 
-Last updated: 2026-08-14
+Last updated: 2026-08-15
 
 This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, and claim metadata.
 
@@ -16,17 +16,17 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | DONE | Design database-only orphan shared-position cleanup | Research | Squash-merged through PR #281 after two adversarial self-review rounds; allocated ONB-026/#280 |
 | 75 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) | P1 | DONE | Define lightweight onboarding product and experience blueprint | Research/product design | Squash-merged through PR #225 as `b485b9b`; informs ONB-008/009/010 and VT-302 |
 | 77 | ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) | P0 | DONE | Persist preparation execution boundary and bounded child-job batches | Implementation | Runtime squash-merged through PR #282 as `885ef785`; completion records reconciled through PR #293 |
-| 78 | ONB-018 | [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254) | P0 | PROPOSED | Implement progressive preparation reconciliation and control | Implementation | ONB-003/007/017; ONB-011/012/015 |
+| 78 | ONB-018 | [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254) | P0 | READY | Implement progressive preparation reconciliation and control | Implementation | ONB-003/007/017 complete; ONB-011/012/013/014 durable import/provider delivery complete; coordinates ONB-015 final handoff |
 | 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | PROPOSED | Persist onboarding disposition and readiness projection | Implementation | ONB-001/007; ONB-017/018 execution state; consumes ONB-016 presentation requirements |
 | 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/007/008/017/018; destructive commands remain ONB-019/020/021-owned |
 | 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | ONB-007/008/009; durable import/preparation; ONB-016; Visual Transformation coordination |
 | 110 | ONB-011 | [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) | P0 | DONE | Persist durable account-import runs and scope coverage | Implementation | Runtime merged through PR #339 as `4c04d47`; ONB-019 retains ownership of persisted lifecycle fences |
 | 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | DONE | Build durable account-import worker and API lifecycle | Implementation | Runtime squash-merged through PR #352 as `640018e4`; completion reconciliation PR #354 |
-| 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | DONE | Implement bounded Lichess import adapter | Implementation | Runtime squash-merged through PR #357 as `e276e382`; completion reconciliation pending |
-| 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | REVIEW | Implement bounded Chess.com import adapter | Implementation | Runtime PR #356 merged; real low-volume Chess.com canary and completion reconciliation remain required |
+| 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | DONE | Implement bounded Lichess import adapter | Implementation | Runtime squash-merged through PR #357 as `e276e382`; completion reconciliation PR #376 |
+| 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | DONE | Implement bounded Chess.com import adapter | Implementation | Runtime PR #356 squash-merged as `b9c2038b`; real canary passed CI #2812; completion reconciliation PR #383 |
 | 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | PROPOSED | Cut over account sync and preparation handoff | Implementation | ONB-013/014; ONB-003/004/007/017/018; coordinates ONB-009/010/020 |
 | 155 | ONB-025 | [#276](https://github.com/vokerg/chess_repertoir_trainer/issues/276) | P1 | PROPOSED | Trigger daily stale account refresh on authenticated app bootstrap | Implementation | ONB-015; transitively ONB-011/012/013/014; coordinates ONB-010/019/020 |
-| 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | PROPOSED | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | ONB-004 complete; coordinates schema with ONB-011/017 and audit/actor policy with ONB-005/022 |
+| 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | READY | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | ONB-004/005 complete; ONB-011/017 schema ownership and migration order resolved; fresh collision check required before claim |
 | 170 | ONB-020 | [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260) | P0 | PROPOSED | Implement account and imported-game destructive lifecycle coordinator | Implementation | ONB-004/007/019; ONB-011/012/015/017/018; admin exposure remains ONB-024-owned |
 | 180 | ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) | P0 | PROPOSED | Implement whole-user deletion and mobile purge handshake | Implementation | ONB-004/007/019/020; mobile offline sync contracts; admin execution deferred by ONB-005 |
 | 185 | ONB-026 | [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280) | P1 | PROPOSED | Implement bounded orphan shared-position cleanup | Implementation | ONB-006/007; trigger/schema coordination with ONB-011/017/019; canonical service may later be exposed by ONB-024 |
@@ -179,7 +179,9 @@ ONB-011 / #199 delivered durable provider-neutral `ImportRun` persistence and ex
 
 ONB-012 / #200 delivered the provider-neutral durable account-import API and worker lifecycle through PR #352. Final refreshed runtime head `dc4e9bc40e9da45c03e83904dfe0864a10cef289` passed CI #2645 (`31505680257`) and squash-merged as `640018e4cd3c5528a94b9d0217e971ab2a2215b7`. Completion PR #354 reconciles the task, queue, status, completion report, downstream provider-adapter promotion, and issue closure.
 
-ONB-013 / #201 delivered the bounded Lichess provider adapter through PR #357. The low-volume Lichess canary passed in workflow run #2665 (`31566377590`); reviewed runtime head `9d1bde8e563e60ab1c233d88123b675f419c5d74` passed CI #2684 (`31571213970`); final PR head `2f53e81fba2386c1c2b3638c24a1450184497f78` passed CI #2687 (`31580120124`); and PR #357 squash-merged as `e276e3820acbd8361feae99d8a0e15a9cf412e53`. This completion reconciliation records final state without changing runtime behavior.
+ONB-013 / #201 delivered the bounded Lichess provider adapter through PR #357. The low-volume Lichess canary passed in workflow run #2665 (`31566377590`); reviewed runtime head `9d1bde8e563e60ab1c233d88123b675f419c5d74` passed CI #2684 (`31571213970`); final PR head `2f53e81fba2386c1c2b3638c24a1450184497f78` passed CI #2687 (`31580120124`); and PR #357 squash-merged as `e276e3820acbd8361feae99d8a0e15a9cf412e53`. Completion PR #376 records final execution state without changing runtime behavior.
+
+ONB-014 / #202 delivered the bounded Chess.com provider adapter through PR #356. Reviewed runtime head `5e530a2a2b001ae0ee2ce42872b45c9b8f86a085` passed CI #2666; final PR head `d4592fe6b0e3c61ee9d25bc1517a8fc83a7466c2` passed CI #2669; and PR #356 squash-merged as `b9c2038bfd20f7b0a493c2eda3dd6c2aed911ec5`. The outstanding real low-volume Chess.com canary passed the dedicated step in workflow run #2812 (`31881053242`) using public account `hikaru` and fixed historical month `2014-01`; completion PR #383 records final execution state and removes the temporary canary workflow hook.
 
 ONB-022 / #272 delivered the migration-free administrator authorization and bounded read-only diagnostics foundation through PR #284. Final runtime pull-request head `fad7a19216c3249827a111e75238aafccac0ec75` passed CI run #2089 (`31031618906`) and squash-merged as `f83d26157e5da2d69f643b0d12100244219d2771`. PR #298 reconciled the completion evidence and synchronized the task, queue, status, report, downstream task promotion, and issue closure.
 
@@ -187,11 +189,13 @@ ONB-023 / #273 delivered the lazy direct-link Angular administrator diagnostics 
 
 ## Deterministic next task
 
-There is no unclaimed `READY` provider-adapter implementation after ONB-013 completion. ONB-014 / #202 remains `REVIEW`: its runtime is merged, but the required real low-volume Chess.com canary and completion reconciliation are still outstanding. ONB-015 / #203 remains `PROPOSED` behind both provider-adapter completion gates and must not be promoted by this ONB-013-only reconciliation.
+ONB-018 / #254 is the next unclaimed `READY` implementation task by canonical order. ONB-003 allocated it after the preparation execution boundary; ONB-017 is complete, and ONB-011/012/013/014 now provide the durable import lifecycle and provider delivery its planning-maturity gate required. ONB-015 / #203 remains `PROPOSED` because its account-sync/preparation handoff consumes ONB-018. The ONB-015 integration point remains a completion/coordination boundary for end-to-end pipelining, not a blocker to claiming and implementing the bounded ONB-018 reconciler itself.
 
-ONB-018, ONB-008 through ONB-010, ONB-019 through ONB-021, ONB-024 through ONB-026 remain `PROPOSED` until their own task-file dependencies and promotion gates are satisfied.
+ONB-019 / #259 is also unclaimed `READY` on the parallel destructive-lifecycle support path. ONB-004/005 are complete; ONB-017 established migration order with ONB-019 following, ONB-011 recorded the destructive lifecycle schema ownership boundary on #259, and both overlapping schema owners are merged. A fresh branch/PR/schema collision check is still mandatory immediately before claim.
 
-ONB-025 / #276 remains `PROPOSED` behind ONB-015. ONB-026 / #280 remains `PROPOSED` until its task-file promotion gates are met. ONB-024 remains `PROPOSED` behind canonical lifecycle services and proven signed reverification.
+ONB-008 through ONB-010, ONB-020 through ONB-021, and ONB-024 through ONB-026 remain `PROPOSED` until their own task-file dependencies and promotion gates are satisfied.
+
+ONB-025 / #276 remains `PROPOSED` behind ONB-015. ONB-026 / #280 remains `PROPOSED` until ONB-019 and its other task-file promotion gates are met. ONB-024 remains `PROPOSED` behind canonical lifecycle services and proven signed reverification.
 
 ## Implementation backlog rule
 

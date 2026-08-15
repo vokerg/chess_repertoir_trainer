@@ -1,6 +1,6 @@
 # ONB-014 — Implement bounded Chess.com import adapter
 
-Status: REVIEW
+Status: DONE
 
 Priority: P0
 
@@ -17,6 +17,10 @@ Target branch: `main`
 Claimed branch: `account-import/onb-014-chess-com-adapter`
 
 Pull request: [#356](https://github.com/vokerg/chess_repertoir_trainer/pull/356)
+
+Completion branch: `account-import/onb-014-completion-reconciliation`
+
+Completion pull request: [#383](https://github.com/vokerg/chess_repertoir_trainer/pull/383)
 
 Claimed by: ChatGPT / account-import implementation session
 
@@ -94,12 +98,20 @@ Provider network, retry delays, parsing, and normalization remain outside databa
 
 Runtime pull request: [#356](https://github.com/vokerg/chess_repertoir_trainer/pull/356)
 
+Final runtime pull-request head: `d4592fe6b0e3c61ee9d25bc1517a8fc83a7466c2`.
+
+Runtime squash commit: `b9c2038bfd20f7b0a493c2eda3dd6c2aed911ec5`.
+
 Implementation report: `reports/ONB-014-2026-08-12-chess-com-bounded-import.md`
 
 Self-review addendum: `reports/ONB-014-2026-08-12-self-review-addendum.md`
 
-Runtime validation: exact runtime head `5e530a2a2b001ae0ee2ce42872b45c9b8f86a085` passed GitHub Actions CI #2666 after the self-review fixes.
+Completion reconciliation: `reports/ONB-014-2026-08-15-completion-reconciliation.md`
 
-Residual completion gate: one real low-volume Chess.com canary remains required before general release / task completion; the current shell cannot reach the provider host. Keep #202 open until that evidence and completion reconciliation are recorded.
+Runtime validation: reviewed runtime head `5e530a2a2b001ae0ee2ce42872b45c9b8f86a085` passed GitHub Actions CI #2666 after the self-review fixes; final merge-candidate head `d4592fe6b0e3c61ee9d25bc1517a8fc83a7466c2` passed CI #2669.
 
-Completed at: none
+Provider validation: the real low-volume Chess.com canary passed the dedicated `ONB-014 low-volume Chess.com canary` step in workflow run #2812 (`31881053242`) on 2026-08-15 using the public `hikaru` account and fixed historical month `2014-01`. The temporary workflow hook was removed immediately after the canary result and is not part of the intended completion diff.
+
+Residual risks: ONB-015 still owns removal of synchronous provider traversal from account HTTP routes and the durable account-sync/preparation handoff. ONB-019 still owns persisted destructive lifecycle fences; ONB-014 consumes the provider-neutral admission/guarded-commit seam without claiming that persistence. No public production ETA or throughput guarantee follows from CI or the low-volume provider canary.
+
+Completed at: 2026-08-15

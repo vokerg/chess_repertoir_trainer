@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Open Questions
 
-Last updated: 2026-08-14
+Last updated: 2026-08-15
 
 Every material question has one owning task. Other tasks may contribute evidence but must not silently finalize it.
 
@@ -290,19 +290,21 @@ No ONB-013-owned implementation question remains open. Optional authenticated Li
 
 ## ONB-014 / #202 — Chess.com adapter
 
-Resolved numeric/provider policy from ONB-007:
+Resolved by merged PR #356, `reports/ONB-014-2026-08-12-chess-com-bounded-import.md`, the ONB-014 self-review addendum, and the real low-volume Chess.com canary:
 
-- serial calendar-month archives;
-- 100-row-or-smaller duplicate-safe writes;
-- `ETag`/`Last-Modified` support where available;
-- one low-volume canary before general release.
+- deterministic serial UTC calendar-month planning with exact epoch-second clipping and independent forward/backfill order;
+- one archive-index traversal as authority for listed versus absent months, with malformed index/month payloads treated as failures;
+- 100-row-or-smaller duplicate-safe guarded writes with exact batch counters and atomic window checkpoint/coverage progression;
+- bounded `ETag`/`Last-Modified` validator metadata, with `304` accepted only while the corresponding cached body remains usable;
+- bounded 408/5xx retry/backoff, explicit durable HTTP 429 retry timing, conservative 404/410 behavior, recognizable User-Agent, and `AbortSignal` cancellation;
+- exact standard/speed/rated/range filtering through one normalization path shared by durable and transitional synchronous flows;
+- lifecycle-fence/stale-work-key rollback through the provider-neutral guarded commit seam;
+- Activity Feed reconciliation after each committed matching batch and before successful window proof;
+- real low-volume canary workflow run #2812 (`31881053242`) passed on 2026-08-15 using public account `hikaru` and fixed historical month `2014-01`.
 
-Still owned by ONB-014:
+The deterministic provider/executor/PostgreSQL tests remain the evidence for exact boundary, validator/cache, malformed-response, retry/429, cancellation, replay, bounded-write, and lifecycle-fence behavior; the real canary complements those tests with a bounded live provider traversal and is not a load test.
 
-- Exact cache-validator persistence timing/shape.
-- Archive-index/month inconsistency after retry exhaustion.
-- Exact canary account/fixture procedure.
-- Fence/abort behavior during account/user lifecycle operations.
+No ONB-014-owned implementation question remains open. ONB-015 owns removal of transitional synchronous provider traversal and the durable account-sync/preparation handoff. Persisted destructive lifecycle fences remain ONB-019-owned; ONB-014 consumes the provider-neutral admission/guarded-commit seam without claiming that persistence.
 
 ## ONB-015 / #203 — Account-sync cutover and handoff
 

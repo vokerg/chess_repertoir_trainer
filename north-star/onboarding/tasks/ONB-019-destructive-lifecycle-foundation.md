@@ -1,6 +1,6 @@
 # ONB-019 — Persist destructive lifecycle operations, fences, audit, and provenance
 
-Status: PROPOSED
+Status: READY
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 160
 
 Delivery class: Implementation
 
-Planning maturity: Allocated by ONB-004; blocked on ONB-004 acceptance and schema-collision coordination
+Planning maturity: Allocated by ONB-004; ONB-004/005 are accepted, ONB-017 established migration order with ONB-019 following, and ONB-011 recorded the import/lifecycle schema ownership split; promoted to unclaimed READY through ONB-014 completion self-review on PR #383
 
 GitHub issue: [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259)
 
@@ -20,15 +20,17 @@ Claimed at: none
 
 Claim scope: none
 
+Promoted at: 2026-08-15 through ONB-014 completion self-review on PR #383
+
 ## Outcome
 
 Add the durable database foundation required to preview, serialize, fence, resume, audit, and verify destructive account/game/user operations.
 
 ## Dependencies
 
-- ONB-004 / #151 accepted lifecycle contract, including both self-review addenda.
-- Coordinate every Prisma/schema/migration edit with ONB-011 / #199 and ONB-017 / #253.
-- Consume ONB-005 / #152 actor/audit authorization decisions before administrator mutation exposure.
+- ONB-004 / #151 accepted lifecycle contract, including both self-review addenda — complete.
+- ONB-011 / #199 and ONB-017 / #253 schema ownership/migration coordination is resolved: ONB-017 established ONB-019 as a later additive migration owner, and ONB-011 recorded the destructive lifecycle operation/resource-fence/audit/opening-provenance/deleted-identity ownership boundary on #259. Both implementation owners are complete. Recheck current Prisma/migration activity immediately before claim.
+- ONB-005 / #152 actor/audit authorization decisions — complete; administrator mutation exposure remains separately gated by ONB-024.
 - Consumed by ONB-020 / #260 and ONB-021 / #261.
 
 ## In scope
