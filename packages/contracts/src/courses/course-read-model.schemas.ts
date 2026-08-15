@@ -24,5 +24,28 @@ export const courseOverviewSchema = z.object({
   sublines: z.array(availableSublineSchema),
   weakestSublines: z.array(z.object({ hash: z.string(), lineId: z.number().int(), lineName: z.string(), chapterId: z.number().int(), chapterName: z.string(), moveText: z.string(), recentAttempts: z.number().int(), passedCount: z.number().int(), failedCount: z.number().int(), passRate: z.number() })),
 });
+export const coursePositionSuggestionSchema = z.object({
+  nodeId: z.number().int(),
+  fenBefore: z.string(),
+  fenAfter: z.string(),
+  moveUci: z.string(),
+  moveSan: z.string(),
+  isUserMove: z.boolean(),
+  isCorrectUserMove: z.boolean(),
+  sortOrder: z.number().int(),
+  lineId: z.number().int(),
+  lineName: z.string(),
+  chapterId: z.number().int(),
+  chapterName: z.string(),
+  chapterSortOrder: z.number().int(),
+  courseId: z.number().int(),
+  courseName: z.string(),
+});
+export const coursePositionSuggestionsResponseSchema = z.object({
+  normalizedFen: z.string(),
+  suggestions: z.array(coursePositionSuggestionSchema),
+});
 export type LibraryCatalog = z.infer<typeof libraryCatalogSchema>;
 export type CourseOverview = z.infer<typeof courseOverviewSchema>;
+export type CoursePositionSuggestion = z.infer<typeof coursePositionSuggestionSchema>;
+export type CoursePositionSuggestionsResponse = z.infer<typeof coursePositionSuggestionsResponseSchema>;

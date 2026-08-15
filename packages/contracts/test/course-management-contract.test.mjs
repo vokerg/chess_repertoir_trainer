@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {
+  coursePositionSuggestionsResponseSchema,
   courseSchema,
   createCourseSchema,
   updateCourseSchema,
@@ -43,5 +44,31 @@ const course = {
   updatedAt: '2026-08-12T12:00:00.000Z',
 };
 assert.deepEqual(courseSchema.parse(course), course);
+
+const positionSuggestions = {
+  normalizedFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -',
+  suggestions: [{
+    nodeId: 31,
+    fenBefore: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+    fenAfter: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+    moveUci: 'e2e4',
+    moveSan: 'e4',
+    isUserMove: true,
+    isCorrectUserMove: true,
+    sortOrder: 0,
+    lineId: 11,
+    lineName: 'Main line',
+    chapterId: 7,
+    chapterName: 'Open Games',
+    chapterSortOrder: 2,
+    courseId: 3,
+    courseName: 'White repertoire',
+  }],
+};
+assert.deepEqual(coursePositionSuggestionsResponseSchema.parse(positionSuggestions), positionSuggestions);
+assert.equal(coursePositionSuggestionsResponseSchema.safeParse({
+  ...positionSuggestions,
+  suggestions: [{ ...positionSuggestions.suggestions[0], courseId: '3' }],
+}).success, false);
 
 console.log('Course management contract tests passed.');

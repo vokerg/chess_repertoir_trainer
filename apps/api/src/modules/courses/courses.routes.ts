@@ -33,6 +33,7 @@ import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 import {
   courseListSchema,
   courseOverviewSchema,
+  coursePositionSuggestionsResponseSchema,
   courseSchema,
   createCourseSchema,
   libraryCatalogSchema,
@@ -149,7 +150,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/courses/position-suggestions', {
     schema: courseRouteSchema('listCoursePositionSuggestions', ['Courses'], 'List repertoire suggestions for a position', {
       querystring: positionSuggestionsQuerySchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema },
+      response: { 200: coursePositionSuggestionsResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
