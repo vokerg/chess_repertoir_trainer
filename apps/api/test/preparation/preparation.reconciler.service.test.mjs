@@ -13,6 +13,7 @@ await proveStageSpecificFairness();
 await proveFirstAnalysisThresholdAndFallback();
 await proveStallWarningsRespectHigherPriorityPreemption();
 await proveProgressiveAdmissionAndCoreReadiness();
+await proveAdmissionBlockDoesNotFreezeImportedIndexBacklog();
 await proveAnalysisFailureIsTerminalAfterCore();
 await provePauseAndCancelAcknowledgement();
 await proveRetryOnlyAdmitsFailedEvidence();
@@ -81,20 +82,40 @@ function proveFirstAnalysisThresholdAndFallback() {
 
 function proveStallWarningsRespectHigherPriorityPreemption() {
   const observedAt = new Date('2026-08-15T20:00:00.000Z');
-  const batch = activeBatch({
+  const queuedBatch = activeBatch({
+    stage: 'ANALYSIS',
+    startedAt: null,
+    higherPriorityRunnable: true,
+    workerCapacityAvailable: true,
+  });
+  assert.equal(
+    selectOperationalAttention([queuedBatch], 0, observedAt, DEFAULT_PREPARATION_CONFIG),
+    null,
+    'explained higher-priority preemption is excluded from queued-start warnings',
+  );
+  queuedBatch.higherPriorityRunnable = false;
+  queuedBatch.workerCapacityAvailable = false;
+  assert.equal(
+    selectOperationalAttention([queuedBatch], 0, observedAt, DEFAULT_PREPARATION_CONFIG),
+    null,
+    'queued-start warnings require worker capacity to be available',
+  );
+  queuedBatch.workerCapacityAvailable = true;
+  assert.equal(
+    selectOperationalAttention([queuedBatch], 0, observedAt, DEFAULT_PREPARATION_CONFIG)?.code,
+    'PREPARATION_TASK_START_DELAY',
+  );
+
+  const runningBatch = activeBatch({
     stage: 'ANALYSIS',
     startedAt: new Date('2026-08-15T19:54:00.000Z'),
     higherPriorityRunnable: true,
+    workerCapacityAvailable: false,
   });
   assert.equal(
-    selectOperationalAttention([batch], 0, observedAt, DEFAULT_PREPARATION_CONFIG),
-    null,
-    'explained higher-priority preemption is excluded from preparation stall warnings',
-  );
-  batch.higherPriorityRunnable = false;
-  assert.equal(
-    selectOperationalAttention([batch], 0, observedAt, DEFAULT_PREPARATION_CONFIG)?.code,
+    selectOperationalAttention([runningBatch], 0, observedAt, DEFAULT_PREPARATION_CONFIG)?.code,
     'ANALYSIS_NO_SETTLEMENT_WARNING',
+    'once a preparation task is running, queued higher-priority work does not explain its lack of settlement',
   );
   assert.equal(
     selectOperationalAttention([], 61_000, observedAt, DEFAULT_PREPARATION_CONFIG)?.code,
@@ -149,6 +170,23 @@ async function proveProgressiveAdmissionAndCoreReadiness() {
   await harness.reconciler.reconcileOnce();
   assert.equal(harness.applied.at(-1).markCoreReady, true);
   assert.equal(harness.applied.at(-1).status, 'RUNNING');
+}
+
+async function proveAdmissionBlockDoesNotFreezeImportedIndexBacklog() {
+  const snapshot = runSnapshot({
+    targets: [target(1, {
+      importStatus: 'FAILED',
+      importedCount: 2,
+      indexPendingCount: 2,
+    })],
+  });
+  const harness = createHarness(snapshot);
+  harness.blockAdmissions = true;
+  harness.queueClaim();
+  await harness.reconciler.reconcileOnce();
+  const applied = harness.applied.at(-1);
+  assert.equal(applied.status, 'RUNNING');
+  assert.equal(applied.attentionCode, null);
 }
 
 async function proveAnalysisFailureIsTerminalAfterCore() {
@@ -425,6 +463,7 @@ function activeBatch(overrides = {}) {
     settledAt: null,
     activeWorkKeys: 0,
     higherPriorityRunnable: false,
+    workerCapacityAvailable: true,
     ...overrides,
   };
 }
