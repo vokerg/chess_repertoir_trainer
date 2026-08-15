@@ -8,6 +8,11 @@ export interface PreparationConfig {
   maxNonTerminalBatches: number;
   maxQueuedTasks: number;
   maxQueuedAnalysisTasks: number;
+  reconcileActiveMs: number;
+  reconcileIdleMs: number;
+  reconcileDueWarningMs: number;
+  firstAnalysisMinIndexed: number;
+  firstAnalysisSmallAccountFallback: number;
 }
 
 export const DEFAULT_PREPARATION_CONFIG: Readonly<PreparationConfig> = {
@@ -18,6 +23,11 @@ export const DEFAULT_PREPARATION_CONFIG: Readonly<PreparationConfig> = {
   maxNonTerminalBatches: 4,
   maxQueuedTasks: 200,
   maxQueuedAnalysisTasks: 40,
+  reconcileActiveMs: 1_000,
+  reconcileIdleMs: 5_000,
+  reconcileDueWarningMs: 15_000,
+  firstAnalysisMinIndexed: 3,
+  firstAnalysisSmallAccountFallback: 1,
 };
 
 export const PREPARATION_LANE_PRIORITIES: Readonly<Record<Exclude<PreparationLane, 'RETRY'>, number>> = {
@@ -65,6 +75,31 @@ export function readPreparationConfig(
       env['PREPARATION_MAX_QUEUED_ANALYSIS_TASKS'],
       DEFAULT_PREPARATION_CONFIG.maxQueuedAnalysisTasks,
       'PREPARATION_MAX_QUEUED_ANALYSIS_TASKS',
+    ),
+    reconcileActiveMs: positiveInteger(
+      env['PREPARATION_RECONCILE_ACTIVE_MS'],
+      DEFAULT_PREPARATION_CONFIG.reconcileActiveMs,
+      'PREPARATION_RECONCILE_ACTIVE_MS',
+    ),
+    reconcileIdleMs: positiveInteger(
+      env['PREPARATION_RECONCILE_IDLE_MS'],
+      DEFAULT_PREPARATION_CONFIG.reconcileIdleMs,
+      'PREPARATION_RECONCILE_IDLE_MS',
+    ),
+    reconcileDueWarningMs: positiveInteger(
+      env['PREPARATION_RECONCILE_DUE_WARNING_MS'],
+      DEFAULT_PREPARATION_CONFIG.reconcileDueWarningMs,
+      'PREPARATION_RECONCILE_DUE_WARNING_MS',
+    ),
+    firstAnalysisMinIndexed: positiveInteger(
+      env['PREPARATION_FIRST_ANALYSIS_MIN_INDEXED'],
+      DEFAULT_PREPARATION_CONFIG.firstAnalysisMinIndexed,
+      'PREPARATION_FIRST_ANALYSIS_MIN_INDEXED',
+    ),
+    firstAnalysisSmallAccountFallback: positiveInteger(
+      env['PREPARATION_FIRST_ANALYSIS_SMALL_ACCOUNT_FALLBACK'],
+      DEFAULT_PREPARATION_CONFIG.firstAnalysisSmallAccountFallback,
+      'PREPARATION_FIRST_ANALYSIS_SMALL_ACCOUNT_FALLBACK',
     ),
   };
 }
