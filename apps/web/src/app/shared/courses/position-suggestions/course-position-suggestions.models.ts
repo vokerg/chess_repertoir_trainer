@@ -1,22 +1,7 @@
-export interface CoursePositionSuggestion {
-  nodeId: number;
-  fenBefore: string;
-  fenAfter: string;
-  moveUci: string;
-  moveSan: string;
-  isUserMove: boolean;
-  isCorrectUserMove: boolean;
-  sortOrder: number;
-  lineId: number;
-  lineName: string;
-  chapterId: number;
-  chapterName: string;
-  chapterSortOrder: number;
-  courseId: number;
-  courseName: string;
-}
+import type {
+  CoursePositionSuggestion as CoursePositionSuggestionContract,
+  CoursePositionSuggestionsResponse as CoursePositionSuggestionsResponseContract,
+} from '@chess-trainer/contracts/courses';
 
-export interface CoursePositionSuggestionsResponse {
-  normalizedFen: string;
-  suggestions: CoursePositionSuggestion[];
-}
+export type CoursePositionSuggestion = CoursePositionSuggestionContract;
+export type CoursePositionSuggestionsResponse = CoursePositionSuggestionsResponseContract;

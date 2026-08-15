@@ -30,6 +30,8 @@ Imported-game routes are no longer part of the opaque-response baseline. The ope
 
 Scenario-training routes are no longer part of the opaque-response baseline. `@chess-trainer/contracts/scenario-training` owns session, history, attempt-result, and dislike response DTOs; Fastify validates every successful response against those schemas, and Angular consumes the inferred response types instead of maintaining handwritten copies. The contract preserves source-game deletion semantics by requiring `importedGameId` with a nullable value.
 
+Course position suggestions now use a concrete shared `@chess-trainer/contracts/courses` response schema and the Angular position-suggestions client consumes its inferred DTOs. The remaining chapter, line, node, and analysis-reintegration course responses stay explicitly ratcheted until their own bounded RH-003 slices are verified.
+
 CI runs the hygiene guard independently from the architecture guardrails so cleanup-specific constraints stay visible and can expand without turning the architecture script into a general lint bucket.
 
 ## Cleanup sequence

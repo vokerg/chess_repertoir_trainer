@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
+import Fastify from 'fastify';
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
+import { coursePositionSuggestionsResponseSchema } from '@chess-trainer/contracts/courses';
 import prismaModule from '../../dist/prisma.js';
+import coursesModule from '../../dist/modules/courses/courses.routes.js';
 import {
   ChapterService,
   CoursePositionSuggestionService,
@@ -12,6 +16,7 @@ const prisma = prismaModule.default;
 
 const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const users = [];
+let app;
 
 try {
   const userA = await prisma.appUser.create({
@@ -70,7 +75,9 @@ try {
   assert.equal(copiedNodes.length, 1);
   assert.equal(copiedNodes[0].fenBeforeNormalized, 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -');
 
-  const positionSuggestions = await CoursePositionSuggestionService.listForFen(userA.id, 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 7 42');
+  const positionFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 7 42';
+  const positionSuggestions = await CoursePositionSuggestionService.listForFen(userA.id, positionFen);
+  assert.deepEqual(coursePositionSuggestionsResponseSchema.parse(positionSuggestions), positionSuggestions);
   assert.equal(positionSuggestions.normalizedFen, 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -');
   assert.deepEqual(
     positionSuggestions.suggestions.map((suggestion) => ({
@@ -86,6 +93,29 @@ try {
   );
   assert.equal(positionSuggestions.suggestions.some((suggestion) => suggestion.courseName === 'User B course'), false);
 
+  app = Fastify();
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+  app.decorateRequest('auth', null);
+  app.addHook('onRequest', async (request) => {
+    request.auth = {
+      userId: userA.id,
+      provider: 'dev',
+      externalSubject: `course-owner-a-${suffix}`,
+    };
+  });
+  await app.register(coursesModule);
+
+  const positionSuggestionsResponse = await app.inject({
+    method: 'GET',
+    url: `/api/courses/position-suggestions?fen=${encodeURIComponent(positionFen)}`,
+  });
+  assert.equal(positionSuggestionsResponse.statusCode, 200);
+  assert.deepEqual(
+    coursePositionSuggestionsResponseSchema.parse(positionSuggestionsResponse.json()),
+    positionSuggestions,
+  );
+
   assert.equal(await ChapterService.get(userA.id, chapterB.id), null);
   assert.equal(await ChapterService.list(userA.id, courseB.id), null);
   assert.equal(await LineService.get(userA.id, lineB.id), null);
@@ -95,8 +125,9 @@ try {
   assert.equal(await MoveNodeService.deleteSubtree(userA.id, nodeB.id), null);
   assert.equal((await MoveNodeService.update(userB.id, nodeB.id, { comment: 'Owned' }))?.comment, 'Owned');
 
-  console.log('Course ownership tests passed.');
+  console.log('Course ownership and position-suggestion response tests passed.');
 } finally {
+  if (app) await app.close();
   if (users.length > 0) {
     await prisma.appUser.deleteMany({ where: { id: { in: users } } });
   }
