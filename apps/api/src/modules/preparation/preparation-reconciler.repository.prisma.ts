@@ -48,6 +48,7 @@ export interface PreparationActiveBatchSnapshot {
   settledAt: Date | null;
   activeWorkKeys: number;
   higherPriorityRunnable: boolean;
+  workerCapacityAvailable: boolean;
 }
 
 export interface PreparationBatchTelemetry {
@@ -360,7 +361,12 @@ export function createPreparationReconcilerRepository(
                   AND other_job."status" IN ('QUEUED', 'RUNNING')
                   AND other_job."priority" > job."priority"
               )
-            END AS "higherPriorityRunnable"
+            END AS "higherPriorityRunnable",
+            NOT EXISTS (
+              SELECT 1
+              FROM "JobTask" AS running_task
+              WHERE running_task."workKey" IS NOT NULL
+            ) AS "workerCapacityAvailable"
           FROM "DataPreparationBatch" AS batch
           LEFT JOIN "JobRun" AS job ON job."id" = batch."jobRunId"
           WHERE batch."preparationRunId" = ${runId}
