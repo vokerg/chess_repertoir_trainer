@@ -1,20 +1,20 @@
-# Data preparation execution boundary
+# Data preparation execution
 
-ONB-017 adds the internal PostgreSQL boundary used by onboarding and later preparation flows. It deliberately does not add a public route or a worker loop.
+ONB-017 provides the durable PostgreSQL parent/target/batch boundary and atomic child-job admission used by onboarding and later preparation flows. ONB-018 adds the bounded reconciliation/control loop that advances those persisted runs in the existing worker deployment. Neither task adds a public preparation route; authenticated lifecycle commands and product readiness projections remain separate consumers.
 
 ## Ownership
 
-`DataPreparationRun` is the durable user-level parent. It stores the immutable recipe snapshot, lifecycle/control state, attention data, milestones, retry lineage, and reconciliation hint.
+`DataPreparationRun` is the durable user-level parent. It stores the immutable recipe snapshot, lifecycle/control state, attention data, milestones, retry lineage, and persisted reconciliation hint.
 
 `DataPreparationTarget` is the ordered account boundary. It stores the immutable account identity snapshot, scope version/hash/JSON, half-open requested range, optional current `ImportRun` link, and account milestones. Account deletion sets the current account link to `NULL` without deleting historical target evidence.
 
 `DataPreparationBatch` is retained execution evidence for one bounded index or analysis wave. It stores the lane, immutable planned limit and total-task denominator, optional child `JobRun` link, terminal counts, and queue/settlement timestamps. Child-job deletion sets the link to `NULL`; database triggers snapshot child counts before retention can remove the job.
 
-ONB-011 remains the owner of durable provider-import coverage and retry history. ONB-019 remains the owner of destructive lifecycle operations, resource fences, and audit records. Preparation exposes an admission guard that ONB-019 can replace inside the existing transaction.
+ONB-011/012 remain the owners of durable provider-import coverage and import lifecycle. ONB-019 remains the owner of destructive lifecycle operations, resource fences, and audit records. Preparation exposes an admission guard that ONB-019 can replace inside the existing transaction.
 
 ## Database invariants
 
-The migration adds PostgreSQL partial unique indexes for:
+PostgreSQL partial unique indexes enforce:
 
 - one non-terminal preparation run per user;
 - one non-terminal batch per preparation run and stage.
@@ -40,7 +40,7 @@ The transaction does not execute provider calls, PGN parsing, Stockfish, task po
 
 ## Defaults and priorities
 
-Environment-backed defaults:
+Environment-backed batch/admission defaults:
 
 ```text
 PREPARATION_FIRST_INDEX_BATCH_SIZE=50
@@ -50,6 +50,16 @@ PREPARATION_ANALYSIS_TAIL_BATCH_SIZE=10
 PREPARATION_MAX_NON_TERMINAL_BATCHES=4
 PREPARATION_MAX_QUEUED_TASKS=200
 PREPARATION_MAX_QUEUED_ANALYSIS_TASKS=40
+```
+
+Reconciliation defaults:
+
+```text
+PREPARATION_RECONCILE_ACTIVE_MS=1000
+PREPARATION_RECONCILE_IDLE_MS=5000
+PREPARATION_RECONCILE_DUE_WARNING_MS=15000
+PREPARATION_FIRST_ANALYSIS_MIN_INDEXED=3
+PREPARATION_FIRST_ANALYSIS_SMALL_ACCOUNT_FALLBACK=1
 ```
 
 Lane priorities:
@@ -79,10 +89,74 @@ Missing or empty arrays mean no restriction for that property. Speed and variant
 
 Normal index admission selects clean unindexed games; index retry selects only unindexed games with a prior index error. Normal analysis admission selects indexed games without an analysis attempt; analysis retry selects only indexed games whose latest analysis status is `FAILED`. `force` remains an explicit analysis override rather than changing retry into general backlog processing.
 
+## Reconciliation loop
+
+`createPreparationReconciler()` runs beside the imported-game job and account-import workers in the same worker deployment. Each claim is a short PostgreSQL transaction over one due parent using `FOR UPDATE SKIP LOCKED`. The claim advances `reconcileAfter` as a short lease, after which all evidence reads, child admission, control calls, and parent updates happen outside that claim transaction.
+
+The loop drains a bounded number of due parents per cycle, then uses the configured one-second active or five-second idle wait. It never holds a database transaction across provider I/O, PGN processing, Stockfish, or task execution.
+
+`reconcileAfter` is the restart-safe wake authority. Database triggers move active parents due immediately when:
+
+- a target is linked to a current import run;
+- linked import progress or lifecycle state changes;
+- a preparation child `JobRun` changes state or is removed by retention;
+- a linked child `JobTask` changes settlement state or releases its `workKey`.
+
+The in-process `wake()` method is only a latency optimization for local control calls. Periodic PostgreSQL scanning remains sufficient after process restart or a lost in-memory notification.
+
+## Progressive lanes and fairness
+
+Indexing pipelines directly from committed eligible `ImportedGame` rows; it does not wait for terminal provider coverage. Core readiness still waits for a successfully completed exact import and terminal index outcomes.
+
+The run may have one non-terminal index batch and one non-terminal analysis batch concurrently. First analysis starts when a target has at least three current indexed/unanalysed games. A successfully completed, index-quiescent small account may use the configured one-game fallback. Failed or cancelled imports do not enter that fallback path.
+
+For multi-account expansion, index and analysis fairness are independent. Each stage chooses the target with the fewest prior normal batches, then immutable target ordinal and target ID. Retry batches are excluded from those normal-stage cursors, so retry activity does not let one account jump the normal round-robin order.
+
+## Evidence, milestones, and completion
+
+Current game evidence is authoritative; historical `JobTask` success is not sufficient on its own.
+
+The reconciler persists first-imported, first-indexed, first-analysed, and core-ready timestamps on the run and affected targets. Core readiness requires:
+
+- every linked target import to be `COMPLETED`;
+- no active preparation index batch;
+- no current clean unindexed eligible game;
+- at least one successfully indexed eligible game.
+
+Index failures are terminal outcomes. They may produce the non-blocking `INDEXING_PARTIAL` warning when at least one game indexed successfully; all-index-failed instead produces `NEEDS_ATTENTION / ALL_INDEXING_FAILED`. A completed import with zero eligible games produces `NEEDS_ATTENTION / NO_RECENT_GAMES`.
+
+Analysis is non-blocking for core readiness. A current analysis status of `RUNNING` remains non-terminal even when the work came from a direct-user job. A preparation run becomes `COMPLETED` only after core readiness and when no requested indexed game is unanalysed or currently analysing and no preparation analysis child remains active. Terminal analysis failures do not revoke core readiness and are retained as `ANALYSIS_PARTIAL` warning evidence.
+
+## Pause, cancel, resume, and retry
+
+Pause is quiescence. `PAUSE_REQUESTED` stops new preparation admission, requests pause on linked mutable imports, lets already admitted child jobs settle, and becomes `PAUSED` only when neither import nor child work can still mutate the preparation state. Preparation does not cancel a child job merely to pause.
+
+Resume restarts linked paused imports, returns the parent to `RUNNING`, and schedules immediate reconciliation from current evidence. Completed child jobs are never recreated.
+
+Cancellation is acknowledged. `CANCEL_REQUESTED` propagates to linked imports and active child jobs. The parent becomes `CANCELLED` only after imports are terminal with no import claim and no child task retains a `workKey`; terminal child status alone is not sufficient.
+
+Preparation retry is explicit and evidence-based. It increments `retryGeneration` and creates new `RETRY` child batches only for current failed index or analysis evidence; completed evidence is never reset and normal reconciliation never auto-requeues terminal failures. A completed run with partial child failures may be reopened for a bounded retry generation. Provider-import retry remains owned by the durable import lifecycle rather than being disguised as a preparation-child retry.
+
+Restarting a terminal cancelled/failed preparation and creating expansion runs remain lifecycle-command concerns outside this worker service.
+
+## Operational attention and telemetry
+
+The reconciler logs aggregate run/batch timing only; it does not log provider payloads, PGNs, usernames, or account identity snapshots. Telemetry includes reconcile lag/decision, batch count, maximum queue wait, first-settlement latency, and total-settlement latency.
+
+Persisted operational attention codes include:
+
+- `RECONCILE_DUE_WARNING` after the configured 15-second initial threshold;
+- `RECONCILE_DUE_CRITICAL` after 60 seconds;
+- `PREPARATION_TASK_START_DELAY` after a queued child waits 30 seconds;
+- `INDEX_NO_SETTLEMENT_WARNING` after two minutes without a settled index task;
+- `ANALYSIS_NO_SETTLEMENT_WARNING` after five minutes without a settled analysis task.
+
+Child start/settlement warnings are conservatively suppressed while higher-priority queued job work exists. This avoids labelling deliberate direct-user preemption as a preparation stall.
+
 ## Direct-user races
 
 A direct job that commits before preparation candidate selection is excluded from the preparation batch. When preparation commits first and a direct action is accepted immediately afterward, one duplicate may remain queued. This is safe by the existing worker contract: the direct job has higher priority, the active-game `workKey` fence prevents overlapping execution, and the idempotent executor later skips already-current preparation work.
 
 ## Integration points
 
-ONB-018 should call this repository from the bounded preparation reconciler and may call `refreshBatchSnapshotForJob` when reconciling a child. ONB-019 should inject its fence-aware admission guard. Public lifecycle commands and readiness projections remain outside this module.
+ONB-009 can consume the internal pause/resume/cancel/retry methods when it adds authenticated lifecycle commands; it must not duplicate the reconciliation state machine. ONB-008 owns user disposition, readiness/presentation projection, and action mapping. ONB-015 owns account-sync/preparation import handoff and can set `currentImportRunId`; the database trigger makes that persisted handoff immediately due. ONB-019 owns destructive resource fences and replaces the existing admission guard rather than adding a second preparation admission path.
