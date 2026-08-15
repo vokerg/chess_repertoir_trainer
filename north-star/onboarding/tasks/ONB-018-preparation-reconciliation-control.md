@@ -1,6 +1,6 @@
 # ONB-018 — Implement progressive preparation reconciliation and control
 
-Status: PROPOSED
+Status: READY
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 78
 
 Delivery class: Implementation
 
-Planning maturity: Allocated by ONB-003; numeric reconciliation and first-value defaults supplied by ONB-007; blocked on ONB-017 and durable import delivery
+Planning maturity: Allocated by ONB-003; numeric reconciliation and first-value defaults supplied by ONB-007; ONB-017 and durable import/provider delivery are complete; promoted to unclaimed READY through ONB-014 completion self-review on PR #383
 
 GitHub issue: [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254)
 
@@ -19,6 +19,8 @@ Claim branch: none
 Claimed at: none
 
 Claim scope: none
+
+Promoted at: 2026-08-15 through ONB-014 completion self-review on PR #383
 
 ## Outcome
 
@@ -32,8 +34,9 @@ The durable parent and batch boundary alone does not advance work. A restart-saf
 
 - ONB-003 / #150 accepted orchestration contract and self-review addendum.
 - ONB-007 / #154 report for 1-second/5-second reconciliation, three-indexed first-analysis threshold, one-game fallback, exact progress, stall, and first-value budgets.
-- ONB-017 / #253 preparation persistence, globally serialized admission, and child-job creation.
-- ONB-011/012 durable import lifecycle and ONB-015 preparation handoff for complete import pipelining.
+- ONB-017 / #253 preparation persistence, globally serialized admission, and child-job creation — complete.
+- ONB-011/012 durable import persistence and worker/API lifecycle plus ONB-013/014 provider adapters — complete.
+- Coordinate the complete account-sync/preparation handoff with ONB-015 / #203. ONB-015 consumes this reconciler for its final handoff and is not a hard readiness blocker for the bounded reconciler implementation itself.
 - Consumed by ONB-008 / #193 and ONB-009 / #194.
 
 ## Initial configuration

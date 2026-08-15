@@ -1,6 +1,6 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-08-14
+Last updated: 2026-08-15
 
 GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the detailed product, architecture, acceptance, and historical source.
 
@@ -115,7 +115,9 @@ ONB-001 allocated ONB-008 through ONB-010 as bounded lifecycle/readiness/Angular
 
 ONB-002 allocated ONB-011 through ONB-015 as bounded import persistence, worker, provider-adapter, and cutover tasks. Coordination umbrella #257 packages those existing tasks without changing their canonical states and records preparation, lifecycle, operations, Activity Feed, and throughput handoffs.
 
-Current account-import execution state: ONB-011/#199 and ONB-012/#200 are `DONE`; ONB-013/#201 has merged runtime PR #357 and completion reconciliation PR #376; ONB-014/#202 remains `REVIEW` after merged runtime PR #356 because its required real low-volume Chess.com canary is still outstanding; ONB-015/#203 remains `PROPOSED` until both provider adapters are completed.
+Current account-import execution state: ONB-011/#199 and ONB-012/#200 are `DONE`; ONB-013/#201 is `DONE` through runtime PR #357 and completion reconciliation PR #376; ONB-014/#202 is reconciled to `DONE` through merged runtime PR #356 plus successful real low-volume Chess.com canary workflow #2812 (`31881053242`) and completion PR #383. ONB-018/#254 is promoted to unclaimed `READY`: ONB-017 plus durable import/provider delivery are complete, and the accepted ONB-003 allocation makes ONB-015 a final handoff coordination point rather than a hard blocker to the reconciler implementation. ONB-015/#203 remains `PROPOSED` because its account-sync/preparation handoff consumes ONB-018.
+
+Parallel lifecycle execution state: ONB-019/#259 is promoted to unclaimed `READY`. ONB-004/005 are complete; ONB-017 established migration order with ONB-019 following, ONB-011 recorded the destructive lifecycle persistence ownership split directly on #259, both overlapping schema owners are merged, and no ONB-019 branch or open PR existed during the PR #383 self-review. A fresh current Prisma/migration collision check remains mandatory immediately before claim. ONB-020/#260 and ONB-021/#261 remain `PROPOSED` behind ONB-019 and their additional gates.
 
 ONB-025 / #276 is the bounded post-cutover follow-up for automatic stale forward refresh on authenticated application bootstrap. It depends on ONB-015 and must not invoke the legacy synchronous provider path.
 
@@ -161,7 +163,7 @@ ONB-007 supplies operational defaults and validation gates to existing owners ra
 
 ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without taking implementation ownership from the other programs.
 
-ONB-007 is `DONE` through squash-merged PR #266. ONB-005 is `DONE` through squash-merged PR #275. ONB-006 is `DONE` through squash-merged PR #281. ONB-017 is `DONE` through runtime PR #282 and completion reconciliation PR #293; issue #253 is closed completed. ONB-022 is `DONE` through runtime PR #284 and completion reconciliation PR #298; issue #272 is closed completed. ONB-023 is `DONE` through runtime PR #307 and completion reconciliation PR #312; issue #273 is closed completed. ONB-013 is being reconciled to `DONE` through PR #376 while issue #201 remains open until that reconciliation merges. ONB-014 remains `REVIEW` on issue #202. No onboarding implementation task is currently unclaimed `READY`; ONB-015, ONB-025, ONB-026, and the other dependency-blocked implementation tasks remain `PROPOSED` until their task-file gates are satisfied. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
+ONB-007 is `DONE` through squash-merged PR #266. ONB-005 is `DONE` through squash-merged PR #275. ONB-006 is `DONE` through squash-merged PR #281. ONB-017 is `DONE` through runtime PR #282 and completion reconciliation PR #293; issue #253 is closed completed. ONB-022 is `DONE` through runtime PR #284 and completion reconciliation PR #298; issue #272 is closed completed. ONB-023 is `DONE` through runtime PR #307 and completion reconciliation PR #312; issue #273 is closed completed. ONB-013 is `DONE` through runtime PR #357 and completion reconciliation PR #376. ONB-014 is reconciled to `DONE` through runtime PR #356, real provider canary workflow #2812 (`31881053242`), and completion PR #383 while issue #202 remains open until that reconciliation merges. ONB-018 / #254 is the deterministic next unclaimed `READY` onboarding implementation task by order, and ONB-019 / #259 is also unclaimed `READY` on the parallel lifecycle path. ONB-015, ONB-020, ONB-021, ONB-025, ONB-026, and the other dependency-blocked implementation tasks remain `PROPOSED` until their task-file gates are satisfied. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
 
 ## Completion
 

@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-08-14
+Last updated: 2026-08-15
 
 ## Program state
 
@@ -22,9 +22,9 @@ Durable account-import persistence: ONB-011 runtime merged through [PR #339](htt
 
 Durable account-import worker/API lifecycle: ONB-012 runtime squash-merged through [PR #352](https://github.com/vokerg/chess_repertoir_trainer/pull/352) as `640018e4cd3c5528a94b9d0217e971ab2a2215b7`; completion records are reconciled through PR #354.
 
-Bounded Lichess import adapter: ONB-013 runtime squash-merged through [PR #357](https://github.com/vokerg/chess_repertoir_trainer/pull/357) as `e276e3820acbd8361feae99d8a0e15a9cf412e53`; final runtime head passed CI #2687 and the low-volume Lichess canary passed workflow run #2665. Completion reconciliation is in progress.
+Bounded Lichess import adapter: ONB-013 runtime squash-merged through [PR #357](https://github.com/vokerg/chess_repertoir_trainer/pull/357) as `e276e3820acbd8361feae99d8a0e15a9cf412e53`; final runtime head passed CI #2687, the low-volume Lichess canary passed workflow run #2665, and completion records are reconciled through PR #376.
 
-Bounded Chess.com import adapter: ONB-014 runtime merged through [PR #356](https://github.com/vokerg/chess_repertoir_trainer/pull/356); task remains `REVIEW` pending the required real low-volume Chess.com canary and completion reconciliation.
+Bounded Chess.com import adapter: ONB-014 runtime squash-merged through [PR #356](https://github.com/vokerg/chess_repertoir_trainer/pull/356) as `b9c2038bfd20f7b0a493c2eda3dd6c2aed911ec5`; final runtime head passed CI #2669, the required real low-volume Chess.com canary passed workflow run #2812 (`31881053242`), and completion reconciliation is recorded by PR #383.
 
 Destructive lifecycle: ONB-004 squash-merged through [PR #263](https://github.com/vokerg/chess_repertoir_trainer/pull/263) as `32db655a100ef1a55264b4d3739e2b7c38e72ee4`.
 
@@ -40,9 +40,9 @@ Shared-position cleanup research: ONB-006 completed through [PR #281](https://gi
 
 Lightweight experience blueprint: ONB-016 squash-merged through [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
 
-Next provider critical-path state: ONB-014 / #202 is `REVIEW`, not claimable; ONB-015 / #203 remains `PROPOSED` until both provider-adapter completion gates are satisfied. No provider-adapter implementation is currently unclaimed `READY`.
+Next provider critical-path state: ONB-013 and ONB-014 are complete. ONB-018 / #254 is the next unclaimed `READY` implementation task by canonical order because ONB-017 plus durable import/provider delivery are complete. ONB-015 / #203 remains `PROPOSED` because its final account-sync/preparation handoff consumes ONB-018; that handoff is a completion coordination point for ONB-018, not a claim blocker for the bounded reconciler itself. ONB-019 / #259 is also unclaimed `READY` on the parallel destructive-lifecycle support path after its accepted lifecycle/admin inputs and schema ownership/migration-order gates were satisfied.
 
-Latest report: `reports/ONB-013-2026-08-14-completion-reconciliation.md`
+Latest report: `reports/ONB-014-2026-08-15-completion-reconciliation.md`
 
 ## Completed contracts
 
@@ -217,11 +217,26 @@ Final refreshed runtime head `dc4e9bc40e9da45c03e83904dfe0864a10cef289` passed C
 - one provider-neutral atomic commit seam for game/progress/checkpoint writes and successful-window coverage completion;
 - exact empty-window coverage and duplicate-safe incomplete-window replay;
 - typed provider failures, minimum one-minute HTTP 429 deferral, restart-stable window planning, and lifecycle-fence/cancellation handling;
-- provider/request/parse/write/checkpoint/window timing without raw provider payloads;
+- provider/request/parse/write/checkpoint/window timing without raw personal payloads;
 - progressive Activity Feed reconciliation after durable commits;
 - worker registration beside the Chess.com executor without a new queue, deployment, schema, or migration.
 
-The low-volume Lichess canary passed workflow run #2665 (`31566377590`). Reviewed runtime head `9d1bde8e563e60ab1c233d88123b675f419c5d74` passed full CI #2684 (`31571213970`), final PR head `2f53e81fba2386c1c2b3638c24a1450184497f78` passed CI #2687 (`31580120124`), and PR #357 squash-merged as `e276e3820acbd8361feae99d8a0e15a9cf412e53`. Completion reconciliation is documentation/execution-state only.
+The low-volume Lichess canary passed workflow run #2665 (`31566377590`). Reviewed runtime head `9d1bde8e563e60ab1c233d88123b675f419c5d74` passed full CI #2684 (`31571213970`), final PR head `2f53e81fba2386c1c2b3638c24a1450184497f78` passed CI #2687 (`31580120124`), and PR #357 squash-merged as `e276e3820acbd8361feae99d8a0e15a9cf412e53`. Completion reconciliation is recorded through PR #376.
+
+### ONB-014
+
+- deterministic half-open UTC Chess.com calendar-month planning with exact epoch-second clipping and provider-order semantics for initial/backfill versus forward work;
+- one successful archive-index traversal as authority for listed versus absent months;
+- strictly serial monthly archive requests with `AbortSignal`, bounded retry/backoff, durable HTTP 429 retry timing, recognizable User-Agent, and conservative 404/410 handling;
+- bounded `ETag` / `Last-Modified` metadata where available, without treating `304` as standalone coverage proof;
+- shared normalization for durable and transitional synchronous Chess.com flows;
+- exact immutable range, standard-variant, speed, and rated/unrated filtering;
+- one provider-neutral guarded commit seam for plan initialization, duplicate-safe 100-game-or-smaller batch writes, exact counters, window checkpoints, and conservative coverage advancement;
+- successful absent/empty-month coverage and replay-safe handling of listed failures, malformed payloads, cancellation, stale work keys, and lifecycle fences;
+- progressive Activity Feed reconciliation after committed matching batches and before successful window proof;
+- existing account-import worker registration with no new queue, deployment, schema, or migration.
+
+Reviewed runtime head `5e530a2a2b001ae0ee2ce42872b45c9b8f86a085` passed CI #2666 after adversarial self-review fixes. Final runtime PR head `d4592fe6b0e3c61ee9d25bc1517a8fc83a7466c2` passed CI #2669, and PR #356 squash-merged as `b9c2038bfd20f7b0a493c2eda3dd6c2aed911ec5`. The required real low-volume Chess.com canary passed the dedicated step in workflow run #2812 (`31881053242`) on public account `hikaru`, fixed historical month `2014-01`; the temporary workflow hook was removed immediately afterward. Completion PR #383 is documentation/execution-state reconciliation only.
 
 ### ONB-022
 
@@ -253,35 +268,34 @@ Final runtime pull-request head `fad7a19216c3249827a111e75238aafccac0ec75` passe
 - focused route, auth-return, API, store, component, table-semantic, keyboard/focus, unavailable-state, and pagination-retry tests;
 - no client administrator identity/role/claim rule, destructive control, impersonation, raw-content browser, new global state framework, or backend/schema change.
 
-Final runtime pull-request head `d9b826054748d9d891584a593954c82b65520965` passed CI run #2237 (`31248860891`). PR #307 squash-merged as `07d19790a20beedf79bb094fead2c48c76404912`. Runtime self-review found and fixed the failed-next-page retry defect before final CI. Completion PR #312 synchronizes the canonical task, queue, status, report, and live issue metadata without changing runtime behavior.
+Final runtime pull-request head `d9b826054748d9d891584a593954c82b65520965` passed CI run #2237 (`31248860891`). PR #307 squash-merged as `07d19790a20beedf79bb094fead2c48c76404912`. Runtime self-review found and fixed the failed-next-page retry defect before final CI. Completion PR #312 synchronizes the canonical task, queue, status, completion report, and live issue metadata without changing runtime behavior.
 
 ## Active and ready work
 
 ### Active implementation / review
 
-- ONB-014 / #202 — bounded Chess.com import adapter — `REVIEW`; runtime PR #356 is merged, but the required real low-volume Chess.com canary and completion reconciliation remain outstanding.
+- None recorded by this completion reconciliation.
 
 ### Ready implementation
 
-- None recorded by this completion reconciliation.
+- ONB-018 / #254 — preparation reconciliation/control — unclaimed `READY`; ONB-003 allocation, ONB-017 persistence/admission, and ONB-011/012/013/014 durable import/provider gates are satisfied. Coordinate final complete-import handoff with ONB-015 without making ONB-015 a claim blocker.
+- ONB-019 / #259 — destructive lifecycle persistence/fences/audit/provenance — unclaimed `READY`; ONB-004/005 are complete, ONB-017 established migration order with ONB-019 following, ONB-011 recorded the schema ownership boundary on #259, and both overlapping schema owners are merged. Fresh current Prisma/migration collision review remains mandatory before claim.
 
-ONB-013 is complete. This reconciliation does not promote ONB-015 while ONB-014 remains incomplete.
+ONB-018 remains the deterministic next task by canonical order. ONB-015 remains `PROPOSED` because it consumes ONB-018 for the account-sync/preparation handoff.
 
 ## Allocated implementation backlog
 
-- ONB-018 / #254 — preparation reconciliation/control — `PROPOSED`; consumes ONB-007 reconcile/first-analysis/stall defaults.
 - ONB-008 / #193 — disposition/readiness projection — `PROPOSED`; consumes ONB-007 exact progress/no-ETA contract.
 - ONB-009 / #194 — onboarding lifecycle commands — `PROPOSED`; destructive commands remain ONB-019/020/021-owned.
 - ONB-010 / #195 — Angular onboarding/Home re-entry — `PROPOSED`; consumes ONB-007 presentation constraints.
-- ONB-015 / #203 — sync cutover/preparation handoff — `PROPOSED`; current immediate account deletion cannot be final before this cutover.
+- ONB-015 / #203 — sync cutover/preparation handoff — `PROPOSED`; both provider adapters are complete, but the task also consumes ONB-018 and current immediate account deletion cannot be final before this cutover.
 - ONB-025 / #276 — authenticated stale-account refresh trigger — `PROPOSED`; depends on accepted ONB-015 and reuses the durable account-import lifecycle without request-time provider traversal.
-- ONB-019 / #259 — destructive lifecycle operation/fence/guard/failure-state/audit/provenance/receipt foundation — `PROPOSED`.
 - ONB-020 / #260 — account/game destructive coordinator — `PROPOSED`; starts with at most 100 games per transaction and operation-specific validation.
 - ONB-021 / #261 — whole-user deletion and mobile purge handshake — `PROPOSED`; consumes the same transaction/lock budgets.
 - ONB-024 / #274 — administrator lifecycle adapters — `PROPOSED`; depends on completed ONB-022/023 plus applicable ONB-019/020/021/026 services and proven reverification.
-- ONB-026 / #280 — bounded orphan shared-position cleanup — `PROPOSED`; consumes ONB-006/007 and remains behind trigger/version/schema/audit coordination gates.
+- ONB-026 / #280 — bounded orphan shared-position cleanup — `PROPOSED`; consumes ONB-006/007 and remains behind trigger/version/schema/audit coordination gates including ONB-019 conventions.
 
-These tasks must not be claimed until their task-file dependencies are resolved and accepted.
+These tasks must not be claimed until their task-file dependencies are resolved and accepted. ONB-018 and ONB-019 are separately listed above because their readiness gates are satisfied.
 
 ## Critical findings
 
@@ -319,18 +333,30 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 ## Blockers to production implementation
 
 - ONB-007 is complete; its consumers retain implementation-specific telemetry, controlled-clock, concurrency, and canary validation responsibilities;
-- ONB-011, ONB-012, and ONB-013 are delivered; ONB-014 runtime is merged but remains incomplete until its real low-volume Chess.com canary and completion reconciliation, and ONB-015 has not delivered the cutover;
-- ONB-017 delivered the preparation execution boundary; ONB-018 has not delivered preparation reconciliation/control;
-- ONB-019/020/021 have not delivered lifecycle persistence/execution/user deletion;
+- ONB-011, ONB-012, ONB-013, and ONB-014 are delivered; ONB-015 has not delivered the synchronous-route cutover/preparation handoff and remains `PROPOSED`, but that does not block the bounded ONB-018 reconciler implementation;
+- ONB-017 delivered the preparation execution boundary; ONB-018 is `READY` and remains undelivered until its reconciler/control implementation lands;
+- ONB-019 is `READY` and remains undelivered; ONB-020/021 still depend on that lifecycle foundation plus their other task-file gates;
 - ONB-022 and ONB-023 delivered the read-only administrator API and administrator diagnostics Angular feature;
 - ONB-024 remains blocked by canonical lifecycle services and a proven signed reverification flow, not by the completed ONB-023 UI;
 - onboarding projection/UI tasks remain blocked by durable foundations;
 - production-like Neon/provider/local-binary telemetry does not exist yet, so public ETA and capacity expansion remain disabled;
-- ONB-026 shared-position cleanup implementation has not been delivered;
+- ONB-026 shared-position cleanup implementation has not been delivered and still consumes ONB-019 actor/audit/claim conventions plus its PostgreSQL compatibility/coordination gates;
 - ONB-025 stale-refresh automation remains blocked by ONB-015 durable sync cutover;
 - Visual Transformation coordination remains required for final product-wide UI polish.
 
 ## Validation
+
+### ONB-014 implementation and completion reconciliation
+
+- runtime PR #356 delivered deterministic calendar-month planning, serial archive discovery/traversal, exact scope/range filtering, validators, shared normalization, bounded duplicate-safe guarded commits, exact empty/absent coverage, replay-safe checkpoints, typed retry/rate-limit behavior, cancellation/lifecycle-fence handling, telemetry, Activity Feed reconciliation, and worker registration;
+- adversarial runtime self-review corrected provider plan progress so all provider progress writes use the guarded commit seam, and added explicit December-to-January planner/boundary coverage;
+- reviewed runtime head `5e530a2a2b001ae0ee2ce42872b45c9b8f86a085` passed CI #2666 after the self-review fixes;
+- final merge-candidate head `d4592fe6b0e3c61ee9d25bc1517a8fc83a7466c2` passed CI #2669 and PR #356 squash-merged into `main` as `b9c2038bfd20f7b0a493c2eda3dd6c2aed911ec5` on 2026-08-12;
+- the real low-volume Chess.com canary passed the dedicated `ONB-014 low-volume Chess.com canary` step in workflow run #2812 (`31881053242`) on 2026-08-15 using public account `hikaru` and fixed historical month `2014-01`;
+- the real canary is complementary provider-integration evidence; deterministic provider/executor/PostgreSQL tests remain the evidence for exact boundary, validator/cache, malformed-response, retry/429, cancellation, replay, lifecycle-fence, and bounded-write semantics;
+- the temporary canary workflow hook was removed immediately afterward and is not part of the intended completion diff;
+- the completion-reconciliation self-review corrected two downstream queue defects: ONB-018 is `READY` while ONB-015 remains `PROPOSED`, and ONB-019 is independently `READY` on the parallel lifecycle path after its schema ownership/migration-order gates were satisfied;
+- PR #383 is documentation/execution-state reconciliation only and must pass its own exact-head normal repository CI before merge.
 
 ### ONB-013 implementation and completion reconciliation
 
@@ -339,7 +365,7 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - reviewed runtime head `9d1bde8e563e60ab1c233d88123b675f419c5d74` passed normal full CI #2684 (`31571213970`);
 - final PR head `2f53e81fba2386c1c2b3638c24a1450184497f78` passed CI #2687 (`31580120124`);
 - PR #357 squash-merged into `main` as `e276e3820acbd8361feae99d8a0e15a9cf412e53` on 2026-08-12;
-- this completion reconciliation is documentation/execution-state only and must pass its own exact-head repository CI before merge.
+- completion reconciliation PR #376 is documentation/execution-state only and records final state without changing runtime behavior.
 
 ### ONB-012 implementation and completion reconciliation
 
@@ -454,4 +480,6 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 
 ## Next deterministic action
 
-ONB-014 / #202 remains `REVIEW` pending the required real low-volume Chess.com canary and completion reconciliation. ONB-015 / #203 remains `PROPOSED` until ONB-014 is accepted and completed; this ONB-013 reconciliation does not promote it. No provider-adapter task is currently unclaimed `READY`.
+ONB-018 / #254 is the next unclaimed `READY` onboarding implementation task by canonical order. Before claim, recheck current branches/PRs and ONB-019 collision surfaces, then record the claim metadata and issue comment. ONB-015 / #203 remains `PROPOSED` until ONB-018 supplies the preparation reconciliation/control consumed by its final account-sync/preparation handoff.
+
+ONB-019 / #259 is also unclaimed `READY` on the parallel destructive-lifecycle support path. Before claim, recheck current Prisma/migration owners and active branches/PRs; do not overlap ONB-018 preparation work or duplicate provider/import/preparation state machines.
