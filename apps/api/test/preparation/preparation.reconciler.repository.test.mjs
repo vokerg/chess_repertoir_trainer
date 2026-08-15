@@ -86,6 +86,8 @@ async function provePersistedWakeHintsAndSingleParentClaim() {
   assert.equal(claims.filter(Boolean).length, 1, 'two reconcilers cannot claim the same parent');
   assert.equal(claims.filter((claim) => claim === null).length, 1);
   assert.equal(claims.find(Boolean).id, preparation.run.id);
+
+  await retirePreparationRun(preparation.run.id);
 }
 
 async function proveChildSettlementWakeHint() {
@@ -139,6 +141,8 @@ async function proveChildSettlementWakeHint() {
     where: { id: admission.jobRunId },
     data: { status: 'CANCELLED', completedAt: new Date() },
   });
+
+  await retirePreparationRun(preparation.run.id);
 }
 
 async function proveRetentionSnapshotAndWakeHint() {
@@ -197,6 +201,8 @@ async function proveRetentionSnapshotAndWakeHint() {
       && run.reconcileAfter.getTime() < future.getTime(),
     'retention deletion wakes the parent after snapshotting terminal child evidence',
   );
+
+  await retirePreparationRun(preparation.run.id);
 }
 
 async function proveLargeAccountQueueBound() {
@@ -318,5 +324,16 @@ function createPreparation(owner, currentImportRunId, hashCharacter) {
       requestedTo,
       currentImportRunId,
     }],
+  });
+}
+
+function retirePreparationRun(runId) {
+  return prisma.dataPreparationRun.update({
+    where: { id: runId },
+    data: {
+      status: 'COMPLETED',
+      reconcileAfter: null,
+      completedAt: new Date(),
+    },
   });
 }
