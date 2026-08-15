@@ -28,6 +28,8 @@ Lab routes are no longer part of the opaque-response baseline. `@chess-trainer/c
 
 Imported-game routes are no longer part of the opaque-response baseline. The opening-analysis core and performance routes now use shared response contracts alongside the existing imported-game DTOs, the top-games route uses the same shared contract family, and Angular consumes the inferred opening-analysis DTOs instead of maintaining duplicate response interfaces.
 
+Scenario-training routes are no longer part of the opaque-response baseline. `@chess-trainer/contracts/scenario-training` owns session, history, attempt-result, and dislike response DTOs; Fastify validates every successful response against those schemas, and Angular consumes the inferred response types instead of maintaining handwritten copies. The contract preserves source-game deletion semantics by requiring `importedGameId` with a nullable value.
+
 CI runs the hygiene guard independently from the architecture guardrails so cleanup-specific constraints stay visible and can expand without turning the architecture script into a general lint bucket.
 
 ## Cleanup sequence

@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../../core/api/api.service';
-import {
+import type {
   ScenarioAttemptResult,
+  ScenarioTrainingDislikeResponse,
   ScenarioTrainingHistoryResponse,
   ScenarioTrainingSession,
   StartScenarioRequest,
@@ -42,8 +43,8 @@ export class ScenarioTrainingApiService {
     return this.api.post<ScenarioTrainingSession>(`/scenario-training/${sessionId}/complete`, {});
   }
 
-  dislike(sessionId: number, reason?: string): Observable<{ disliked: true }> {
-    return this.api.post<{ disliked: true }>(`/scenario-training/${sessionId}/dislike`, { reason });
+  dislike(sessionId: number, reason?: string): Observable<ScenarioTrainingDislikeResponse> {
+    return this.api.post<ScenarioTrainingDislikeResponse>(`/scenario-training/${sessionId}/dislike`, { reason });
   }
 
   history(): Observable<ScenarioTrainingHistoryResponse> {
