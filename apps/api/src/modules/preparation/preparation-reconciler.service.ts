@@ -123,7 +123,11 @@ export function createPreparationReconciler(
 
     async reconcileOnce() {
       const startedAt = now();
-      const leaseMs = Math.max(config.reconcileActiveMs, config.reconcileIdleMs);
+      const leaseMs = Math.max(
+        config.reconcileActiveMs,
+        config.reconcileIdleMs,
+        config.reconcileDueWarningMs,
+      );
       const claim = await repository.claimNextDueRun(
         startedAt,
         new Date(startedAt.getTime() + leaseMs),
@@ -205,7 +209,9 @@ export function createPreparationReconciler(
   ): Promise<PreparationRunStatus | undefined> {
     let snapshot = await repository.loadSnapshot(claim.id);
     if (!snapshot) return undefined;
-    if (snapshot.run.status !== claim.status) return snapshot.run.status;
+    if (snapshot.run.status !== claim.status) {
+      return snapshot.run.status;
+    }
 
     if (snapshot.run.status === 'PAUSE_REQUESTED') {
       await reconcilePause(snapshot);
@@ -464,7 +470,7 @@ export function createPreparationReconciler(
         code: 'ALL_INDEXING_FAILED',
         detail: 'Every eligible imported game has a terminal indexing failure.',
       };
-    } else if (importFailure && !activeIndex) {
+    } else if (importFailure && !activeIndex && totals.indexPending === 0) {
       deterministicAttention = {
         code: importFailure.importStatus === 'PAUSED' ? 'IMPORT_PAUSED' : 'IMPORT_RETRY_AVAILABLE',
         detail: `Linked import is ${importFailure.importStatus?.toLowerCase()}.`,
@@ -596,15 +602,21 @@ export function selectOperationalAttention(
   }
 
   for (const batch of activeBatches) {
-    if (batch.higherPriorityRunnable) continue;
     const createdAgeMs = observedAt.getTime() - batch.createdAt.getTime();
-    if (batch.startedAt === null && createdAgeMs >= CHILD_START_WARNING_MS) {
-      return {
-        code: 'PREPARATION_TASK_START_DELAY',
-        detail: `${batch.stage.toLowerCase()} batch ${batch.id} has waited ${Math.floor(createdAgeMs / 1000)} seconds to start.`,
-      };
+    if (batch.startedAt === null) {
+      if (
+        createdAgeMs >= CHILD_START_WARNING_MS
+        && batch.workerCapacityAvailable
+        && !batch.higherPriorityRunnable
+      ) {
+        return {
+          code: 'PREPARATION_TASK_START_DELAY',
+          detail: `${batch.stage.toLowerCase()} batch ${batch.id} has waited ${Math.floor(createdAgeMs / 1000)} seconds to start.`,
+        };
+      }
+      continue;
     }
-    if (batch.startedAt === null || batch.firstSettledAt !== null) continue;
+    if (batch.firstSettledAt !== null) continue;
     const runningAgeMs = observedAt.getTime() - batch.startedAt.getTime();
     const threshold = batch.stage === 'INDEX'
       ? INDEX_FIRST_SETTLEMENT_WARNING_MS
