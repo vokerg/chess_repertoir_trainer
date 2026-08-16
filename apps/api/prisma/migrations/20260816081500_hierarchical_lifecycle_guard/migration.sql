@@ -83,7 +83,10 @@ CHECK (
 ),
 ADD CONSTRAINT "DataLifecycleOperation_scopeSnapshot_check"
 CHECK (
-    "scopeJson" ->> 'resourceType' = "scopeResourceType"
+    jsonb_typeof("scopeJson") = 'object'
+    AND "scopeJson" ? 'resourceType'
+    AND "scopeJson" ? 'userId'
+    AND "scopeJson" ->> 'resourceType' = "scopeResourceType"
     AND jsonb_typeof("scopeJson" -> 'userId') = 'number'
     AND ("scopeJson" ->> 'userId')::INTEGER = "targetUserId"
 );
