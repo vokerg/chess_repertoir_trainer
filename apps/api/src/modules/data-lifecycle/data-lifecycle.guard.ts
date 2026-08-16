@@ -41,12 +41,21 @@ export class DataLifecycleWriteBlockedError extends Error {
 export function dataLifecycleAdmissionPredicate(
   columns: DataLifecycleFenceColumns,
 ): Prisma.Sql {
-  const accountClause = columns.accountId
-    ? Prisma.sql`OR (fence."resourceType" = 'ACCOUNT' AND fence."resourceId" = ${columns.accountId})`
-    : Prisma.empty;
-  const gameClause = columns.gameId
-    ? Prisma.sql`OR (fence."resourceType" = 'GAME' AND fence."resourceId" = ${columns.gameId})`
-    : Prisma.empty;
+  const scopePredicate = columns.gameId
+    ? Prisma.sql`
+        fence."resourceType" = 'USER'
+        ${columns.accountId
+          ? Prisma.sql`OR (fence."resourceType" = 'ACCOUNT' AND fence."resourceId" = ${columns.accountId})`
+          : Prisma.empty}
+        OR (fence."resourceType" = 'GAME' AND fence."resourceId" = ${columns.gameId})
+      `
+    : columns.accountId
+      ? Prisma.sql`
+          fence."resourceType" = 'USER'
+          OR (fence."resourceType" = 'ACCOUNT' AND fence."resourceId" = ${columns.accountId})
+          OR (fence."resourceType" = 'GAME' AND fence."ownerAccountId" = ${columns.accountId})
+        `
+      : Prisma.sql`TRUE`;
 
   return Prisma.sql`
     NOT EXISTS (
@@ -54,11 +63,7 @@ export function dataLifecycleAdmissionPredicate(
       FROM "DataLifecycleResourceFence" AS fence
       WHERE fence."releasedAt" IS NULL
         AND fence."ownerUserId" = ${columns.userId}
-        AND (
-          fence."resourceType" = 'USER'
-          ${accountClause}
-          ${gameClause}
-        )
+        AND (${scopePredicate})
     )
   `;
 }
@@ -70,20 +75,26 @@ export async function assertDataLifecycleWriteAllowed(
   validateScope(input);
   await lockDataLifecycleUserScope(transaction, input.userId);
 
+  const scopePredicate = input.gameId != null
+    ? Prisma.sql`
+        fence."resourceType" = 'USER'
+        OR (fence."resourceType" = 'ACCOUNT' AND fence."resourceId" = ${input.accountId!})
+        OR (fence."resourceType" = 'GAME' AND fence."resourceId" = ${input.gameId})
+      `
+    : input.accountId != null
+      ? Prisma.sql`
+          fence."resourceType" = 'USER'
+          OR (fence."resourceType" = 'ACCOUNT' AND fence."resourceId" = ${input.accountId})
+          OR (fence."resourceType" = 'GAME' AND fence."ownerAccountId" = ${input.accountId})
+        `
+      : Prisma.sql`TRUE`;
+
   const rows = await transaction.$queryRaw<ActiveFenceRow[]>(Prisma.sql`
     SELECT fence."operationId", fence."resourceType", fence."resourceId"
     FROM "DataLifecycleResourceFence" AS fence
     WHERE fence."releasedAt" IS NULL
       AND fence."ownerUserId" = ${input.userId}
-      AND (
-        fence."resourceType" = 'USER'
-        ${input.accountId == null
-          ? Prisma.empty
-          : Prisma.sql`OR (fence."resourceType" = 'ACCOUNT' AND fence."resourceId" = ${input.accountId})`}
-        ${input.gameId == null
-          ? Prisma.empty
-          : Prisma.sql`OR (fence."resourceType" = 'GAME' AND fence."resourceId" = ${input.gameId})`}
-      )
+      AND (${scopePredicate})
     ORDER BY
       CASE fence."resourceType" WHEN 'USER' THEN 0 WHEN 'ACCOUNT' THEN 1 ELSE 2 END,
       fence."id"
@@ -153,7 +164,12 @@ export async function bindDataLifecycleOperation(
 function validateScope(input: DataLifecycleWriteScope): void {
   validatePositiveInteger(input.userId, 'userId');
   if (input.accountId != null) validatePositiveInteger(input.accountId, 'accountId');
-  if (input.gameId != null) validatePositiveInteger(input.gameId, 'gameId');
+  if (input.gameId != null) {
+    validatePositiveInteger(input.gameId, 'gameId');
+    if (input.accountId == null) {
+      throw new Error('accountId is required when gameId is provided.');
+    }
+  }
 }
 
 function validatePositiveInteger(value: number, label: string): void {

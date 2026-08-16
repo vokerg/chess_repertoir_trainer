@@ -6,6 +6,7 @@ import { bindDataLifecycleOperation } from '../../dist/modules/data-lifecycle/da
 import {
   createDataLifecycleRepository,
   DataLifecycleConflictError,
+  DataLifecyclePreviewExpiredError,
 } from '../../dist/modules/data-lifecycle/data-lifecycle.repository.prisma.js';
 import {
   LifecycleHmacKeyring,
@@ -15,6 +16,14 @@ import {
   createDeletedIdentityGuard,
   DeletedIdentityBlockedError,
 } from '../../dist/modules/data-lifecycle/deleted-identity.guard.js';
+import {
+  allowAccountImportAdmission,
+  AccountImportAdmissionBlockedError,
+} from '../../dist/modules/account-imports/account-import-admission.guard.js';
+import {
+  allowPreparationAdmission,
+  PreparationAdmissionBlockedError,
+} from '../../dist/modules/preparation/preparation-admission.guard.js';
 import { createCurrentAppUserService } from '../../dist/auth/current-app-user.service.js';
 
 const prisma = prismaModule.default;
@@ -131,6 +140,67 @@ try {
       /DATA_LIFECYCLE_WRITE_BLOCKED/,
     );
 
+    // Parent-scoped admission must treat a child GAME fence as overlapping.
+    await assert.rejects(
+      prisma.$transaction((tx) => allowAccountImportAdmission.assertAllowed(tx, {
+        userId: user.id,
+        accountId: account.id,
+      })),
+      AccountImportAdmissionBlockedError,
+    );
+    await assert.rejects(
+      prisma.$transaction((tx) => allowPreparationAdmission.assertAllowed(tx, {
+        userId: user.id,
+        accountId: account.id,
+      })),
+      PreparationAdmissionBlockedError,
+    );
+    await assert.rejects(
+      prisma.externalAccount.update({
+        where: { id: account.id },
+        data: { displayName: 'must-not-commit' },
+      }),
+      /DATA_LIFECYCLE_WRITE_BLOCKED/,
+    );
+    await assert.rejects(
+      prisma.appUser.update({
+        where: { id: user.id },
+        data: { displayName: 'must-not-commit' },
+      }),
+      /DATA_LIFECYCLE_WRITE_BLOCKED/,
+    );
+    await assert.rejects(
+      createCurrentAppUserService(prisma).resolveExternalUser({
+        provider: 'lifecycle-test',
+        externalSubject: `fence-${suffix}`,
+        displayName: 'must-not-commit',
+      }),
+      /Write is blocked by an active data lifecycle operation/,
+    );
+    await assert.rejects(
+      prisma.$transaction(async (tx) => {
+        const jobRun = await tx.jobRun.create({
+          data: {
+            userId: user.id,
+            kind: 'ANALYSE',
+            source: 'TEST',
+            priority: 0,
+            status: 'QUEUED',
+            totalTasks: 1,
+          },
+        });
+        await tx.jobTask.create({
+          data: {
+            jobRunId: jobRun.id,
+            importedGameId: game.id,
+            ordinal: 0,
+            status: 'QUEUED',
+          },
+        });
+      }),
+      /DATA_LIFECYCLE_WRITE_BLOCKED/,
+    );
+
     const conflictPreview = await preview({
       userId: user.id,
       accountId: account.id,
@@ -148,10 +218,32 @@ try {
       DataLifecycleConflictError,
     );
 
+    const userConflictPreview = await preview({
+      userId: user.id,
+      action: 'DELETE_APP_USER',
+      token: 'user-conflict',
+    });
+    await assert.rejects(
+      repository.startExecution({
+        operationId: userConflictPreview.id,
+        targetUserId: user.id,
+        previewTokenHash: hash('token:user-conflict'),
+        previewHash: hash('preview:user-conflict'),
+        idempotencyKeyHash: hash('idempotency:user-conflict'),
+      }),
+      DataLifecycleConflictError,
+    );
+
     const claim = await repository.claimNext('lifecycle-worker-fence');
     assert.equal(claim?.id, operation.id);
     await repository.advanceClaimed(operation.id, 'lifecycle-worker-fence', 'EXECUTING');
     await repository.markFirstDestructiveCommit(operation.id, 'lifecycle-worker-fence', { batch: 1 });
+    await assert.rejects(
+      prisma.dataLifecycleOperation.update({
+        where: { id: operation.id },
+        data: { status: 'CANCELLED' },
+      }),
+    );
     const stopped = await repository.requestStop(user.id, operation.id);
     assert.equal(stopped.stopRequest, 'STOP_AFTER_BATCH');
     assert.notEqual(stopped.status, 'CANCELLED');
@@ -200,6 +292,34 @@ try {
   }
 
   {
+    const { user, account } = await fixture('expired-preview');
+    const operation = await preview({
+      userId: user.id,
+      accountId: account.id,
+      action: 'PURGE_ACCOUNT_DATA',
+      token: 'expired-preview',
+    });
+    const now = Date.now();
+    await prisma.dataLifecycleOperation.update({
+      where: { id: operation.id },
+      data: {
+        createdAt: new Date(now - 120_000),
+        previewExpiresAt: new Date(now - 60_000),
+      },
+    });
+    await assert.rejects(
+      repository.startExecution({
+        operationId: operation.id,
+        targetUserId: user.id,
+        previewTokenHash: hash('token:expired-preview'),
+        previewHash: hash('preview:expired-preview'),
+        idempotencyKeyHash: hash('idempotency:expired-preview'),
+      }),
+      DataLifecyclePreviewExpiredError,
+    );
+  }
+
+  {
     const { user, account } = await fixture('stale-claim');
     const operation = await preview({
       userId: user.id,
@@ -233,6 +353,12 @@ try {
     const reclaimed = await repository.claimNext('lifecycle-worker-stale-cleanup');
     assert.equal(reclaimed?.id, operation.id);
     await repository.failClaimed(operation.id, 'lifecycle-worker-stale-cleanup', 'TEST_STALE_CLEANUP');
+    assert.equal(
+      await prisma.dataLifecycleResourceFence.count({
+        where: { operationId: operation.id, releasedAt: null },
+      }),
+      0,
+    );
   }
 
   {
