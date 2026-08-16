@@ -36,6 +36,8 @@ The database, rather than the reconciler, is the final concurrency authority for
 9. create the retained batch, `JobRun(source = ONBOARDING)`, and ordered `JobTask` rows atomically;
 10. link the child and mark a queued parent as running.
 
+For an explicit preparation retry, the same transaction also increments `retryGeneration`, clears prior attention, and returns the parent to `RUNNING`. A capacity/no-candidate block therefore cannot consume a retry generation, and a committed generation always has a durable retry child job.
+
 The transaction does not execute provider calls, PGN parsing, Stockfish, task polling, or reconciliation. Existing job workers and imported-game executors remain authoritative after commit.
 
 ## Defaults and priorities
@@ -93,6 +95,8 @@ Normal index admission selects clean unindexed games; index retry selects only u
 
 `createPreparationReconciler()` runs beside the imported-game job and account-import workers in the same worker deployment. Each claim is a short PostgreSQL transaction over one due parent using `FOR UPDATE SKIP LOCKED`. The claim advances `reconcileAfter` as a short lease, after which all evidence reads, child admission, control calls, and parent updates happen outside that claim transaction.
 
+The persisted claim/wake timestamp also acts as an optimistic evidence fence. A linked import/child/control event that occurs after a snapshot rewrites `reconcileAfter`; the later parent state write compares the expected lease and refuses to commit stale milestones or terminal state when that durable wake changed.
+
 The loop drains a bounded number of due parents per cycle, then uses the configured one-second active or five-second idle wait. It never holds a database transaction across provider I/O, PGN processing, Stockfish, or task execution.
 
 `reconcileAfter` is the restart-safe wake authority. Database triggers move active parents due immediately when:
@@ -102,7 +106,9 @@ The loop drains a bounded number of due parents per cycle, then uses the configu
 - a preparation child `JobRun` changes state or is removed by retention;
 - a linked child `JobTask` changes settlement state or releases its `workKey`.
 
-The in-process `wake()` method is only a latency optimization for local control calls. Periodic PostgreSQL scanning remains sufficient after process restart or a lost in-memory notification.
+`NEEDS_ATTENTION` is not normally polled. Only recoverable import attention (`IMPORT_PAUSED` / `IMPORT_RETRY_AVAILABLE`) is made due by linked import/relink events, allowing a resumed or replacement current import attempt to return the parent to `RUNNING`. Product attention such as `NO_RECENT_GAMES` and `ALL_INDEXING_FAILED` remains dormant until an explicit lifecycle action.
+
+The in-process `wake()` method is only a latency optimization for local control calls. Persisted PostgreSQL state remains authoritative after process restart or a lost in-memory notification.
 
 ## Progressive lanes and fairness
 
@@ -131,11 +137,11 @@ Analysis is non-blocking for core readiness. A current analysis status of `RUNNI
 
 Pause is quiescence. `PAUSE_REQUESTED` stops new preparation admission, requests pause on linked mutable imports, lets already admitted child jobs settle, and becomes `PAUSED` only when neither import nor child work can still mutate the preparation state. Preparation does not cancel a child job merely to pause.
 
-Resume restarts linked paused imports, returns the parent to `RUNNING`, and schedules immediate reconciliation from current evidence. Completed child jobs are never recreated.
+Resume transitions the preparation parent to `RUNNING` first, then resumes linked paused imports and schedules immediate reconciliation from current evidence. If the parent transition is rejected because lifecycle state changed concurrently, no child import is restarted. Completed child jobs are never recreated.
 
 Cancellation is acknowledged. `CANCEL_REQUESTED` propagates to linked imports and active child jobs. The parent becomes `CANCELLED` only after imports are terminal with no import claim and no child task retains a `workKey`; terminal child status alone is not sufficient.
 
-Preparation retry is explicit and evidence-based. It increments `retryGeneration` and creates new `RETRY` child batches only for current failed index or analysis evidence; completed evidence is never reset and normal reconciliation never auto-requeues terminal failures. A completed run with partial child failures may be reopened for a bounded retry generation. Provider-import retry remains owned by the durable import lifecycle rather than being disguised as a preparation-child retry.
+Preparation retry is explicit and evidence-based. Within a non-terminal `RUNNING` / `NEEDS_ATTENTION` run, one explicit retry request creates one bounded `RETRY` batch for current failed index or analysis evidence and increments the generation atomically with that child creation. Completed evidence is never reset, a blocked retry consumes no generation, and normal reconciliation never auto-requeues terminal failures. A terminal `COMPLETED` preparation is not reopened; terminal recovery is represented by a new linked `RECOVERY` run through ONB-009. Provider-import retry remains owned by the durable import lifecycle rather than being disguised as a preparation-child retry.
 
 Restarting a terminal cancelled/failed preparation and creating expansion runs remain lifecycle-command concerns outside this worker service.
 
@@ -151,7 +157,7 @@ Persisted operational attention codes include:
 - `INDEX_NO_SETTLEMENT_WARNING` after two minutes without a settled index task;
 - `ANALYSIS_NO_SETTLEMENT_WARNING` after five minutes without a settled analysis task.
 
-Child start/settlement warnings are conservatively suppressed while higher-priority queued job work exists. This avoids labelling deliberate direct-user preemption as a preparation stall.
+Queued-start warnings require worker capacity to be available and are suppressed when higher-priority runnable work explains the wait. Once a preparation child is already running, higher-priority queued work does not explain a lack of settlement, so the stage-specific no-settlement warning remains eligible.
 
 ## Direct-user races
 
@@ -159,4 +165,4 @@ A direct job that commits before preparation candidate selection is excluded fro
 
 ## Integration points
 
-ONB-009 can consume the internal pause/resume/cancel/retry methods when it adds authenticated lifecycle commands; it must not duplicate the reconciliation state machine. ONB-008 owns user disposition, readiness/presentation projection, and action mapping. ONB-015 owns account-sync/preparation import handoff and can set `currentImportRunId`; the database trigger makes that persisted handoff immediately due. ONB-019 owns destructive resource fences and replaces the existing admission guard rather than adding a second preparation admission path.
+ONB-009 can consume the internal pause/resume/cancel/retry methods when it adds authenticated lifecycle commands; it must not duplicate the reconciliation state machine. ONB-008 owns user disposition, readiness/presentation projection, and action mapping. ONB-015 owns account-sync/preparation import handoff and can set `currentImportRunId`; recoverable import attention observes that persisted handoff through the database wake path. ONB-019 owns destructive resource fences and replaces the existing admission guard rather than adding a second preparation admission path.
