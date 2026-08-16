@@ -80,4 +80,10 @@ CHECK (
         AND "scopeResourceType" = 'ACCOUNT'
     )
     OR ("action" = 'DELETE_APP_USER' AND "scopeResourceType" = 'USER')
+),
+ADD CONSTRAINT "DataLifecycleOperation_scopeSnapshot_check"
+CHECK (
+    "scopeJson" ->> 'resourceType' = "scopeResourceType"
+    AND jsonb_typeof("scopeJson" -> 'userId') = 'number'
+    AND ("scopeJson" ->> 'userId')::INTEGER = "targetUserId"
 );
