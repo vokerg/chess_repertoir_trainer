@@ -109,7 +109,6 @@ export interface PreparationReconcilerRepository {
   requestPause(userId: number, runId: number): Promise<boolean>;
   resume(userId: number, runId: number): Promise<boolean>;
   requestCancel(userId: number, runId: number): Promise<boolean>;
-  beginRetry(userId: number, runId: number): Promise<number | null>;
 }
 
 type RunRow = {
@@ -152,7 +151,6 @@ type TargetRow = Omit<PreparationTargetSnapshot, 'importedCount'
 type ActiveBatchRow = Omit<PreparationActiveBatchSnapshot, 'stage'> & { stage: string };
 type TelemetryRow = PreparationBatchTelemetry;
 type StatusRow = { status: string };
-type GenerationRow = { retryGeneration: number };
 
 export function createPreparationReconcilerRepository(
   database: PrismaClient = prisma,
@@ -553,31 +551,6 @@ export function createPreparationReconcilerRepository(
 
     async requestCancel(userId, runId) {
       return updateOwnedControlState(database, userId, runId, 'CANCEL');
-    },
-
-    async beginRetry(userId, runId) {
-      return database.$transaction(async (transaction) => {
-        const rows = await lockOwnedRun(transaction, userId, runId);
-        const status = rows[0]?.status;
-        if (status === undefined || !['RUNNING', 'NEEDS_ATTENTION', 'COMPLETED'].includes(status)) {
-          return null;
-        }
-        const generationRows = await transaction.$queryRaw<GenerationRow[]>(Prisma.sql`
-          UPDATE "DataPreparationRun"
-          SET "status" = 'RUNNING',
-              "retryGeneration" = "retryGeneration" + 1,
-              "attentionCode" = NULL,
-              "attentionDetail" = NULL,
-              "reconcileAfter" = NOW(),
-              "completedAt" = NULL,
-              "updatedAt" = NOW()
-          WHERE "id" = ${runId}
-            AND "userId" = ${userId}
-            AND "status" = ${status}
-          RETURNING "retryGeneration"
-        `);
-        return generationRows[0]?.retryGeneration ?? null;
-      });
     },
   };
 }
