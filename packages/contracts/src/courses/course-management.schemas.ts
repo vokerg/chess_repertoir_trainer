@@ -26,6 +26,18 @@ export const courseSchema = z.object({
 
 export const courseListSchema = z.array(courseSchema);
 
+export const chapterSchema = z.object({
+  id: z.number().int().positive(),
+  courseId: z.number().int().positive(),
+  name: z.string(),
+  description: z.string().nullable(),
+  sortOrder: z.number().int(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+});
+
+export const chapterListSchema = z.array(chapterSchema);
+
 export const createCourseSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional().nullable(),
@@ -41,6 +53,7 @@ export const updateCourseSchema = z.object({
 });
 
 export type Course = z.infer<typeof courseSchema>;
+export type Chapter = z.infer<typeof chapterSchema>;
 export type CourseSide = z.infer<typeof courseSideSchema>;
 export type CourseCoverKey = z.infer<typeof courseCoverKeySchema>;
 export type CreateCourseInput = z.input<typeof createCourseSchema>;

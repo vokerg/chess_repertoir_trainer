@@ -31,6 +31,8 @@ import {
 } from '../../routes/legacy-route.schemas';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 import {
+  chapterListSchema,
+  chapterSchema,
   courseListSchema,
   courseOverviewSchema,
   coursePositionSuggestionsResponseSchema,
@@ -39,7 +41,7 @@ import {
   libraryCatalogSchema,
   updateCourseSchema,
 } from '@chess-trainer/contracts/courses';
-import type { CourseCoverKey } from '@chess-trainer/contracts/courses';
+import type { Chapter, CourseCoverKey } from '@chess-trainer/contracts/courses';
 import { CourseDerivedDataService } from './course-derived-data.service';
 
 const importPgnSchema = z.object({
@@ -90,6 +92,22 @@ function courseResponse(course: {
     contentChangedAt: course.contentChangedAt.toISOString(),
     createdAt: course.createdAt.toISOString(),
     updatedAt: course.updatedAt.toISOString(),
+  };
+}
+
+function chapterResponse(chapter: {
+  id: number;
+  courseId: number;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}): Chapter {
+  return {
+    ...chapter,
+    createdAt: chapter.createdAt.toISOString(),
+    updatedAt: chapter.updatedAt.toISOString(),
   };
 }
 
@@ -222,7 +240,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/courses/:courseId/chapters', {
     schema: courseRouteSchema('listCourseChapters', ['Chapters'], 'List chapters in a course', {
       params: courseIdParamsSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+      response: { 200: chapterListSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -230,14 +248,14 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     const courseId = request.params.courseId;
     const chapters = await ChapterService.list(auth.userId, courseId);
     if (!chapters) return reply.status(404).send({ message: 'Course not found' });
-    return chapters;
+    return chapters.map(chapterResponse);
   });
 
   app.post('/api/courses/:courseId/chapters', {
     schema: courseRouteSchema('createCourseChapter', ['Chapters'], 'Create a chapter in a course', {
       params: courseIdParamsSchema,
       body: createChapterSchema,
-      response: { 201: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+      response: { 201: chapterSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -246,13 +264,13 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     const chapter = await ChapterService.create(auth.userId, courseId, request.body);
     if (!chapter) return reply.status(404).send({ message: 'Course not found' });
     reply.code(201);
-    return chapter;
+    return chapterResponse(chapter);
   });
 
   app.get('/api/chapters/:id', {
     schema: courseRouteSchema('getChapter', ['Chapters'], 'Get one chapter', {
       params: idParamsSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+      response: { 200: chapterSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -263,14 +281,14 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
       reply.code(404);
       return { message: 'Chapter not found' };
     }
-    return chapter;
+    return chapterResponse(chapter);
   });
 
   app.patch('/api/chapters/:id', {
     schema: courseRouteSchema('updateChapter', ['Chapters'], 'Update one chapter', {
       params: idParamsSchema,
       body: updateChapterSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+      response: { 200: chapterSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -279,7 +297,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     try {
       const chapter = await ChapterService.update(auth.userId, id, request.body);
       if (!chapter) return reply.status(404).send({ message: 'Chapter not found' });
-      return chapter;
+      return chapterResponse(chapter);
     } catch {
       reply.code(404);
       return { message: 'Chapter not found' };

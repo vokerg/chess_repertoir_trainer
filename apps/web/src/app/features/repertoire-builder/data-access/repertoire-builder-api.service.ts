@@ -8,6 +8,7 @@ import type {
   BuilderCourseReintegrationApplyResponse,
   BuilderCourseReintegrationPreviewRequest,
   BuilderCourseReintegrationPreviewResponse,
+  Chapter,
 } from '@chess-trainer/contracts/courses';
 import type {
   LichessGamesRatingGroup,
@@ -23,12 +24,7 @@ export interface RepertoireBuilderCourseOption {
   name: string;
 }
 
-export interface RepertoireBuilderChapterOption {
-  id: number;
-  courseId: number;
-  name: string;
-  sortOrder: number;
-}
+export type RepertoireBuilderChapterOption = Pick<Chapter, 'id' | 'courseId' | 'name' | 'sortOrder'>;
 
 @Injectable()
 export class RepertoireBuilderApiService {
