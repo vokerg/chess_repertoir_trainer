@@ -77,15 +77,30 @@ async function provePersistedWakeHintsAndSingleParentClaim() {
     'committed import progress moves the linked preparation run due immediately',
   );
 
+  // Other preparation tests share this database and may leave their own parents due.
+  // Make this fixture the oldest due row, then prove that concurrent reconcilers can
+  // claim distinct parents but can never both claim this same parent.
+  await prisma.dataPreparationRun.update({
+    where: { id: preparation.run.id },
+    data: { reconcileAfter: new Date('2000-01-01T00:00:00.000Z') },
+  });
   const now = new Date();
   const leaseUntil = new Date(now.getTime() + 5_000);
   const claims = await Promise.all([
     reconcilerA.claimNextDueRun(now, leaseUntil),
     reconcilerB.claimNextDueRun(now, leaseUntil),
   ]);
-  assert.equal(claims.filter(Boolean).length, 1, 'two reconcilers cannot claim the same parent');
-  assert.equal(claims.filter((claim) => claim === null).length, 1);
-  assert.equal(claims.find(Boolean).id, preparation.run.id);
+  const claimed = claims.filter((claim) => claim !== null);
+  assert.equal(
+    claimed.filter((claim) => claim.id === preparation.run.id).length,
+    1,
+    'two reconcilers cannot claim the same parent',
+  );
+  assert.equal(
+    new Set(claimed.map((claim) => claim.id)).size,
+    claimed.length,
+    'concurrent claims may take different due parents but never duplicate one parent',
+  );
 
   await retirePreparationRun(preparation.run.id);
 }
