@@ -8,6 +8,10 @@ const CLAIMABLE_STATUSES = [
   'PAUSE_REQUESTED',
   'CANCEL_REQUESTED',
 ] as const;
+const RECOVERABLE_IMPORT_ATTENTION_CODES = [
+  'IMPORT_PAUSED',
+  'IMPORT_RETRY_AVAILABLE',
+] as const;
 
 export interface PreparationReconcileClaim {
   id: number;
@@ -175,8 +179,18 @@ export function createPreparationReconcilerRepository(
             run."coreReadyAt",
             run."analysisCompletedAt"
           FROM "DataPreparationRun" AS run
-          WHERE run."status" IN (${Prisma.join(CLAIMABLE_STATUSES.map((status) => Prisma.sql`${status}`))})
-            AND (run."reconcileAfter" IS NULL OR run."reconcileAfter" <= ${now})
+          WHERE (
+            (
+              run."status" IN (${Prisma.join(CLAIMABLE_STATUSES.map((status) => Prisma.sql`${status}`))})
+              AND (run."reconcileAfter" IS NULL OR run."reconcileAfter" <= ${now})
+            )
+            OR (
+              run."status" = 'NEEDS_ATTENTION'
+              AND run."attentionCode" IN (${Prisma.join(RECOVERABLE_IMPORT_ATTENTION_CODES.map((code) => Prisma.sql`${code}`))})
+              AND run."reconcileAfter" IS NOT NULL
+              AND run."reconcileAfter" <= ${now}
+            )
+          )
           ORDER BY COALESCE(run."reconcileAfter", run."createdAt") ASC, run."id" ASC
           FOR UPDATE SKIP LOCKED
           LIMIT 1
