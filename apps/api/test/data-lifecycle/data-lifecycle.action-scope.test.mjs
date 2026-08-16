@@ -99,6 +99,15 @@ try {
       data: { scopeJson: gameScope },
     }),
   );
+  // PostgreSQL CHECK constraints accept NULL expressions, so missing required
+  // snapshot keys are covered explicitly by the constraint rather than relying
+  // on equality alone.
+  await assert.rejects(
+    prisma.dataLifecycleOperation.update({
+      where: { id: userDelete.id },
+      data: { scopeJson: { userId: user.id } },
+    }),
+  );
 
   console.log('Data lifecycle action/scope tests passed.');
 } finally {
