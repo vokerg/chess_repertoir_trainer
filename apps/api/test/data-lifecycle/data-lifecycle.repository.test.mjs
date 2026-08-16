@@ -326,10 +326,12 @@ try {
     const beforeRollback = await prisma.importedGame.findUniqueOrThrow({ where: { id: game.id } });
     await assert.rejects(
       repository.runDestructiveTransaction(
-        operation.id,
-        user.id,
-        'lifecycle-worker-fence',
-        { batch: 0 },
+        {
+          operationId: operation.id,
+          targetUserId: user.id,
+          workKey: 'lifecycle-worker-fence',
+          checkpoint: { batch: 0 },
+        },
         async (tx) => {
           await tx.importedGame.update({
             where: { id: game.id },
@@ -346,10 +348,12 @@ try {
     assert.equal(rolledBackGame.status, beforeRollback.status);
 
     await repository.runDestructiveTransaction(
-      operation.id,
-      user.id,
-      'lifecycle-worker-fence',
-      { batch: 1 },
+      {
+        operationId: operation.id,
+        targetUserId: user.id,
+        workKey: 'lifecycle-worker-fence',
+        checkpoint: { batch: 1 },
+      },
       async (tx) => {
         await tx.importedGame.update({
           where: { id: game.id },
@@ -573,16 +577,20 @@ try {
     });
 
     await repository.runDestructiveTransaction(
-      operation.id,
-      user.id,
-      'lifecycle-worker-identity',
-      { phase: 'DELETE_APP_USER' },
+      {
+        operationId: operation.id,
+        targetUserId: user.id,
+        workKey: 'lifecycle-worker-identity',
+        checkpoint: { phase: 'DELETE_APP_USER' },
+        beforeUserLock: async (tx) => {
+          await identityGuard.createTombstone(tx, {
+            provider,
+            externalSubject,
+            operationId: operation.id,
+          });
+        },
+      },
       async (tx) => {
-        await identityGuard.createTombstone(tx, {
-          provider,
-          externalSubject,
-          operationId: operation.id,
-        });
         await tx.appUser.delete({ where: { id: user.id } });
       },
     );
