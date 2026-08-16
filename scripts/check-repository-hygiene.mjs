@@ -11,7 +11,7 @@ const apiSourceRoot = new URL('../apps/api/src/', import.meta.url);
 // This is a debt-count ratchet, not an identity-level allowlist for individual route usages.
 const expectedLegacyOpaqueResponseOccurrences = new Map([
   ['apps/api/src/modules/courses/courses.routes.ts', 18],
-  ['apps/api/src/routes/externalAccounts.ts', 13],
+  ['apps/api/src/routes/externalAccounts.ts', 5],
 ]);
 
 const actualLegacyOccurrences = new Map(

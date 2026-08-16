@@ -1,3 +1,4 @@
+import type { ExternalAccount as PrismaExternalAccount } from '@prisma/client';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { CurrentAppUserService } from '../auth/current-app-user.service';
@@ -22,6 +23,12 @@ import { importedGameSearchResponseSchema } from '@chess-trainer/contracts/impor
 import {
   accountPerformanceRatingSpeedSchema,
   accountPerformanceStatsResponseSchema,
+  accountRatingHistoryResponseSchema,
+  accountRatingStatsResponseSchema,
+  defaultProgressAccountResponseSchema,
+  externalAccountDeleteResponseSchema,
+  externalAccountListResponseSchema,
+  externalAccountResponseSchema,
 } from '@chess-trainer/contracts/external-accounts';
 
 const createAccountSchema = z.object({
@@ -100,6 +107,20 @@ const accountSchema = <T extends Record<string, unknown>>(
   ...extra,
 });
 
+type ExternalAccountWithDefaultFlag = PrismaExternalAccount & {
+  isDefaultProgressAccount: boolean;
+};
+
+function toExternalAccountResponse(account: ExternalAccountWithDefaultFlag) {
+  return {
+    ...account,
+    lastSyncAt: account.lastSyncAt?.toISOString() ?? null,
+    syncCursorTime: account.syncCursorTime?.toISOString() ?? null,
+    createdAt: account.createdAt.toISOString(),
+    updatedAt: account.updatedAt.toISOString(),
+  };
+}
+
 const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     '/api/me',
@@ -121,13 +142,14 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
     '/api/me/accounts',
     {
       schema: accountSchema('listExternalAccounts', 'List external chess accounts', {
-        response: { 200: legacyOpaqueResponseSchema, 401: unauthorizedResponseSchema },
+        response: { 200: externalAccountListResponseSchema, 401: unauthorizedResponseSchema },
       }),
     },
     async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      return ExternalAccountService.listForUser(auth.userId);
+      const accounts = await ExternalAccountService.listForUser(auth.userId);
+      return externalAccountListResponseSchema.parse(accounts.map(toExternalAccountResponse));
     },
   );
 
@@ -140,7 +162,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
         {
           body: createAccountSchema,
           response: {
-            201: legacyOpaqueResponseSchema,
+            201: externalAccountResponseSchema,
             400: validationErrorResponseSchema,
             401: unauthorizedResponseSchema,
           },
@@ -152,7 +174,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
       if (!auth) return;
       const account = await ExternalAccountService.createForUser(auth.userId, request.body);
       reply.code(201);
-      return account;
+      return externalAccountResponseSchema.parse(toExternalAccountResponse(account));
     },
   );
 
@@ -165,7 +187,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
         {
           body: defaultProgressAccountSchema,
           response: {
-            200: legacyOpaqueResponseSchema,
+            200: defaultProgressAccountResponseSchema,
             400: validationErrorResponseSchema,
             401: unauthorizedResponseSchema,
             404: messageResponseSchema,
@@ -185,7 +207,11 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
         return { message: 'External account not found' };
       }
 
-      return result;
+      return defaultProgressAccountResponseSchema.parse({
+        defaultProgressAccountId: result.defaultProgressAccountId,
+        account: result.account ? toExternalAccountResponse(result.account) : null,
+        accounts: result.accounts.map(toExternalAccountResponse),
+      });
     },
   );
 
@@ -195,7 +221,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: accountSchema('getExternalAccount', 'Get one external chess account', {
         params: accountIdParamsSchema,
         response: {
-          200: legacyOpaqueResponseSchema,
+          200: externalAccountResponseSchema,
           400: validationErrorResponseSchema,
           401: unauthorizedResponseSchema,
           404: messageResponseSchema,
@@ -211,7 +237,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
         reply.code(404);
         return { message: 'External account not found' };
       }
-      return account;
+      return externalAccountResponseSchema.parse(toExternalAccountResponse(account));
     },
   );
 
@@ -225,7 +251,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
           params: accountIdParamsSchema,
           querystring: ratingHistoryQuerySchema,
           response: {
-            200: legacyOpaqueResponseSchema,
+            200: accountRatingHistoryResponseSchema,
             400: validationErrorResponseSchema,
             401: unauthorizedResponseSchema,
             404: messageResponseSchema,
@@ -243,7 +269,9 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
         return { message: 'External account not found' };
       }
 
-      return AccountRatingHistoryService.getForAccount(auth.userId, account, request.query);
+      return accountRatingHistoryResponseSchema.parse(
+        await AccountRatingHistoryService.getForAccount(auth.userId, account, request.query),
+      );
     },
   );
 
@@ -256,7 +284,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
         {
           params: accountIdParamsSchema,
           response: {
-            200: legacyOpaqueResponseSchema,
+            200: accountRatingStatsResponseSchema.nullable(),
             400: validationErrorResponseSchema,
             401: unauthorizedResponseSchema,
             404: messageResponseSchema,
@@ -274,7 +302,8 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
         return { message: 'External account not found' };
       }
 
-      return AccountRatingStatsService.getForAccount(auth.userId, id);
+      const stats = await AccountRatingStatsService.getForAccount(auth.userId, id);
+      return stats ? accountRatingStatsResponseSchema.parse(stats) : null;
     },
   );
 
@@ -323,7 +352,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
         params: accountIdParamsSchema,
         body: updateAccountSchema,
         response: {
-          200: legacyOpaqueResponseSchema,
+          200: externalAccountResponseSchema,
           400: validationErrorResponseSchema,
           401: unauthorizedResponseSchema,
           404: messageResponseSchema,
@@ -339,7 +368,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
         reply.code(404);
         return { message: 'External account not found' };
       }
-      return account;
+      return externalAccountResponseSchema.parse(toExternalAccountResponse(account));
     },
   );
 
@@ -349,7 +378,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: accountSchema('deleteExternalAccount', 'Delete one external account', {
         params: accountIdParamsSchema,
         response: {
-          200: legacyOpaqueResponseSchema,
+          200: externalAccountDeleteResponseSchema,
           400: validationErrorResponseSchema,
           401: unauthorizedResponseSchema,
           404: messageResponseSchema,
@@ -366,7 +395,10 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
         return { message: 'External account not found' };
       }
 
-      return { deleted: true, account };
+      return externalAccountDeleteResponseSchema.parse({
+        deleted: true,
+        account: toExternalAccountResponse(account),
+      });
     },
   );
 

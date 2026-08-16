@@ -51,7 +51,7 @@ describe('RatingHistoryChartComponent', () => {
 
 function ratingHistory(): AccountRatingHistoryResponse {
   return {
-    account: { id: 7, provider: 'LICHESS', username: 'local-user' },
+    account: { id: 7, provider: 'LICHESS', username: 'local-user', displayName: null },
     bucket: 'day',
     aggregation: 'max',
     ratingSource: 'gameRecordedRating',

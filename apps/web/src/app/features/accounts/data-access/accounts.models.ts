@@ -4,29 +4,27 @@ export type {
   AccountPerformanceRecentGame,
   AccountPerformanceStatsResponse,
   AccountPerformanceTimeControlWdl,
+  AccountRatingHistoryPoint,
+  AccountRatingHistoryResponse,
+  AccountRatingHistorySeries,
+  AccountRatingStatsMilestone,
+  AccountRatingStatsPeak,
+  AccountRatingStatsProjection,
+  AccountRatingStatsResponse,
+  AccountRatingStatsSpeedProjection,
+  AccountRatingStatsYearlyPeak,
 } from '@chess-trainer/contracts/external-accounts';
 
 import type {
-  AccountPerformanceGameHighlight,
-  AccountPerformanceRecentGame,
-  AccountPerformanceStatsResponse,
-  AccountPerformanceTimeControlWdl,
+  AccountRatingHistoryPoint as SharedAccountRatingHistoryPoint,
+  AccountRatingHistorySeries as SharedAccountRatingHistorySeries,
+  DefaultProgressAccountResponse as SharedDefaultProgressAccountResponse,
+  ExternalAccountDeleteResponse,
+  ExternalAccountResponse,
 } from '@chess-trainer/contracts/external-accounts';
 
-export type AccountProvider = 'LICHESS' | 'CHESS_COM';
-
-export interface ExternalAccount {
-  id: number;
-  provider: AccountProvider;
-  username: string;
-  displayName?: string | null;
-  isActive: boolean;
-  lastSyncAt?: string | null;
-  syncCursorTime?: string | null;
-  isDefaultProgressAccount?: boolean;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-}
+export type AccountProvider = ExternalAccountResponse['provider'];
+export type ExternalAccount = ExternalAccountResponse;
 
 export interface ImportRunSummary {
   importRunId: number;
@@ -44,10 +42,7 @@ export interface ImportRunSummary {
   eligibleUnindexedGameIds?: number[];
 }
 
-export interface DeleteAccountResponse {
-  deleted: true;
-  account: ExternalAccount;
-}
+export type DeleteAccountResponse = ExternalAccountDeleteResponse;
 
 export interface ImportedGameWorkflowCandidates {
   accountId: number;
@@ -83,11 +78,7 @@ export interface BatchAnalysisAcceptedResponse {
   gameIds: number[];
 }
 
-export interface DefaultProgressAccountResponse {
-  defaultProgressAccountId: number | null;
-  account?: ExternalAccount | null;
-  accounts: ExternalAccount[];
-}
+export type DefaultProgressAccountResponse = SharedDefaultProgressAccountResponse;
 
 export interface AccountForm {
   provider: AccountProvider;
@@ -95,89 +86,17 @@ export interface AccountForm {
   displayName: string;
 }
 
-export type RatingSpeed = 'bullet' | 'blitz' | 'rapid';
+export type RatingSpeed = SharedAccountRatingHistorySeries['key'];
 export type RatingSpeedFilter = 'all' | RatingSpeed;
 export type RatingRangeKey = '1M' | '3M' | '6M' | 'YTD' | '1Y' | '3Y' | '5Y' | 'ALL';
 
-export interface RatingHistoryPoint {
-  date: string;
-  rating: number;
-  gameCount: number;
-  ratingAt: string;
-}
-
-export interface RatingHistorySeries {
-  key: RatingSpeed;
-  label: 'Bullet' | 'Blitz' | 'Rapid';
-  points: RatingHistoryPoint[];
-}
-
-export interface AccountRatingHistoryResponse {
-  account: {
-    id: number;
-    provider: AccountProvider;
-    username: string;
-    displayName?: string | null;
-  };
-  bucket: 'day';
-  aggregation: 'max';
-  ratingSource: 'gameRecordedRating';
-  series: RatingHistorySeries[];
-  yDomain: {
-    min: number;
-    max: number;
-  } | null;
-}
+export type RatingHistoryPoint = SharedAccountRatingHistoryPoint;
+export type RatingHistorySeries = SharedAccountRatingHistorySeries;
 
 export interface AccountRatingHistoryQuery {
   from?: string;
   to?: string;
   speeds?: RatingSpeed[];
-}
-
-export interface AccountRatingStatsPeak {
-  rating: number;
-  ratingAt: string;
-  gameId: number;
-}
-
-export interface AccountRatingStatsYearlyPeak extends AccountRatingStatsPeak {
-  year: number;
-}
-
-export interface AccountRatingStatsMilestone {
-  rating: number;
-  reachedAt: string;
-  actualRating: number;
-  gameId: number;
-}
-
-export interface AccountRatingStatsSpeedProjection {
-  key: RatingSpeed;
-  label: 'Bullet' | 'Blitz' | 'Rapid';
-  gamesCount: number;
-  current: AccountRatingStatsPeak | null;
-  highest: AccountRatingStatsPeak | null;
-  yearlyHighs: AccountRatingStatsYearlyPeak[];
-  milestones: AccountRatingStatsMilestone[];
-}
-
-export interface AccountRatingStatsProjection {
-  version: 3;
-  ratingSource: 'gameRecordedRating';
-  speeds: AccountRatingStatsSpeedProjection[];
-}
-
-export interface AccountRatingStatsResponse {
-  account: {
-    id: number;
-    provider: AccountProvider;
-    username: string;
-    displayName?: string | null;
-  };
-  computedAt: string;
-  gamesCount: number;
-  data: AccountRatingStatsProjection;
 }
 
 export type DashboardPeriodKey = RatingRangeKey;

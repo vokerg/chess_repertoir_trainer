@@ -13,14 +13,18 @@ describe('AccountsPageComponent', () => {
 
   const account: ExternalAccount = {
     id: 7,
+    userId: 1,
     provider: 'LICHESS',
     username: 'tester',
     displayName: 'Training account',
+    providerUserId: null,
     isActive: true,
     isDefaultProgressAccount: false,
     lastSyncAt: '2026-08-05T04:00:00.000Z',
     syncCursorTime: '2026-08-01T00:00:00.000Z',
+    lastSyncRunId: null,
     createdAt: '2026-07-01T00:00:00.000Z',
+    updatedAt: '2026-08-05T04:00:00.000Z',
   };
 
   const result: ImportRunSummary = {

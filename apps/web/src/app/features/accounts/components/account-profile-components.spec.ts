@@ -98,7 +98,7 @@ async function createFixture<T>(component: Type<T>): Promise<ComponentFixture<T>
 
 function ratingStats(): AccountRatingStatsResponse {
   return {
-    account: { id: 7, provider: 'LICHESS', username: 'profile-user' },
+    account: { id: 7, provider: 'LICHESS', username: 'profile-user', displayName: null },
     computedAt: '2026-08-12T06:42:00Z',
     gamesCount: 12,
     data: {
@@ -136,7 +136,7 @@ function speed(
 
 function ratingHistory(): AccountRatingHistoryResponse {
   return {
-    account: { id: 7, provider: 'LICHESS', username: 'profile-user' },
+    account: { id: 7, provider: 'LICHESS', username: 'profile-user', displayName: null },
     bucket: 'day',
     aggregation: 'max',
     ratingSource: 'gameRecordedRating',
