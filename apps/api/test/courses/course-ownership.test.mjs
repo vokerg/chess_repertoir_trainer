@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import Fastify from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
-import { coursePositionSuggestionsResponseSchema } from '@chess-trainer/contracts/courses';
+import {
+  chapterListSchema,
+  chapterSchema,
+  coursePositionSuggestionsResponseSchema,
+} from '@chess-trainer/contracts/courses';
 import prismaModule from '../../dist/prisma.js';
 import coursesModule from '../../dist/modules/courses/courses.routes.js';
 import {
@@ -116,6 +120,51 @@ try {
     positionSuggestions,
   );
 
+  const chapterListResponse = await app.inject({
+    method: 'GET',
+    url: `/api/courses/${courseA.id}/chapters`,
+  });
+  assert.equal(chapterListResponse.statusCode, 200);
+  assert.deepEqual(
+    chapterListSchema.parse(chapterListResponse.json()),
+    [serializeChapter(chapterA)],
+  );
+
+  const createChapterResponse = await app.inject({
+    method: 'POST',
+    url: `/api/courses/${courseA.id}/chapters`,
+    payload: { name: 'HTTP-created chapter', description: null, sortOrder: 5 },
+  });
+  assert.equal(createChapterResponse.statusCode, 201);
+  const createdChapter = chapterSchema.parse(createChapterResponse.json());
+  assert.equal(createdChapter.courseId, courseA.id);
+  assert.equal(createdChapter.name, 'HTTP-created chapter');
+  assert.equal(createdChapter.description, null);
+  assert.equal(createdChapter.sortOrder, 5);
+  assert.equal(typeof createdChapter.createdAt, 'string');
+  assert.equal(typeof createdChapter.updatedAt, 'string');
+
+  const getChapterResponse = await app.inject({
+    method: 'GET',
+    url: `/api/chapters/${createdChapter.id}`,
+  });
+  assert.equal(getChapterResponse.statusCode, 200);
+  assert.deepEqual(chapterSchema.parse(getChapterResponse.json()), createdChapter);
+
+  const updateChapterResponse = await app.inject({
+    method: 'PATCH',
+    url: `/api/chapters/${createdChapter.id}`,
+    payload: { name: 'HTTP-updated chapter', description: 'Updated over HTTP', sortOrder: 6 },
+  });
+  assert.equal(updateChapterResponse.statusCode, 200);
+  const updatedChapter = chapterSchema.parse(updateChapterResponse.json());
+  assert.equal(updatedChapter.id, createdChapter.id);
+  assert.equal(updatedChapter.courseId, courseA.id);
+  assert.equal(updatedChapter.name, 'HTTP-updated chapter');
+  assert.equal(updatedChapter.description, 'Updated over HTTP');
+  assert.equal(updatedChapter.sortOrder, 6);
+  assert.equal(updatedChapter.createdAt, createdChapter.createdAt);
+
   assert.equal(await ChapterService.get(userA.id, chapterB.id), null);
   assert.equal(await ChapterService.list(userA.id, courseB.id), null);
   assert.equal(await LineService.get(userA.id, lineB.id), null);
@@ -125,11 +174,19 @@ try {
   assert.equal(await MoveNodeService.deleteSubtree(userA.id, nodeB.id), null);
   assert.equal((await MoveNodeService.update(userB.id, nodeB.id, { comment: 'Owned' }))?.comment, 'Owned');
 
-  console.log('Course ownership and position-suggestion response tests passed.');
+  console.log('Course ownership, chapter response, and position-suggestion response tests passed.');
 } finally {
   if (app) await app.close();
   if (users.length > 0) {
     await prisma.appUser.deleteMany({ where: { id: { in: users } } });
   }
   await prisma.$disconnect();
+}
+
+function serializeChapter(chapter) {
+  return {
+    ...chapter,
+    createdAt: chapter.createdAt.toISOString(),
+    updatedAt: chapter.updatedAt.toISOString(),
+  };
 }

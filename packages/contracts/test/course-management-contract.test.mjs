@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import {
+  chapterListSchema,
+  chapterSchema,
   coursePositionSuggestionsResponseSchema,
   courseSchema,
   createCourseSchema,
@@ -44,6 +46,21 @@ const course = {
   updatedAt: '2026-08-12T12:00:00.000Z',
 };
 assert.deepEqual(courseSchema.parse(course), course);
+
+const chapter = {
+  id: 8,
+  courseId: course.id,
+  name: 'Accepted Queen’s Gambit',
+  description: null,
+  sortOrder: 2,
+  createdAt: '2026-08-12T12:05:00.000Z',
+  updatedAt: '2026-08-12T12:10:00.000Z',
+};
+assert.deepEqual(chapterSchema.parse(chapter), chapter);
+assert.deepEqual(chapterListSchema.parse([chapter]), [chapter]);
+assert.equal(chapterSchema.safeParse({ ...chapter, createdAt: new Date(chapter.createdAt) }).success, false);
+assert.equal(chapterSchema.safeParse({ ...chapter, sortOrder: 2.5 }).success, false);
+assert.equal(chapterSchema.safeParse({ ...chapter, description: undefined }).success, false);
 
 const positionSuggestions = {
   normalizedFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -',

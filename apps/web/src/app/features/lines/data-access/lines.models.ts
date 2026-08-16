@@ -1,3 +1,4 @@
+import type { Chapter } from '@chess-trainer/contracts/courses';
 import type {
   ActiveTrainingStatsDto,
   LineTrainingSessionDto,
@@ -15,12 +16,7 @@ import type {
 
 export type RepertoireColor = 'WHITE' | 'BLACK';
 
-export interface ChapterDetail {
-  id: number;
-  courseId: number;
-  name: string;
-  description?: string | null;
-}
+export type ChapterDetail = Pick<Chapter, 'id' | 'courseId' | 'name' | 'description'>;
 
 export interface LineTransferTargetCourse {
   id: number;
@@ -28,12 +24,7 @@ export interface LineTransferTargetCourse {
   description?: string | null;
 }
 
-export interface LineTransferTargetChapter {
-  id: number;
-  name: string;
-  description?: string | null;
-  sortOrder: number;
-}
+export type LineTransferTargetChapter = Pick<Chapter, 'id' | 'name' | 'description' | 'sortOrder'>;
 
 export type ActiveTrainingStats = ActiveTrainingStatsDto;
 
