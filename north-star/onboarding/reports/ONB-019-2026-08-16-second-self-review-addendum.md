@@ -44,7 +44,7 @@ Worker advancement now permits only same-state retries or the forward path:
 
 The original `markFirstDestructiveCommit` repository method could commit the marker independently and the exported `bindDataLifecycleOperation` helper could be used directly by a later mutation transaction. That left the architecture vulnerable to both directions of inconsistency: mutation without first-commit evidence, or first-commit evidence without the intended mutation.
 
-The standalone marker was replaced by `runDestructiveTransaction(...)`. It owns the short Prisma transaction, acquires the same user lifecycle lock used by stop requests, verifies the claimed operation is `EXECUTING`, sets `firstDestructiveCommitAt` and the checkpoint, installs the transaction-local operation id for trigger bypass, and then invokes the destructive mutation callback. A callback failure rolls back the marker, checkpoint change, trigger binding, and mutation together.
+The standalone marker was replaced by `runDestructiveTransaction(...)`. It owns the short Prisma transaction, verifies the claimed operation is `EXECUTING`, sets `firstDestructiveCommitAt` and the checkpoint, installs the transaction-local operation id for trigger bypass, and then invokes the destructive mutation callback. A callback failure rolls back the marker, checkpoint change, trigger binding, and mutation together.
 
 The raw trigger-bypass helper is no longer exported from the shared lifecycle guard, so downstream destructive code has one supported transactional entrypoint.
 
@@ -56,6 +56,14 @@ The lifecycle repository no longer uses mutating `UPDATE ... RETURNING` statemen
 
 The temporary transaction diagnostic test used to isolate the CI behavior was removed after the root cause was addressed.
 
+### 6. Whole-user destructive setup initially inverted the identity/user lock order
+
+The first `runDestructiveTransaction(...)` draft acquired the lifecycle user lock before invoking the destructive callback. `DeletedIdentityGuard.createTombstone(...)` acquires the deleted-identity advisory lock itself, so creating the tombstone inside that callback would produce the order **user -> identity**. Normal auth provisioning uses the established **identity -> user** order. Those opposing orders could deadlock under concurrent provisioning and whole-user deletion.
+
+The destructive transaction API now accepts a narrowly scoped `beforeUserLock` callback that executes inside the same database transaction before the lifecycle user lock. Whole-user deletion uses that callback to create the tombstone and acquire the identity lock first. The repository then acquires the user lock, records first-destructive-commit/checkpoint evidence, installs the transaction-local lifecycle binding, and invokes the main callback that deletes the AppUser. Any failure still rolls back tombstone creation, lifecycle evidence, and deletion together.
+
+This preserves the accepted identity-first lock order without re-exposing the raw trigger-bypass primitive.
+
 ## Regression coverage added
 
 The PostgreSQL lifecycle integration test now additionally verifies:
@@ -66,7 +74,7 @@ The PostgreSQL lifecycle integration test now additionally verifies:
 - backward claimed-state advancement is rejected;
 - a destructive callback failure rolls back both target mutation and `firstDestructiveCommitAt`/checkpoint evidence;
 - a successful destructive callback commits target mutation and first-commit/checkpoint evidence together;
-- whole-user tombstone creation and user deletion use the same atomic destructive transaction entrypoint;
+- whole-user tombstone creation runs in the identity-first pre-user-lock phase while AppUser deletion remains in the same atomic destructive transaction;
 - the writer-before-fence race is cleaned up so later global lifecycle claims remain deterministic inside the suite.
 
 ## Validation status
