@@ -1,8 +1,6 @@
-export interface PlayerChessProfileAccountDto {
-  id: number;
-  provider: 'LICHESS' | 'CHESS_COM';
-  username: string;
-  displayName?: string | null;
-  isActive: boolean;
-  isDefaultProgressAccount?: boolean;
-}
+import type { ExternalAccountResponse } from '@chess-trainer/contracts/external-accounts';
+
+export type PlayerChessProfileAccountDto = Pick<
+  ExternalAccountResponse,
+  'id' | 'provider' | 'username' | 'displayName' | 'isActive' | 'isDefaultProgressAccount'
+>;

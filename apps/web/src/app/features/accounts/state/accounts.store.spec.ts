@@ -203,10 +203,18 @@ function acceptedJob(
 function account(id: number, username: string, isActive: boolean): ExternalAccount {
   return {
     id,
+    userId: 1,
     provider: 'LICHESS',
     username,
     displayName: null,
+    providerUserId: null,
     isActive,
+    lastSyncAt: null,
+    syncCursorTime: null,
+    lastSyncRunId: null,
+    createdAt: '2026-07-01T10:00:00.000Z',
+    updatedAt: '2026-07-01T10:00:00.000Z',
+    isDefaultProgressAccount: false,
   };
 }
 

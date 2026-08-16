@@ -32,6 +32,8 @@ Scenario-training routes are no longer part of the opaque-response baseline. `@c
 
 Course position suggestions now use a concrete shared `@chess-trainer/contracts/courses` response schema and the Angular position-suggestions client consumes its inferred DTOs. The remaining chapter, line, node, and analysis-reintegration course responses stay explicitly ratcheted until their own bounded RH-003 slices are verified.
 
+The stable External Accounts resource/read-model surface is now concrete. `@chess-trainer/contracts/external-accounts` owns account list/create/get/update/delete, default-progress-account, rating-history, and rating-stats responses; the API explicitly converts Prisma account dates to ISO strings before validation, and Angular account/profile consumers derive their DTOs from the shared contract. The External Accounts hygiene baseline is intentionally retained at five occurrences: one import plus `/api/me`, synchronous account sync, workflow-candidate ID arrays, and raw cursor reset. Those remaining responses have separate lifecycle/cutover ownership and were not stabilized opportunistically in this slice.
+
 CI runs the hygiene guard independently from the architecture guardrails so cleanup-specific constraints stay visible and can expand without turning the architecture script into a general lint bucket.
 
 ## Cleanup sequence

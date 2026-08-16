@@ -75,9 +75,18 @@ describe('home dashboard rules', () => {
 function account(id: number, overrides: Partial<ExternalAccount> = {}): ExternalAccount {
   return {
     id,
+    userId: 1,
     provider: 'LICHESS',
     username: `player-${id}`,
+    displayName: null,
+    providerUserId: null,
     isActive: true,
+    lastSyncAt: null,
+    syncCursorTime: null,
+    lastSyncRunId: null,
+    createdAt: '2026-07-01T10:00:00.000Z',
+    updatedAt: '2026-07-01T10:00:00.000Z',
+    isDefaultProgressAccount: false,
     ...overrides,
   };
 }
