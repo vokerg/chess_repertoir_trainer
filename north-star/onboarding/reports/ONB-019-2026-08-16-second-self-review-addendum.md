@@ -64,11 +64,24 @@ The destructive transaction API now accepts a narrowly scoped `beforeUserLock` c
 
 This preserves the accepted identity-first lock order without re-exposing the raw trigger-bypass primitive.
 
+### 7. Action and durable scope could disagree
+
+The lifecycle contracts typed actions and resource scopes independently, and the operation table constrained each field separately. That still allowed a structurally valid but semantically impossible operation such as `DELETE_APP_USER` with a GAME scope or `UNINDEX_GAMES` with an ACCOUNT scope.
+
+ONB-004 defines one target boundary per canonical action. The migration now has a durable action/scope check constraint:
+
+- `UNANALYSE_GAMES` and `UNINDEX_GAMES` require GAME scope;
+- `PURGE_ACCOUNT_DATA` and `DELETE_EXTERNAL_ACCOUNT` require ACCOUNT scope;
+- `DELETE_APP_USER` requires USER scope.
+
+A focused integration test proves all five canonical pairings persist and representative mismatches are rejected.
+
 ## Regression coverage added
 
-The PostgreSQL lifecycle integration test now additionally verifies:
+The PostgreSQL lifecycle integration coverage now additionally verifies:
 
 - foreign-account and missing-game preview scopes are rejected before a preview row is persisted;
+- all five canonical action/resource pairings persist and mismatched pairings are rejected by the durable constraint;
 - an execute idempotency key cannot be rebound to another preview;
 - an idempotent retry with different preview proof is rejected;
 - backward claimed-state advancement is rejected;
