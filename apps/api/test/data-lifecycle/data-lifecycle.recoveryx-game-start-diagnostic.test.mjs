@@ -5,7 +5,6 @@ import { createDataLifecycleRepository } from '../../dist/modules/data-lifecycle
 import { hashOpaqueLifecycleToken } from '../../dist/modules/data-lifecycle/data-lifecycle.hmac.js';
 
 const prisma = prismaModule.default;
-const repository = createDataLifecycleRepository(prisma);
 const suffix = randomUUID();
 let userId;
 let operationId;
@@ -14,6 +13,54 @@ let diagnosticClient;
 function hash(value) {
   return createHash('sha256').update(value).digest('hex');
 }
+
+function instrumentTransaction(transaction, sequence) {
+  return new Proxy(transaction, {
+    get(target, property, receiver) {
+      if (property === '$queryRaw' || property === '$executeRaw') {
+        return async (...args) => {
+          const markerRows = await target.$queryRawUnsafe(
+            'SELECT pg_backend_pid()::int AS pid, txid_current()::text AS txid',
+          );
+          const marker = markerRows[0];
+          const sql = args[0]?.text ?? '<tagged-sql>';
+          console.log(
+            'DATA_LIFECYCLE_TX_IDENTITY',
+            JSON.stringify({
+              sequence,
+              method: property,
+              pid: marker?.pid ?? null,
+              txid: marker?.txid ?? null,
+              sql: String(sql).replace(/\s+/g, ' ').trim().slice(0, 120),
+            }),
+          );
+          return target[property](...args);
+        };
+      }
+      return Reflect.get(target, property, receiver);
+    },
+  });
+}
+
+const originalTransaction = prisma.$transaction.bind(prisma);
+let transactionSequence = 0;
+const instrumentedDatabase = new Proxy(prisma, {
+  get(target, property, receiver) {
+    if (property === '$transaction') {
+      return async (input, options) => {
+        if (typeof input !== 'function') return originalTransaction(input, options);
+        const sequence = ++transactionSequence;
+        return originalTransaction(
+          (transaction) => input(instrumentTransaction(transaction, sequence)),
+          options,
+        );
+      };
+    }
+    const value = Reflect.get(target, property, receiver);
+    return typeof value === 'function' ? value.bind(target) : value;
+  },
+});
+const repository = createDataLifecycleRepository(instrumentedDatabase);
 
 try {
   const user = await prisma.appUser.create({
