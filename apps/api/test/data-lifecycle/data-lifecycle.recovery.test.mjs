@@ -68,14 +68,24 @@ try {
     previewHash: hash(`preview:${suffix}`),
     idempotencyKeyHash: hash(`idempotency:${suffix}`),
   });
-  const claimed = await repository.claimNext(`recovery-first-${suffix}`);
+  const firstWorkKey = `recovery-first-${suffix}`;
+  const claimed = await repository.claimNext(firstWorkKey);
   assert.equal(claimed?.id, preview.id);
-  await repository.advanceClaimed(preview.id, `recovery-first-${suffix}`, 'EXECUTING');
-  await repository.markFirstDestructiveCommit(preview.id, `recovery-first-${suffix}`, {
-    batch: 3,
-    cursor: 'preserve-me',
-  });
-  await repository.failClaimed(preview.id, `recovery-first-${suffix}`, 'TEST_PARTIAL_FAILURE');
+  await repository.advanceClaimed(preview.id, firstWorkKey, 'WAITING_FOR_DRAIN');
+  await repository.advanceClaimed(preview.id, firstWorkKey, 'EXECUTING');
+  await repository.runDestructiveTransaction(
+    {
+      operationId: preview.id,
+      targetUserId: user.id,
+      workKey: firstWorkKey,
+      checkpoint: {
+        batch: 3,
+        cursor: 'preserve-me',
+      },
+    },
+    async () => {},
+  );
+  await repository.failClaimed(preview.id, firstWorkKey, 'TEST_PARTIAL_FAILURE');
 
   const attention = await repository.getForTargetUser(user.id, preview.id);
   assert.equal(attention?.status, 'NEEDS_ATTENTION');
@@ -100,7 +110,8 @@ try {
     1,
   );
 
-  const reclaimed = await repository.claimNext(`recovery-second-${suffix}`);
+  const secondWorkKey = `recovery-second-${suffix}`;
+  const reclaimed = await repository.claimNext(secondWorkKey);
   assert.equal(reclaimed?.id, preview.id);
   assert.equal(reclaimed?.status, 'WAITING_FOR_DRAIN');
   assert.deepEqual(reclaimed?.checkpoint, { batch: 3, cursor: 'preserve-me' });
@@ -108,7 +119,7 @@ try {
 
   // The resumed operation stays forward-only. A second failure remains
   // NEEDS_ATTENTION and does not clear the fence or destructive checkpoint.
-  await repository.failClaimed(preview.id, `recovery-second-${suffix}`, 'TEST_SECOND_FAILURE');
+  await repository.failClaimed(preview.id, secondWorkKey, 'TEST_SECOND_FAILURE');
   const secondAttention = await repository.getForTargetUser(user.id, preview.id);
   assert.equal(secondAttention?.status, 'NEEDS_ATTENTION');
   assert.deepEqual(secondAttention?.checkpoint, { batch: 3, cursor: 'preserve-me' });
