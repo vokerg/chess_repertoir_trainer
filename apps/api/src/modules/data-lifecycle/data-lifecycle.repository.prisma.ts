@@ -12,10 +12,7 @@ import {
   type DataLifecycleTerminalResult,
 } from '@chess-trainer/contracts/data-lifecycle';
 import prisma from '../../prisma';
-import {
-  bindDataLifecycleOperation,
-  lockDataLifecycleUserScope,
-} from './data-lifecycle.guard';
+import { lockDataLifecycleUserScope } from './data-lifecycle.guard';
 
 const CLAIMABLE_STATUSES = [
   'FENCING',
@@ -796,6 +793,16 @@ async function insertFence(
       ${resourceId},
       NOW()
     )
+  `);
+}
+
+async function bindDataLifecycleOperation(
+  transaction: Prisma.TransactionClient,
+  operationId: number,
+): Promise<void> {
+  validatePositiveInteger(operationId, 'operationId');
+  await transaction.$executeRaw(Prisma.sql`
+    SELECT set_config('app.data_lifecycle_operation_id', ${String(operationId)}, TRUE)
   `);
 }
 
