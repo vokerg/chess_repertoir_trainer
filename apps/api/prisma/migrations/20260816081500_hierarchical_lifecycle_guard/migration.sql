@@ -68,3 +68,16 @@ BEGIN
     END IF;
 END;
 $$;
+
+-- Canonical destructive actions have one resource boundary. Keep the durable
+-- operation row internally consistent even before public preview routes exist.
+ALTER TABLE "DataLifecycleOperation"
+ADD CONSTRAINT "DataLifecycleOperation_actionScope_check"
+CHECK (
+    ("action" IN ('UNANALYSE_GAMES', 'UNINDEX_GAMES') AND "scopeResourceType" = 'GAME')
+    OR (
+        "action" IN ('PURGE_ACCOUNT_DATA', 'DELETE_EXTERNAL_ACCOUNT')
+        AND "scopeResourceType" = 'ACCOUNT'
+    )
+    OR ("action" = 'DELETE_APP_USER' AND "scopeResourceType" = 'USER')
+);
