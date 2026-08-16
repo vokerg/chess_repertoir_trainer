@@ -105,6 +105,11 @@ export interface AdmitPreparationBatchInput {
   lane: PreparationLane;
   force?: boolean;
   retryFailed?: boolean;
+  /**
+   * Internal preparation-control flag. When true, creation of this RETRY batch
+   * and incrementing the parent retry generation are one database transaction.
+   */
+  startRetryGeneration?: boolean;
 }
 
 export type PreparationAdmissionBlockedReason =
@@ -122,6 +127,7 @@ export type PreparationBatchAdmission =
       jobRunId: number;
       importedGameIds: number[];
       plannedLimit: number;
+      retryGeneration?: number;
     }
   | {
       outcome: 'BLOCKED';
