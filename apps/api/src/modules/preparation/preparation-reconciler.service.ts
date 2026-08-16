@@ -272,6 +272,7 @@ export function createPreparationReconciler(
     const applied = await repository.applyState({
       runId: snapshot.run.id,
       expectedStatus: snapshot.run.status,
+      expectedReconcileAfter: snapshot.run.reconcileAfter,
       status: decision.status,
       attentionCode: decision.attentionCode,
       attentionDetail: decision.attentionDetail,
@@ -285,7 +286,7 @@ export function createPreparationReconciler(
     });
 
     if (!applied) {
-      logger.info('Preparation reconcile lost a lifecycle-state race; persisted control state wins.', {
+      logger.info('Preparation reconcile lost a lifecycle-state or wake-fence race; persisted state wins.', {
         runId: snapshot.run.id,
         expectedStatus: snapshot.run.status,
       });
@@ -307,6 +308,7 @@ export function createPreparationReconciler(
     const applied = await repository.applyState({
       runId: snapshot.run.id,
       expectedStatus: 'NEEDS_ATTENTION',
+      expectedReconcileAfter: snapshot.run.reconcileAfter,
       status: resolved ? 'RUNNING' : 'NEEDS_ATTENTION',
       attentionCode: resolved ? null : snapshot.run.attentionCode,
       attentionDetail: resolved ? null : snapshot.run.attentionDetail,
@@ -322,9 +324,9 @@ export function createPreparationReconciler(
     });
     if (!applied || resolved) return;
 
-    // If an import resume/relink committed after the snapshot but before the
-    // attention update, re-read once so setting reconcileAfter=NULL cannot erase
-    // the only durable wake for the recovered import attempt.
+    // Re-read once after an unresolved attention write. A concurrent import
+    // resume/relink either invalidates the wake fence above or persists a new
+    // wake after this transaction, so this is only a low-latency recovery path.
     const refreshed = await repository.loadSnapshot(snapshot.run.id);
     if (
       !refreshed
@@ -338,6 +340,7 @@ export function createPreparationReconciler(
     await repository.applyState({
       runId: refreshed.run.id,
       expectedStatus: 'NEEDS_ATTENTION',
+      expectedReconcileAfter: refreshed.run.reconcileAfter,
       status: 'RUNNING',
       attentionCode: null,
       attentionDetail: null,
@@ -427,6 +430,7 @@ export function createPreparationReconciler(
     await repository.applyState({
       runId: refreshed.run.id,
       expectedStatus: 'PAUSE_REQUESTED',
+      expectedReconcileAfter: refreshed.run.reconcileAfter,
       status: importCanMutate || childCanMutate ? 'PAUSE_REQUESTED' : 'PAUSED',
       attentionCode: null,
       attentionDetail: null,
@@ -469,6 +473,7 @@ export function createPreparationReconciler(
     await repository.applyState({
       runId: refreshed.run.id,
       expectedStatus: 'CANCEL_REQUESTED',
+      expectedReconcileAfter: refreshed.run.reconcileAfter,
       status: importCanMutate || childCanMutate ? 'CANCEL_REQUESTED' : 'CANCELLED',
       attentionCode: null,
       attentionDetail: null,
