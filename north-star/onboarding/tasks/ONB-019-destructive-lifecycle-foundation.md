@@ -1,6 +1,6 @@
 # ONB-019 — Persist destructive lifecycle operations, fences, audit, and provenance
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P0
 
@@ -8,13 +8,13 @@ Order: 160
 
 Delivery class: Implementation
 
-Planning maturity: Allocated by ONB-004; ONB-004/005 are accepted, ONB-017 established migration order with ONB-019 following, and ONB-011 recorded the import/lifecycle schema ownership split; promoted to unclaimed READY through ONB-014 completion self-review on PR #383
+Planning maturity: Allocated by ONB-004; ONB-004/005 are accepted, ONB-017 established migration order with ONB-019 following, and ONB-011 recorded the import/lifecycle schema ownership split; implementation is now under review in PR #386
 
 GitHub issue: [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259)
 
 Claimed by: ChatGPT
 
-Claim branch: `onb-019/issue-259-destructive-lifecycle-foundation`
+Implementation branch: `onb-019/issue-259-destructive-lifecycle-foundation`
 
 Claimed at: 2026-08-16
 
@@ -29,7 +29,7 @@ Add the durable database foundation required to preview, serialize, fence, resum
 ## Dependencies
 
 - ONB-004 / #151 accepted lifecycle contract, including both self-review addenda — complete.
-- ONB-011 / #199 and ONB-017 / #253 schema ownership/migration coordination is resolved: ONB-017 established ONB-019 as a later additive migration owner, and ONB-011 recorded the destructive lifecycle operation/resource-fence/audit/opening-provenance/deleted-identity ownership boundary on #259. Both implementation owners are complete. Recheck current Prisma/migration activity immediately before claim.
+- ONB-011 / #199 and ONB-017 / #253 schema ownership/migration coordination is resolved: ONB-017 established ONB-019 as a later additive migration owner, and ONB-011 recorded the destructive lifecycle operation/resource-fence/audit/opening-provenance/deleted-identity ownership boundary on #259. Both implementation owners are complete. Claim-time collision review found ONB-018 / PR #385 adding a later preparation reconciliation migration without a `schema.prisma` edit; ONB-019 uses a later additive migration timestamp.
 - ONB-005 / #152 actor/audit authorization decisions — complete; administrator mutation exposure remains separately gated by ONB-024.
 - Consumed by ONB-020 / #260 and ONB-021 / #261.
 
@@ -94,8 +94,12 @@ Add the durable database foundation required to preview, serialize, fence, resum
 
 ## Completion
 
-Report: none
+Implementation report: `north-star/onboarding/reports/ONB-019-2026-08-16-destructive-lifecycle-foundation.md`
 
-Pull request: none
+Pull request: [#386](https://github.com/vokerg/chess_repertoir_trainer/pull/386)
 
-Completed at: none
+Initial implementation head: `8d0466a7741c92abb965fac17e870faa4959470d`
+
+Validation: local checkout unavailable because `github.com` DNS resolution failed in the execution environment; exact-head GitHub Actions validation and PR self-review are required before merge readiness.
+
+Completed at: none — task remains `REVIEW` until accepted merge/completion reconciliation.
