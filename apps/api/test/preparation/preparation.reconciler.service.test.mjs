@@ -259,7 +259,7 @@ async function provePauseAndCancelAcknowledgement() {
 
 async function proveRetryOnlyAdmitsFailedEvidence() {
   const snapshot = runSnapshot({
-    status: 'COMPLETED',
+    status: 'NEEDS_ATTENTION',
     targets: [target(1, {
       importStatus: 'COMPLETED',
       importedCount: 4,
@@ -271,34 +271,74 @@ async function proveRetryOnlyAdmitsFailedEvidence() {
     })],
   });
   const harness = createHarness(snapshot);
-  harness.repository.beginRetry = async () => {
-    snapshot.run.status = 'RUNNING';
-    snapshot.run.retryGeneration += 1;
-    return snapshot.run.retryGeneration;
-  };
   const generation = await harness.reconciler.retry(snapshot.run.userId, snapshot.run.id);
   assert.equal(generation, 1);
   assert.deepEqual(
-    harness.admissions.map(({ stage, lane, retryFailed }) => [stage, lane, retryFailed]),
-    [['INDEX', 'RETRY', true], ['ANALYSIS', 'RETRY', true]],
+    harness.admissions.map(({ stage, lane, retryFailed, startRetryGeneration }) => [
+      stage,
+      lane,
+      retryFailed,
+      startRetryGeneration,
+    ]),
+    [['INDEX', 'RETRY', true, true]],
+    'one explicit retry generation creates one bounded failed-evidence wave, preferring indexing first',
   );
+  assert.equal(snapshot.run.status, 'RUNNING');
+  assert.equal(snapshot.run.retryGeneration, 1);
+
+  const analysisOnlyFailure = runSnapshot({
+    status: 'RUNNING',
+    targets: [target(2, {
+      importStatus: 'COMPLETED',
+      indexedCount: 2,
+      analysisFailedCount: 1,
+    })],
+  });
+  const analysisOnly = createHarness(analysisOnlyFailure);
+  assert.equal(
+    await analysisOnly.reconciler.retry(analysisOnlyFailure.run.userId, analysisOnlyFailure.run.id),
+    1,
+  );
+  assert.equal(analysisOnly.admissions[0].stage, 'ANALYSIS');
+  assert.equal(analysisOnly.admissions[0].lane, 'RETRY');
+
+  const blockedSnapshot = runSnapshot({
+    status: 'NEEDS_ATTENTION',
+    targets: [target(3, { indexFailedCount: 1 })],
+  });
+  const blockedRetry = createHarness(blockedSnapshot);
+  blockedRetry.blockAdmissions = true;
+  assert.equal(
+    await blockedRetry.reconciler.retry(blockedSnapshot.run.userId, blockedSnapshot.run.id),
+    null,
+    'capacity blocking does not persist a retry generation without durable child work',
+  );
+  assert.equal(blockedSnapshot.run.retryGeneration, 0);
+  assert.equal(blockedSnapshot.run.status, 'NEEDS_ATTENTION');
+
+  const completedFailure = runSnapshot({
+    status: 'COMPLETED',
+    targets: [target(4, { analysisFailedCount: 1 })],
+  });
+  const completed = createHarness(completedFailure);
+  assert.equal(
+    await completed.reconciler.retry(completedFailure.run.userId, completedFailure.run.id),
+    null,
+    'terminal preparation is not reopened; ONB-009 owns linked recovery/expansion commands',
+  );
+  assert.equal(completed.admissions.length, 0);
 
   const importOnlyFailure = runSnapshot({
     status: 'NEEDS_ATTENTION',
-    targets: [target(2, { importStatus: 'FAILED' })],
+    targets: [target(5, { importStatus: 'FAILED' })],
   });
   const importOnly = createHarness(importOnlyFailure);
-  let beginRetryCalled = false;
-  importOnly.repository.beginRetry = async () => {
-    beginRetryCalled = true;
-    return 1;
-  };
   assert.equal(
     await importOnly.reconciler.retry(importOnlyFailure.run.userId, importOnlyFailure.run.id),
     null,
     'preparation retry does not masquerade as provider-import retry when no failed child evidence exists',
   );
-  assert.equal(beginRetryCalled, false);
+  assert.equal(importOnly.admissions.length, 0);
 }
 
 async function proveActiveAndIdleCadence() {
@@ -381,12 +421,19 @@ function createHarness(snapshot) {
       admitNextBatch: async (input) => {
         admissions.push(input);
         if (harness.blockAdmissions) return { outcome: 'BLOCKED', reason: 'GLOBAL_TASK_CAPACITY' };
+        let retryGeneration;
+        if (input.startRetryGeneration) {
+          snapshot.run.status = 'RUNNING';
+          snapshot.run.retryGeneration += 1;
+          retryGeneration = snapshot.run.retryGeneration;
+        }
         return {
           outcome: 'CREATED',
           batchId: admissions.length,
           jobRunId: 100 + admissions.length,
           importedGameIds: [1000 + admissions.length],
           plannedLimit: 1,
+          ...(retryGeneration === undefined ? {} : { retryGeneration }),
         };
       },
       createRun: async () => { throw new Error('not used'); },
