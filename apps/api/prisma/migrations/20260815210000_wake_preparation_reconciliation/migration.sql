@@ -1,5 +1,6 @@
 -- ONB-018: durable preparation wake hints.
--- Polling remains authoritative; these triggers only move active parents due sooner.
+-- Polling remains authoritative; these triggers only move active parents, or
+-- recoverable import-attention parents, due sooner.
 
 CREATE OR REPLACE FUNCTION "snapshot_data_preparation_batch_for_job"()
 RETURNS TRIGGER
@@ -68,7 +69,7 @@ BEGIN
     FROM "DataPreparationTarget" AS target
     WHERE target."currentImportRunId" = NEW."id"
       AND run."id" = target."preparationRunId"
-      AND run."status" IN ('QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'CANCEL_REQUESTED');
+      AND run."status" IN ('QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'CANCEL_REQUESTED', 'NEEDS_ATTENTION');
     RETURN NEW;
 END;
 $$;
@@ -127,7 +128,7 @@ BEGIN
     SET "reconcileAfter" = CURRENT_TIMESTAMP,
         "updatedAt" = CURRENT_TIMESTAMP
     WHERE "id" = NEW."preparationRunId"
-      AND "status" IN ('QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'CANCEL_REQUESTED');
+      AND "status" IN ('QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'CANCEL_REQUESTED', 'NEEDS_ATTENTION');
     RETURN NEW;
 END;
 $$;
