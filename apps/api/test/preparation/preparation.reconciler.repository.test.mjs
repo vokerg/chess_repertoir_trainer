@@ -238,6 +238,14 @@ async function proveLargeAccountQueueBound() {
     })),
   });
 
+  // The API test runner shares one PostgreSQL database across files. Make this
+  // fixture deterministically next instead of assuming no prior preparation row
+  // is due, which is not an invariant of the production reconciler.
+  await prisma.dataPreparationRun.update({
+    where: { id: preparation.run.id },
+    data: { reconcileAfter: new Date('1990-01-01T00:00:00.000Z') },
+  });
+
   const reconciler = createPreparationReconciler({
     repository: createPreparationReconcilerRepository(prisma),
     batchRepository: preparationRepository,
@@ -268,6 +276,8 @@ async function proveLargeAccountQueueBound() {
     DEFAULT_PREPARATION_CONFIG.firstIndexBatchSize,
     'large-account queue materialization remains bounded by the configured wave size',
   );
+
+  await retirePreparationRun(preparation.run.id);
 }
 
 function createGame(owner, label) {
