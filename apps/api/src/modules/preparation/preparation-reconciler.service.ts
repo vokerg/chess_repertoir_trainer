@@ -34,6 +34,17 @@ const IMPORT_CANCELLABLE_STATUSES = new Set([
   'PAUSED',
   'CANCEL_REQUESTED',
 ]);
+const RECOVERABLE_IMPORT_ATTENTION_CODES = new Set([
+  'IMPORT_PAUSED',
+  'IMPORT_RETRY_AVAILABLE',
+]);
+const IMPORT_ATTENTION_BLOCKING_STATUSES = new Set([
+  'FAILED',
+  'CANCELLED',
+  'PAUSED',
+  'PAUSE_REQUESTED',
+  'CANCEL_REQUESTED',
+]);
 
 export interface PreparationReconcilerLogger {
   info(message: string, details?: Record<string, unknown>): void;
@@ -219,6 +230,10 @@ export function createPreparationReconciler(
       return snapshot.run.status;
     }
 
+    if (snapshot.run.status === 'NEEDS_ATTENTION') {
+      await reconcileImportAttention(snapshot);
+      return (await repository.loadSnapshot(claim.id))?.run.status;
+    }
     if (snapshot.run.status === 'PAUSE_REQUESTED') {
       await reconcilePause(snapshot);
       return (await repository.loadSnapshot(claim.id))?.run.status;
@@ -263,6 +278,62 @@ export function createPreparationReconciler(
 
     logOperationalTelemetry(snapshot, lagMs, decision.attentionCode, decision.status);
     return applied ? decision.status : (await repository.loadSnapshot(claim.id))?.run.status;
+  }
+
+  async function reconcileImportAttention(snapshot: PreparationReconcileSnapshot): Promise<void> {
+    if (
+      snapshot.run.attentionCode === null
+      || !RECOVERABLE_IMPORT_ATTENTION_CODES.has(snapshot.run.attentionCode)
+    ) {
+      return;
+    }
+
+    const resolved = isImportAttentionResolved(snapshot);
+    const applied = await repository.applyState({
+      runId: snapshot.run.id,
+      expectedStatus: 'NEEDS_ATTENTION',
+      status: resolved ? 'RUNNING' : 'NEEDS_ATTENTION',
+      attentionCode: resolved ? null : snapshot.run.attentionCode,
+      attentionDetail: resolved ? null : snapshot.run.attentionDetail,
+      reconcileAfter: resolved
+        ? new Date(now().getTime() + config.reconcileActiveMs)
+        : null,
+      markFirstImported: false,
+      markFirstIndexed: false,
+      markFirstAnalysed: false,
+      markCoreReady: false,
+      markAnalysisCompleted: false,
+      targetMilestones: [],
+    });
+    if (!applied || resolved) return;
+
+    // If an import resume/relink committed after the snapshot but before the
+    // attention update, re-read once so setting reconcileAfter=NULL cannot erase
+    // the only durable wake for the recovered import attempt.
+    const refreshed = await repository.loadSnapshot(snapshot.run.id);
+    if (
+      !refreshed
+      || refreshed.run.status !== 'NEEDS_ATTENTION'
+      || refreshed.run.attentionCode === null
+      || !RECOVERABLE_IMPORT_ATTENTION_CODES.has(refreshed.run.attentionCode)
+      || !isImportAttentionResolved(refreshed)
+    ) {
+      return;
+    }
+    await repository.applyState({
+      runId: refreshed.run.id,
+      expectedStatus: 'NEEDS_ATTENTION',
+      status: 'RUNNING',
+      attentionCode: null,
+      attentionDetail: null,
+      reconcileAfter: new Date(now().getTime() + config.reconcileActiveMs),
+      markFirstImported: false,
+      markFirstIndexed: false,
+      markFirstAnalysed: false,
+      markCoreReady: false,
+      markAnalysisCompleted: false,
+      targetMilestones: [],
+    });
   }
 
   async function admitNormalWork(snapshot: PreparationReconcileSnapshot): Promise<void> {
@@ -504,6 +575,8 @@ export function createPreparationReconciler(
           }
         : null;
     const attention = deterministicAttention ?? operational ?? partialAttention;
+    const recoverableImportAttention = deterministicAttention !== null
+      && RECOVERABLE_IMPORT_ATTENTION_CODES.has(deterministicAttention.code);
 
     return {
       status,
@@ -511,7 +584,9 @@ export function createPreparationReconciler(
       attentionDetail: attention?.detail ?? null,
       reconcileAfter: status === 'RUNNING'
         ? new Date(observedAt.getTime() + config.reconcileActiveMs)
-        : null,
+        : recoverableImportAttention
+          ? new Date(observedAt.getTime() + config.reconcileIdleMs)
+          : null,
       markFirstImported: totals.imported > 0,
       markFirstIndexed: totals.indexed > 0,
       markFirstAnalysed: totals.analysed > 0,
@@ -637,6 +712,14 @@ export function selectOperationalAttention(
     }
   }
   return null;
+}
+
+function isImportAttentionResolved(snapshot: PreparationReconcileSnapshot): boolean {
+  return snapshot.targets.length > 0 && snapshot.targets.every((target) => (
+    target.currentImportRunId !== null
+    && target.importStatus !== null
+    && !IMPORT_ATTENTION_BLOCKING_STATUSES.has(target.importStatus)
+  ));
 }
 
 const consoleLogger: PreparationReconcilerLogger = {
