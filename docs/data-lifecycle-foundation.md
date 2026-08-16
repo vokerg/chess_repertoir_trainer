@@ -27,7 +27,7 @@ The guard is intentionally commit-side. Provider requests, Stockfish analysis, L
 
 The migration installs database triggers as the final race-safe guard for imported games and their index/analysis/AI/tactical/scenario children, external accounts, AppUser updates/deletes, preparation target admission, and JobTask admission. Account-import and preparation repositories also use the shared application guard. Job workers exclude lifecycle-fenced games while choosing runnable candidates; the trigger remains the commit-side race check.
 
-Destructive code must use `DataLifecycleRepository.runDestructiveTransaction(...)` for each short destructive batch. The repository acquires the user lock, atomically sets `firstDestructiveCommitAt`/checkpoint evidence, installs the transaction-local operation id used by database triggers, and only then invokes the mutation callback. If the callback fails, both the destructive writes and first-commit evidence roll back. The raw fence-bypass binding is intentionally not exported as a general writer primitive.
+Destructive code must use `DataLifecycleRepository.runDestructiveTransaction(...)` for each short destructive batch. The repository may first run a narrowly scoped `beforeUserLock` callback inside the same database transaction when a prerequisite has a stricter lock order, then acquires the user lock, atomically sets `firstDestructiveCommitAt`/checkpoint evidence, installs the transaction-local operation id used by database triggers, and invokes the destructive mutation callback. If any part fails, the prerequisite changes, destructive writes, and first-commit evidence roll back together. The raw fence-bypass binding is intentionally not exported as a general writer primitive.
 
 ## Cancellation and crash semantics
 
@@ -51,7 +51,7 @@ Opaque receipt tokens are stored only as SHA-256 hashes. Deleted identities may 
 
 Auth provisioning and final user deletion share the lock order **identity, then user**. Identity serialization uses a separate advisory lock derived from the provider/subject pair.
 
-Before normal `AppUser` provisioning, `CurrentAppUserService` checks the deleted-identity HMAC tombstones. A matching tombstone rejects provisioning. A future `DELETE_APP_USER` executor must create the tombstone and delete the AppUser inside the callback supplied to `runDestructiveTransaction(...)`; the database trigger verifies that the internally bound operation targets that user and is a `DELETE_APP_USER` operation.
+Before normal `AppUser` provisioning, `CurrentAppUserService` checks the deleted-identity HMAC tombstones. A matching tombstone rejects provisioning. A future `DELETE_APP_USER` executor must create the tombstone in `runDestructiveTransaction(...)`'s `beforeUserLock` callback so the identity lock is acquired first; the main destructive callback then deletes the AppUser after the repository acquires the user lock and internally binds the lifecycle operation. The database trigger verifies that the bound operation targets that user and is a `DELETE_APP_USER` operation. Both steps remain part of one database transaction.
 
 HMAC configuration is versioned for rotation:
 
