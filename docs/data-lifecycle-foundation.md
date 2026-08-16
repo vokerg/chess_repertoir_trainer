@@ -27,11 +27,13 @@ The guard is intentionally commit-side. Provider requests, Stockfish analysis, L
 
 The migration installs database triggers as the final race-safe guard for imported games and their index/analysis/AI/tactical/scenario children, external accounts, AppUser updates/deletes, preparation target admission, and JobTask admission. Account-import and preparation repositories also use the shared application guard. Job workers exclude lifecycle-fenced games while choosing runnable candidates; the trigger remains the commit-side race check.
 
-A future destructive executor may call `bindDataLifecycleOperation(transaction, operationId)` inside each short destructive transaction. That sets a transaction-local operation id so triggers ignore only that operation's own fence. Other lifecycle fences continue to win.
+Destructive code must use `DataLifecycleRepository.runDestructiveTransaction(...)` for each short destructive batch. The repository acquires the user lock, atomically sets `firstDestructiveCommitAt`/checkpoint evidence, installs the transaction-local operation id used by database triggers, and only then invokes the mutation callback. If the callback fails, both the destructive writes and first-commit evidence roll back. The raw fence-bypass binding is intentionally not exported as a general writer primitive.
 
 ## Cancellation and crash semantics
 
 `CANCELLED` is valid only before the first destructive commit. The repository and database constraint both enforce that boundary.
+
+Claimed execution advances only forward through the supported worker states: `FENCING` → `WAITING_FOR_DRAIN` → `EXECUTING` → `VERIFYING` (same-state retries are idempotent). `CANCEL_REQUESTED` is a stop state handled by the cancellation path rather than a route back into execution.
 
 After `firstDestructiveCommitAt` is set, a stop request becomes `STOP_AFTER_BATCH`. Failure becomes `NEEDS_ATTENTION`, keeps the checkpoint, and retains the durable fence. Stale worker recovery clears only claim ownership/heartbeat state; it does not release fences.
 
@@ -39,9 +41,9 @@ Fences are released only for verified completion or a pre-mutation cancellation/
 
 ## Preview, idempotency, and receipt semantics
 
-GAME preview scopes are bounded to at most 100 explicit game ids. Every preview has an expiry and immutable scope/hash binding. Execution revalidates target ownership before fencing.
+GAME preview scopes are bounded to at most 100 explicit game ids. Every preview has an expiry and immutable scope/hash binding. Preview creation acquires the user lifecycle lock and verifies the target USER/ACCOUNT/GAME ownership before persisting the preview; execution revalidates ownership again immediately before fencing.
 
-Execute idempotency is unique per target user. Repeating the same idempotency key returns the already-bound operation rather than creating a second destructive operation.
+Execute idempotency is unique per target user. Repeating the same idempotency key returns the already-bound operation only when the request names the same operation and presents the same preview token/hash proof. Reusing that key for another preview is rejected rather than silently returning an unrelated operation.
 
 Opaque receipt tokens are stored only as SHA-256 hashes. Deleted identities may resolve lifecycle status through their versioned HMAC tombstone or a valid unexpired receipt token without ordinary `AppUser` provisioning.
 
@@ -49,7 +51,7 @@ Opaque receipt tokens are stored only as SHA-256 hashes. Deleted identities may 
 
 Auth provisioning and final user deletion share the lock order **identity, then user**. Identity serialization uses a separate advisory lock derived from the provider/subject pair.
 
-Before normal `AppUser` provisioning, `CurrentAppUserService` checks the deleted-identity HMAC tombstones. A matching tombstone rejects provisioning. The final future `DELETE_APP_USER` transaction must write the tombstone, bind the lifecycle operation, and then delete the AppUser; the database trigger verifies that the bound operation targets that user and is a `DELETE_APP_USER` operation.
+Before normal `AppUser` provisioning, `CurrentAppUserService` checks the deleted-identity HMAC tombstones. A matching tombstone rejects provisioning. A future `DELETE_APP_USER` executor must create the tombstone and delete the AppUser inside the callback supplied to `runDestructiveTransaction(...)`; the database trigger verifies that the internally bound operation targets that user and is a `DELETE_APP_USER` operation.
 
 HMAC configuration is versioned for rotation:
 
