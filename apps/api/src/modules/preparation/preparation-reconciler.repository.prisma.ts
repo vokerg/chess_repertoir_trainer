@@ -70,6 +70,7 @@ export interface PreparationReconcileSnapshot {
     retryGeneration: number;
     attentionCode: string | null;
     attentionDetail: string | null;
+    reconcileAfter: Date | null;
     firstImportedAt: Date | null;
     firstIndexedAt: Date | null;
     firstAnalysedAt: Date | null;
@@ -84,6 +85,7 @@ export interface PreparationReconcileSnapshot {
 export interface ApplyPreparationReconcileStateInput {
   runId: number;
   expectedStatus: PreparationRunStatus;
+  expectedReconcileAfter: Date | null;
   status: PreparationRunStatus;
   attentionCode: string | null;
   attentionDetail: string | null;
@@ -151,6 +153,7 @@ type TargetRow = Omit<PreparationTargetSnapshot, 'importedCount'
 type ActiveBatchRow = Omit<PreparationActiveBatchSnapshot, 'stage'> & { stage: string };
 type TelemetryRow = PreparationBatchTelemetry;
 type StatusRow = { status: string };
+type StateFenceRow = { status: string; reconcileAfter: Date | null };
 
 export function createPreparationReconcilerRepository(
   database: PrismaClient = prisma,
@@ -422,6 +425,7 @@ export function createPreparationReconcilerRepository(
           retryGeneration: run.retryGeneration,
           attentionCode: run.attentionCode,
           attentionDetail: run.attentionDetail,
+          reconcileAfter: run.reconcileAfter,
           firstImportedAt: run.firstImportedAt,
           firstIndexedAt: run.firstIndexedAt,
           firstAnalysedAt: run.firstAnalysedAt,
@@ -443,15 +447,22 @@ export function createPreparationReconcilerRepository(
     },
 
     async applyState(input) {
+      validateDateOrNull(input.expectedReconcileAfter, 'expectedReconcileAfter');
       validateDateOrNull(input.reconcileAfter, 'reconcileAfter');
       return database.$transaction(async (transaction) => {
-        const statusRows = await transaction.$queryRaw<StatusRow[]>(Prisma.sql`
-          SELECT "status"
+        const stateRows = await transaction.$queryRaw<StateFenceRow[]>(Prisma.sql`
+          SELECT "status", "reconcileAfter"
           FROM "DataPreparationRun"
           WHERE "id" = ${input.runId}
           FOR UPDATE
         `);
-        if (statusRows[0]?.status !== input.expectedStatus) return false;
+        const state = stateRows[0];
+        if (
+          state?.status !== input.expectedStatus
+          || !sameDate(state.reconcileAfter, input.expectedReconcileAfter)
+        ) {
+          return false;
+        }
 
         for (const target of input.targetMilestones) {
           await transaction.$executeRaw(Prisma.sql`
@@ -517,6 +528,7 @@ export function createPreparationReconcilerRepository(
               "updatedAt" = NOW()
           WHERE "id" = ${input.runId}
             AND "status" = ${input.expectedStatus}
+            AND "reconcileAfter" IS NOT DISTINCT FROM ${input.expectedReconcileAfter}
         `);
         return updated === 1;
       });
@@ -628,6 +640,11 @@ function validateDate(value: Date, name: string): void {
 
 function validateDateOrNull(value: Date | null, name: string): void {
   if (value !== null) validateDate(value, name);
+}
+
+function sameDate(left: Date | null, right: Date | null): boolean {
+  if (left === null || right === null) return left === right;
+  return left.getTime() === right.getTime();
 }
 
 export const PreparationReconcilerRepository = createPreparationReconcilerRepository();
