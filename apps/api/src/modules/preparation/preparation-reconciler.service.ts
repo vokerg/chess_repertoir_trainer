@@ -152,16 +152,22 @@ export function createPreparationReconciler(
     },
 
     async resume(userId, runId) {
+      const changed = await repository.resume(userId, runId);
+      if (!changed) return false;
+
       const snapshot = await repository.loadSnapshot(runId);
-      if (!snapshot || snapshot.run.userId !== userId) return false;
-      for (const target of snapshot.targets) {
-        if (target.currentImportRunId !== null && target.importStatus === 'PAUSED') {
-          await importRepository.resume(userId, target.currentImportRunId);
+      if (
+        snapshot?.run.userId === userId
+        && (snapshot.run.status === 'RUNNING' || snapshot.run.status === 'QUEUED')
+      ) {
+        for (const target of snapshot.targets) {
+          if (target.currentImportRunId !== null && target.importStatus === 'PAUSED') {
+            await importRepository.resume(userId, target.currentImportRunId);
+          }
         }
       }
-      const changed = await repository.resume(userId, runId);
-      if (changed) api.wake();
-      return changed;
+      api.wake();
+      return true;
     },
 
     async requestCancel(userId, runId) {
