@@ -74,7 +74,9 @@ ONB-004 defines one target boundary per canonical action. The migration now has 
 - `PURGE_ACCOUNT_DATA` and `DELETE_EXTERNAL_ACCOUNT` require ACCOUNT scope;
 - `DELETE_APP_USER` requires USER scope.
 
-A focused integration test proves all five canonical pairings persist and representative mismatches are rejected.
+Because execution consumes the JSON scope snapshot while admission/indexing also carries redundant `scopeResourceType` and `targetUserId` columns, the migration additionally requires `scopeJson.resourceType = scopeResourceType` and `scopeJson.userId = targetUserId`. This prevents a row from satisfying the action/scope check through the indexed column while carrying a different executable JSON scope.
+
+A focused integration test proves all five canonical pairings persist, representative mismatches are rejected, and the JSON snapshot cannot diverge from the durable scope columns.
 
 ## Regression coverage added
 
@@ -82,6 +84,7 @@ The PostgreSQL lifecycle integration coverage now additionally verifies:
 
 - foreign-account and missing-game preview scopes are rejected before a preview row is persisted;
 - all five canonical action/resource pairings persist and mismatched pairings are rejected by the durable constraint;
+- the executable JSON scope snapshot cannot diverge from `scopeResourceType`/`targetUserId`;
 - an execute idempotency key cannot be rebound to another preview;
 - an idempotent retry with different preview proof is rejected;
 - backward claimed-state advancement is rejected;
