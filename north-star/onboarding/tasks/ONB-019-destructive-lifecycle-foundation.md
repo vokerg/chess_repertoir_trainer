@@ -1,6 +1,6 @@
 # ONB-019 — Persist destructive lifecycle operations, fences, audit, and provenance
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P0
 
@@ -12,13 +12,13 @@ Planning maturity: Allocated by ONB-004; ONB-004/005 are accepted, ONB-017 estab
 
 GitHub issue: [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT
 
-Claim branch: none
+Claim branch: `onb-019/issue-259-destructive-lifecycle-foundation`
 
-Claimed at: none
+Claimed at: 2026-08-16
 
-Claim scope: none
+Claim scope: durable destructive lifecycle persistence/contracts, user/account/game fences and overlap serialization, import/job/preparation/auth/direct-writer admission guards, bounded preview/idempotency/checkpoint/audit/claim foundation, opening provenance, deleted-identity tombstones and receipt lookup, focused tests, and architecture documentation; no destructive row execution, public lifecycle routes, Angular UI, provider/preparation implementation, shared-position cleanup, or administrator policy
 
 Promoted at: 2026-08-15 through ONB-014 completion self-review on PR #383
 
