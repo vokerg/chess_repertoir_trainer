@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import prismaModule from '../../dist/prisma.js';
-import { bindDataLifecycleOperation } from '../../dist/modules/data-lifecycle/data-lifecycle.guard.js';
 import {
   createDataLifecycleRepository,
   DataLifecycleConflictError,
@@ -526,6 +525,10 @@ try {
       prisma.importedGame.update({ where: { id: game.id }, data: { status: 'TOO_LATE' } }),
       /DATA_LIFECYCLE_WRITE_BLOCKED/,
     );
+
+    const cleanupClaim = await repository.claimNext('lifecycle-worker-writer-race');
+    assert.equal(cleanupClaim?.id, operation.id);
+    await repository.failClaimed(operation.id, 'lifecycle-worker-writer-race', 'TEST_WRITER_RACE_CLEANUP');
   }
 
   {
@@ -548,6 +551,10 @@ try {
       receiptTokenHash: hashOpaqueLifecycleToken('identity-receipt'),
       receiptExpiresAt: new Date(Date.now() + 60_000),
     });
+    const claim = await repository.claimNext('lifecycle-worker-identity');
+    assert.equal(claim?.id, operation.id);
+    await repository.advanceClaimed(operation.id, 'lifecycle-worker-identity', 'WAITING_FOR_DRAIN');
+    await repository.advanceClaimed(operation.id, 'lifecycle-worker-identity', 'EXECUTING');
 
     const keyring = new LifecycleHmacKeyring([{ version: 7, secret: 'test-only-lifecycle-key' }]);
     const identityGuard = createDeletedIdentityGuard(prisma, keyring);
@@ -555,7 +562,7 @@ try {
       operationId: operation.id,
       eventType: 'TEST_DELETE_STARTED',
       action: 'DELETE_APP_USER',
-      status: 'FENCING',
+      status: 'EXECUTING',
       actorKeyVersion: 7,
       actorKeyHash: hash('audit-actor'),
       targetKeyVersion: 7,
@@ -565,15 +572,20 @@ try {
       confirmationMethod: 'TEST',
     });
 
-    await prisma.$transaction(async (tx) => {
-      await identityGuard.createTombstone(tx, {
-        provider,
-        externalSubject,
-        operationId: operation.id,
-      });
-      await bindDataLifecycleOperation(tx, operation.id);
-      await tx.appUser.delete({ where: { id: user.id } });
-    });
+    await repository.runDestructiveTransaction(
+      operation.id,
+      user.id,
+      'lifecycle-worker-identity',
+      { phase: 'DELETE_APP_USER' },
+      async (tx) => {
+        await identityGuard.createTombstone(tx, {
+          provider,
+          externalSubject,
+          operationId: operation.id,
+        });
+        await tx.appUser.delete({ where: { id: user.id } });
+      },
+    );
 
     const authService = createCurrentAppUserService(prisma, identityGuard);
     await assert.rejects(
