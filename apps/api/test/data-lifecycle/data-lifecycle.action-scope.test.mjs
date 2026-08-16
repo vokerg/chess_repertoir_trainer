@@ -85,11 +85,20 @@ try {
   assert.equal((await createPreview('UNINDEX_GAMES', gameScope, 'valid-unindex')).scope.resourceType, 'GAME');
   assert.equal((await createPreview('PURGE_ACCOUNT_DATA', accountScope, 'valid-purge')).scope.resourceType, 'ACCOUNT');
   assert.equal((await createPreview('DELETE_EXTERNAL_ACCOUNT', accountScope, 'valid-account-delete')).scope.resourceType, 'ACCOUNT');
-  assert.equal((await createPreview('DELETE_APP_USER', userScope, 'valid-user-delete')).scope.resourceType, 'USER');
+  const userDelete = await createPreview('DELETE_APP_USER', userScope, 'valid-user-delete');
+  assert.equal(userDelete.scope.resourceType, 'USER');
 
   await assert.rejects(createPreview('DELETE_APP_USER', gameScope, 'invalid-user-game'));
   await assert.rejects(createPreview('PURGE_ACCOUNT_DATA', userScope, 'invalid-purge-user'));
   await assert.rejects(createPreview('UNINDEX_GAMES', accountScope, 'invalid-unindex-account'));
+
+  // The redundant indexed scope column and executable JSON snapshot must not diverge.
+  await assert.rejects(
+    prisma.dataLifecycleOperation.update({
+      where: { id: userDelete.id },
+      data: { scopeJson: gameScope },
+    }),
+  );
 
   console.log('Data lifecycle action/scope tests passed.');
 } finally {
