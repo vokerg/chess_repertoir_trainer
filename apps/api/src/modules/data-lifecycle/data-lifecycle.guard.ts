@@ -142,7 +142,10 @@ export async function lockDataLifecycleUserScope(
 ): Promise<void> {
   validatePositiveInteger(userId, 'userId');
   await transaction.$executeRaw(Prisma.sql`
-    SELECT pg_advisory_xact_lock(${DATA_LIFECYCLE_USER_LOCK_NAMESPACE}, ${userId})
+    SELECT pg_advisory_xact_lock(
+      ${DATA_LIFECYCLE_USER_LOCK_NAMESPACE}::integer,
+      ${userId}::integer
+    )
   `);
 }
 

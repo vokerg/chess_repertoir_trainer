@@ -208,7 +208,10 @@ async function lockIdentity(
     .digest();
   const lockKey = digest.readInt32BE(0);
   await transaction.$executeRaw(Prisma.sql`
-    SELECT pg_advisory_xact_lock(${DELETED_IDENTITY_LOCK_NAMESPACE}, ${lockKey})
+    SELECT pg_advisory_xact_lock(
+      ${DELETED_IDENTITY_LOCK_NAMESPACE}::integer,
+      ${lockKey}::integer
+    )
   `);
 }
 
