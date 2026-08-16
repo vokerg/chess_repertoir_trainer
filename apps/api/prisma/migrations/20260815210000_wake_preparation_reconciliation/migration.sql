@@ -69,7 +69,13 @@ BEGIN
     FROM "DataPreparationTarget" AS target
     WHERE target."currentImportRunId" = NEW."id"
       AND run."id" = target."preparationRunId"
-      AND run."status" IN ('QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'CANCEL_REQUESTED', 'NEEDS_ATTENTION');
+      AND (
+        run."status" IN ('QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'CANCEL_REQUESTED')
+        OR (
+          run."status" = 'NEEDS_ATTENTION'
+          AND run."attentionCode" IN ('IMPORT_PAUSED', 'IMPORT_RETRY_AVAILABLE')
+        )
+      );
     RETURN NEW;
 END;
 $$;
@@ -128,7 +134,13 @@ BEGIN
     SET "reconcileAfter" = CURRENT_TIMESTAMP,
         "updatedAt" = CURRENT_TIMESTAMP
     WHERE "id" = NEW."preparationRunId"
-      AND "status" IN ('QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'CANCEL_REQUESTED', 'NEEDS_ATTENTION');
+      AND (
+        "status" IN ('QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'CANCEL_REQUESTED')
+        OR (
+          "status" = 'NEEDS_ATTENTION'
+          AND "attentionCode" IN ('IMPORT_PAUSED', 'IMPORT_RETRY_AVAILABLE')
+        )
+      );
     RETURN NEW;
 END;
 $$;
