@@ -188,23 +188,38 @@ export function createPreparationReconciler(
     },
 
     async retry(userId, runId) {
-      const beforeRetry = await repository.loadSnapshot(runId);
-      if (!beforeRetry || beforeRetry.run.userId !== userId) return null;
-      const hasRetryableEvidence = beforeRetry.targets.some((target) => (
-        target.indexFailedCount > 0 || target.analysisFailedCount > 0
-      ));
-      if (!hasRetryableEvidence) return null;
-
-      const generation = await repository.beginRetry(userId, runId);
-      if (generation === null) return null;
-
       const snapshot = await repository.loadSnapshot(runId);
       if (!snapshot || snapshot.run.userId !== userId) return null;
-      await admitRetry(snapshot, 'INDEX');
-      const refreshed = await repository.loadSnapshot(runId);
-      if (refreshed) await admitRetry(refreshed, 'ANALYSIS');
+      if (snapshot.run.status !== 'RUNNING' && snapshot.run.status !== 'NEEDS_ATTENTION') {
+        return null;
+      }
+
+      const retry = pickRetryTarget(snapshot.targets);
+      if (!retry) return null;
+      const result = await batchRepository.admitNextBatch({
+        userId: snapshot.run.userId,
+        preparationRunId: snapshot.run.id,
+        targetId: retry.target.id,
+        stage: retry.stage,
+        lane: 'RETRY',
+        retryFailed: true,
+        startRetryGeneration: true,
+      });
+      if (result.outcome !== 'CREATED' || result.retryGeneration === undefined) {
+        return null;
+      }
+
+      logger.info('Preparation retry generation admitted.', {
+        runId: snapshot.run.id,
+        retryGeneration: result.retryGeneration,
+        targetId: retry.target.id,
+        stage: retry.stage,
+        batchId: result.batchId,
+        jobRunId: result.jobRunId,
+        taskCount: result.importedGameIds.length,
+      });
       api.wake();
-      return generation;
+      return result.retryGeneration;
     },
   };
 
@@ -367,7 +382,6 @@ export function createPreparationReconciler(
     target: PreparationTargetSnapshot,
     stage: PreparationStage,
     lane: PreparationLane,
-    retryFailed = false,
   ): Promise<void> {
     const result = await batchRepository.admitNextBatch({
       userId: snapshot.run.userId,
@@ -375,7 +389,6 @@ export function createPreparationReconciler(
       targetId: target.id,
       stage,
       lane,
-      ...(retryFailed ? { retryFailed: true } : {}),
     });
     if (result.outcome === 'CREATED') {
       logger.info('Preparation batch admitted.', {
@@ -388,22 +401,6 @@ export function createPreparationReconciler(
         taskCount: result.importedGameIds.length,
       });
     }
-  }
-
-  async function admitRetry(snapshot: PreparationReconcileSnapshot, stage: PreparationStage): Promise<void> {
-    if (snapshot.activeBatches.some((batch) => batch.stage === stage)) return;
-    const candidates = snapshot.targets
-      .filter((target) => stage === 'INDEX'
-        ? target.indexFailedCount > 0
-        : target.analysisFailedCount > 0)
-      .sort((left, right) => {
-        const leftCount = stage === 'INDEX' ? left.normalIndexBatches : left.normalAnalysisBatches;
-        const rightCount = stage === 'INDEX' ? right.normalIndexBatches : right.normalAnalysisBatches;
-        return leftCount - rightCount || left.ordinal - right.ordinal || left.id - right.id;
-      });
-    const target = candidates[0];
-    if (!target) return;
-    await admitBatch(snapshot, target, stage, 'RETRY', true);
   }
 
   async function reconcilePause(snapshot: PreparationReconcileSnapshot): Promise<void> {
@@ -712,6 +709,28 @@ export function selectOperationalAttention(
     }
   }
   return null;
+}
+
+function pickRetryTarget(
+  targets: PreparationTargetSnapshot[],
+): { target: PreparationTargetSnapshot; stage: PreparationStage } | null {
+  const indexTarget = [...targets]
+    .filter((target) => target.indexFailedCount > 0)
+    .sort((left, right) => (
+      left.normalIndexBatches - right.normalIndexBatches
+      || left.ordinal - right.ordinal
+      || left.id - right.id
+    ))[0];
+  if (indexTarget) return { target: indexTarget, stage: 'INDEX' };
+
+  const analysisTarget = [...targets]
+    .filter((target) => target.analysisFailedCount > 0)
+    .sort((left, right) => (
+      left.normalAnalysisBatches - right.normalAnalysisBatches
+      || left.ordinal - right.ordinal
+      || left.id - right.id
+    ))[0];
+  return analysisTarget ? { target: analysisTarget, stage: 'ANALYSIS' } : null;
 }
 
 function isImportAttentionResolved(snapshot: PreparationReconcileSnapshot): boolean {
