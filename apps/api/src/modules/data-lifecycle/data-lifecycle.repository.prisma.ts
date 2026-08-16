@@ -139,6 +139,14 @@ export interface StartDataLifecycleExecutionInput {
   receiptExpiresAt?: Date | null;
 }
 
+export interface DataLifecycleDestructiveTransactionInput {
+  operationId: number;
+  targetUserId: number;
+  workKey: string;
+  checkpoint?: unknown;
+  beforeUserLock?: (transaction: Prisma.TransactionClient) => Promise<void>;
+}
+
 export interface AppendLifecycleAuditInput {
   operationId: number;
   eventType: string;
@@ -217,10 +225,7 @@ export interface DataLifecycleRepository {
   ): Promise<StoredDataLifecycleOperation>;
   updateCheckpoint(operationId: number, workKey: string, checkpoint: unknown): Promise<void>;
   runDestructiveTransaction<T>(
-    operationId: number,
-    targetUserId: number,
-    workKey: string,
-    checkpoint: unknown | undefined,
+    input: DataLifecycleDestructiveTransactionInput,
     work: (transaction: Prisma.TransactionClient) => Promise<T>,
   ): Promise<T>;
   requestStop(targetUserId: number, operationId: number): Promise<StoredDataLifecycleOperation>;
@@ -454,30 +459,34 @@ export function createDataLifecycleRepository(
       if (updated !== 1) throw new DataLifecycleClaimLostError();
     },
 
-    async runDestructiveTransaction(operationId, targetUserId, workKey, checkpoint, work) {
-      validatePositiveInteger(operationId, 'operationId');
-      validatePositiveInteger(targetUserId, 'targetUserId');
-      validateWorkKey(workKey);
+    async runDestructiveTransaction(input, work) {
+      validatePositiveInteger(input.operationId, 'operationId');
+      validatePositiveInteger(input.targetUserId, 'targetUserId');
+      validateWorkKey(input.workKey);
+      if (input.beforeUserLock != null && typeof input.beforeUserLock !== 'function') {
+        throw new Error('Lifecycle beforeUserLock callback must be a function.');
+      }
       if (typeof work !== 'function') throw new Error('Lifecycle destructive work callback is required.');
 
       return database.$transaction(async (transaction) => {
-        await lockDataLifecycleUserScope(transaction, targetUserId);
-        const checkpointSql = checkpoint === undefined
+        if (input.beforeUserLock) await input.beforeUserLock(transaction);
+        await lockDataLifecycleUserScope(transaction, input.targetUserId);
+        const checkpointSql = input.checkpoint === undefined
           ? Prisma.sql`"checkpointJson"`
-          : Prisma.sql`${JSON.stringify(checkpoint)}::jsonb`;
+          : Prisma.sql`${JSON.stringify(input.checkpoint)}::jsonb`;
         const updated = await transaction.$executeRaw(Prisma.sql`
           UPDATE "DataLifecycleOperation"
           SET "firstDestructiveCommitAt" = COALESCE("firstDestructiveCommitAt", NOW()),
               "checkpointJson" = ${checkpointSql},
               "updatedAt" = NOW()
-          WHERE "id" = ${operationId}
-            AND "targetUserId" = ${targetUserId}
-            AND "workKey" = ${workKey}
+          WHERE "id" = ${input.operationId}
+            AND "targetUserId" = ${input.targetUserId}
+            AND "workKey" = ${input.workKey}
             AND "status" = 'EXECUTING'
         `);
         if (updated !== 1) throw new DataLifecycleClaimLostError();
 
-        await bindDataLifecycleOperation(transaction, operationId);
+        await bindDataLifecycleOperation(transaction, input.operationId);
         return work(transaction);
       });
     },
