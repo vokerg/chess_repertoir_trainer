@@ -96,6 +96,10 @@
       "types": "./dist/jobs/index.d.ts",
       "default": "./dist/jobs/index.js"
     },
+    "./data-lifecycle": {
+      "types": "./dist/data-lifecycle/index.d.ts",
+      "default": "./dist/data-lifecycle/index.js"
+    },
     "./rating-normalization": {
       "types": "./dist/rating-normalization/index.d.ts",
       "default": "./dist/rating-normalization/index.js"
@@ -108,7 +112,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node test/contracts.test.mjs && node test/course-management-contract.test.mjs && node test/account-imports-contract.test.mjs && node test/analysis-contract.test.mjs && node test/training-stats-contract.test.mjs && node test/training-marathon-contract.test.mjs && node test/top-opponents-contract.test.mjs && node test/monthly-games-contract.test.mjs && node test/opening-analysis-contract.test.mjs && node test/lab-training-tactical-contract.test.mjs && node test/scenario-training-contract.test.mjs && node test/opening-explorer-contract.test.mjs && node test/activity-feed-contract.test.mjs && node test/player-chess-profile-contract.test.mjs && node test/repertoire-target-contract.test.mjs && node test/repertoire-coverage-contract.test.mjs && node test/candidate-decision-contract.test.mjs && node test/candidate-decision-policy-version-contract.test.mjs && node test/builder-course-reintegration-contract.test.mjs && node test/lichess-puzzles-contract.test.mjs && node test/lichess-contract.test.mjs && node test/ai-contract.test.mjs && node test/jobs-contract.test.mjs && node test/admin-contract.test.mjs"
+    "test": "npm run build && node test/contracts.test.mjs && node test/course-management-contract.test.mjs && node test/account-imports-contract.test.mjs && node test/analysis-contract.test.mjs && node test/training-stats-contract.test.mjs && node test/training-marathon-contract.test.mjs && node test/top-opponents-contract.test.mjs && node test/monthly-games-contract.test.mjs && node test/opening-analysis-contract.test.mjs && node test/lab-training-tactical-contract.test.mjs && node test/scenario-training-contract.test.mjs && node test/opening-explorer-contract.test.mjs && node test/activity-feed-contract.test.mjs && node test/player-chess-profile-contract.test.mjs && node test/repertoire-target-contract.test.mjs && node test/repertoire-coverage-contract.test.mjs && node test/candidate-decision-contract.test.mjs && node test/candidate-decision-policy-version-contract.test.mjs && node test/builder-course-reintegration-contract.test.mjs && node test/lichess-puzzles-contract.test.mjs && node test/lichess-contract.test.mjs && node test/ai-contract.test.mjs && node test/jobs-contract.test.mjs && node test/data-lifecycle-contract.test.mjs && node test/admin-contract.test.mjs"
   },
   "dependencies": {
     "zod": "^4.2.0"

@@ -250,6 +250,7 @@ model ImportedGame {
   status                          String?
   openingName                     String?
   openingEco                      String?
+  openingProvenance               String                           @default("NONE") @db.VarChar(16)
   plyIndexedAt                    DateTime?
   plyIndexError                   String?
   tagCodes                        Int[]                            @default([])
@@ -926,4 +927,101 @@ model TrainingAttemptMove {
   playedMoveUci   String?
   wasCorrect      Boolean
   createdAt       DateTime        @default(now())
+}
+
+model DataLifecycleOperation {
+  id                       Int       @id @default(autoincrement())
+  action                   String    @db.VarChar(40)
+  status                   String    @db.VarChar(32)
+  actorUserId              Int?
+  targetUserId             Int
+  actorKeyVersion          Int
+  actorKeyHash             String    @db.VarChar(64)
+  targetKeyVersion         Int
+  targetKeyHash            String    @db.VarChar(64)
+  scopeResourceType        String    @db.VarChar(16)
+  scopeJson                Json
+  previewCountsJson        Json
+  previewHash              String    @db.VarChar(64)
+  previewTokenHash         String    @unique @db.VarChar(64)
+  previewExpiresAt         DateTime
+  confirmationPhrase       String    @db.VarChar(120)
+  warningCodes             String[]  @default([])
+  idempotencyKeyHash       String?   @db.VarChar(64)
+  stopRequest              String    @default("NONE") @db.VarChar(24)
+  stopRequestedAt          DateTime?
+  checkpointJson           Json?
+  workKey                  String?   @unique @db.VarChar(80)
+  claimedAt                DateTime?
+  heartbeatAt              DateTime?
+  firstDestructiveCommitAt DateTime?
+  verificationJson         Json?
+  terminalResult           String?   @db.VarChar(40)
+  errorCode                String?   @db.VarChar(120)
+  receiptTokenHash         String?   @unique @db.VarChar(64)
+  receiptExpiresAt         DateTime?
+  startedAt                DateTime?
+  completedAt              DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  fences                   DataLifecycleResourceFence[]
+
+  @@index([targetUserId, status, updatedAt])
+  @@index([targetUserId, idempotencyKeyHash])
+  @@index([status, updatedAt])
+  @@index([previewExpiresAt])
+  @@index([completedAt])
+}
+
+model DataLifecycleResourceFence {
+  id             Int                    @id @default(autoincrement())
+  operationId    Int
+  operation      DataLifecycleOperation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  ownerUserId    Int
+  ownerAccountId Int?
+  resourceType   String                 @db.VarChar(16)
+  resourceId     Int
+  createdAt      DateTime               @default(now())
+  releasedAt     DateTime?
+
+  @@index([operationId, releasedAt])
+  @@index([ownerUserId, releasedAt])
+  @@index([ownerAccountId, releasedAt])
+  @@index([resourceType, resourceId, releasedAt])
+}
+
+model DataLifecycleAuditEvent {
+  id                  Int      @id @default(autoincrement())
+  operationId         Int
+  eventType           String   @db.VarChar(80)
+  action              String   @db.VarChar(40)
+  status              String?  @db.VarChar(32)
+  actorKeyVersion     Int
+  actorKeyHash        String   @db.VarChar(64)
+  targetKeyVersion    Int
+  targetKeyHash       String   @db.VarChar(64)
+  resourceType        String?  @db.VarChar(16)
+  aggregateCountsJson Json?
+  reasonCode          String?  @db.VarChar(120)
+  errorCode           String?  @db.VarChar(120)
+  confirmationMethod  String?  @db.VarChar(120)
+  terminalResult      String?  @db.VarChar(40)
+  createdAt           DateTime @default(now())
+
+  @@index([operationId, createdAt])
+  @@index([targetKeyVersion, targetKeyHash, createdAt])
+  @@index([createdAt])
+}
+
+model DeletedAuthIdentityTombstone {
+  id                 Int      @id @default(autoincrement())
+  provider           String   @db.VarChar(40)
+  identityKeyVersion Int
+  identityKeyHash    String   @db.VarChar(64)
+  operationId        Int
+  createdAt          DateTime @default(now())
+
+  @@unique([provider, identityKeyVersion, identityKeyHash])
+  @@index([operationId])
+  @@index([createdAt])
 }

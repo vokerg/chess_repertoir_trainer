@@ -86,6 +86,7 @@ try {
     assert.equal(result.status, 'ASSIGNED');
     assert.equal(updated.openingEco, result.openingEco);
     assert.equal(updated.openingName, result.openingName);
+    assert.equal(updated.openingProvenance, 'LOCAL_BOOK');
     assert.match(updated.openingName ?? '', /Sicilian/i);
   }
 
@@ -103,6 +104,7 @@ try {
     assert.equal(result.reason, 'OPENING_ALREADY_PRESENT');
     assert.equal(updated.openingEco, 'Z99');
     assert.equal(updated.openingName, 'Provider Supplied Opening');
+    assert.equal(updated.openingProvenance, 'PROVIDER');
   }
 
   {
@@ -118,6 +120,7 @@ try {
     assert.equal(result.status, 'ASSIGNED');
     assert.equal(updated.openingEco, 'B20');
     assert.match(updated.openingName ?? '', /Sicilian/i);
+    assert.equal(updated.openingProvenance, 'PROVIDER');
   }
 
   {
@@ -146,6 +149,7 @@ try {
 
     assert.equal(updated.openingEco !== null, true);
     assert.equal(updated.openingName !== null, true);
+    assert.equal(updated.openingProvenance, 'LOCAL_BOOK');
     assert.equal(calculateAllTagCodes(gameForTagging).includes(GAME_TAG.OPENING_FAMILY_KNOWN), true);
     assert.equal(refresh.tagCodes.includes(GAME_TAG.OPENING_FAMILY_KNOWN), false);
   }

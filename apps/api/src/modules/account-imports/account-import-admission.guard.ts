@@ -1,4 +1,9 @@
 import { Prisma } from '@prisma/client';
+import {
+  DataLifecycleWriteBlockedError,
+  assertDataLifecycleWriteAllowed,
+  dataLifecycleAdmissionPredicate,
+} from '../data-lifecycle/data-lifecycle.guard';
 
 export interface AccountImportAdmissionGuardInput {
   userId: number;
@@ -28,17 +33,24 @@ export interface AccountImportAdmissionGuard {
 }
 
 /**
- * ONB-019 owns persisted destructive lifecycle fences. ONB-011/012 call this
- * guard when accepting durable import work, selecting worker claims, and
- * immediately before each bounded game/coverage commit. Claim filtering keeps
- * fenced queue entries from starving unrelated runnable accounts; assertAllowed
- * remains the transactional race-safe recheck before mutation. ONB-019 can
- * therefore replace the no-op through this one seam without duplicating import
- * creation, scheduling, or persistence logic.
+ * Persisted lifecycle fences are checked both while selecting worker candidates
+ * and under the shared user-scoped transaction lock immediately before durable
+ * import/coverage writes. That lock is also used by fence creation, so a writer
+ * that already owns the short commit guard may finish before the fence commits;
+ * later writers observe the durable fence and are rejected.
  */
 export const allowAccountImportAdmission: AccountImportAdmissionGuard = {
-  claimCandidatePredicate() {
-    return Prisma.sql`TRUE`;
+  claimCandidatePredicate(columns) {
+    return dataLifecycleAdmissionPredicate(columns);
   },
-  async assertAllowed() {},
+  async assertAllowed(transaction, input) {
+    try {
+      await assertDataLifecycleWriteAllowed(transaction, input);
+    } catch (error) {
+      if (error instanceof DataLifecycleWriteBlockedError) {
+        throw new AccountImportAdmissionBlockedError();
+      }
+      throw error;
+    }
+  },
 };
