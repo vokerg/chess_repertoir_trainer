@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import prismaModule from '../../dist/prisma.js';
 import { createDataLifecycleRepository } from '../../dist/modules/data-lifecycle/data-lifecycle.repository.prisma.js';
+import { hashOpaqueLifecycleToken } from '../../dist/modules/data-lifecycle/data-lifecycle.hmac.js';
 
 const prisma = prismaModule.default;
 const repository = createDataLifecycleRepository(prisma);
@@ -103,6 +104,8 @@ try {
       previewTokenHash: hash(`token:${suffix}`),
       previewHash: hash(`preview:${suffix}`),
       idempotencyKeyHash: hash(`idempotency:${suffix}`),
+      receiptTokenHash: hashOpaqueLifecycleToken('fence-receipt'),
+      receiptExpiresAt: new Date(Date.now() + 60_000),
     });
   } finally {
     clearTimeout(timer);
