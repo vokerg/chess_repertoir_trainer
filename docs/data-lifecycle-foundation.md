@@ -43,6 +43,8 @@ Fences are released only for verified completion or a pre-mutation cancellation/
 
 GAME preview scopes are bounded to at most 100 explicit game ids. Every preview has an expiry and immutable scope/hash binding. Preview creation acquires the user lifecycle lock and verifies the target USER/ACCOUNT/GAME ownership before persisting the preview; execution revalidates ownership again immediately before fencing.
 
+The durable action/resource boundary is fixed by the canonical lifecycle action: `UNANALYSE_GAMES` and `UNINDEX_GAMES` require GAME scope; `PURGE_ACCOUNT_DATA` and `DELETE_EXTERNAL_ACCOUNT` require ACCOUNT scope; `DELETE_APP_USER` requires USER scope. A database check constraint prevents semantically mismatched operation rows even before public preview routes exist.
+
 Execute idempotency is unique per target user. Repeating the same idempotency key returns the already-bound operation only when the request names the same operation and presents the same preview token/hash proof. Reusing that key for another preview is rejected rather than silently returning an unrelated operation.
 
 Opaque receipt tokens are stored only as SHA-256 hashes. Deleted identities may resolve lifecycle status through their versioned HMAC tombstone or a valid unexpired receipt token without ordinary `AppUser` provisioning.
