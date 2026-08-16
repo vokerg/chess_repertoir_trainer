@@ -6,7 +6,10 @@ import { bindDataLifecycleOperation } from '../../dist/modules/data-lifecycle/da
 import {
   createDataLifecycleRepository,
   DataLifecycleConflictError,
+  DataLifecycleInvalidStateError,
+  DataLifecycleOwnershipChangedError,
   DataLifecyclePreviewExpiredError,
+  DataLifecyclePreviewInvalidError,
 } from '../../dist/modules/data-lifecycle/data-lifecycle.repository.prisma.js';
 import {
   LifecycleHmacKeyring,
@@ -103,7 +106,57 @@ async function preview({ userId, accountId, gameIds, action = 'UNANALYSE_GAMES',
   return created;
 }
 
+async function createRawPreview({ userId, scope, token }) {
+  return repository.createPreview({
+    action: 'UNANALYSE_GAMES',
+    actorUserId: userId,
+    targetUserId: userId,
+    actorKeyVersion: 1,
+    actorKeyHash: hash(`actor:${userId}`),
+    targetKeyVersion: 1,
+    targetKeyHash: hash(`target:${userId}`),
+    scope,
+    previewCounts: counts,
+    previewHash: hash(`preview:${token}`),
+    previewTokenHash: hash(`token:${token}`),
+    previewExpiresAt: new Date(Date.now() + 60_000),
+    confirmationPhrase: 'DELETE TEST DATA',
+    warningCodes: ['TEST_ONLY'],
+  });
+}
+
 try {
+  {
+    const owner = await fixture('preview-owner');
+    const foreign = await fixture('preview-foreign');
+
+    await assert.rejects(
+      createRawPreview({
+        userId: owner.user.id,
+        scope: {
+          resourceType: 'ACCOUNT',
+          userId: owner.user.id,
+          accountId: foreign.account.id,
+        },
+        token: 'foreign-account-preview',
+      }),
+      DataLifecycleOwnershipChangedError,
+    );
+    await assert.rejects(
+      createRawPreview({
+        userId: owner.user.id,
+        scope: {
+          resourceType: 'GAME',
+          userId: owner.user.id,
+          accountId: owner.account.id,
+          gameIds: [2_147_483_647],
+        },
+        token: 'missing-game-preview',
+      }),
+      DataLifecycleOwnershipChangedError,
+    );
+  }
+
   {
     const { user, account, game } = await fixture('fence');
     const operation = await preview({
@@ -131,6 +184,34 @@ try {
       idempotencyKeyHash: hash('idempotency:fence'),
     });
     assert.equal(duplicate.id, operation.id);
+
+    await assert.rejects(
+      repository.startExecution({
+        operationId: operation.id,
+        targetUserId: user.id,
+        previewTokenHash: hash('token:not-the-original-preview'),
+        previewHash: hash('preview:fence'),
+        idempotencyKeyHash: hash('idempotency:fence'),
+      }),
+      DataLifecyclePreviewInvalidError,
+    );
+
+    const reboundPreview = await preview({
+      userId: user.id,
+      accountId: account.id,
+      gameIds: [game.id],
+      token: 'idempotency-rebind',
+    });
+    await assert.rejects(
+      repository.startExecution({
+        operationId: reboundPreview.id,
+        targetUserId: user.id,
+        previewTokenHash: hash('token:idempotency-rebind'),
+        previewHash: hash('preview:idempotency-rebind'),
+        idempotencyKeyHash: hash('idempotency:fence'),
+      }),
+      DataLifecycleInvalidStateError,
+    );
 
     await assert.rejects(
       prisma.importedGame.update({
@@ -236,8 +317,48 @@ try {
 
     const claim = await repository.claimNext('lifecycle-worker-fence');
     assert.equal(claim?.id, operation.id);
+    await repository.advanceClaimed(operation.id, 'lifecycle-worker-fence', 'WAITING_FOR_DRAIN');
     await repository.advanceClaimed(operation.id, 'lifecycle-worker-fence', 'EXECUTING');
-    await repository.markFirstDestructiveCommit(operation.id, 'lifecycle-worker-fence', { batch: 1 });
+    await assert.rejects(
+      repository.advanceClaimed(operation.id, 'lifecycle-worker-fence', 'WAITING_FOR_DRAIN'),
+      DataLifecycleInvalidStateError,
+    );
+
+    const beforeRollback = await prisma.importedGame.findUniqueOrThrow({ where: { id: game.id } });
+    await assert.rejects(
+      repository.runDestructiveTransaction(
+        operation.id,
+        user.id,
+        'lifecycle-worker-fence',
+        { batch: 0 },
+        async (tx) => {
+          await tx.importedGame.update({
+            where: { id: game.id },
+            data: { status: 'ROLL_BACK_DESTRUCTIVE_TEST' },
+          });
+          throw new Error('ROLL_BACK_DESTRUCTIVE_TEST');
+        },
+      ),
+      /ROLL_BACK_DESTRUCTIVE_TEST/,
+    );
+    const rolledBackOperation = await repository.getForTargetUser(user.id, operation.id);
+    const rolledBackGame = await prisma.importedGame.findUniqueOrThrow({ where: { id: game.id } });
+    assert.equal(rolledBackOperation?.firstDestructiveCommitAt, null);
+    assert.equal(rolledBackGame.status, beforeRollback.status);
+
+    await repository.runDestructiveTransaction(
+      operation.id,
+      user.id,
+      'lifecycle-worker-fence',
+      { batch: 1 },
+      async (tx) => {
+        await tx.importedGame.update({
+          where: { id: game.id },
+          data: { status: 'DESTRUCTIVE_TEST_COMMITTED' },
+        });
+      },
+    );
+
     await assert.rejects(
       prisma.dataLifecycleOperation.update({
         where: { id: operation.id },
@@ -252,6 +373,7 @@ try {
     const needsAttention = await repository.getForTargetUser(user.id, operation.id);
     assert.equal(needsAttention?.status, 'NEEDS_ATTENTION');
     assert.equal(needsAttention?.firstDestructiveCommitAt instanceof Date, true);
+    assert.deepEqual(needsAttention?.checkpoint, { batch: 1 });
     assert.equal(
       await prisma.dataLifecycleResourceFence.count({
         where: { operationId: operation.id, releasedAt: null },
