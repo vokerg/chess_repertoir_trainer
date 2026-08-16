@@ -149,21 +149,6 @@ export async function lockDataLifecycleUserScope(
   `);
 }
 
-/**
- * Future destructive execution must call this inside each short mutation
- * transaction before writing target rows. Database triggers then ignore only
- * fences owned by this exact operation; every other lifecycle fence still wins.
- */
-export async function bindDataLifecycleOperation(
-  transaction: Prisma.TransactionClient,
-  operationId: number,
-): Promise<void> {
-  validatePositiveInteger(operationId, 'operationId');
-  await transaction.$executeRaw(Prisma.sql`
-    SELECT set_config('app.data_lifecycle_operation_id', ${String(operationId)}, TRUE)
-  `);
-}
-
 function validateScope(input: DataLifecycleWriteScope): void {
   validatePositiveInteger(input.userId, 'userId');
   if (input.accountId != null) validatePositiveInteger(input.accountId, 'accountId');
