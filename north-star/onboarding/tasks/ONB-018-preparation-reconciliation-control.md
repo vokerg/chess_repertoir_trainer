@@ -122,6 +122,8 @@ Persist an immediate wake hint after committed import batches, import transition
 
 Report: [ONB-018 preparation reconciliation and control](../reports/ONB-018-2026-08-15-preparation-reconciliation-control.md)
 
+Second self-review: [ONB-018 second self-review](../reports/ONB-018-2026-08-17-second-self-review.md)
+
 Pull request: [#385](https://github.com/vokerg/chess_repertoir_trainer/pull/385)
 
 Completed at: none
