@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { DEFAULT_PREPARATION_CONFIG } from '../../dist/modules/preparation/preparation.config.js';
-import { pickAnalysisTarget } from '../../dist/modules/preparation/preparation-reconciler.service.js';
+import {
+  createPreparationReconciler,
+  pickAnalysisTarget,
+} from '../../dist/modules/preparation/preparation-reconciler.service.js';
 
 function target(overrides = {}) {
   return {
@@ -78,4 +81,101 @@ assert.equal(
   'after first analysis, the analysis tail may continue from remaining indexed evidence regardless of account size',
 );
 
+const fallbackAdmission = await captureAnalysisAdmission(
+  target({ importedCount: 2, indexedCount: 2, analysisPendingCount: 2 }),
+);
+assert.equal(fallbackAdmission.lane, 'FIRST_ANALYSIS');
+assert.equal(
+  fallbackAdmission.maxTasks,
+  1,
+  'the two-game fallback is a one-game wave rather than a normal three-game FIRST_ANALYSIS batch',
+);
+
+const thresholdAdmission = await captureAnalysisAdmission(
+  target({ importedCount: 10, indexedCount: 3, analysisPendingCount: 3 }),
+);
+assert.equal(thresholdAdmission.lane, 'FIRST_ANALYSIS');
+assert.equal(
+  thresholdAdmission.maxTasks,
+  undefined,
+  'normal first analysis keeps the configured three-game lane size',
+);
+
 console.log('Preparation small-account first-analysis fallback tests passed.');
+
+async function captureAnalysisAdmission(targetSnapshot) {
+  const observedAt = new Date('2026-08-17T00:00:00.000Z');
+  const snapshot = {
+    run: {
+      id: 7,
+      userId: 11,
+      status: 'RUNNING',
+      attentionCode: null,
+      attentionDetail: null,
+      reconcileAfter: new Date('2026-08-17T00:00:15.000Z'),
+      firstImportedAt: null,
+      firstIndexedAt: null,
+      firstAnalysedAt: null,
+      coreReadyAt: null,
+      analysisCompletedAt: null,
+      completedAt: null,
+    },
+    targets: [targetSnapshot],
+    activeBatches: [],
+    telemetry: {
+      batchCount: 0,
+      maxQueueWaitMs: null,
+      maxFirstSettlementMs: null,
+      maxTotalSettlementMs: null,
+    },
+  };
+  const admissions = [];
+  const repository = {
+    async claimNextDueRun() {
+      return {
+        id: snapshot.run.id,
+        userId: snapshot.run.userId,
+        status: snapshot.run.status,
+        dueAt: observedAt,
+      };
+    },
+    async loadSnapshot() {
+      return snapshot;
+    },
+    async applyState() {
+      return true;
+    },
+    async requestPause() {
+      return false;
+    },
+    async resume() {
+      return false;
+    },
+    async requestCancel() {
+      return false;
+    },
+  };
+  const batchRepository = {
+    async admitNextBatch(input) {
+      admissions.push(input);
+      return {
+        outcome: 'CREATED',
+        batchId: 101,
+        jobRunId: 201,
+        importedGameIds: [301],
+        plannedLimit: input.maxTasks ?? DEFAULT_PREPARATION_CONFIG.firstAnalysisBatchSize,
+      };
+    },
+  };
+  const reconciler = createPreparationReconciler({
+    repository,
+    batchRepository,
+    config: { ...DEFAULT_PREPARATION_CONFIG },
+    now: () => observedAt,
+    logger: { info() {}, warn() {}, error() {} },
+  });
+
+  await reconciler.reconcileOnce();
+  assert.equal(admissions.length, 1, 'one analysis batch is admitted');
+  return admissions[0];
+}
