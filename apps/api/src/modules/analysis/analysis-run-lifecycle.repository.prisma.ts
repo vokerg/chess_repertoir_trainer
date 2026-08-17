@@ -131,6 +131,92 @@ export async function getImportedGameAnalysisExecutionState(
   };
 }
 
+export async function recordGameAnalysisSetupFailure(input: {
+  userId: number;
+  importedGameId: number;
+  force: boolean;
+  error: string;
+}): Promise<{ id: number; status: string } | null> {
+  return prisma.$transaction(async (transaction) => {
+    const locked = await transaction.$queryRaw<Array<{ id: number }>>(Prisma.sql`
+      SELECT "id"
+      FROM "ImportedGame"
+      WHERE "id" = ${input.importedGameId}
+        AND "userId" = ${input.userId}
+      FOR UPDATE
+    `);
+    if (!locked[0]) throw new Error('Imported game not found');
+
+    const [totalPlies, analysedPlies, latest] = await Promise.all([
+      transaction.importedGamePly.count({
+        where: { importedGameId: input.importedGameId },
+      }),
+      transaction.importedGamePly.count({
+        where: {
+          importedGameId: input.importedGameId,
+          scoreLossCp: { not: null },
+          classificationCode: { not: null },
+        },
+      }),
+      transaction.gameAnalysisRun.findFirst({
+        where: {
+          importedGameId: input.importedGameId,
+          status: { in: [...latestRunStatuses] },
+        },
+        orderBy: [
+          { createdAt: 'desc' },
+          { id: 'desc' },
+        ],
+        select: {
+          status: true,
+          positionsTotal: true,
+          positionsDone: true,
+        },
+      }),
+    ]);
+
+    const isCurrent = latest?.status === 'COMPLETED'
+      && latest.positionsDone >= totalPlies
+      && latest.positionsTotal >= totalPlies
+      && analysedPlies >= totalPlies;
+    if (!input.force && isCurrent) return null;
+
+    const completedAt = new Date();
+    const run = await transaction.gameAnalysisRun.create({
+      data: {
+        importedGameId: input.importedGameId,
+        status: 'FAILED',
+        positionsTotal: totalPlies,
+        positionsDone: analysedPlies,
+        error: input.error,
+        completedAt,
+      },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        completedAt: true,
+        whiteAccuracy: true,
+        blackAccuracy: true,
+      },
+    });
+
+    await transaction.importedGame.update({
+      where: { id: input.importedGameId },
+      data: {
+        latestAnalysisRunId: run.id,
+        latestAnalysisStatus: run.status,
+        latestAnalysisCreatedAt: run.createdAt,
+        latestAnalysisCompletedAt: run.completedAt,
+        latestWhiteAccuracy: run.whiteAccuracy,
+        latestBlackAccuracy: run.blackAccuracy,
+      },
+    });
+
+    return { id: run.id, status: run.status };
+  });
+}
+
 export async function findAbortCleanupCandidate(input: {
   userId: number;
   importedGameId: number;
