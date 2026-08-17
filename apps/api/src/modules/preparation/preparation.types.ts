@@ -102,6 +102,8 @@ interface AdmitPreparationBatchBaseInput {
   preparationRunId: number;
   targetId: number;
   stage: PreparationStage;
+  /** Optional stricter cap below the configured lane batch size. */
+  maxTasks?: number;
 }
 
 /**
