@@ -156,6 +156,23 @@ try {
     1,
   );
 
+  // Remove the test lifecycle operation/fence, then verify that deleting the
+  // owning AppUser can cascade through ImportedGame and the retained scenario
+  // snapshot even when PostgreSQL has already removed the game parent before
+  // ScenarioTrainingSession's DELETE trigger executes.
+  await prisma.dataLifecycleAuditEvent.deleteMany({ where: { operationId } });
+  await prisma.deletedAuthIdentityTombstone.deleteMany({ where: { operationId } });
+  await prisma.dataLifecycleOperation.deleteMany({ where: { id: operationId } });
+  operationId = undefined;
+
+  const deletedUser = await prisma.appUser.deleteMany({ where: { id: user.id } });
+  assert.equal(deletedUser.count, 1);
+  userId = undefined;
+  assert.equal(
+    await prisma.scenarioTrainingSession.count({ where: { id: session.id } }),
+    0,
+  );
+
   console.log('Data lifecycle retained scenario cascade tests passed.');
 } finally {
   if (operationId) {
