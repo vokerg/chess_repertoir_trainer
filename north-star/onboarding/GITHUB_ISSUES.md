@@ -1,8 +1,8 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-08-17
+Last updated: 2026-08-15
 
-GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the product, architecture, acceptance, queue, and historical source of truth.
+GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the detailed product, architecture, acceptance, and historical source.
 
 ## Program
 
@@ -40,16 +40,32 @@ GitHub Issues is the execution layer for the Onboarding and Data Lifecycle progr
 | ONB-025 | [#276](https://github.com/vokerg/chess_repertoir_trainer/issues/276) |
 | ONB-026 | [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280) |
 
-All allocated ONB IDs are mapped. Do not create a second issue for an existing ONB ID. New tasks receive a new immutable ID and issue in the same coordination change.
+All currently allocated ONB IDs are mapped. Do not create a second issue for an existing ONB ID. New tasks receive a new immutable ID and issue in the same coordination change.
+
+## Coordination umbrellas
+
+- [#257 — Durable Account Import and Background Refresh](https://github.com/vokerg/chess_repertoir_trainer/issues/257) groups ONB-011 through ONB-015 plus ONB-025 into the planned delivery sequence `#199 → #200 → (#201 + #202) → #203 → #276`.
+
+A coordination umbrella may summarize an existing multi-task delivery track and record cross-track dependencies. It does not receive an ONB ID, replace any task issue, own runtime scope, alter task priority/status/order, or authorize claims. `TASKS.md` and the individual task files remain authoritative.
+
+For #257, material coordination includes preparation #253/#254, lifecycle persistence/execution #259/#260, throughput #154, Activity Feed import reconciliation #248, and the post-cutover authenticated stale-refresh trigger #276. ONB-007 supplies initial operational defaults and validation gates without changing the umbrella's delivery ownership.
+
+## Related programs
+
+- [#122 — Visual Transformation Program](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
+- [#133 — Complete onboarding, empty states, accessibility, and responsive polish](https://github.com/vokerg/chess_repertoir_trainer/issues/133)
+- [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105)
+
+Material collisions or dependencies must be recorded in both affected issue threads.
 
 ## Sources of truth
 
 - `FOUNDATION.md`, `MASTER_PLAN.md`, `EXPERIENCE_BLUEPRINT.md`, and `DECISIONS.md`: product, interaction, and architecture direction.
 - `ROADMAP.md`, `TASKS.md`, and task files: order, dependencies, scope, and acceptance.
 - GitHub Issues: claim, assignee, branch, PR, blocker, and execution status.
-- `reports/`: append-only evidence and completion records.
+- `reports/`: append-only evidence and completion record.
 
-When repository metadata and issue state disagree, reconcile them before substantive work.
+When repository metadata and issue state disagree, stop and reconcile before substantive work.
 
 ## State mapping
 
@@ -66,66 +82,98 @@ When repository metadata and issue state disagree, reconcile them before substan
 
 1. Read root and program AGENTS guidance.
 2. Re-inspect current code and relevant branches/PRs.
-3. Confirm the task is `READY` or explicitly authorized by the user.
-4. Check active branches/issues for file, schema, and decision collisions.
+3. Confirm task is READY or explicitly authorized by the user and dependencies are sufficient for its bounded scope.
+4. Check active branches/issues for file and decision collisions.
 5. Create a branch containing ONB ID and issue number.
 6. Update task claim metadata.
 7. Comment on the issue with claimant, exact scope, exclusions, and branch.
-8. Move the task to `CLAIMED`/`IN_PROGRESS`.
+8. Move task to CLAIMED/IN_PROGRESS.
 9. Begin substantive work.
 
-## Current execution state
+Recommended branch:
 
-### Preparation/product path
+```text
+onb-007/issue-154-throughput-progress-benchmark
+```
 
-- ONB-017 / #253 — `DONE`; preparation persistence/admission delivered through runtime PR #282 and completion PR #293.
-- ONB-018 / #254 — `DONE`; preparation reconciliation/control delivered through runtime PR #385, squash commit `9b0293271a2c1a9f24a77939e828c3ee1aca8ffd`, exact-head CI #2998, and completion reconciliation PR #397.
-- ONB-008 / #193 — unclaimed `READY`; now the deterministic lowest-order ready task. It consumes the delivered preparation/import evidence to own disposition/readiness projection.
-- ONB-009 / #194 — `PROPOSED`; depends on ONB-008 and must not duplicate destructive lifecycle commands.
-- ONB-010 / #195 — `PROPOSED`; depends on ONB-008/009 and consumes ONB-016.
+## Work updates
 
-### Durable account-import path
+Comment only on meaningful changes:
 
-- ONB-011 / #199, ONB-012 / #200, ONB-013 / #201, and ONB-014 / #202 — `DONE`.
-- ONB-015 / #203 — unclaimed `READY`; provider adapters plus ONB-017/018 preparation execution/control are complete. It owns the remaining normal account-sync cutover and preparation handoff.
-- ONB-025 / #276 — `PROPOSED`; depends on ONB-015 and must not invoke legacy synchronous provider traversal.
-- Coordination umbrella [#257](https://github.com/vokerg/chess_repertoir_trainer/issues/257) groups this delivery track without changing task ownership or claim rules.
+- claim/release;
+- blocker;
+- decision or scope change;
+- implementation/research start;
+- PR;
+- validation failure that changes risk;
+- review readiness;
+- completion or supersession.
 
-### Destructive lifecycle path
+## Allocation and handoff notes
 
-- ONB-019 / #259 — unclaimed `READY`; lifecycle/admin research is complete and prior schema ownership/migration-order gates are resolved. A fresh Prisma/migration collision check is mandatory immediately before claim.
-- ONB-020 / #260 and ONB-021 / #261 — `PROPOSED` behind ONB-019 and their additional task-file gates.
-- ONB-026 / #280 — `PROPOSED` behind its ONB-019 coordination and cleanup-specific gates.
+ONB-001 allocated ONB-008 through ONB-010 as bounded lifecycle/readiness/Angular implementation tasks.
 
-### Administrator path
+ONB-002 allocated ONB-011 through ONB-015 as bounded import persistence, worker, provider-adapter, and cutover tasks. Coordination umbrella #257 packages those existing tasks without changing their canonical states and records preparation, lifecycle, operations, Activity Feed, and throughput handoffs.
 
-- ONB-022 / #272 and ONB-023 / #273 — `DONE`.
-- ONB-024 / #274 — `PROPOSED` behind applicable canonical lifecycle services and proven signed reverification.
+Current account-import execution state: ONB-011/#199 and ONB-012/#200 are `DONE`; ONB-013/#201 is `DONE` through runtime PR #357 and completion reconciliation PR #376; ONB-014/#202 is reconciled to `DONE` through merged runtime PR #356 plus successful real low-volume Chess.com canary workflow #2812 (`31881053242`) and completion PR #383. ONB-018/#254 is promoted to unclaimed `READY`: ONB-017 plus durable import/provider delivery are complete, and the accepted ONB-003 allocation makes ONB-015 a final handoff coordination point rather than a hard blocker to the reconciler implementation. ONB-015/#203 remains `PROPOSED` because its account-sync/preparation handoff consumes ONB-018.
 
-## Coordination boundaries
+Parallel lifecycle execution state: ONB-019/#259 is promoted to unclaimed `READY`. ONB-004/005 are complete; ONB-017 established migration order with ONB-019 following, ONB-011 recorded the destructive lifecycle persistence ownership split directly on #259, both overlapping schema owners are merged, and no ONB-019 branch or open PR existed during the PR #383 self-review. A fresh current Prisma/migration collision check remains mandatory immediately before claim. ONB-020/#260 and ONB-021/#261 remain `PROPOSED` behind ONB-019 and their additional gates.
 
-- ONB-008 owns user disposition, readiness/presentation projection, warnings/actions, and bounded reveals.
-- ONB-009 owns authenticated preparation lifecycle command routes.
-- ONB-015 owns normal account-sync cutover and preparation handoff.
-- ONB-019/020/021 own destructive lifecycle persistence and execution.
-- ONB-010 owns functional Angular onboarding/Home re-entry; Visual Transformation owns final product-wide visual/accessibility polish.
-- ONB-026 owns shared-position cleanup implementation; account/user purge must not duplicate it.
+ONB-025 / #276 is the bounded post-cutover follow-up for automatic stale forward refresh on authenticated application bootstrap. It depends on ONB-015 and must not invoke the legacy synchronous provider path.
 
-## ONB-018 completion record
+ONB-003 allocated:
 
-Runtime PR #385 was accepted after three self-review rounds. The final merge-readiness review found and fixed a failure-atomicity gap in pre-engine analysis setup-failure persistence: the failed run and latest-analysis snapshot are now committed in one owned-game-locked PostgreSQL transaction, preserving a current successful analysis for non-forced work.
+- ONB-017 / #253 — preparation run/target/batch persistence, bounded database selection, globally serialized admission, and atomic child-job creation;
+- ONB-018 / #254 — progressive preparation reconciliation, import pipelining, first-analysis lane, stage-specific account fairness, and acknowledged controls.
 
-Final reviewed runtime head `4e3a3a4ea6f3f0f798d52e08830d051ad13c7b95` passed CI #2998 (`32041962372`) end-to-end and PR #385 squash-merged as `9b0293271a2c1a9f24a77939e828c3ee1aca8ffd`. PR #397 reconciles repository completion metadata and downstream readiness before issue #254 is closed completed.
+ONB-004 allocated:
 
-## Completion checklist
+- ONB-019 / #259 — durable destructive operation, preview/idempotency, resource fences, audit, opening provenance, and deleted-identity tombstone;
+- ONB-020 / #260 — bounded account/game un-analysis, un-index, purge, account-delete coordinator and legacy-route cutover;
+- ONB-021 / #261 — whole-user deletion, OAuth/auth recreation safety, and mobile local-purge handshake.
 
-Before closing a task issue:
+ONB-004 also defines the administrator mutation boundary consumed by ONB-005, the retained shared-position boundary consumed by ONB-006, and the acknowledged import/preparation drain required from ONB-011/012/015/017/018.
+
+ONB-005 allocated:
+
+- ONB-022 / #272 — migration-free server-only administrator authorization, verified-session context, capabilities, and bounded read-only diagnostics;
+- ONB-023 / #273 — lazy direct-link Angular administrator diagnostics with server authority and no required static navigation entry;
+- ONB-024 / #274 — capability-gated preview/execute/status/audit adapters over ONB-019/020/021, with signed recent factor age and one-use reverification binding.
+
+ONB-005 completed through squash-merged PR #275 after three adversarial self-review rounds. ONB-022 is `DONE` through runtime PR #284 and completion reconciliation PR #298. ONB-023 is `DONE` through runtime PR #307 and completion reconciliation PR #312. ONB-024 remains `PROPOSED` behind the applicable lifecycle services and proven signed reverification.
+
+ONB-006 allocated:
+
+- ONB-026 / #280 — dedicated candidate/run persistence, database statement-trigger grace reset, 30-day first-observed grace, input-page-bounded reconcile/observe/dry-run/delete phases, plies-first maintenance locking, observational dry-run/status/control contracts, canonical service plus manual command, and disabled-by-default unscheduled execution.
+
+ONB-026 remains `PROPOSED` until its task-file promotion gates are met. ONB-024 may later expose the canonical cleanup service; it must not own parallel deletion SQL or worker phases.
+
+ONB-007 supplies operational defaults and validation gates to existing owners rather than allocating a new implementation task:
+
+- ONB-008 / #193 and ONB-010 / #195 — exact counts, fixed-denominator percentages, milestones, checked-empty/rate-limit/stall states, and no public ETA;
+- ONB-011 / #199 — import counters/checkpoints and bounded-write/telemetry-compatible persistence;
+- ONB-012 / #200 — one executor and initial 1-second poll, 15-second heartbeat, 2-minute stale, and 30-second recovery defaults;
+- ONB-013 / #201 — serial 14-day Lichess windows, 100-row writes, one-minute 429 cooldown, and a low-volume canary;
+- ONB-014 / #202 — serial calendar-month Chess.com access, cache validators, 100-row writes, and a low-volume canary;
+- ONB-017 / #253 — 50/3/10 preparation waves and four-batch/200-task/40-analysis global caps;
+- ONB-018 / #254 — one-second active/five-second idle reconciliation, three-indexed first-analysis threshold, one-game fallback, and stall codes;
+- ONB-022 / #272 — queue age, heartbeat, reconcile lag, rate-limit, and stage-duration diagnostics;
+- ONB-026 / #280 — at most 500 input Position/candidate rows inspected per transaction initially, transaction p90 below one second, lock-wait p90 below 250 ms, and measured reduction before release if budgets are breached;
+- ONB-020 / #260 and ONB-021 / #261 — operation-specific transaction/lock budgets beginning at no more than 100 game IDs per transaction.
+
+ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without taking implementation ownership from the other programs.
+
+ONB-007 is `DONE` through squash-merged PR #266. ONB-005 is `DONE` through squash-merged PR #275. ONB-006 is `DONE` through squash-merged PR #281. ONB-017 is `DONE` through runtime PR #282 and completion reconciliation PR #293; issue #253 is closed completed. ONB-022 is `DONE` through runtime PR #284 and completion reconciliation PR #298; issue #272 is closed completed. ONB-023 is `DONE` through runtime PR #307 and completion reconciliation PR #312; issue #273 is closed completed. ONB-013 is `DONE` through runtime PR #357 and completion reconciliation PR #376. ONB-014 is reconciled to `DONE` through runtime PR #356, real provider canary workflow #2812 (`31881053242`), and completion PR #383 while issue #202 remains open until that reconciliation merges. ONB-018 / #254 is the deterministic next unclaimed `READY` onboarding implementation task by order, and ONB-019 / #259 is also unclaimed `READY` on the parallel lifecycle path. ONB-015, ONB-020, ONB-021, ONB-025, ONB-026, and the other dependency-blocked implementation tasks remain `PROPOSED` until their task-file gates are satisfied. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
+
+## Completion
+
+Before closing:
 
 - accepted deliverable exists;
 - task metadata is complete;
 - report exists at `reports/ONB-###-YYYY-MM-DD-<slug>.md`;
 - validation performed/skipped is recorded;
-- `ROADMAP.md`, `TASKS.md`, `STATUS.md`, `DECISIONS.md`, and `OPEN_QUESTIONS.md` are reassessed;
+- ROADMAP, TASKS, STATUS, DECISIONS, and OPEN_QUESTIONS are reassessed;
 - follow-up tasks have IDs/issues or are explicitly mapped to existing owners;
 - PR/branch/final commit are linked;
 - residual risks and queue impact are stated.
