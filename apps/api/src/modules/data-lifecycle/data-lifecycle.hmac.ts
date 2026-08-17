@@ -12,6 +12,7 @@ export interface LifecycleHmacKey {
 
 export class LifecycleHmacKeyring {
   private readonly orderedKeys: LifecycleHmacKey[];
+  private readonly configuredVersions: ReadonlySet<number>;
 
   constructor(keys: LifecycleHmacKey[]) {
     const uniqueVersions = new Set<number>();
@@ -26,10 +27,15 @@ export class LifecycleHmacKeyring {
       uniqueVersions.add(key.version);
     }
     this.orderedKeys = [...keys].sort((left, right) => right.version - left.version);
+    this.configuredVersions = uniqueVersions;
   }
 
   get configured(): boolean {
     return this.orderedKeys.length > 0;
+  }
+
+  hasVersion(version: number): boolean {
+    return this.configuredVersions.has(version);
   }
 
   current(value: string, domain: string): VersionedHmacDigest {
