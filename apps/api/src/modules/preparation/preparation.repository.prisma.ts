@@ -211,7 +211,18 @@ export function createPreparationRepository(
         throw new Error('A preparation retry generation must create a RETRY batch.');
       }
 
-      const plannedLimit = preparationBatchLimit(config, input.stage, input.lane);
+      const configuredLimit = preparationBatchLimit(config, input.stage, input.lane);
+      if (
+        input.maxTasks !== undefined
+        && (
+          !Number.isSafeInteger(input.maxTasks)
+          || input.maxTasks <= 0
+          || input.maxTasks > configuredLimit
+        )
+      ) {
+        throw new Error('Preparation maxTasks must be a positive integer within the configured lane batch size.');
+      }
+      const plannedLimit = input.maxTasks ?? configuredLimit;
       const priority = preparationLanePriority(input.stage, input.lane);
       const kind: JobRunKind = input.stage === 'INDEX' ? 'INDEX_GAMES' : 'ANALYSE_GAMES';
 
