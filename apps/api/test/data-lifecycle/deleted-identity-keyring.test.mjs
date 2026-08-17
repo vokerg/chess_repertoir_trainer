@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import prismaModule from '../../dist/prisma.js';
-import { LifecycleHmacKeyring } from '../../dist/modules/data-lifecycle/data-lifecycle.hmac.js';
+import {
+  LifecycleHmacKeyring,
+  loadLifecycleIdentityKeyring,
+} from '../../dist/modules/data-lifecycle/data-lifecycle.hmac.js';
 import {
   createDeletedIdentityGuard,
   DeletedIdentityBlockedError,
@@ -19,6 +22,31 @@ function hash(value) {
 }
 
 try {
+  assert.throws(
+    () => loadLifecycleIdentityKeyring({
+      DATA_LIFECYCLE_IDENTITY_HMAC_PREVIOUS_KEYS: JSON.stringify({ 1: 'old-key' }),
+    }),
+    /PREVIOUS_KEYS requires DATA_LIFECYCLE_IDENTITY_HMAC_KEY/,
+  );
+  assert.throws(
+    () => loadLifecycleIdentityKeyring({
+      DATA_LIFECYCLE_IDENTITY_HMAC_KEY: 'current-key',
+      DATA_LIFECYCLE_IDENTITY_HMAC_KEY_VERSION: '2',
+      DATA_LIFECYCLE_IDENTITY_HMAC_PREVIOUS_KEYS: JSON.stringify({ 3: 'not-previous-key' }),
+    }),
+    /PREVIOUS_KEYS versions must be lower than DATA_LIFECYCLE_IDENTITY_HMAC_KEY_VERSION/,
+  );
+  const loadedRotatedKeyring = loadLifecycleIdentityKeyring({
+    DATA_LIFECYCLE_IDENTITY_HMAC_KEY: 'current-key',
+    DATA_LIFECYCLE_IDENTITY_HMAC_KEY_VERSION: '2',
+    DATA_LIFECYCLE_IDENTITY_HMAC_PREVIOUS_KEYS: JSON.stringify({ 1: 'old-key' }),
+  });
+  assert.equal(loadedRotatedKeyring.current('subject', 'deleted-auth-identity').keyVersion, 2);
+  assert.deepEqual(
+    loadedRotatedKeyring.candidates('subject', 'deleted-auth-identity').map((candidate) => candidate.keyVersion),
+    [2, 1],
+  );
+
   const provider = `rotation-${suffix.slice(0, 24)}`;
   const externalSubject = `deleted-subject-${suffix}`;
   const user = await prisma.appUser.create({
