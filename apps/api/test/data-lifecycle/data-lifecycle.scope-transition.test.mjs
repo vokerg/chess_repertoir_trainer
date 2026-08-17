@@ -19,12 +19,27 @@ const counts = {
   plies: 0,
   analysisRuns: 1,
   aiReviews: 0,
-  tacticalDetections: 0,
-  scenarioSessions: 0,
+  tacticalDetections: 1,
+  scenarioSessions: 1,
   importRuns: 0,
   jobRuns: 1,
   preparationRuns: 0,
 };
+
+function scenarioSessionData(userId, detectionId, importedGameId = null) {
+  return {
+    userId,
+    scenarioType: 'MISSED_OPPORTUNITY',
+    sourceType: 'TACTICAL_DETECTION',
+    sourceId: detectionId,
+    tacticalDetectionId: detectionId,
+    importedGameId,
+    userColor: 'WHITE',
+    startFen: '8/8/8/8/8/8/8/K6k w - - 0 1',
+    challengePlyNumber: 1,
+    contextPlies: [],
+  };
+}
 
 try {
   const owner = await prisma.appUser.create({
@@ -100,6 +115,39 @@ try {
       status: 'QUEUED',
     },
   });
+  const thresholdsHash = hash(`thresholds:${suffix}`);
+  const detectionRun = await prisma.tacticalDetectionRun.create({
+    data: {
+      userId: owner.id,
+      from: new Date(Date.now() - 60_000),
+      to: new Date(),
+      thresholds: {},
+      thresholdsHash,
+    },
+  });
+  const detection = await prisma.tacticalDetection.create({
+    data: {
+      runId: detectionRun.id,
+      userId: owner.id,
+      importedGameId: gameA.id,
+      kind: 'MISSED_SHOT',
+      thresholdsHash,
+      triggerPlyNumber: 1,
+      moveUci: 'e2e4',
+    },
+  });
+  const detectionOnlySession = await prisma.scenarioTrainingSession.create({
+    data: scenarioSessionData(owner.id, detection.id),
+  });
+
+  // The direct game snapshot and tactical detection must never disagree about
+  // which lifecycle game scope owns a scenario session.
+  await assert.rejects(
+    prisma.scenarioTrainingSession.create({
+      data: scenarioSessionData(owner.id, detection.id, gameB.id),
+    }),
+    /DATA_LIFECYCLE_SCOPE_MISMATCH/,
+  );
 
   const operation = await repository.createPreview({
     action: 'PURGE_ACCOUNT_DATA',
@@ -161,6 +209,46 @@ try {
     prisma.jobTask.update({
       where: { id: jobTask.id },
       data: { importedGameId: gameB.id },
+    }),
+    /DATA_LIFECYCLE_WRITE_BLOCKED/,
+  );
+
+  // A nullable direct game link must not let a detection-backed scenario bypass
+  // the target account fence.
+  await assert.rejects(
+    prisma.scenarioTrainingSession.create({
+      data: scenarioSessionData(owner.id, detection.id),
+    }),
+    /DATA_LIFECYCLE_WRITE_BLOCKED/,
+  );
+
+  // Attempts inherit lifecycle scope through their session and, when the direct
+  // game snapshot is null, through the session's tactical detection.
+  await assert.rejects(
+    prisma.scenarioTrainingAttempt.create({
+      data: {
+        sessionId: detectionOnlySession.id,
+        attemptNumber: 1,
+        fenBefore: '8/8/8/8/8/8/8/K6k w - - 0 1',
+        playedMoveUci: 'a1a2',
+        fenAfter: '8/8/8/8/8/8/K7/7k b - - 1 1',
+        passed: true,
+        engineSource: 'TEST',
+        engineDepth: 1,
+      },
+    }),
+    /DATA_LIFECYCLE_WRITE_BLOCKED/,
+  );
+
+  // A scenario snapshot whose game/detection links are already gone remains a
+  // user-scoped write, so a descendant account fence still blocks admission.
+  await assert.rejects(
+    prisma.scenarioTrainingSession.create({
+      data: {
+        ...scenarioSessionData(owner.id, detection.id),
+        sourceId: 0,
+        tacticalDetectionId: null,
+      },
     }),
     /DATA_LIFECYCLE_WRITE_BLOCKED/,
   );
