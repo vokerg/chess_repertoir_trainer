@@ -6,7 +6,7 @@ import { createDataLifecycleRepository } from '../../dist/modules/data-lifecycle
 
 const prisma = prismaModule.default;
 const lockClient = new PrismaClient();
-const checkClient = new PrismaClient();
+const moveClient = new PrismaClient();
 const repository = createDataLifecycleRepository(prisma);
 const suffix = randomUUID();
 const userIds = [];
@@ -156,40 +156,50 @@ try {
     /DATA_LIFECYCLE_SCOPE_MISMATCH/,
   );
 
-  // Indirect child scope resolution must lock the game row while ownership is
-  // derived. Holding an UPDATE lock here makes the helper block until the game
-  // row is stable; the old plain-SELECT implementation completed immediately.
-  let releaseGameLock;
-  let gameLockAcquired;
-  const gameLockReady = new Promise((resolve) => { gameLockAcquired = resolve; });
-  const releaseGame = new Promise((resolve) => { releaseGameLock = resolve; });
+  // Force a real stale-scope ordering without locking the parent game row:
+  // hold owner's lifecycle lock, queue a game reparent first, then queue an
+  // indirect scope check that can still read the old MVCC ownership. Once the
+  // lock is released the reparent commits first; the checker must re-read under
+  // the lifecycle lock and reject its stale snapshot rather than commit under
+  // the former owner/account scope.
+  let releaseLifecycleLock;
+  let lifecycleLockAcquired;
+  const lifecycleLockReady = new Promise((resolve) => { lifecycleLockAcquired = resolve; });
+  const releaseLifecycle = new Promise((resolve) => { releaseLifecycleLock = resolve; });
   const lockTransaction = lockClient.$transaction(async (tx) => {
     await tx.$queryRawUnsafe(
-      'SELECT "id" FROM "ImportedGame" WHERE "id" = $1 FOR UPDATE',
-      ownerGame.id,
+      'SELECT pg_advisory_xact_lock(17000259, $1::integer)',
+      owner.id,
     );
-    gameLockAcquired();
-    await releaseGame;
+    lifecycleLockAcquired();
+    await releaseLifecycle;
   });
-  await gameLockReady;
+  await lifecycleLockReady;
 
-  let scopeCheckSettled = false;
-  const scopeCheck = checkClient.$queryRawUnsafe(
-    'SELECT "data_lifecycle_assert_game_transition_allowed"(NULL, $1)',
-    ownerGame.id,
-  ).then((value) => {
-    scopeCheckSettled = true;
+  let moveSettled = false;
+  const moveGame = moveClient.importedGame.update({
+    where: { id: ownerGame.id },
+    data: { userId: other.id, accountId: otherAccount.id },
+  }).then((value) => {
+    moveSettled = true;
     return value;
   });
   await new Promise((resolve) => setTimeout(resolve, 75));
-  assert.equal(
-    scopeCheckSettled,
-    false,
-    'indirect scope resolution must wait for the referenced game row to stabilize',
+  assert.equal(moveSettled, false, 'game ownership transition must be waiting on the lifecycle lock');
+
+  const staleScopeCheck = prisma.$queryRawUnsafe(
+    'SELECT "data_lifecycle_assert_game_transition_allowed"(NULL, $1)',
+    ownerGame.id,
   );
-  releaseGameLock();
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  releaseLifecycleLock();
   await lockTransaction;
-  await scopeCheck;
+  await moveGame;
+  await assert.rejects(staleScopeCheck, /DATA_LIFECYCLE_OWNERSHIP_CHANGED/);
+
+  const movedGame = await prisma.importedGame.findUniqueOrThrow({ where: { id: ownerGame.id } });
+  assert.equal(movedGame.userId, other.id);
+  assert.equal(movedGame.accountId, otherAccount.id);
 
   const operation = await repository.createPreview({
     action: 'DELETE_APP_USER',
@@ -255,6 +265,6 @@ try {
     await prisma.appUser.deleteMany({ where: { id: { in: userIds } } });
   }
   await lockClient.$disconnect();
-  await checkClient.$disconnect();
+  await moveClient.$disconnect();
   await prisma.$disconnect();
 }
