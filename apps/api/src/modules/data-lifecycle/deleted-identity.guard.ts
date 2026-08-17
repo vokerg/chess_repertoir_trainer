@@ -21,10 +21,6 @@ interface TombstoneRow {
   operationId: number;
 }
 
-interface ExistsRow {
-  exists: boolean;
-}
-
 interface ReceiptRow {
   id: number;
   action: string;
@@ -118,23 +114,24 @@ export function createDeletedIdentityGuard(
 
     async findOperationByReceipt(receiptToken) {
       const receiptTokenHash = hashOpaqueLifecycleToken(receiptToken);
-      const rows = await database.$queryRaw<ReceiptRow[]>(Prisma.sql`
-        SELECT
-          operation."id",
-          operation."action",
-          operation."status",
-          operation."terminalResult",
-          operation."completedAt",
-          operation."receiptExpiresAt"
-        FROM "DataLifecycleOperation" AS operation
-        WHERE operation."receiptTokenHash" = ${receiptTokenHash}
-          AND (
-            operation."receiptExpiresAt" IS NULL
-            OR operation."receiptExpiresAt" > NOW()
-          )
-        LIMIT 1
-      `);
-      return rows[0] ? toReceiptStatus(rows[0]) : null;
+      const row = await database.dataLifecycleOperation.findFirst({
+        where: {
+          receiptTokenHash,
+          OR: [
+            { receiptExpiresAt: null },
+            { receiptExpiresAt: { gt: new Date() } },
+          ],
+        },
+        select: {
+          id: true,
+          action: true,
+          status: true,
+          terminalResult: true,
+          completedAt: true,
+          receiptExpiresAt: true,
+        },
+      });
+      return row ? toReceiptStatus(row) : null;
     },
   };
 }
@@ -148,14 +145,11 @@ async function findTombstone(
   externalSubject: string,
 ): Promise<TombstoneRow | null> {
   if (!keyring.configured) {
-    const existing = await transaction.$queryRaw<ExistsRow[]>(Prisma.sql`
-      SELECT EXISTS (
-        SELECT 1
-        FROM "DeletedAuthIdentityTombstone"
-        WHERE "provider" = ${provider}
-      ) AS "exists"
-    `);
-    if (existing[0]?.exists) {
+    const existing = await transaction.deletedAuthIdentityTombstone.findFirst({
+      where: { provider },
+      select: { id: true },
+    });
+    if (existing) {
       throw new Error(
         'Deleted identities exist for this provider but DATA_LIFECYCLE_IDENTITY_HMAC_KEY is not configured.',
       );
@@ -165,37 +159,35 @@ async function findTombstone(
 
   const digests = keyring.candidates(identityValue(provider, externalSubject), 'deleted-identity');
   if (digests.length === 0) return null;
-  const matches = Prisma.join(digests.map((digest) => Prisma.sql`
-    ("identityKeyVersion" = ${digest.keyVersion} AND "identityKeyHash" = ${digest.digest})
-  `), ' OR ');
-  const rows = await transaction.$queryRaw<TombstoneRow[]>(Prisma.sql`
-    SELECT "operationId"
-    FROM "DeletedAuthIdentityTombstone"
-    WHERE "provider" = ${provider}
-      AND (${matches})
-    ORDER BY "id" DESC
-    LIMIT 1
-  `);
-  return rows[0] ?? null;
+  return transaction.deletedAuthIdentityTombstone.findFirst({
+    where: {
+      provider,
+      OR: digests.map((digest) => ({
+        identityKeyVersion: digest.keyVersion,
+        identityKeyHash: digest.digest,
+      })),
+    },
+    orderBy: { id: 'desc' },
+    select: { operationId: true },
+  });
 }
 
 async function findReceiptStatusByOperationId(
   transaction: Prisma.TransactionClient,
   operationId: number,
 ): Promise<DataLifecycleReceiptStatus | null> {
-  const rows = await transaction.$queryRaw<ReceiptRow[]>(Prisma.sql`
-    SELECT
-      "id",
-      "action",
-      "status",
-      "terminalResult",
-      "completedAt",
-      "receiptExpiresAt"
-    FROM "DataLifecycleOperation"
-    WHERE "id" = ${operationId}
-    LIMIT 1
-  `);
-  return rows[0] ? toReceiptStatus(rows[0]) : null;
+  const row = await transaction.dataLifecycleOperation.findUnique({
+    where: { id: operationId },
+    select: {
+      id: true,
+      action: true,
+      status: true,
+      terminalResult: true,
+      completedAt: true,
+      receiptExpiresAt: true,
+    },
+  });
+  return row ? toReceiptStatus(row) : null;
 }
 
 async function lockIdentity(
