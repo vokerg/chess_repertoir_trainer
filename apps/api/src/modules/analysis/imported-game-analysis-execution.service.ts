@@ -9,6 +9,7 @@ import {
   abandonGameAnalysisRun,
   findAbortCleanupCandidate,
   getImportedGameAnalysisExecutionState,
+  recordGameAnalysisSetupFailure,
   type ImportedGameAnalysisExecutionState,
 } from './analysis-run-lifecycle.repository.prisma';
 import type { StockfishEngine } from './stockfish-engine';
@@ -22,6 +23,7 @@ interface ImportedGameAnalysisExecutionDependencies {
   getExecutionState: typeof getImportedGameAnalysisExecutionState;
   findAbortCleanupCandidate: typeof findAbortCleanupCandidate;
   abandonRun: typeof abandonGameAnalysisRun;
+  recordFailedRun?: typeof recordGameAnalysisSetupFailure;
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
@@ -47,6 +49,23 @@ export function createImportedGameAnalysisExecutionService(
   dependencies: ImportedGameAnalysisExecutionDependencies,
 ) {
   return {
+    async recordSetupFailure(
+      userId: number,
+      importedGameId: number,
+      force: boolean,
+      error: unknown,
+    ): Promise<void> {
+      if (!dependencies.recordFailedRun) {
+        throw new Error('Analysis setup-failure persistence is not configured.');
+      }
+      await dependencies.recordFailedRun({
+        userId,
+        importedGameId,
+        force,
+        error: errorMessage(error),
+      });
+    },
+
     async analyseOne(
       engine: StockfishEngine,
       userId: number,
@@ -113,4 +132,5 @@ export const ImportedGameAnalysisExecutionService = createImportedGameAnalysisEx
   getExecutionState: getImportedGameAnalysisExecutionState,
   findAbortCleanupCandidate,
   abandonRun: abandonGameAnalysisRun,
+  recordFailedRun: recordGameAnalysisSetupFailure,
 });

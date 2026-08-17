@@ -97,15 +97,34 @@ export interface CreatedPreparationRun {
   targets: StoredPreparationTarget[];
 }
 
-export interface AdmitPreparationBatchInput {
+interface AdmitPreparationBatchBaseInput {
   userId: number;
   preparationRunId: number;
   targetId: number;
   stage: PreparationStage;
-  lane: PreparationLane;
-  force?: boolean;
-  retryFailed?: boolean;
+  /** Optional stricter cap below the configured lane batch size. */
+  maxTasks?: number;
 }
+
+/**
+ * Retry-generation admission is intentionally a narrower shape than ordinary
+ * preparation admission: a generation must atomically create a RETRY batch
+ * from failed evidence and must not force normal candidates back into scope.
+ */
+export type AdmitPreparationBatchInput = AdmitPreparationBatchBaseInput & (
+  | {
+      lane: PreparationLane;
+      force?: boolean;
+      retryFailed?: boolean;
+      startRetryGeneration?: false;
+    }
+  | {
+      lane: 'RETRY';
+      force?: false;
+      retryFailed: true;
+      startRetryGeneration: true;
+    }
+);
 
 export type PreparationAdmissionBlockedReason =
   | 'RUN_NOT_ADMITTABLE'
@@ -122,6 +141,7 @@ export type PreparationBatchAdmission =
       jobRunId: number;
       importedGameIds: number[];
       plannedLimit: number;
+      retryGeneration?: number;
     }
   | {
       outcome: 'BLOCKED';

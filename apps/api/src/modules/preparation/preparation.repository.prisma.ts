@@ -24,6 +24,7 @@ import type {
 
 const PREPARATION_ADMISSION_LOCK_KEY = 17_000_253;
 const ADMITTABLE_RUN_STATUSES = ['QUEUED', 'RUNNING'] as const;
+const RETRY_ADMITTABLE_RUN_STATUSES = ['RUNNING', 'NEEDS_ATTENTION'] as const;
 const ACTIVE_BATCH_STATUSES = ['QUEUED', 'RUNNING'] as const;
 
 interface RunRow {
@@ -60,6 +61,10 @@ interface CountRow {
 
 interface CandidateRow {
   id: number;
+}
+
+interface GenerationRow {
+  retryGeneration: number;
 }
 
 export interface PreparationRepository {
@@ -201,7 +206,23 @@ export function createPreparationRepository(
     },
 
     async admitNextBatch(input) {
-      const plannedLimit = preparationBatchLimit(config, input.stage, input.lane);
+      const startsRetryGeneration = input.startRetryGeneration ?? false;
+      if (startsRetryGeneration && input.lane !== 'RETRY') {
+        throw new Error('A preparation retry generation must create a RETRY batch.');
+      }
+
+      const configuredLimit = preparationBatchLimit(config, input.stage, input.lane);
+      if (
+        input.maxTasks !== undefined
+        && (
+          !Number.isSafeInteger(input.maxTasks)
+          || input.maxTasks <= 0
+          || input.maxTasks > configuredLimit
+        )
+      ) {
+        throw new Error('Preparation maxTasks must be a positive integer within the configured lane batch size.');
+      }
+      const plannedLimit = input.maxTasks ?? configuredLimit;
       const priority = preparationLanePriority(input.stage, input.lane);
       const kind: JobRunKind = input.stage === 'INDEX' ? 'INDEX_GAMES' : 'ANALYSE_GAMES';
 
@@ -231,7 +252,14 @@ export function createPreparationRepository(
         if (!target || target.accountId === null) {
           return blocked('RUN_NOT_ADMITTABLE');
         }
-        if (!ADMITTABLE_RUN_STATUSES.includes(target.runStatus as typeof ADMITTABLE_RUN_STATUSES[number])) {
+        const runAdmittable = startsRetryGeneration
+          ? RETRY_ADMITTABLE_RUN_STATUSES.includes(
+              target.runStatus as typeof RETRY_ADMITTABLE_RUN_STATUSES[number],
+            )
+          : ADMITTABLE_RUN_STATUSES.includes(
+              target.runStatus as typeof ADMITTABLE_RUN_STATUSES[number],
+            );
+        if (!runAdmittable) {
           return blocked('RUN_NOT_ADMITTABLE');
         }
 
@@ -399,13 +427,34 @@ export function createPreparationRepository(
           WHERE "id" = ${batchId}
         `);
 
-        await transaction.$executeRaw(Prisma.sql`
-          UPDATE "DataPreparationRun"
-          SET "status" = 'RUNNING',
-              "updatedAt" = NOW()
-          WHERE "id" = ${input.preparationRunId}
-            AND "status" = 'QUEUED'
-        `);
+        let retryGeneration: number | undefined;
+        if (startsRetryGeneration) {
+          const generationRows = await transaction.$queryRaw<GenerationRow[]>(Prisma.sql`
+            UPDATE "DataPreparationRun"
+            SET "status" = 'RUNNING',
+                "retryGeneration" = "retryGeneration" + 1,
+                "attentionCode" = NULL,
+                "attentionDetail" = NULL,
+                "reconcileAfter" = NOW(),
+                "updatedAt" = NOW()
+            WHERE "id" = ${input.preparationRunId}
+              AND "userId" = ${input.userId}
+              AND "status" = ${target.runStatus}
+            RETURNING "retryGeneration"
+          `);
+          retryGeneration = generationRows[0]?.retryGeneration;
+          if (retryGeneration === undefined) {
+            throw new Error('Preparation retry generation did not update the parent run.');
+          }
+        } else {
+          await transaction.$executeRaw(Prisma.sql`
+            UPDATE "DataPreparationRun"
+            SET "status" = 'RUNNING',
+                "updatedAt" = NOW()
+            WHERE "id" = ${input.preparationRunId}
+              AND "status" = 'QUEUED'
+          `);
+        }
 
         return {
           outcome: 'CREATED',
@@ -413,6 +462,7 @@ export function createPreparationRepository(
           jobRunId,
           importedGameIds: candidates.map((candidate) => candidate.id),
           plannedLimit,
+          ...(retryGeneration === undefined ? {} : { retryGeneration }),
         };
       });
     },

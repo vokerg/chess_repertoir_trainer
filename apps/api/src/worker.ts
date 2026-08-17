@@ -16,6 +16,8 @@ import { loadJobWorkerConfig } from './modules/jobs/job-worker.config';
 import { JobWorkerRepository } from './modules/jobs/job-worker.repository.prisma';
 import { settlesWithin } from './modules/jobs/job-worker-shutdown';
 import { createJobWorker } from './modules/jobs/job-worker.service';
+import { readPreparationConfig } from './modules/preparation/preparation.config';
+import { createPreparationReconciler } from './modules/preparation/preparation-reconciler.service';
 
 const DAY_MS = 24 * 60 * 60_000;
 const TERMINAL_RETENTION_INTERVAL_MS = 60 * 60_000;
@@ -26,6 +28,7 @@ defaultAccountImportExecutorRegistry.register(createLichessAccountImportExecutor
 async function bootstrap() {
   const config = loadJobWorkerConfig();
   const accountImportConfig = loadAccountImportWorkerConfig();
+  const preparationConfig = readPreparationConfig();
   const shutdownTimeoutMs = Math.max(config.shutdownTimeoutMs, accountImportConfig.shutdownTimeoutMs);
   const worker = createJobWorker({
     repository: JobWorkerRepository,
@@ -37,6 +40,7 @@ async function bootstrap() {
     executors: defaultAccountImportExecutorRegistry,
     config: accountImportConfig,
   });
+  const preparationWorker = createPreparationReconciler({ config: preparationConfig });
   let shuttingDown = false;
   let retentionTimer: NodeJS.Timeout | undefined;
   let retentionInFlight: Promise<void> | null = null;
@@ -75,7 +79,12 @@ async function bootstrap() {
 
   const jobWorkerPromise = worker.run();
   const accountImportWorkerPromise = accountImportWorker.run();
-  const runPromise = Promise.all([jobWorkerPromise, accountImportWorkerPromise]);
+  const preparationWorkerPromise = preparationWorker.run();
+  const runPromise = Promise.all([
+    jobWorkerPromise,
+    accountImportWorkerPromise,
+    preparationWorkerPromise,
+  ]);
 
   const shutdown = async (signal: NodeJS.Signals) => {
     if (shuttingDown) return;
@@ -87,6 +96,7 @@ async function bootstrap() {
     console.info('Shutting down persistent background workers', { signal });
     worker.requestStop(`Worker received ${signal}.`);
     accountImportWorker.requestStop(`Worker received ${signal}.`);
+    preparationWorker.requestStop();
 
     const stopped = await settlesWithin(cleanupCompleted, shutdownTimeoutMs);
     if (!stopped) {
@@ -110,8 +120,9 @@ async function bootstrap() {
     process.exitCode = 1;
     worker.requestStop('Peer worker failed.');
     accountImportWorker.requestStop('Peer worker failed.');
+    preparationWorker.requestStop();
     const peerStopped = await settlesWithin(
-      Promise.allSettled([jobWorkerPromise, accountImportWorkerPromise]),
+      Promise.allSettled([jobWorkerPromise, accountImportWorkerPromise, preparationWorkerPromise]),
       shutdownTimeoutMs,
     );
     if (!peerStopped) {

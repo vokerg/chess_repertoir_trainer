@@ -11,6 +11,7 @@ Canonical documents in `docs/` describe current runtime architecture and operati
 - [Activity Feed](activity-feed.md): current daily-aggregate ledger/API foundation and the boundary to pending producers and Home presentation.
 - [Position analysis cache](position-analysis-cache.md): compact/rich analysis persistence.
 - [Persistent imported-game job processing](imported-game-job-processing.md): durable worker architecture and operational behavior.
+- [Data preparation execution](data-preparation-execution.md): durable preparation parent/batch admission, progressive reconciliation, control acknowledgement, and operational wake/stall behavior.
 - [Opening Explorer](opening-explorer.md): Masters and rated-game APIs, shared integration, and cache behavior.
 - [Imported-game query reuse](imported-games-query-reuse.md): shared filter and query ownership.
 - [Opening struggles](opening-struggles.md): report modes, course coverage semantics, and performance boundary.

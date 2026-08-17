@@ -1,6 +1,6 @@
 # ONB-018 — Implement progressive preparation reconciliation and control
 
-Status: READY
+Status: REVIEW
 
 Priority: P0
 
@@ -12,13 +12,13 @@ Planning maturity: Allocated by ONB-003; numeric reconciliation and first-value 
 
 GitHub issue: [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT
 
-Claim branch: none
+Claim branch: `onb-018/issue-254-preparation-reconciliation-control`
 
-Claimed at: none
+Claimed at: 2026-08-15
 
-Claim scope: none
+Claim scope: bounded preparation reconciliation/control in the existing worker deployment, progressive index/analysis admission, persisted wake hints, milestone/control reconciliation, explicit failed-evidence retry, operational telemetry, focused tests, and architecture documentation; no public lifecycle routes, readiness projection, provider traversal, Angular UI, generic workflow framework, or ONB-019 destructive fences
 
 Promoted at: 2026-08-15 through ONB-014 completion self-review on PR #383
 
@@ -120,8 +120,10 @@ Persist an immediate wake hint after committed import batches, import transition
 
 ## Completion
 
-Report: none
+Report: [ONB-018 preparation reconciliation and control](../reports/ONB-018-2026-08-15-preparation-reconciliation-control.md)
 
-Pull request: none
+Second self-review: [ONB-018 second self-review](../reports/ONB-018-2026-08-17-second-self-review.md)
+
+Pull request: [#385](https://github.com/vokerg/chess_repertoir_trainer/pull/385)
 
 Completed at: none

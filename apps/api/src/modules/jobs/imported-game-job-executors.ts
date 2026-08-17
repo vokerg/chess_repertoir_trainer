@@ -1,5 +1,6 @@
 import { ImportedGamesService } from '../imported-games/imported-games.service';
 import { ImportedGameProcessingService } from '../imported-games/imported-game-processing.service';
+import { ImportedGameAnalysisExecutionService } from '../analysis/imported-game-analysis-execution.service';
 import {
   getLocalBatchStockfishAnalysisConfig,
   type LocalBatchStockfishAnalysisConfig,
@@ -19,6 +20,7 @@ interface ImportedGameJobExecutorDependencies {
     'indexOne' | 'analyseOne' | 'processOne'
   >;
   refreshTags: typeof ImportedGamesService.refreshTags;
+  recordAnalysisSetupFailure?: typeof ImportedGameAnalysisExecutionService.recordSetupFailure;
   loadAnalysisConfig: () => LocalBatchStockfishAnalysisConfig;
   createEngine: (config: LocalBatchStockfishAnalysisConfig) => StockfishEngine;
 }
@@ -26,6 +28,7 @@ interface ImportedGameJobExecutorDependencies {
 const defaultDependencies: ImportedGameJobExecutorDependencies = {
   processing: ImportedGameProcessingService,
   refreshTags: ImportedGamesService.refreshTags,
+  recordAnalysisSetupFailure: ImportedGameAnalysisExecutionService.recordSetupFailure,
   loadAnalysisConfig: getLocalBatchStockfishAnalysisConfig,
   createEngine: createStockfishEngine,
 };
@@ -36,6 +39,10 @@ function throwIfAborted(signal: AbortSignal): void {
   throw new Error('Persistent imported-game task was aborted.');
 }
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 async function withAnalysisEngine(
   dependencies: ImportedGameJobExecutorDependencies,
   context: JobTaskExecutionContext,
@@ -43,14 +50,32 @@ async function withAnalysisEngine(
     engine: StockfishEngine,
     config: LocalBatchStockfishAnalysisConfig,
   ) => Promise<JobTaskExecutionStatus>,
+  onSetupFailure?: (error: unknown) => Promise<void>,
 ): Promise<JobTaskExecutionStatus> {
   throwIfAborted(context.signal);
-  const config = dependencies.loadAnalysisConfig();
-  if (!config.enabled) {
-    throw new Error('Local batch Stockfish analysis is disabled');
+
+  let config: LocalBatchStockfishAnalysisConfig;
+  let engine: StockfishEngine;
+  try {
+    config = dependencies.loadAnalysisConfig();
+    if (!config.enabled) {
+      throw new Error('Local batch Stockfish analysis is disabled');
+    }
+    engine = dependencies.createEngine(config);
+  } catch (error) {
+    if (!context.signal.aborted && onSetupFailure) {
+      try {
+        await onSetupFailure(error);
+      } catch (persistenceError) {
+        console.error(
+          'Could not persist imported-game analysis setup failure',
+          errorMessage(persistenceError),
+        );
+      }
+    }
+    throw error;
   }
 
-  const engine = dependencies.createEngine(config);
   let disposed = false;
   const disposeEngine = () => {
     if (disposed) return;
@@ -83,8 +108,18 @@ export function createImportedGameJobTaskExecutorRegistry(
     {
       kind: 'ANALYSE_GAMES',
       execute(task: ClaimedJobTask, context: JobTaskExecutionContext) {
-        return withAnalysisEngine(dependencies, context, (engine, config) => (
-          dependencies.processing.analyseOne(
+        const onSetupFailure = dependencies.recordAnalysisSetupFailure
+          ? (error: unknown) => dependencies.recordAnalysisSetupFailure!(
+              task.userId,
+              task.importedGameId,
+              task.force,
+              error,
+            )
+          : undefined;
+        return withAnalysisEngine(
+          dependencies,
+          context,
+          (engine, config) => dependencies.processing.analyseOne(
             engine,
             task.userId,
             task.importedGameId,
@@ -95,8 +130,9 @@ export function createImportedGameJobTaskExecutorRegistry(
               refreshTagsAfterAnalysis: true,
               signal: context.signal,
             },
-          )
-        ));
+          ),
+          onSetupFailure,
+        );
       },
     },
     {
