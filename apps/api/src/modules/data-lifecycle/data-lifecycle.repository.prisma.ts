@@ -72,14 +72,6 @@ interface OperationRow {
   updatedAt: Date;
 }
 
-interface IdRow {
-  id: number;
-}
-
-interface CountRow {
-  count: number;
-}
-
 export interface StoredDataLifecycleOperation {
   id: number;
   action: DataLifecycleAction;
@@ -279,14 +271,12 @@ export function createDataLifecycleRepository(
       return database.$transaction(async (transaction) => {
         await lockDataLifecycleUserScope(transaction, input.targetUserId);
 
-        const duplicateRows = await transaction.$queryRaw<OperationRow[]>(Prisma.sql`
-          SELECT ${operationColumns('operation')}
-          FROM "DataLifecycleOperation" AS operation
-          WHERE operation."targetUserId" = ${input.targetUserId}
-            AND operation."idempotencyKeyHash" = ${input.idempotencyKeyHash}
-          LIMIT 1
-        `);
-        const duplicate = duplicateRows[0];
+        const duplicate = await transaction.dataLifecycleOperation.findFirst({
+          where: {
+            targetUserId: input.targetUserId,
+            idempotencyKeyHash: input.idempotencyKeyHash,
+          },
+        });
         if (duplicate) {
           if (duplicate.id !== input.operationId) {
             throw new DataLifecycleInvalidStateError(
@@ -302,14 +292,12 @@ export function createDataLifecycleRepository(
           return toStoredOperation(duplicate);
         }
 
-        const rows = await transaction.$queryRaw<OperationRow[]>(Prisma.sql`
-          SELECT ${operationColumns('operation')}
-          FROM "DataLifecycleOperation" AS operation
-          WHERE operation."id" = ${input.operationId}
-            AND operation."targetUserId" = ${input.targetUserId}
-          FOR UPDATE
-        `);
-        const operation = rows[0];
+        const operation = await transaction.dataLifecycleOperation.findFirst({
+          where: {
+            id: input.operationId,
+            targetUserId: input.targetUserId,
+          },
+        });
         if (!operation || operation.status !== 'PREVIEWED') {
           throw new DataLifecycleInvalidStateError('Only a current preview can start execution.');
         }
@@ -325,14 +313,14 @@ export function createDataLifecycleRepository(
         if (scope.userId !== input.targetUserId) throw new DataLifecyclePreviewInvalidError();
         await assertScopeStillOwned(transaction, scope);
 
-        const conflicts = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
-          SELECT "id"
-          FROM "DataLifecycleResourceFence"
-          WHERE "ownerUserId" = ${input.targetUserId}
-            AND "releasedAt" IS NULL
-          LIMIT 1
-        `);
-        if (conflicts.length > 0) throw new DataLifecycleConflictError();
+        const conflict = await transaction.dataLifecycleResourceFence.findFirst({
+          where: {
+            ownerUserId: input.targetUserId,
+            releasedAt: null,
+          },
+          select: { id: true },
+        });
+        if (conflict) throw new DataLifecycleConflictError();
 
         await createScopeFences(transaction, operation.id, scope);
         const updatedCount = await transaction.$executeRaw(Prisma.sql`
@@ -344,30 +332,41 @@ export function createDataLifecycleRepository(
               "startedAt" = COALESCE("startedAt", NOW()),
               "updatedAt" = NOW()
           WHERE "id" = ${operation.id}
+            AND "targetUserId" = ${input.targetUserId}
+            AND "status" = 'PREVIEWED'
+            AND "idempotencyKeyHash" IS NULL
+            AND "previewTokenHash" = ${input.previewTokenHash}
+            AND "previewHash" = ${input.previewHash}
+            AND "previewExpiresAt" > NOW()
         `);
         if (updatedCount !== 1) {
-          throw new Error('Data lifecycle execution start did not update exactly one row.');
+          const current = await transaction.dataLifecycleOperation.findUnique({
+            where: { id: operation.id },
+            select: { status: true, previewExpiresAt: true },
+          });
+          if (current?.status === 'PREVIEWED' && current.previewExpiresAt <= new Date()) {
+            throw new DataLifecyclePreviewExpiredError();
+          }
+          throw new DataLifecycleInvalidStateError('Lifecycle preview changed before execution could start.');
         }
         return toStoredOperation(await readOperationById(transaction, operation.id));
       });
     },
 
     async getForTargetUser(targetUserId, operationId) {
-      const rows = await database.$queryRaw<OperationRow[]>(Prisma.sql`
-        SELECT ${operationColumns('operation')}
-        FROM "DataLifecycleOperation" AS operation
-        WHERE operation."id" = ${operationId}
-          AND operation."targetUserId" = ${targetUserId}
-        LIMIT 1
-      `);
-      return rows[0] ? toStoredOperation(rows[0]) : null;
+      validatePositiveInteger(targetUserId, 'targetUserId');
+      validatePositiveInteger(operationId, 'operationId');
+      const row = await database.dataLifecycleOperation.findFirst({
+        where: { id: operationId, targetUserId },
+      });
+      return row ? toStoredOperation(row) : null;
     },
 
     async claimNext(workKey) {
       validateWorkKey(workKey);
-      return database.$transaction(async (transaction) => {
-        const statuses = Prisma.join(CLAIMABLE_STATUSES.map((status) => Prisma.sql`${status}`));
-        const candidates = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
+      const statuses = Prisma.join(CLAIMABLE_STATUSES.map((status) => Prisma.sql`${status}`));
+      const rows = await database.$queryRaw<OperationRow[]>(Prisma.sql`
+        WITH candidate AS (
           SELECT "id"
           FROM "DataLifecycleOperation"
           WHERE "status" IN (${statuses})
@@ -375,25 +374,22 @@ export function createDataLifecycleRepository(
           ORDER BY "updatedAt" ASC, "id" ASC
           FOR UPDATE SKIP LOCKED
           LIMIT 1
-        `);
-        const candidate = candidates[0];
-        if (!candidate) return null;
-
-        const updated = await transaction.$executeRaw(Prisma.sql`
-          UPDATE "DataLifecycleOperation"
-          SET "workKey" = ${workKey},
-              "claimedAt" = NOW(),
-              "heartbeatAt" = NOW(),
-              "updatedAt" = NOW()
-          WHERE "id" = ${candidate.id}
-            AND "workKey" IS NULL
-        `);
-        if (updated !== 1) return null;
-        return toStoredOperation(await readOperationById(transaction, candidate.id));
-      });
+        )
+        UPDATE "DataLifecycleOperation" AS operation
+        SET "workKey" = ${workKey},
+            "claimedAt" = NOW(),
+            "heartbeatAt" = NOW(),
+            "updatedAt" = NOW()
+        FROM candidate
+        WHERE operation."id" = candidate."id"
+          AND operation."workKey" IS NULL
+        RETURNING operation.*
+      `);
+      return rows[0] ? toStoredOperation(rows[0]) : null;
     },
 
     async heartbeat(operationId, workKey) {
+      validatePositiveInteger(operationId, 'operationId');
       validateWorkKey(workKey);
       const updated = await database.$executeRaw(Prisma.sql`
         UPDATE "DataLifecycleOperation"
@@ -414,33 +410,25 @@ export function createDataLifecycleRepository(
         throw new DataLifecycleInvalidStateError();
       }
       const targetStatus = parsedStatus as ClaimableStatus;
+      const allowedCurrentStatuses = ALLOWED_CURRENT_STATUSES_BY_TARGET[targetStatus];
 
       return database.$transaction(async (transaction) => {
-        const rows = await transaction.$queryRaw<OperationRow[]>(Prisma.sql`
-          SELECT ${operationColumns('operation')}
-          FROM "DataLifecycleOperation" AS operation
-          WHERE operation."id" = ${operationId}
-            AND operation."workKey" = ${workKey}
-          FOR UPDATE
-        `);
-        const operation = rows[0];
-        if (!operation) throw new DataLifecycleClaimLostError();
-        const currentStatus = dataLifecycleOperationStatusSchema.parse(operation.status);
-        if (
-          !CLAIMABLE_STATUSES.includes(currentStatus as ClaimableStatus)
-          || !ALLOWED_CURRENT_STATUSES_BY_TARGET[targetStatus].includes(currentStatus as ClaimableStatus)
-        ) {
-          throw new DataLifecycleInvalidStateError('Lifecycle execution state transitions are forward-only.');
-        }
-
         const updated = await transaction.$executeRaw(Prisma.sql`
           UPDATE "DataLifecycleOperation"
           SET "status" = ${targetStatus},
               "updatedAt" = NOW()
           WHERE "id" = ${operationId}
             AND "workKey" = ${workKey}
+            AND "status" IN (${Prisma.join(allowedCurrentStatuses.map((current) => Prisma.sql`${current}`))})
         `);
-        if (updated !== 1) throw new DataLifecycleClaimLostError();
+        if (updated !== 1) {
+          const current = await transaction.dataLifecycleOperation.findUnique({
+            where: { id: operationId },
+            select: { status: true, workKey: true },
+          });
+          if (!current || current.workKey !== workKey) throw new DataLifecycleClaimLostError();
+          throw new DataLifecycleInvalidStateError('Lifecycle execution state transitions are forward-only.');
+        }
         return toStoredOperation(await readOperationById(transaction, operationId));
       });
     },
@@ -496,47 +484,64 @@ export function createDataLifecycleRepository(
       validatePositiveInteger(operationId, 'operationId');
       return database.$transaction(async (transaction) => {
         await lockDataLifecycleUserScope(transaction, targetUserId);
-        const rows = await transaction.$queryRaw<OperationRow[]>(Prisma.sql`
-          SELECT ${operationColumns('operation')}
-          FROM "DataLifecycleOperation" AS operation
-          WHERE operation."id" = ${operationId}
-            AND operation."targetUserId" = ${targetUserId}
-          FOR UPDATE
-        `);
-        const operation = rows[0];
-        if (!operation) throw new DataLifecycleInvalidStateError('Data lifecycle operation was not found.');
-        const status = dataLifecycleOperationStatusSchema.parse(operation.status);
-        if (TERMINAL_STATUSES.includes(status as typeof TERMINAL_STATUSES[number])) {
-          return toStoredOperation(operation);
-        }
 
-        if (operation.status === 'PREVIEWED') {
-          const cancelled = await transaction.$executeRaw(Prisma.sql`
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const operation = await transaction.dataLifecycleOperation.findFirst({
+            where: { id: operationId, targetUserId },
+          });
+          if (!operation) {
+            throw new DataLifecycleInvalidStateError('Data lifecycle operation was not found.');
+          }
+          const status = dataLifecycleOperationStatusSchema.parse(operation.status);
+          if (TERMINAL_STATUSES.includes(status as typeof TERMINAL_STATUSES[number])) {
+            return toStoredOperation(operation);
+          }
+
+          if (operation.status === 'PREVIEWED') {
+            const cancelled = await transaction.$executeRaw(Prisma.sql`
+              UPDATE "DataLifecycleOperation"
+              SET "status" = 'CANCELLED',
+                  "stopRequest" = 'CANCEL',
+                  "stopRequestedAt" = NOW(),
+                  "terminalResult" = 'CANCELLED_BEFORE_MUTATION',
+                  "completedAt" = NOW(),
+                  "updatedAt" = NOW()
+              WHERE "id" = ${operation.id}
+                AND "targetUserId" = ${targetUserId}
+                AND "status" = 'PREVIEWED'
+                AND "firstDestructiveCommitAt" IS NULL
+            `);
+            if (cancelled === 1) {
+              return toStoredOperation(await readOperationById(transaction, operation.id));
+            }
+            continue;
+          }
+
+          const afterMutation = operation.firstDestructiveCommitAt !== null;
+          const stopRequest = afterMutation ? 'STOP_AFTER_BATCH' : 'CANCEL';
+          const nextStatus = afterMutation ? operation.status : 'CANCEL_REQUESTED';
+          const mutationPredicate = afterMutation
+            ? Prisma.sql`"firstDestructiveCommitAt" IS NOT NULL`
+            : Prisma.sql`"firstDestructiveCommitAt" IS NULL`;
+          const updated = await transaction.$executeRaw(Prisma.sql`
             UPDATE "DataLifecycleOperation"
-            SET "status" = 'CANCELLED',
-                "stopRequest" = 'CANCEL',
-                "stopRequestedAt" = NOW(),
-                "terminalResult" = 'CANCELLED_BEFORE_MUTATION',
-                "completedAt" = NOW(),
+            SET "status" = ${nextStatus},
+                "stopRequest" = ${stopRequest},
+                "stopRequestedAt" = COALESCE("stopRequestedAt", NOW()),
                 "updatedAt" = NOW()
             WHERE "id" = ${operation.id}
+              AND "targetUserId" = ${targetUserId}
+              AND "status" = ${operation.status}
+              AND ${mutationPredicate}
           `);
-          if (cancelled !== 1) throw new DataLifecycleInvalidStateError();
-          return toStoredOperation(await readOperationById(transaction, operation.id));
+          if (updated === 1) {
+            return toStoredOperation(await readOperationById(transaction, operation.id));
+          }
         }
 
-        const stopRequest = operation.firstDestructiveCommitAt === null ? 'CANCEL' : 'STOP_AFTER_BATCH';
-        const nextStatus = operation.firstDestructiveCommitAt === null ? 'CANCEL_REQUESTED' : operation.status;
-        const updated = await transaction.$executeRaw(Prisma.sql`
-          UPDATE "DataLifecycleOperation"
-          SET "status" = ${nextStatus},
-              "stopRequest" = ${stopRequest},
-              "stopRequestedAt" = COALESCE("stopRequestedAt", NOW()),
-              "updatedAt" = NOW()
-          WHERE "id" = ${operation.id}
-        `);
-        if (updated !== 1) throw new DataLifecycleInvalidStateError();
-        return toStoredOperation(await readOperationById(transaction, operation.id));
+        throw new DataLifecycleInvalidStateError(
+          'Lifecycle operation changed concurrently while requesting a stop.',
+        );
       });
     },
 
@@ -544,22 +549,7 @@ export function createDataLifecycleRepository(
       validatePositiveInteger(operationId, 'operationId');
       validateWorkKey(workKey);
       await database.$transaction(async (transaction) => {
-        const rows = await transaction.$queryRaw<OperationRow[]>(Prisma.sql`
-          SELECT ${operationColumns('operation')}
-          FROM "DataLifecycleOperation" AS operation
-          WHERE operation."id" = ${operationId}
-            AND operation."workKey" = ${workKey}
-          FOR UPDATE
-        `);
-        const operation = rows[0];
-        if (!operation) throw new DataLifecycleClaimLostError();
-        if (operation.firstDestructiveCommitAt !== null) {
-          throw new DataLifecycleInvalidStateError('An operation cannot be cancelled after destructive execution starts.');
-        }
-        if (operation.status !== 'CANCEL_REQUESTED') throw new DataLifecycleInvalidStateError();
-
-        await releaseOperationFences(transaction, operationId);
-        await transaction.$executeRaw(Prisma.sql`
+        const updated = await transaction.$executeRaw(Prisma.sql`
           UPDATE "DataLifecycleOperation"
           SET "status" = 'CANCELLED',
               "terminalResult" = 'CANCELLED_BEFORE_MUTATION',
@@ -569,7 +559,24 @@ export function createDataLifecycleRepository(
               "completedAt" = NOW(),
               "updatedAt" = NOW()
           WHERE "id" = ${operationId}
+            AND "workKey" = ${workKey}
+            AND "status" = 'CANCEL_REQUESTED'
+            AND "firstDestructiveCommitAt" IS NULL
         `);
+        if (updated !== 1) {
+          const current = await transaction.dataLifecycleOperation.findUnique({
+            where: { id: operationId },
+            select: { workKey: true, firstDestructiveCommitAt: true, status: true },
+          });
+          if (!current || current.workKey !== workKey) throw new DataLifecycleClaimLostError();
+          if (current.firstDestructiveCommitAt !== null) {
+            throw new DataLifecycleInvalidStateError(
+              'An operation cannot be cancelled after destructive execution starts.',
+            );
+          }
+          throw new DataLifecycleInvalidStateError();
+        }
+        await releaseOperationFences(transaction, operationId);
       });
     },
 
@@ -578,29 +585,35 @@ export function createDataLifecycleRepository(
       validateWorkKey(workKey);
       validateCode(errorCode, 'errorCode');
       await database.$transaction(async (transaction) => {
-        const rows = await transaction.$queryRaw<OperationRow[]>(Prisma.sql`
-          SELECT ${operationColumns('operation')}
-          FROM "DataLifecycleOperation" AS operation
-          WHERE operation."id" = ${operationId}
-            AND operation."workKey" = ${workKey}
-          FOR UPDATE
-        `);
-        const operation = rows[0];
-        if (!operation) throw new DataLifecycleClaimLostError();
-        const afterMutation = operation.firstDestructiveCommitAt !== null;
-        if (!afterMutation) await releaseOperationFences(transaction, operationId);
-        await transaction.$executeRaw(Prisma.sql`
+        const updated = await transaction.$executeRaw(Prisma.sql`
           UPDATE "DataLifecycleOperation"
-          SET "status" = ${afterMutation ? 'NEEDS_ATTENTION' : 'FAILED'},
-              "terminalResult" = ${afterMutation ? 'NEEDS_ATTENTION' : 'FAILED_BEFORE_MUTATION'},
+          SET "status" = CASE
+                WHEN "firstDestructiveCommitAt" IS NULL THEN 'FAILED'
+                ELSE 'NEEDS_ATTENTION'
+              END,
+              "terminalResult" = CASE
+                WHEN "firstDestructiveCommitAt" IS NULL THEN 'FAILED_BEFORE_MUTATION'
+                ELSE 'NEEDS_ATTENTION'
+              END,
               "errorCode" = ${errorCode},
               "workKey" = NULL,
               "claimedAt" = NULL,
               "heartbeatAt" = NULL,
-              "completedAt" = ${afterMutation ? null : new Date()},
+              "completedAt" = CASE
+                WHEN "firstDestructiveCommitAt" IS NULL THEN NOW()
+                ELSE NULL
+              END,
               "updatedAt" = NOW()
           WHERE "id" = ${operationId}
+            AND "workKey" = ${workKey}
+            AND "status" IN (${Prisma.join(CLAIMABLE_STATUSES.map((status) => Prisma.sql`${status}`))})
         `);
+        if (updated !== 1) throw new DataLifecycleClaimLostError();
+
+        const operation = await readOperationById(transaction, operationId);
+        if (operation.firstDestructiveCommitAt === null) {
+          await releaseOperationFences(transaction, operationId);
+        }
       });
     },
 
@@ -608,17 +621,7 @@ export function createDataLifecycleRepository(
       validatePositiveInteger(operationId, 'operationId');
       validateWorkKey(workKey);
       await database.$transaction(async (transaction) => {
-        const rows = await transaction.$queryRaw<OperationRow[]>(Prisma.sql`
-          SELECT ${operationColumns('operation')}
-          FROM "DataLifecycleOperation" AS operation
-          WHERE operation."id" = ${operationId}
-            AND operation."workKey" = ${workKey}
-            AND operation."status" = 'VERIFYING'
-          FOR UPDATE
-        `);
-        if (!rows[0]) throw new DataLifecycleClaimLostError();
-        await releaseOperationFences(transaction, operationId);
-        await transaction.$executeRaw(Prisma.sql`
+        const updated = await transaction.$executeRaw(Prisma.sql`
           UPDATE "DataLifecycleOperation"
           SET "status" = 'COMPLETED',
               "terminalResult" = 'COMPLETED',
@@ -629,7 +632,11 @@ export function createDataLifecycleRepository(
               "completedAt" = NOW(),
               "updatedAt" = NOW()
           WHERE "id" = ${operationId}
+            AND "workKey" = ${workKey}
+            AND "status" = 'VERIFYING'
         `);
+        if (updated !== 1) throw new DataLifecycleClaimLostError();
+        await releaseOperationFences(transaction, operationId);
       });
     },
 
@@ -667,6 +674,12 @@ export function createDataLifecycleRepository(
         WHERE operation."status" IN ('COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED')
           AND operation."completedAt" < ${cutoff}
           AND (operation."receiptExpiresAt" IS NULL OR operation."receiptExpiresAt" < ${cutoff})
+          AND NOT EXISTS (
+            SELECT 1
+            FROM "DataLifecycleResourceFence" AS fence
+            WHERE fence."operationId" = operation."id"
+              AND fence."releasedAt" IS NULL
+          )
           AND NOT EXISTS (
             SELECT 1
             FROM "DeletedAuthIdentityTombstone" AS tombstone
@@ -731,33 +744,30 @@ async function assertScopeStillOwned(
   scope: DataLifecycleScope,
 ): Promise<void> {
   if (scope.resourceType === 'USER') {
-    const rows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
-      SELECT "id" FROM "AppUser" WHERE "id" = ${scope.userId} FOR SHARE
-    `);
-    if (rows.length !== 1) throw new DataLifecycleOwnershipChangedError();
+    const user = await transaction.appUser.findUnique({
+      where: { id: scope.userId },
+      select: { id: true },
+    });
+    if (!user) throw new DataLifecycleOwnershipChangedError();
     return;
   }
 
-  const accounts = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
-    SELECT "id"
-    FROM "ExternalAccount"
-    WHERE "id" = ${scope.accountId}
-      AND "userId" = ${scope.userId}
-    FOR SHARE
-  `);
-  if (accounts.length !== 1) throw new DataLifecycleOwnershipChangedError();
+  const account = await transaction.externalAccount.findFirst({
+    where: { id: scope.accountId, userId: scope.userId },
+    select: { id: true },
+  });
+  if (!account) throw new DataLifecycleOwnershipChangedError();
   if (scope.resourceType === 'ACCOUNT') return;
 
-  const counts = await transaction.$queryRaw<CountRow[]>(Prisma.sql`
-    SELECT COUNT(*)::int AS "count"
-    FROM "ImportedGame"
-    WHERE "userId" = ${scope.userId}
-      AND "accountId" = ${scope.accountId}
-      AND "id" IN (${Prisma.join(scope.gameIds.map((gameId) => Prisma.sql`${gameId}`))})
-  `);
-  if ((counts[0]?.count ?? 0) !== new Set(scope.gameIds).size) {
-    throw new DataLifecycleOwnershipChangedError();
-  }
+  const uniqueGameIds = Array.from(new Set(scope.gameIds));
+  const count = await transaction.importedGame.count({
+    where: {
+      userId: scope.userId,
+      accountId: scope.accountId,
+      id: { in: uniqueGameIds },
+    },
+  });
+  if (count !== uniqueGameIds.length) throw new DataLifecycleOwnershipChangedError();
 }
 
 async function createScopeFences(
@@ -831,51 +841,9 @@ async function readOperationById(
   transaction: Prisma.TransactionClient,
   operationId: number,
 ): Promise<OperationRow> {
-  const rows = await transaction.$queryRaw<OperationRow[]>(Prisma.sql`
-    SELECT ${operationColumns('operation')}
-    FROM "DataLifecycleOperation" AS operation
-    WHERE operation."id" = ${operationId}
-    LIMIT 1
-  `);
-  const row = rows[0];
+  const row = await transaction.dataLifecycleOperation.findUnique({ where: { id: operationId } });
   if (!row) throw new Error('Data lifecycle operation disappeared during a transaction.');
   return row;
-}
-
-function operationColumns(alias?: string): Prisma.Sql {
-  const prefix = alias ? Prisma.raw(`"${alias}".`) : Prisma.empty;
-  return Prisma.join([
-    Prisma.sql`${prefix}"id"`,
-    Prisma.sql`${prefix}"action"`,
-    Prisma.sql`${prefix}"status"`,
-    Prisma.sql`${prefix}"actorUserId"`,
-    Prisma.sql`${prefix}"targetUserId"`,
-    Prisma.sql`${prefix}"scopeResourceType"`,
-    Prisma.sql`${prefix}"scopeJson"`,
-    Prisma.sql`${prefix}"previewCountsJson"`,
-    Prisma.sql`${prefix}"previewHash"`,
-    Prisma.sql`${prefix}"previewTokenHash"`,
-    Prisma.sql`${prefix}"previewExpiresAt"`,
-    Prisma.sql`${prefix}"confirmationPhrase"`,
-    Prisma.sql`${prefix}"warningCodes"`,
-    Prisma.sql`${prefix}"idempotencyKeyHash"`,
-    Prisma.sql`${prefix}"stopRequest"`,
-    Prisma.sql`${prefix}"stopRequestedAt"`,
-    Prisma.sql`${prefix}"checkpointJson"`,
-    Prisma.sql`${prefix}"workKey"`,
-    Prisma.sql`${prefix}"claimedAt"`,
-    Prisma.sql`${prefix}"heartbeatAt"`,
-    Prisma.sql`${prefix}"firstDestructiveCommitAt"`,
-    Prisma.sql`${prefix}"verificationJson"`,
-    Prisma.sql`${prefix}"terminalResult"`,
-    Prisma.sql`${prefix}"errorCode"`,
-    Prisma.sql`${prefix}"receiptTokenHash"`,
-    Prisma.sql`${prefix}"receiptExpiresAt"`,
-    Prisma.sql`${prefix}"startedAt"`,
-    Prisma.sql`${prefix}"completedAt"`,
-    Prisma.sql`${prefix}"createdAt"`,
-    Prisma.sql`${prefix}"updatedAt"`,
-  ]);
 }
 
 function toStoredOperation(row: OperationRow): StoredDataLifecycleOperation {
