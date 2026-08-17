@@ -36,6 +36,8 @@ The database, rather than the reconciler, is the final concurrency authority for
 9. create the retained batch, `JobRun(source = ONBOARDING)`, and ordered `JobTask` rows atomically;
 10. link the child and mark a queued parent as running.
 
+The configured lane size is an upper bound. Internal reconciliation may pass a stricter positive `maxTasks` cap below that lane size; the first-analysis fallback uses this to persist and admit a one-game wave without introducing a second analysis-admission path.
+
 For an explicit preparation retry, the same transaction also increments `retryGeneration`, clears prior attention, and returns the parent to `RUNNING`. A capacity/no-candidate block therefore cannot consume a retry generation, and a committed generation always has a durable retry child job.
 
 The transaction does not execute provider calls, PGN parsing, Stockfish, task polling, or reconciliation. Existing job workers and imported-game executors remain authoritative after commit.
@@ -63,6 +65,8 @@ PREPARATION_RECONCILE_DUE_WARNING_MS=15000
 PREPARATION_FIRST_ANALYSIS_MIN_INDEXED=3
 PREPARATION_FIRST_ANALYSIS_SMALL_ACCOUNT_FALLBACK=1
 ```
+
+The fallback size must remain below the normal first-analysis threshold and no larger than the configured `FIRST_ANALYSIS` lane size.
 
 Lane priorities:
 
@@ -106,7 +110,7 @@ The loop drains a bounded number of due parents per cycle, then uses the configu
 - a preparation child `JobRun` changes state or is removed by retention;
 - a linked child `JobTask` changes settlement state or releases its `workKey`.
 
-`NEEDS_ATTENTION` is not normally polled. Only recoverable import attention (`IMPORT_PAUSED` / `IMPORT_RETRY_AVAILABLE`) is made due by linked import/relink events, allowing a resumed or replacement current import attempt to return the parent to `RUNNING`. Product attention such as `NO_RECENT_GAMES` and `ALL_INDEXING_FAILED` remains dormant until an explicit lifecycle action.
+`NEEDS_ATTENTION` is not normally polled. Only recoverable import attention (`IMPORT_PAUSED` / `IMPORT_RETRY_AVAILABLE`) is made due by linked import/relink events, allowing a resumed or replacement current import attempt to return the parent to `RUNNING`. On each such wake, the recoverable attention code/detail is recomputed from the current ordered target imports, so a multi-target run does not preserve an action signal for a blocker that has already recovered. Product attention such as `NO_RECENT_GAMES` and `ALL_INDEXING_FAILED` remains dormant until an explicit lifecycle action.
 
 The in-process `wake()` method is only a latency optimization for local control calls. Persisted PostgreSQL state remains authoritative after process restart or a lost in-memory notification.
 
@@ -114,7 +118,7 @@ The in-process `wake()` method is only a latency optimization for local control 
 
 Indexing pipelines directly from committed eligible `ImportedGame` rows; it does not wait for terminal provider coverage. Core readiness still waits for a successfully completed exact import and terminal index outcomes.
 
-The run may have one non-terminal index batch and one non-terminal analysis batch concurrently. First analysis starts when a target has at least three current indexed/unanalysed games. A successfully completed, index-quiescent small account may use the configured one-game fallback. Failed or cancelled imports do not enter that fallback path.
+The run may have one non-terminal index batch and one non-terminal analysis batch concurrently. Normal first analysis starts when a target has at least three current indexed/unanalysed games, even while indexing continues. Below that threshold, fallback waits for successful terminal import coverage, no clean index candidate, and no active index batch for that target; if at least one current indexed/unanalysed game remains, it admits a bounded one-game `FIRST_ANALYSIS` wave. This also prevents partial indexing failures from stranding the remaining successfully indexed evidence. Failed or cancelled imports do not enter the fallback path.
 
 For multi-account expansion, index and analysis fairness are independent. Each stage chooses the target with the fewest prior normal batches, then immutable target ordinal and target ID. Retry batches are excluded from those normal-stage cursors, so retry activity does not let one account jump the normal round-robin order.
 
@@ -141,9 +145,9 @@ Resume transitions the preparation parent to `RUNNING` first, then resumes linke
 
 Cancellation is acknowledged. `CANCEL_REQUESTED` propagates to linked imports and active child jobs. The parent becomes `CANCELLED` only after imports are terminal with no import claim and no child task retains a `workKey`; terminal child status alone is not sufficient.
 
-Preparation retry is explicit and evidence-based. Within a non-terminal `RUNNING` / `NEEDS_ATTENTION` run, one explicit retry request creates one bounded `RETRY` batch for current failed index or analysis evidence and increments the generation atomically with that child creation. Completed evidence is never reset, a blocked retry consumes no generation, and normal reconciliation never auto-requeues terminal failures. A terminal `COMPLETED` preparation is not reopened; terminal recovery is represented by a new linked `RECOVERY` run through ONB-009. Provider-import retry remains owned by the durable import lifecycle rather than being disguised as a preparation-child retry.
+Preparation retry is explicit and evidence-based. Within a non-terminal `RUNNING` / `NEEDS_ATTENTION` run, one explicit retry request creates one bounded `RETRY` batch for current failed index or analysis evidence and increments the generation atomically with that child creation. Completed evidence is never reset, a blocked retry consumes no generation, and normal reconciliation never auto-requeues terminal failures. A terminal `COMPLETED` preparation is not reopened by the ONB-018 internal retry method. ONB-008 owns completed-partial action mapping, while ONB-009 owns the authenticated command semantics; ONB-009 explicitly assigns new linked `RECOVERY` runs to terminal cancelled/failed restart rather than silently reopening historical scope. Provider-import retry remains owned by the durable import lifecycle rather than being disguised as a preparation-child retry.
 
-Restarting a terminal cancelled/failed preparation and creating expansion runs remain lifecycle-command concerns outside this worker service.
+Restarting terminal cancelled/failed preparation and creating expansion runs remain lifecycle-command concerns outside this worker service.
 
 ## Operational attention and telemetry
 
