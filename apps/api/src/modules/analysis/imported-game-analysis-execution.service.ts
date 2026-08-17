@@ -1,6 +1,10 @@
 import { ImportedGamesService } from '../imported-games/imported-games.service';
 import { refreshTacticalDetectionsForGame } from '../lab/tactical-detections/tactical-detection.service';
 import {
+  createRunningGameAnalysisRun,
+  failGameAnalysisRun,
+} from './analysis.repository.prisma';
+import {
   ImportedGameAnalysisService,
   type ImportedGameAnalysisExecutionStatus,
   type ImportedGameAnalysisOptions,
@@ -22,6 +26,8 @@ interface ImportedGameAnalysisExecutionDependencies {
   getExecutionState: typeof getImportedGameAnalysisExecutionState;
   findAbortCleanupCandidate: typeof findAbortCleanupCandidate;
   abandonRun: typeof abandonGameAnalysisRun;
+  createRunningRun?: typeof createRunningGameAnalysisRun;
+  failRun?: typeof failGameAnalysisRun;
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
@@ -47,6 +53,25 @@ export function createImportedGameAnalysisExecutionService(
   dependencies: ImportedGameAnalysisExecutionDependencies,
 ) {
   return {
+    async recordSetupFailure(
+      userId: number,
+      importedGameId: number,
+      error: unknown,
+    ): Promise<void> {
+      if (!dependencies.createRunningRun || !dependencies.failRun) {
+        throw new Error('Analysis setup-failure persistence is not configured.');
+      }
+      const state = await dependencies.getExecutionState(userId, importedGameId);
+      if (!state) throw new Error('Imported game not found');
+
+      const run = await dependencies.createRunningRun({
+        importedGameId,
+        positionsTotal: state.totalPlies,
+        positionsDone: state.analysedPlies,
+      });
+      await dependencies.failRun(run.id, errorMessage(error));
+    },
+
     async analyseOne(
       engine: StockfishEngine,
       userId: number,
@@ -113,4 +138,6 @@ export const ImportedGameAnalysisExecutionService = createImportedGameAnalysisEx
   getExecutionState: getImportedGameAnalysisExecutionState,
   findAbortCleanupCandidate,
   abandonRun: abandonGameAnalysisRun,
+  createRunningRun: createRunningGameAnalysisRun,
+  failRun: failGameAnalysisRun,
 });
