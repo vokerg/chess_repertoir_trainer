@@ -189,7 +189,7 @@ try {
 
   const staleScopeCheck = assert.rejects(
     prisma.$queryRawUnsafe(
-      'SELECT "data_lifecycle_assert_game_transition_allowed"(NULL, $1)',
+      'SELECT "data_lifecycle_assert_game_transition_allowed"(NULL::integer, $1::integer)',
       ownerGame.id,
     ),
     /DATA_LIFECYCLE_OWNERSHIP_CHANGED/,
