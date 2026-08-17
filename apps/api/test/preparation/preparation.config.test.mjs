@@ -10,13 +10,13 @@ assert.deepEqual(
   'empty environment preserves the validated preparation defaults',
 );
 
-assert.throws(
-  () => readPreparationConfig({
-    PREPARATION_FIRST_ANALYSIS_MIN_INDEXED: '3',
-    PREPARATION_FIRST_ANALYSIS_SMALL_ACCOUNT_FALLBACK: '3',
-  }),
-  /SMALL_ACCOUNT_FALLBACK must be less than PREPARATION_FIRST_ANALYSIS_MIN_INDEXED/,
-  'fallback remains a distinct below-threshold path',
+assert.equal(
+  readPreparationConfig({
+    PREPARATION_FIRST_ANALYSIS_MIN_INDEXED: '1',
+    PREPARATION_FIRST_ANALYSIS_SMALL_ACCOUNT_FALLBACK: '1',
+  }).firstAnalysisMinIndexed,
+  1,
+  'the normal trigger and fallback cap can be tuned independently',
 );
 
 assert.throws(
