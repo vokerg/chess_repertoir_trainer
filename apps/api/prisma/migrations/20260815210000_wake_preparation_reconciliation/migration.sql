@@ -43,13 +43,23 @@ BEGIN
     ) AS counts
     WHERE batch."jobRunId" = child_job."id";
 
+    -- JobRun is also deleted as part of AppUser cascading cleanup. At that
+    -- point DataPreparationRun may still be visible to this BEFORE DELETE
+    -- trigger even though its owning AppUser row has already been removed.
+    -- Updating that transient row would re-check its user FK and abort the
+    -- cascade, so retention wakes are emitted only while the owner exists.
     UPDATE "DataPreparationRun" AS run
     SET "reconcileAfter" = CURRENT_TIMESTAMP,
         "updatedAt" = CURRENT_TIMESTAMP
     FROM "DataPreparationBatch" AS batch
     WHERE batch."jobRunId" = child_job."id"
       AND run."id" = batch."preparationRunId"
-      AND run."status" IN ('QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'CANCEL_REQUESTED');
+      AND run."status" IN ('QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'CANCEL_REQUESTED')
+      AND EXISTS (
+          SELECT 1
+          FROM "AppUser" AS owner
+          WHERE owner."id" = run."userId"
+      );
 
     IF TG_OP = 'DELETE' THEN
         RETURN OLD;
