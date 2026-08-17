@@ -66,7 +66,7 @@ PREPARATION_FIRST_ANALYSIS_MIN_INDEXED=3
 PREPARATION_FIRST_ANALYSIS_SMALL_ACCOUNT_FALLBACK=1
 ```
 
-The fallback size must remain below the normal first-analysis threshold and no larger than the configured `FIRST_ANALYSIS` lane size.
+The trigger threshold and fallback cap are independently tunable. The fallback cap must not exceed the configured `FIRST_ANALYSIS` lane size; the approved defaults remain a three-game normal trigger and a one-game quiescent fallback.
 
 Lane priorities:
 
@@ -136,6 +136,8 @@ The reconciler persists first-imported, first-indexed, first-analysed, and core-
 Index failures are terminal outcomes. They may produce the non-blocking `INDEXING_PARTIAL` warning when at least one game indexed successfully; all-index-failed instead produces `NEEDS_ATTENTION / ALL_INDEXING_FAILED`. A completed import with zero eligible games produces `NEEDS_ATTENTION / NO_RECENT_GAMES`.
 
 Analysis is non-blocking for core readiness. A current analysis status of `RUNNING` remains non-terminal even when the work came from a direct-user job. A preparation run becomes `COMPLETED` only after core readiness and when no requested indexed game is unanalysed or currently analysing and no preparation analysis child remains active. Terminal analysis failures do not revoke core readiness and are retained as `ANALYSIS_PARTIAL` warning evidence.
+
+`ANALYSE_GAMES` setup failures that occur before Stockfish begins—such as disabled local batch analysis, configuration failure, or engine-construction failure—are persisted through the existing `GameAnalysisRun` lifecycle as `FAILED` evidence before the job error is returned. A non-forced task does not replace an already-current completed analysis snapshot. This prevents technical setup failures from remaining `latestAnalysisStatus = NULL` and being automatically re-admitted forever as fresh preparation backlog; explicit failed-evidence retry remains the recovery path.
 
 ## Pause, cancel, resume, and retry
 
