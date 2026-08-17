@@ -1,6 +1,6 @@
 # ONB-018 — Implement progressive preparation reconciliation and control
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P0
 
