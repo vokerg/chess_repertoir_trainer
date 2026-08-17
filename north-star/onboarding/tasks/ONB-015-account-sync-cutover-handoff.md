@@ -1,6 +1,6 @@
 # ONB-015 — Cut over account sync and preparation handoff
 
-Status: PROPOSED
+Status: READY
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 150
 
 Delivery class: Implementation
 
-Planning maturity: Researched
+Planning maturity: Researched; ONB-013/014 provider adapters and ONB-017/018 preparation execution/control are complete
 
 GitHub issue: [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203)
 
@@ -19,6 +19,8 @@ Claim branch: none
 Claimed at: none
 
 Claim scope: none
+
+Promoted at: 2026-08-17 through ONB-018 completion reconciliation
 
 ## Outcome
 

@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-08-15
+Last updated: 2026-08-17
 
 ## Program state
 
@@ -8,478 +8,85 @@ Last updated: 2026-08-15
 
 Program tracker: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
-Foundation: ONB-000 squash-merged through [PR #156](https://github.com/vokerg/chess_repertoir_trainer/pull/156)
+The durable import and preparation execution foundations are now delivered. Product projection, lifecycle commands, account-sync cutover, destructive lifecycle work, and functional onboarding remain in the implementation backlog.
 
-Lifecycle contract: ONB-001 squash-merged through [PR #197](https://github.com/vokerg/chess_repertoir_trainer/pull/197)
+## Delivered foundations
 
-Bounded import/backfill contract: ONB-002 squash-merged through [PR #204](https://github.com/vokerg/chess_repertoir_trainer/pull/204)
+- ONB-000 through ONB-007 — program, lifecycle, import, preparation, destructive-lifecycle, administration, cleanup, and throughput contracts are complete.
+- ONB-016 / #224 — lightweight onboarding experience blueprint is complete through PR #225.
+- ONB-017 / #253 — preparation persistence/admission runtime squash-merged through PR #282 as `885ef785bdac1b0c77cc500e3345745b0e723912`; completion records reconciled through PR #293.
+- ONB-018 / #254 — preparation reconciliation/control runtime squash-merged through PR #385 as `9b0293271a2c1a9f24a77939e828c3ee1aca8ffd`; final reviewed head `4e3a3a4ea6f3f0f798d52e08830d051ad13c7b95` passed CI #2998 (`32041962372`); completion records are reconciled through PR #397.
+- ONB-011 / #199 — durable account-import persistence/coverage delivered through PR #339 as `4c04d47dac40aa0ae254babbf65449b701b5c447`.
+- ONB-012 / #200 — durable account-import API/worker lifecycle delivered through PR #352 as `640018e4cd3c5528a94b9d0217e971ab2a2215b7`; completion records through PR #354.
+- ONB-013 / #201 — bounded Lichess adapter delivered through PR #357 as `e276e3820acbd8361feae99d8a0e15a9cf412e53`; completion records through PR #376.
+- ONB-014 / #202 — bounded Chess.com adapter delivered through PR #356 as `b9c2038bfd20f7b0a493c2eda3dd6c2aed911ec5`; real low-volume canary passed workflow #2812; completion records through PR #383.
+- ONB-022 / #272 — administrator authorization/read-only diagnostics delivered through PR #284; completion records through PR #298.
+- ONB-023 / #273 — administrator Angular diagnostics delivered through PR #307; completion records through PR #312.
 
-Preparation orchestration: ONB-003 squash-merged through [PR #256](https://github.com/vokerg/chess_repertoir_trainer/pull/256) as `d41f75c080cd19ad106b2143acecd3b0606adacb`
+Detailed historical validation is preserved in task files and append-only reports; this status file intentionally summarizes only current program state.
 
-Preparation execution boundary: ONB-017 runtime squash-merged through [PR #282](https://github.com/vokerg/chess_repertoir_trainer/pull/282) as `885ef785bdac1b0c77cc500e3345745b0e723912`; completion records reconciled through PR #293.
+## ONB-018 delivered boundary
 
-Durable account-import persistence: ONB-011 runtime merged through [PR #339](https://github.com/vokerg/chess_repertoir_trainer/pull/339) as `4c04d47dac40aa0ae254babbf65449b701b5c447`; persisted destructive lifecycle fences remain ONB-019-owned.
+ONB-018 now provides:
 
-Durable account-import worker/API lifecycle: ONB-012 runtime squash-merged through [PR #352](https://github.com/vokerg/chess_repertoir_trainer/pull/352) as `640018e4cd3c5528a94b9d0217e971ab2a2215b7`; completion records are reconciled through PR #354.
+- a bounded PostgreSQL reconciler in the existing worker deployment with one-second active/five-second idle cadence;
+- atomic due-parent claim and persisted wake/lease fencing;
+- progressive committed-import-to-index admission plus separate bounded analysis waves;
+- deterministic three-indexed first-analysis admission and one-game quiescent fallback;
+- stage-specific multi-account fairness below direct-user job priority;
+- exact first-imported, first-indexed, first-analysed, and core-ready milestones from current evidence;
+- restart-safe pause, resume, cancel, and explicit failed-evidence retry semantics;
+- retention-safe child snapshots and wake behavior;
+- recoverable import-attention reconciliation and aggregate stall telemetry without public ETA;
+- durable failed evidence for pre-engine analysis setup failures.
 
-Bounded Lichess import adapter: ONB-013 runtime squash-merged through [PR #357](https://github.com/vokerg/chess_repertoir_trainer/pull/357) as `e276e3820acbd8361feae99d8a0e15a9cf412e53`; final runtime head passed CI #2687, the low-volume Lichess canary passed workflow run #2665, and completion records are reconciled through PR #376.
+The final review made setup-failure persistence atomic: the owned game is locked, current evidence is rechecked, the terminal failed `GameAnalysisRun` is created, and the latest-analysis snapshot is updated in one PostgreSQL transaction. This prevents a split `RUNNING`/`FAILED` failure state.
 
-Bounded Chess.com import adapter: ONB-014 runtime squash-merged through [PR #356](https://github.com/vokerg/chess_repertoir_trainer/pull/356) as `b9c2038bfd20f7b0a493c2eda3dd6c2aed911ec5`; final runtime head passed CI #2669, the required real low-volume Chess.com canary passed workflow run #2812 (`31881053242`), and completion reconciliation is recorded by PR #383.
+## Ready implementation
 
-Destructive lifecycle: ONB-004 squash-merged through [PR #263](https://github.com/vokerg/chess_repertoir_trainer/pull/263) as `32db655a100ef1a55264b4d3739e2b7c38e72ee4`.
+- **ONB-008 / #193 — disposition/readiness projection — READY.** ONB-017/018 execution state and durable import/provider delivery are complete. This is the deterministic next task by canonical order.
+- **ONB-015 / #203 — account sync cutover/preparation handoff — READY.** Provider adapters and preparation execution/control are complete. Destructive fences/execution remain owned by ONB-019/020.
+- **ONB-019 / #259 — destructive lifecycle persistence/fences/audit/provenance — READY.** A fresh Prisma/migration collision check remains mandatory before claim.
 
-Throughput/progress: ONB-007 squash-merged through [PR #266](https://github.com/vokerg/chess_repertoir_trainer/pull/266) as `d6313823bd7da36991972a804f59d47d77578bdf` after corrected benchmark evidence and three self-review rounds.
+## Allocated but not ready
 
-Administrator architecture: ONB-005 completed through [PR #275](https://github.com/vokerg/chess_repertoir_trainer/pull/275) after three self-review rounds.
+- ONB-009 / #194 — lifecycle commands — `PROPOSED`; depends on ONB-008 and must not duplicate destructive commands.
+- ONB-010 / #195 — functional onboarding/Home re-entry — `PROPOSED`; depends on ONB-008/009 and ONB-016.
+- ONB-020 / #260 — account/game destructive coordinator — `PROPOSED`; depends on ONB-019 and other task-file gates.
+- ONB-021 / #261 — whole-user deletion/mobile purge — `PROPOSED`; depends on ONB-019/020 and mobile contracts.
+- ONB-024 / #274 — administrator lifecycle controls — `PROPOSED`; depends on canonical lifecycle services and proven reverification.
+- ONB-025 / #276 — stale-account refresh trigger — `PROPOSED`; depends on ONB-015 cutover.
+- ONB-026 / #280 — orphan shared-position cleanup implementation — `PROPOSED`; depends on ONB-019 coordination and its other gates.
 
-Administrator read-only foundation: ONB-022 runtime squash-merged through [PR #284](https://github.com/vokerg/chess_repertoir_trainer/pull/284) as `f83d26157e5da2d69f643b0d12100244219d2771`; completion records reconciled through PR #298 as `04e77e2e3f4575b260bca26cadbfec6129187552`.
+Only `READY` tasks may be claimed unless the user explicitly authorizes otherwise.
 
-Administrator diagnostics Angular feature: ONB-023 runtime squash-merged through [PR #307](https://github.com/vokerg/chess_repertoir_trainer/pull/307) as `07d19790a20beedf79bb094fead2c48c76404912`; completion records are reconciled by PR #312.
+## Current critical findings
 
-Shared-position cleanup research: ONB-006 completed through [PR #281](https://github.com/vokerg/chess_repertoir_trainer/pull/281) after two adversarial self-review rounds.
-
-Lightweight experience blueprint: ONB-016 squash-merged through [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
-
-Next provider critical-path state: ONB-013 and ONB-014 are complete. ONB-018 / #254 is the next unclaimed `READY` implementation task by canonical order because ONB-017 plus durable import/provider delivery are complete. ONB-015 / #203 remains `PROPOSED` because its final account-sync/preparation handoff consumes ONB-018; that handoff is a completion coordination point for ONB-018, not a claim blocker for the bounded reconciler itself. ONB-019 / #259 is also unclaimed `READY` on the parallel destructive-lifecycle support path after its accepted lifecycle/admin inputs and schema ownership/migration-order gates were satisfied.
-
-Latest report: `reports/ONB-014-2026-08-15-completion-reconciliation.md`
-
-## Completed contracts
-
-### ONB-001
-
-- persisted user disposition and repeatable preparation runs;
-- fixed one-account three-calendar-month standard blitz/rapid initial recipe;
-- import/index core-completion gate;
-- analysis continues progressively;
-- feature-specific readiness;
-- `/home` plus resumable `/onboarding`;
-- skip distinct from cancellation;
-- legacy-user adoption;
-- exact progress without ETA.
-
-### ONB-002
-
-- extended durable `ImportRun` plus exact account/scope coverage;
-- half-open UTC ranges and distinct initial/forward/backfill modes;
-- one non-terminal import per account;
-- replayable provider windows and conservative coverage advancement;
-- bounded duplicate-safe persistence;
-- database-based preparation handoff;
-- explicit backfill rather than raw cursor reset.
-
-### ONB-003
-
-- durable preparation run/target/batch boundary;
-- separate bounded index and analysis child jobs;
-- server-side candidate selection and atomic child creation;
-- per-run and global admission bounds;
-- committed-import pipelining;
-- first-analysis lane and stage-specific multi-account fairness;
-- direct-user preemption;
-- acknowledged controls and evidence-based readiness.
-
-### ONB-004
-
-- five distinct actions: un-analyse, un-index, purge account data, delete external account, and delete app user;
-- un-index always includes un-analysis;
-- every action is a durable previewed, idempotent, audited operation;
-- persisted user/account/game write fences block new work;
-- cross-resource fence creation is serialized per user;
-- destructive execution waits for preparation/import cancellation acknowledgement and zero target `JobTask.workKey` claims;
-- synchronous AI/tag/tactical/scenario/provider writers use a short commit-side lifecycle guard so a request started before fence creation cannot persist afterward;
-- terminal cancellation is permitted only before the first destructive commit; later stop/failure retains the resource fence and resumable checkpoint;
-- large actions use forward-only bounded checkpoints, not one account/user transaction;
-- shared `Position`, `PositionAnalysis`, and caches survive; ONB-006 owns cleanup;
-- un-analysis removes per-game runs/snapshots, AI review, ply classifications, all tactical versions/processed markers, and recomputes tags;
-- tactical feedback and scenario snapshots survive un-analysis/un-index;
-- account purge removes copied scenario data before game/detection cascades can null source links and verifies no target-game personal snapshot remains;
-- opening provenance distinguishes provider, local-book, and legacy/unknown values;
-- account purge retains the account, terminal import-run history, and independent OAuth connection while clearing authoritative coverage/current pointers/frontiers;
-- account delete removes the account and account-owned import history after lifecycle audit snapshot;
-- whole-user deletion blocks ordinary auth-resolution writes, removes OAuth state/tokens, creates the HMAC tombstone before or with final AppUser deletion, and exposes post-delete receipt/status without ordinary AppUser upsert;
-- mobile local purge is explicit, and stale devices receive typed deleted state before upload/provisioning;
-- operation/audit history survives target deletion without raw personal payloads;
-- implementation allocation: ONB-019/#259, ONB-020/#260, ONB-021/#261.
-
-### ONB-005
-
-- normal Clerk authentication remains the sole production login boundary;
-- administrator capabilities are derived server-side after verified authentication;
-- a disabled-by-default exact Clerk-subject allowlist bootstraps one replaceable authorization policy;
-- production `dev-single-user`, shared secrets, email allowlists, `AppUser.isAdmin`, client roles, second login, impersonation, and Organizations solely for global operators are rejected;
-- the API retains only the verified session context required for authorization and future reverification;
-- ONB-022 delivers migration-free cursor-paginated aggregate diagnostics with numeric user-ID lookup, explicit partial sections, exact row counts, and strict sensitive-field exclusions;
-- ONB-023 uses a lazy direct-link `/admin` route in the existing Angular deployment, with no required static-navigation entry and no client authorization authority;
-- administrator execution requires canonical lifecycle services, valid preview, typed confirmation, idempotency, recent signed `fva`, and one-use request-bound `reverification_id`;
-- administrator execution stays disabled until the pinned Clerk client flow proves signed evidence end to end;
-- administrator whole-user deletion remains disabled pending a separate support/recovery policy decision;
-- read-access security logs and lifecycle mutation audit use configurable initial 30/365-day defaults with explicit production confirmation;
-- pseudonymous actor/target HMAC domains are versioned and separate from deleted-identity tombstones;
-- request-budget enforcement must match verified API replica topology;
-- implementation allocation: ONB-022/#272, ONB-023/#273, ONB-024/#274 at orders 190/200/210.
-
-Completed through PR #275 after three adversarial self-review rounds and final canonical reconciliation.
-
-### ONB-006
-
-- exact zero-`ImportedGamePly` orphan predicate;
-- course `MoveNode` explicitly excluded;
-- `PositionAnalysis` and `MastersExplorerCache` treated as dependent cascades;
-- durable first-observed candidate and initial 30-day grace;
-- same-transaction PostgreSQL statement-trigger grace reset for every ply-reference insert/update;
-- bounded input-page traversal and checkpoints to the last row inspected;
-- fixed plies-first maintenance lock order plus final predicate/FK backstops;
-- observational bounded dry-run with exact execution counters and no ETA/byte claim;
-- manual server-side command over the canonical service, disabled by default and unscheduled;
-- implementation allocation ONB-026/#280.
-
-Completed through squash-merged PR #281 after two adversarial self-review rounds and final current-main reconciliation.
-
-### ONB-007
-
-- safe reusable benchmark harness restricted to a fresh local disposable PostgreSQL database;
-- synthetic 10/50/200-game scale fixtures and deterministic legal 16/40/80-ply length fixtures;
-- depth-12 WASM analysis and actual child-worker wave evidence;
-- measured 50-game medium index worker wave observed maximum below 1.8 seconds in corrected CI;
-- measured three-game short depth-12 analysis wave first-result observed maximum below 1.8 seconds and total observed maximum about 3.61 seconds in corrected CI;
-- index, first-analysis, and analysis-tail defaults of 50, 3, and 10 games;
-- global preparation caps of four non-terminal batches, 200 queued tasks, and 40 queued analysis tasks;
-- existing scheduling slice retained at 25 as a fairness/preemption boundary, not a visible wave;
-- one-second active/five-second idle preparation reconciliation with persisted immediate wake hints;
-- serial provider execution, initial 14-day Lichess windows, Chess.com calendar-month units, and 100-row database writes;
-- one active import executor with 1-second poll, 15-second heartbeat, 2-minute stale, and 30-second recovery defaults;
-- exact counts and fixed-denominator percentages only; no weighted overall percentage or public ETA in the initial release;
-- future stage ETA requires production telemetry, a fixed denominator, stable fingerprint, at least 30 recent samples across five runs/three accounts, bounded variance, and low failure rate;
-- internal first-value, stall, direct-user protection, scaling, and lifecycle/cleanup transaction budgets;
-- implementation handoffs applied to ONB-008, ONB-010 through ONB-014, ONB-017/018, and diagnostic/lifecycle owners.
-
-Completed through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d77578bdf`.
-
-### ONB-016
-
-- focused route-based progressive disclosure;
-- one-account first value then optional expansion;
-- persisted milestones and evidence-labelled bounded reveals;
-- optional tactical and Builder continuations;
-- functional Angular ownership with VT coordination.
-
-### ONB-017
-
-- `DataPreparationRun`, ordered account target, and retained preparation batch persistence;
-- immutable recipe/scope/range snapshots with nullable current-import and child-job links;
-- PostgreSQL lifecycle constraints and partial unique indexes for one non-terminal run per user and one active batch per run/stage;
-- database triggers retaining aggregate child evidence before job retention clears links;
-- configurable 50/50/3/10 wave defaults and 4/200/40 global admission caps;
-- bounded database-side ownership, scope, range, evidence, retry, active-work, and newest-first candidate selection;
-- one short globally serialized parent-locked transaction for capacity recount, candidate selection, and atomic batch/job/task creation;
-- direct-user priority above all preparation lanes;
-- immutable denominators, retained terminal evidence, and queue/settlement telemetry;
-- ONB-019 admission-guard seam without lifecycle persistence or destructive-safety overclaim;
-- exact implementation head `c226f15b9c75c6fb4cea3072828842d728b9eb5a` and final CI run 1994 (`30898278426`).
-
-Runtime squash-merged through PR #282 as `885ef785bdac1b0c77cc500e3345745b0e723912`. PR #293 preserved the original task contract and reconciled the task, queue, status, and completion evidence. Issue #253 was closed as completed after the reconciliation squash merge.
-
-### ONB-011
-
-- durable provider-neutral `ImportRun` persistence with explicit `LEGACY_SYNC` compatibility;
-- canonical versioned import scope hashes and immutable requested ranges;
-- exact contiguous `AccountImportCoverage` without cursor-derived overclaiming;
-- one non-terminal import per account and exact active-claim projection;
-- bounded duplicate-safe game persistence and coverage primitives;
-- retry lineage and replaceable lifecycle admission-guard seam;
-- no provider traversal, worker loop, Angular, or destructive lifecycle persistence.
-
-Runtime merged through PR #339 as `4c04d47dac40aa0ae254babbf65449b701b5c447`; issue #199 is completed. ONB-019 remains owner of persisted destructive lifecycle fences and audit persistence.
-
-### ONB-012
-
-- authenticated ownership-scoped create/list/detail/pause/resume/cancel/retry account-import API;
-- durable globally serialized claim, exact work-key heartbeat/checkpoint/settlement fencing, retry-at deferral, and stale recovery;
-- one global provider execution lane in the existing worker process with provider I/O outside database transactions;
-- safe pause/cancel acknowledgement, non-cooperative-executor stale fallback, settlement-failure containment, and bounded shared-worker shutdown;
-- exact active-claim/drain projection consumed by ONB-020;
-- one starvation-safe provider-neutral lifecycle-fence admission seam consumed by ONB-019;
-- stable `ACCOUNT_IMPORT_ADMISSION_BLOCKED` conflict handling;
-- monotonic durable completed-window progress and fixed denominator initialization;
-- linked retry mode/scope/range lineage and conservative full-range coverage completion;
-- queue/stage/heartbeat/cancellation telemetry without raw personal payloads;
-- no provider adapter, Angular, lifecycle-operation persistence, broker/new deployment, parallel provider execution, or generic `JobRun`/`JobTask` change.
-
-Final refreshed runtime head `dc4e9bc40e9da45c03e83904dfe0864a10cef289` passed CI #2645 (`31505680257`). PR #352 squash-merged into `main` as `640018e4cd3c5528a94b9d0217e971ab2a2215b7`. Completion PR #354 synchronizes the task, queue, status, completion evidence, issue closure, and promotion of ONB-013/014 to unclaimed `READY`.
-
-### ONB-013
-
-- deterministic half-open Lichess windows, 14 days by default, with canonical `perfType` and rated-scope mapping;
-- serial streaming NDJSON with `AbortSignal` and explicit failed-stream cancellation;
-- shared normalization for durable and compatibility paths;
-- duplicate-safe bounded persistence in 100-game-or-smaller commits without per-game existence N+1;
-- one provider-neutral atomic commit seam for game/progress/checkpoint writes and successful-window coverage completion;
-- exact empty-window coverage and duplicate-safe incomplete-window replay;
-- typed provider failures, minimum one-minute HTTP 429 deferral, restart-stable window planning, and lifecycle-fence/cancellation handling;
-- provider/request/parse/write/checkpoint/window timing without raw personal payloads;
-- progressive Activity Feed reconciliation after durable commits;
-- worker registration beside the Chess.com executor without a new queue, deployment, schema, or migration.
-
-The low-volume Lichess canary passed workflow run #2665 (`31566377590`). Reviewed runtime head `9d1bde8e563e60ab1c233d88123b675f419c5d74` passed full CI #2684 (`31571213970`), final PR head `2f53e81fba2386c1c2b3638c24a1450184497f78` passed CI #2687 (`31580120124`), and PR #357 squash-merged as `e276e3820acbd8361feae99d8a0e15a9cf412e53`. Completion reconciliation is recorded through PR #376.
-
-### ONB-014
-
-- deterministic half-open UTC Chess.com calendar-month planning with exact epoch-second clipping and provider-order semantics for initial/backfill versus forward work;
-- one successful archive-index traversal as authority for listed versus absent months;
-- strictly serial monthly archive requests with `AbortSignal`, bounded retry/backoff, durable HTTP 429 retry timing, recognizable User-Agent, and conservative 404/410 handling;
-- bounded `ETag` / `Last-Modified` metadata where available, without treating `304` as standalone coverage proof;
-- shared normalization for durable and transitional synchronous Chess.com flows;
-- exact immutable range, standard-variant, speed, and rated/unrated filtering;
-- one provider-neutral guarded commit seam for plan initialization, duplicate-safe 100-game-or-smaller batch writes, exact counters, window checkpoints, and conservative coverage advancement;
-- successful absent/empty-month coverage and replay-safe handling of listed failures, malformed payloads, cancellation, stale work keys, and lifecycle fences;
-- progressive Activity Feed reconciliation after committed matching batches and before successful window proof;
-- existing account-import worker registration with no new queue, deployment, schema, or migration.
-
-Reviewed runtime head `5e530a2a2b001ae0ee2ce42872b45c9b8f86a085` passed CI #2666 after adversarial self-review fixes. Final runtime PR head `d4592fe6b0e3c61ee9d25bc1517a8fc83a7466c2` passed CI #2669, and PR #356 squash-merged as `b9c2038bfd20f7b0a493c2eda3dd6c2aed911ec5`. The required real low-volume Chess.com canary passed the dedicated step in workflow run #2812 (`31881053242`) on public account `hikaru`, fixed historical month `2014-01`; the temporary workflow hook was removed immediately afterward. Completion PR #383 is documentation/execution-state reconciliation only.
-
-### ONB-022
-
-- disabled-by-default server-only administrator configuration;
-- exact Clerk-subject allowlist behind one replaceable `AdminAuthorizationPolicy`;
-- normalized verified-session evidence while preserving normal user-owned `RequestAuth` behavior;
-- versioned domain-separated pseudonymous administrator actor and target keys;
-- bounded `GET /api/admin/me`, `/api/admin/users`, `/api/admin/users/:userId`, and `/api/admin/users/:userId/work` routes;
-- opaque versioned `AppUser.id DESC` keyset cursors with default 25 and maximum 100 rows;
-- database-aggregated account, game, course, training, import, job, preparation, and approved row-count diagnostics without per-user N+1 queries;
-- explicit unavailable sections and ONB-007 warnings with exact evidence and no ETA/SLA;
-- injectable `AdminRequestBudget` seam that emits `429` only when a real enforcing implementation is injected;
-- structured pseudonymous security logs and strict sensitive-field exclusions;
-- no Prisma schema/migration, Angular UI, lifecycle mutation, persisted mutation audit, distributed limiter persistence, broker, or new service.
-
-Final runtime pull-request head `fad7a19216c3249827a111e75238aafccac0ec75` passed CI run #2089 (`31031618906`). PR #284 squash-merged as `f83d26157e5da2d69f643b0d12100244219d2771`. Refreshed completion head `3d1ec5e84baa34dfa37d0d13f81f4b28e5ba4736` passed CI #2201 (`31197631342`) and PR #298 squash-merged as `04e77e2e3f4575b260bca26cadbfec6129187552`, closing issue #272 completed and promoting ONB-023 to `READY`.
-
-### ONB-023
-
-- lazy protected `/admin` direct-link route using the existing sign-in `authGuard` only;
-- capability bootstrap from `GET /api/admin/me`, leaving administrator authorization entirely server-owned;
-- typed feature-local data access and page-scoped signal state;
-- stale-response protection across capability, pagination, detail, and work loads;
-- cursor-bounded user pages that replace rather than accumulate results;
-- failed next-page cursor preservation so retry targets the failed page;
-- bounded user detail and work diagnostics with explicit loading, empty, partial, forbidden, unavailable, stale, and error states;
-- exact ONB-007 warning evidence without ETA or SLA language;
-- unchanged static main navigation and direct-link/bookmark operator entry;
-- focused route, auth-return, API, store, component, table-semantic, keyboard/focus, unavailable-state, and pagination-retry tests;
-- no client administrator identity/role/claim rule, destructive control, impersonation, raw-content browser, new global state framework, or backend/schema change.
-
-Final runtime pull-request head `d9b826054748d9d891584a593954c82b65520965` passed CI run #2237 (`31248860891`). PR #307 squash-merged as `07d19790a20beedf79bb094fead2c48c76404912`. Runtime self-review found and fixed the failed-next-page retry defect before final CI. Completion PR #312 synchronizes the canonical task, queue, status, completion report, and live issue metadata without changing runtime behavior.
-
-## Active and ready work
-
-### Active implementation / review
-
-- None recorded by this completion reconciliation.
-
-### Ready implementation
-
-- ONB-018 / #254 — preparation reconciliation/control — unclaimed `READY`; ONB-003 allocation, ONB-017 persistence/admission, and ONB-011/012/013/014 durable import/provider gates are satisfied. Coordinate final complete-import handoff with ONB-015 without making ONB-015 a claim blocker.
-- ONB-019 / #259 — destructive lifecycle persistence/fences/audit/provenance — unclaimed `READY`; ONB-004/005 are complete, ONB-017 established migration order with ONB-019 following, ONB-011 recorded the schema ownership boundary on #259, and both overlapping schema owners are merged. Fresh current Prisma/migration collision review remains mandatory before claim.
-
-ONB-018 remains the deterministic next task by canonical order. ONB-015 remains `PROPOSED` because it consumes ONB-018 for the account-sync/preparation handoff.
-
-## Allocated implementation backlog
-
-- ONB-008 / #193 — disposition/readiness projection — `PROPOSED`; consumes ONB-007 exact progress/no-ETA contract.
-- ONB-009 / #194 — onboarding lifecycle commands — `PROPOSED`; destructive commands remain ONB-019/020/021-owned.
-- ONB-010 / #195 — Angular onboarding/Home re-entry — `PROPOSED`; consumes ONB-007 presentation constraints.
-- ONB-015 / #203 — sync cutover/preparation handoff — `PROPOSED`; both provider adapters are complete, but the task also consumes ONB-018 and current immediate account deletion cannot be final before this cutover.
-- ONB-025 / #276 — authenticated stale-account refresh trigger — `PROPOSED`; depends on accepted ONB-015 and reuses the durable account-import lifecycle without request-time provider traversal.
-- ONB-020 / #260 — account/game destructive coordinator — `PROPOSED`; starts with at most 100 games per transaction and operation-specific validation.
-- ONB-021 / #261 — whole-user deletion and mobile purge handshake — `PROPOSED`; consumes the same transaction/lock budgets.
-- ONB-024 / #274 — administrator lifecycle adapters — `PROPOSED`; depends on completed ONB-022/023 plus applicable ONB-019/020/021/026 services and proven reverification.
-- ONB-026 / #280 — bounded orphan shared-position cleanup — `PROPOSED`; consumes ONB-006/007 and remains behind trigger/version/schema/audit coordination gates including ONB-019 conventions.
-
-These tasks must not be claimed until their task-file dependencies are resolved and accepted. ONB-018 and ONB-019 are separately listed above because their readiness gates are satisfied.
-
-## Critical findings
-
-- the legacy account sync route still performs synchronous provider traversal; ONB-015 owns durable cutover to the already-landed account-import worker adapters;
+- legacy account sync still performs synchronous provider traversal; ONB-015 owns removal/cutover;
 - legacy cursor state is not exact coverage;
-- the durable Lichess and Chess.com adapters use bounded duplicate-safe persistence and conservative provider-window coverage; ONB-015 still owns removal of transitional synchronous traversal;
-- current account workflow still moves candidate ID arrays through Angular;
-- the imported-game worker already supplies priority, fencing, cancellation, stale recovery, and idempotent executors;
-- the worker executes one imported-game task at a time; slice 25 is a scheduling yield boundary, not concurrency;
-- every current analysis/process task creates and disposes a fresh engine;
-- measured fresh WASM first-position startup is roughly 283–294 ms and is material, but reuse remains deferred pending production evidence and isolation tests;
-- current account deletion is one immediate unfenced cascade;
-- terminal job status is not drain proof because a cancelled running task deliberately retains `workKey` until executor acknowledgement;
-- transitional synchronous provider sync has no persisted claim that deletion can drain;
-- direct synchronous writers need commit-side fence serialization, not only route admission checks;
-- current `clearPlyRowsForGame` is not a complete un-index operation;
-- analysis evidence spans game runs, snapshots, ply fields, AI review, tags, tactical rows, and shared PositionAnalysis;
-- tags are a mixed projection and must be recomputed after reset;
-- scenario sessions copy personal game context and survive imported-game cascade through `SetNull`, so purge must delete them before those source links are nulled;
-- opening provenance is absent;
-- `OAuthLoginState` has no AppUser foreign key;
-- ordinary external-user upsert can recreate a deleted AppUser unless active deletion and tombstones are checked before provisioning;
-- mobile sign-out locks offline data rather than deleting it;
-- account purge can retain terminal import history while clearing current coverage/frontiers;
-- partial destructive failure must retain its durable resource fence;
-- post-delete status retrieval cannot depend on recreating the user;
-- shared Position cleanup must remain separate from account/user purge;
-- read-only administrator API runtime and completion reconciliation are delivered through ONB-022 / PRs #284 and #298;
-- administrator Angular diagnostics runtime is delivered through ONB-023 / PR #307, with completion reconciliation in PR #312;
-- main navigation remains static and intentionally has no required administrator entry; administrator capability state remains feature-local;
-- current API deployment documentation does not guarantee one replica, so in-process rate limiting cannot be treated as distributed enforcement;
-- current auth request context retains the signed session/factor/reverification fields needed by future administrator execution adapters, but no mutation execution is enabled;
-- CI-local provider/database/engine timings are evidence for initial configuration and budgets, not a public production ETA.
-
-## Blockers to production implementation
-
-- ONB-007 is complete; its consumers retain implementation-specific telemetry, controlled-clock, concurrency, and canary validation responsibilities;
-- ONB-011, ONB-012, ONB-013, and ONB-014 are delivered; ONB-015 has not delivered the synchronous-route cutover/preparation handoff and remains `PROPOSED`, but that does not block the bounded ONB-018 reconciler implementation;
-- ONB-017 delivered the preparation execution boundary; ONB-018 is `READY` and remains undelivered until its reconciler/control implementation lands;
-- ONB-019 is `READY` and remains undelivered; ONB-020/021 still depend on that lifecycle foundation plus their other task-file gates;
-- ONB-022 and ONB-023 delivered the read-only administrator API and administrator diagnostics Angular feature;
-- ONB-024 remains blocked by canonical lifecycle services and a proven signed reverification flow, not by the completed ONB-023 UI;
-- onboarding projection/UI tasks remain blocked by durable foundations;
-- production-like Neon/provider/local-binary telemetry does not exist yet, so public ETA and capacity expansion remain disabled;
-- ONB-026 shared-position cleanup implementation has not been delivered and still consumes ONB-019 actor/audit/claim conventions plus its PostgreSQL compatibility/coordination gates;
-- ONB-025 stale-refresh automation remains blocked by ONB-015 durable sync cutover;
+- current account workflow still carries candidate ID arrays through Angular; ONB-015 owns the bounded database handoff;
+- terminal job status alone is not drain proof because a cancelled running task may retain `workKey` until executor acknowledgement;
+- destructive lifecycle persistence/fences are not delivered until ONB-019;
+- public ETA remains disabled because production-like telemetry eligibility is not established;
+- shared-position cleanup remains separate from account/user purge;
 - Visual Transformation coordination remains required for final product-wide UI polish.
 
-## Validation
+## Canonical ownership after ONB-018
 
-### ONB-014 implementation and completion reconciliation
+- ONB-008 owns user disposition, readiness/presentation projection, warnings/actions, and bounded reveals.
+- ONB-009 owns authenticated preparation lifecycle command routes.
+- ONB-015 owns normal account-sync cutover and preparation handoff.
+- ONB-019/020/021 own destructive lifecycle persistence and execution.
+- ONB-010 owns functional Angular onboarding/Home re-entry; Visual Transformation owns final visual/accessibility polish.
 
-- runtime PR #356 delivered deterministic calendar-month planning, serial archive discovery/traversal, exact scope/range filtering, validators, shared normalization, bounded duplicate-safe guarded commits, exact empty/absent coverage, replay-safe checkpoints, typed retry/rate-limit behavior, cancellation/lifecycle-fence handling, telemetry, Activity Feed reconciliation, and worker registration;
-- adversarial runtime self-review corrected provider plan progress so all provider progress writes use the guarded commit seam, and added explicit December-to-January planner/boundary coverage;
-- reviewed runtime head `5e530a2a2b001ae0ee2ce42872b45c9b8f86a085` passed CI #2666 after the self-review fixes;
-- final merge-candidate head `d4592fe6b0e3c61ee9d25bc1517a8fc83a7466c2` passed CI #2669 and PR #356 squash-merged into `main` as `b9c2038bfd20f7b0a493c2eda3dd6c2aed911ec5` on 2026-08-12;
-- the real low-volume Chess.com canary passed the dedicated `ONB-014 low-volume Chess.com canary` step in workflow run #2812 (`31881053242`) on 2026-08-15 using public account `hikaru` and fixed historical month `2014-01`;
-- the real canary is complementary provider-integration evidence; deterministic provider/executor/PostgreSQL tests remain the evidence for exact boundary, validator/cache, malformed-response, retry/429, cancellation, replay, lifecycle-fence, and bounded-write semantics;
-- the temporary canary workflow hook was removed immediately afterward and is not part of the intended completion diff;
-- the completion-reconciliation self-review corrected two downstream queue defects: ONB-018 is `READY` while ONB-015 remains `PROPOSED`, and ONB-019 is independently `READY` on the parallel lifecycle path after its schema ownership/migration-order gates were satisfied;
-- PR #383 is documentation/execution-state reconciliation only and must pass its own exact-head normal repository CI before merge.
+## Latest validation
 
-### ONB-013 implementation and completion reconciliation
+ONB-018 final runtime head `4e3a3a4ea6f3f0f798d52e08830d051ad13c7b95` passed CI #2998 (`32041962372`) end-to-end: dependency audit, lint, full build, opening audits, architecture/hygiene guardrails, migrations, imported-game audits, and the complete repository test suite including the final PostgreSQL setup-failure atomicity regression.
 
-- runtime PR #357 delivered deterministic 14-day half-open Lichess planning, strict serial NDJSON traversal, canonical scope mapping, shared normalization, bounded duplicate-safe persistence, atomic guarded provider commits, exact empty-window coverage, replay-safe checkpoints, typed failures, 429 deferral, cancellation/fence behavior, telemetry, and worker registration;
-- the low-volume Lichess canary passed workflow run #2665 (`31566377590`), including the dedicated canary step together with normal repository gates; the temporary workflow hook was removed afterward;
-- reviewed runtime head `9d1bde8e563e60ab1c233d88123b675f419c5d74` passed normal full CI #2684 (`31571213970`);
-- final PR head `2f53e81fba2386c1c2b3638c24a1450184497f78` passed CI #2687 (`31580120124`);
-- PR #357 squash-merged into `main` as `e276e3820acbd8361feae99d8a0e15a9cf412e53` on 2026-08-12;
-- completion reconciliation PR #376 is documentation/execution-state only and records final state without changing runtime behavior.
+Runtime PR #385 was rechecked against current `main`, had no unresolved review threads, and squash-merged as `9b0293271a2c1a9f24a77939e828c3ee1aca8ffd`.
 
-### ONB-012 implementation and completion reconciliation
-
-- runtime PR #352 delivered the provider-neutral account-import command/read API, globally serialized claim lifecycle, exact work-key fencing/drain, pause/cancel/retry/retry-at/stale recovery, one provider-neutral executor registry, one lifecycle-fence admission seam, safe shared-worker shutdown, telemetry, and focused contract/PostgreSQL/worker regressions;
-- three append-only adversarial review reports corrected exact persistence/coverage fencing, schema/counter drift, settlement resilience, control stale fallback, peer-worker shutdown bounds, retry lineage, starvation-safe future fence admission, typed conflict handling, and monotonic/fixed-denominator progress;
-- third-review code/test head `f0c29cbddd89c6d658ec3c03cff26e3bac8e5fa7` passed CI #2641 (`31480536544`);
-- third-review evidence head `64e1d63bee671cf75868f89e11b6d417bc929d95` passed CI #2643 (`31481147692`) across lint, full build, architecture/hygiene, migrations, all opening audits, and complete monorepo tests;
-- the implementation branch was refreshed over then-current `main` / RH-003; final runtime head `dc4e9bc40e9da45c03e83904dfe0864a10cef289` passed CI #2645 (`31505680257`);
-- PR #352 squash-merged into `main` as `640018e4cd3c5528a94b9d0217e971ab2a2215b7` on 2026-08-11;
-- PR #354 is documentation/execution-state reconciliation only: it synchronizes the task, queue, status, completion report, issue closure, and unclaimed promotion of ONB-013/014 without runtime changes.
-
-### ONB-023 implementation and completion reconciliation
-
-- implementation PR #307 introduced the lazy `/admin` route, typed feature-local administrator data access, page-scoped signal state, bounded cursor pagination, user detail/work diagnostics, explicit forbidden/unavailable/partial/error states, exact warning evidence, and focused route/store/component/accessibility coverage;
-- Angular retained the normal `authGuard` only for sign-in and did not encode administrator identities, roles, claims, or capability rules; every administrator request remains authorized by the API;
-- implementation self-review found one pagination recovery defect: retry after a failed next-page request would reload the last successful cursor page;
-- the runtime branch was corrected to preserve and retry the failed cursor/page, with regression coverage added before merge;
-- final runtime pull-request head is `d9b826054748d9d891584a593954c82b65520965`;
-- final runtime CI run #2237 (`31248860891`) passed dependency installation, lint, the full repository build including the lazy administrator chunk, opening audits, architecture and accessibility guardrails, the migration chain, imported-game audits, the full test suite, artifact handling, and cleanup on that exact head;
-- PR #307 squash-merged as `07d19790a20beedf79bb094fead2c48c76404912`, changing 22 files with 1,825 additions and no deletions;
-- PR #312 is documentation/execution-state reconciliation only and synchronizes the task, queue, status, completion report, and issue metadata; no runtime, API, schema, Angular, lifecycle, dependency, workflow, or infrastructure change is included;
-- local clone/build is not claimed for this reconciliation; GitHub connector evidence and repository CI are authoritative for the docs-only completion change.
-
-### ONB-022 implementation and completion reconciliation
-
-- implementation PR #284 introduced the administrator configuration, authorization policy, verified-session context, domain-separated actor/target keys, shared contracts, four bounded OpenAPI routes, aggregate diagnostics, request-budget seam, structured security logs, and focused tests;
-- adversarial self-review corrected manual route parsing, incomplete 400 schemas, missing active import counts, request-budget overclaiming, HMAC-domain collision risk, pre-authorization target lookup, invented zeroes, and incomplete query-plan/startup/sensitive-field/non-enumeration coverage;
-- final runtime pull-request head is `fad7a19216c3249827a111e75238aafccac0ec75`;
-- final runtime CI run #2089 (`31031618906`) passed dependency installation, lint, the full monorepo build, opening and imported-game audits, architecture guardrails, the complete migration chain, the full test suite, artifact upload, and runner cleanup on that exact head;
-- PR #284 squash-merged as `f83d26157e5da2d69f643b0d12100244219d2771` and changed 24 files without a Prisma schema or migration;
-- the first completion-reconciliation draft was inadequate because it added only one report, left the task/queue/status ledgers unchanged, and incorrectly identified unrelated Activity Feed commit `7507f3cc12be1b9cd88f67bc5e019ded0deadfb0` as the ONB-022 runtime merge;
-- CI run #2140 passed the superseded one-file draft at `b8e7a23224aff363446840cf99d9f0d0dce2c3ae`; it is historical only;
-- CI run #2141 (`31094431988`) passed the first corrected multi-file head `cc68fc55822d3bcacd16c42629a319537d9db2ce`;
-- CI run #2145 (`31096659920`) passed the second-review head `99f20c63e238a985fd4eafca641ab1b35a8c9894`;
-- a full review found that ONB-023 had been promoted in queue/status records while its own task file remained `PROPOSED`, issue #272 live metadata still advertised `READY`, the branch was stale and retained superseded mistakes in three commits, and `4c8018cc…` / CI #2074 was incorrectly presented as final runtime evidence despite fourteen later PR commits;
-- PR #298 was rebuilt as one clean commit on main `90ea23965b5a4ce032ca9b75d837e4e3dfff58ab`, producing final head `3d1ec5e84baa34dfa37d0d13f81f4b28e5ba4736` with one commit ahead and zero behind;
-- exact-head CI #2201 (`31197631342`) passed dependency installation, lint, full build, generated and imported-game opening audits, architecture guardrails, migrations, full tests, artifact handling, and cleanup;
-- PR #298 squash-merged as `04e77e2e3f4575b260bca26cadbfec6129187552`, issue #272 closed completed, and issue #273 was synchronized to `READY`;
-- local clone/build remains unavailable because this runtime cannot resolve or connect to `github.com`; no local result is claimed.
-
-### ONB-017 implementation and completion reconciliation
-
-- implementation PR #282 introduced the preparation persistence, constraints, bounded candidate selection, globally serialized admission, retention evidence, configuration, and focused tests;
-- adversarial implementation self-review corrected provider-shaped speed/variant aliases, failed-evidence-only retries, cancellation-lease filtering, active-stage index coverage, and both direct-user/preparation race orderings;
-- exact implementation head is `c226f15b9c75c6fb4cea3072828842d728b9eb5a`;
-- final implementation CI run 1994 (`30898278426`) passed lint, build, architecture guardrails, the complete PostgreSQL migration chain, audits, and the full test suite;
-- PR #282 squash-merged as `885ef785bdac1b0c77cc500e3345745b0e723912`;
-- the first completion-reconciliation draft was incomplete because it changed only the task file, removed the original scope/acceptance/validation contract, left queue/status records stale, and recorded an incorrect implementation-head SHA;
-- corrected PR #293 preserved the full task contract, recorded exact evidence, synchronized `TASKS.md` and `STATUS.md`, and closed issue #253 as completed after squash merge;
-- initial reconciliation CI run 2098 passed before the self-review corrections;
-- CI run 2110 exposed unnecessary concurrent fixture setup that exhausted Prisma's five-second interactive transaction timeout before admission assertions began;
-- final corrected CI run 2114 (`31077878915`) passed dependency installation, lint, the full monorepo build, opening and imported-game audits, architecture guardrails, the complete PostgreSQL migration chain, the full test suite including the default-200-task regression, and artifact upload on exact head `e315eee560adfa9ba9a88e6baa2a212d1a86244e`;
-- local clone/build remains unavailable because this runtime cannot resolve or connect to `github.com`; no local result is claimed.
-
-### ONB-006 documentation-only research
-
-- inspected current Position relations, migration delete rules, indexing, analysis, opening-explorer, worker, and maintenance-script patterns;
-- verified official PostgreSQL lock conflicts, command snapshots, transition relations, trigger transaction behavior, and local lock timeout semantics;
-- compared predicate-only, application/advisory coordination, and explicit database-lock approaches;
-- first self-review corrected the maintenance lock order to plies-first;
-- second self-review corrected application-only grace reset, match-limited scans, point-snapshot dry-run wording, missing manual invocation, and incomplete canonical reconciliation;
-- allocated and synchronized ONB-026/#280;
-- reconciled over merged ONB-005 records and current main without changing runtime code, schema, migration, dependency, worker, deployment, or production deletion behavior;
-- local clone/build remained unavailable because this runtime cannot resolve `github.com`; GitHub status and diff validation are authoritative for this documentation-only change.
-
-### ONB-005 documentation-only research
-
-- verified current queue, issue, branch, PR, review-thread, and collision state;
-- reset the original branch onto current `main` after ONB-007 merged;
-- inspected current API auth configuration/plugin/request context, app factory, central route registration, representative Zod/OpenAPI modules, jobs, schema, contracts, and tests;
-- inspected current Angular routes, static navigation, auth service/guard/interceptor, API service, feature data-access, signal-store, and responsive/accessibility patterns;
-- inspected current hosted Render/Neon/Vercel deployment documentation;
-- verified current official Clerk session-token V2, authorized-party, custom-claim, reverification, and active-Organization authorization behavior;
-- first self-review corrected stale base state, insufficient repository inspection, unproven recent-auth claims, Organization-role misuse, over-broad data scope, rate-limit overclaiming, retention/key-rotation ambiguity, and under-specified implementation tasks;
-- second self-review corrected implementation-task ordering, deployment-topology assumptions, and a residual display-label projection;
-- third self-review corrected missing `DECISIONS.md`, `OPEN_QUESTIONS.md`, `ROADMAP.md`, and `STATUS.md` reconciliation, finalized task promotion/queue state, and reverified Clerk assumptions;
-- allocated and synchronized ONB-022/#272, ONB-023/#273, and ONB-024/#274;
-- no production code, schema, migration, dependency, workflow, worker, authentication, deployment, or UI behavior changed;
-- local clone/build remained unavailable because this runtime cannot resolve `github.com`; GitHub Actions is the authoritative repository gate.
-
-### ONB-007 research and benchmark
-
-- verified queue, issue, branch, PR, and collision state;
-- reinspected current provider, job, index, tag, analysis, worker, deployment, test, and progress paths;
-- added `apps/api/benchmarks/onboarding-throughput-safe.mjs`, which refuses remote, non-disposable, or non-empty databases and makes no provider calls;
-- measured synthetic provider persistence, job admission, direct index/tag, depth-1/depth-12 analysis, combined process, and actual worker waves;
-- committed environment, p50/p90, source-run, artifact-ID, digest, and limitation evidence;
-- CI run `30786132287` / #1840 passed the original benchmark and repository gates;
-- corrected benchmark CI `30877363202` / #1905 passed lint, build, all opening audits, architecture guardrails, migrations, corrected benchmark artifact upload, and the full test suite;
-- final standard CI `30878078284` / #1912 passed lint, build, all opening audits, architecture guardrails, migrations, and the full test suite on head `ee765cac67d12bbd5e41926d6eed9fa1b50fa4bb`;
-- separated provider-network, Neon, Render local-binary, multi-worker, end-to-end preparation, and lifecycle/cleanup performance from measured claims;
-- no production runtime behavior, schema, migration, dependency, provider load, worker count, deployment, or user-facing ETA changed;
-- local clone remained unavailable because this runtime could not resolve `github.com`.
-
-### ONB-004 documentation-only research
-
-- queue, issue, branch, PR, review-thread, and collision state verified;
-- current Prisma relations and relevant migrations inspected;
-- account delete, sync cursor reset, OAuth connection, and user resolver inspected;
-- job claim/cancel/work-key/stale recovery behavior inspected;
-- index, analysis, tag, tactical, AI review, and scenario writes traced;
-- course/training ownership cascades inspected;
-- mobile local-user/offline/outbox cascade and sign-out behavior inspected;
-- running durable and synchronous writers, partial reset/failure, account purge/delete, whole-user deletion, auth recreation, post-delete polling, mobile offline devices, restart, and large-data scenarios modelled;
-- first self-review corrected commit-side synchronous writer fencing and terminal import-history retention during account purge;
-- second self-review corrected scenario source-preservation order, post-mutation cancellation/failure fence retention, active-fence auth behavior, tombstone ordering, and post-delete receipt lookup;
-- ONB-019/#259, ONB-020/#260, and ONB-021/#261 allocated and hardened;
-- final GitHub Actions CI run `30748024881` / #1804 passed lint, build, audits, architecture guardrails, migrations, and the full test suite on head `16947156e40f292e4aa5e6597c814ad4c9f36bb8`;
-- PR #263 squash-merged as `32db655a100ef1a55264b4d3739e2b7c38e72ee4`;
-- no production code, schema, migration, route, worker, provider, Angular, mobile, dependency, workflow, or deployment behavior changed;
-- local clone/build/tests were unavailable because this runtime could not resolve `github.com`.
+Latest report: `reports/ONB-018-2026-08-17-completion-reconciliation.md`
 
 ## Next deterministic action
 
-ONB-018 / #254 is the next unclaimed `READY` onboarding implementation task by canonical order. Before claim, recheck current branches/PRs and ONB-019 collision surfaces, then record the claim metadata and issue comment. ONB-015 / #203 remains `PROPOSED` until ONB-018 supplies the preparation reconciliation/control consumed by its final account-sync/preparation handoff.
-
-ONB-019 / #259 is also unclaimed `READY` on the parallel destructive-lifecycle support path. Before claim, recheck current Prisma/migration owners and active branches/PRs; do not overlap ONB-018 preparation work or duplicate provider/import/preparation state machines.
+ONB-008 / #193 is the next unclaimed `READY` task by canonical order. ONB-015 / #203 and ONB-019 / #259 are also unclaimed `READY` on their integration/support paths. Before any claim, recheck live branches/PRs and relevant schema/file ownership.

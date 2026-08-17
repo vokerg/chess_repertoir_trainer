@@ -1,6 +1,6 @@
 # ONB-018 — Implement progressive preparation reconciliation and control
 
-Status: REVIEW
+Status: DONE
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 78
 
 Delivery class: Implementation
 
-Planning maturity: Allocated by ONB-003; numeric reconciliation and first-value defaults supplied by ONB-007; ONB-017 and durable import/provider delivery are complete; promoted to unclaimed READY through ONB-014 completion self-review on PR #383
+Planning maturity: Delivered through runtime PR #385 after three self-review rounds; numeric reconciliation and first-value defaults supplied by ONB-007 and persisted execution boundary supplied by ONB-017
 
 GitHub issue: [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254)
 
@@ -124,6 +124,16 @@ Report: [ONB-018 preparation reconciliation and control](../reports/ONB-018-2026
 
 Second self-review: [ONB-018 second self-review](../reports/ONB-018-2026-08-17-second-self-review.md)
 
-Pull request: [#385](https://github.com/vokerg/chess_repertoir_trainer/pull/385)
+Final self-review: [ONB-018 final self-review](../reports/ONB-018-2026-08-17-final-self-review.md)
 
-Completed at: none
+Completion reconciliation: [ONB-018 completion reconciliation](../reports/ONB-018-2026-08-17-completion-reconciliation.md)
+
+Runtime pull request: [#385](https://github.com/vokerg/chess_repertoir_trainer/pull/385)
+
+Runtime squash commit: `9b0293271a2c1a9f24a77939e828c3ee1aca8ffd`
+
+Final reviewed head: `4e3a3a4ea6f3f0f798d52e08830d051ad13c7b95`
+
+Final validation: CI #2998 (`32041962372`) passed end-to-end on the exact final reviewed head.
+
+Completed at: 2026-08-17
