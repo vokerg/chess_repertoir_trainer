@@ -71,9 +71,11 @@ The third pass adds/extends PostgreSQL coverage for:
 - ImportedGame/TacticalDetection FK `SET NULL` behavior for retained scenario snapshots;
 - whole-user FK cascade through a retained scenario snapshot.
 
-## Final validation
+## Validation history
 
-The code-bearing reviewed head `da8e41a0dec2f1280bdc841539a0ba067f36c365` passed GitHub Actions CI run #2986 (`32016829189`) end-to-end. Subsequent report-only reconciliation heads passed CI #2987, #2988, #2989, and #2990. The implementation and review record have therefore repeatedly passed dependency audit, lint, build, opening audits, architecture and repository-hygiene guardrails, the complete migration chain from an empty PostgreSQL database, and the full repository test suite including the strengthened lifecycle cascade regressions and the existing scenario-training response contract that originally exposed the `SET NULL` edge case.
+The code-bearing reviewed head passed GitHub Actions CI #2986 end-to-end. Subsequent review-record-only reconciliation heads repeatedly passed the same full workflow through CI #2987, #2988, #2989, #2990, and #2992. Those runs covered dependency audit, lint, build, opening audits, architecture and repository-hygiene guardrails, the complete migration chain from an empty PostgreSQL database, and the full repository test suite including the strengthened lifecycle cascade regressions and the existing scenario-training response contract that originally exposed the `SET NULL` edge case.
+
+The current exact PR-head CI state should be read from GitHub rather than embedded here, so recording a validation result does not itself create another moving-head cycle.
 
 ## Review conclusion
 
