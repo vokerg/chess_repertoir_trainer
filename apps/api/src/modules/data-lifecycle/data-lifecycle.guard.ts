@@ -15,16 +15,6 @@ export interface DataLifecycleFenceColumns {
   gameId?: Prisma.Sql;
 }
 
-interface ActiveFenceRow {
-  operationId: number;
-  resourceType: string;
-  resourceId: number;
-}
-
-interface GameOwnerRow {
-  accountId: number;
-}
-
 export class DataLifecycleWriteBlockedError extends Error {
   readonly code = 'DATA_LIFECYCLE_WRITE_BLOCKED' as const;
 
@@ -75,32 +65,37 @@ export async function assertDataLifecycleWriteAllowed(
   validateScope(input);
   await lockDataLifecycleUserScope(transaction, input.userId);
 
-  const scopePredicate = input.gameId != null
-    ? Prisma.sql`
-        fence."resourceType" = 'USER'
-        OR (fence."resourceType" = 'ACCOUNT' AND fence."resourceId" = ${input.accountId!})
-        OR (fence."resourceType" = 'GAME' AND fence."resourceId" = ${input.gameId})
-      `
+  const scopeWhere = input.gameId != null
+    ? {
+        OR: [
+          { resourceType: 'USER' },
+          { resourceType: 'ACCOUNT', resourceId: input.accountId! },
+          { resourceType: 'GAME', resourceId: input.gameId },
+        ],
+      }
     : input.accountId != null
-      ? Prisma.sql`
-          fence."resourceType" = 'USER'
-          OR (fence."resourceType" = 'ACCOUNT' AND fence."resourceId" = ${input.accountId})
-          OR (fence."resourceType" = 'GAME' AND fence."ownerAccountId" = ${input.accountId})
-        `
-      : Prisma.sql`TRUE`;
+      ? {
+          OR: [
+            { resourceType: 'USER' },
+            { resourceType: 'ACCOUNT', resourceId: input.accountId },
+            { resourceType: 'GAME', ownerAccountId: input.accountId },
+          ],
+        }
+      : {};
 
-  const rows = await transaction.$queryRaw<ActiveFenceRow[]>(Prisma.sql`
-    SELECT fence."operationId", fence."resourceType", fence."resourceId"
-    FROM "DataLifecycleResourceFence" AS fence
-    WHERE fence."releasedAt" IS NULL
-      AND fence."ownerUserId" = ${input.userId}
-      AND (${scopePredicate})
-    ORDER BY
-      CASE fence."resourceType" WHEN 'USER' THEN 0 WHEN 'ACCOUNT' THEN 1 ELSE 2 END,
-      fence."id"
-    LIMIT 1
-  `);
-  const fence = rows[0];
+  const fence = await transaction.dataLifecycleResourceFence.findFirst({
+    where: {
+      ownerUserId: input.userId,
+      releasedAt: null,
+      ...scopeWhere,
+    },
+    orderBy: { id: 'asc' },
+    select: {
+      operationId: true,
+      resourceType: true,
+      resourceId: true,
+    },
+  });
   if (fence) {
     throw new DataLifecycleWriteBlockedError(
       fence.operationId,
@@ -119,14 +114,11 @@ export async function assertGameLifecycleWriteAllowed(
   validatePositiveInteger(gameId, 'gameId');
 
   await database.$transaction(async (transaction) => {
-    const games = await transaction.$queryRaw<GameOwnerRow[]>(Prisma.sql`
-      SELECT game."accountId"
-      FROM "ImportedGame" AS game
-      WHERE game."id" = ${gameId}
-        AND game."userId" = ${userId}
-      FOR SHARE
-    `);
-    const game = games[0];
+    await lockDataLifecycleUserScope(transaction, userId);
+    const game = await transaction.importedGame.findFirst({
+      where: { id: gameId, userId },
+      select: { accountId: true },
+    });
     if (!game) return;
     await assertDataLifecycleWriteAllowed(transaction, {
       userId,
