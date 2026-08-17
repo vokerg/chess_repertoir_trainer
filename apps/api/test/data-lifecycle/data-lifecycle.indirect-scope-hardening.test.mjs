@@ -187,15 +187,18 @@ try {
   await new Promise((resolve) => setTimeout(resolve, 75));
   assert.equal(moveSettled, false, 'game ownership transition must be waiting on the lifecycle lock');
 
-  const staleScopeCheck = prisma.$queryRawUnsafe(
-    'SELECT "data_lifecycle_assert_game_transition_allowed"(NULL, $1)',
-    ownerGame.id,
+  const staleScopeCheck = assert.rejects(
+    prisma.$queryRawUnsafe(
+      'SELECT "data_lifecycle_assert_game_transition_allowed"(NULL, $1)',
+      ownerGame.id,
+    ),
+    /DATA_LIFECYCLE_OWNERSHIP_CHANGED/,
   );
   await new Promise((resolve) => setTimeout(resolve, 50));
   releaseLifecycleLock();
   await lockTransaction;
   await moveGame;
-  await assert.rejects(staleScopeCheck, /DATA_LIFECYCLE_OWNERSHIP_CHANGED/);
+  await staleScopeCheck;
 
   const movedGame = await prisma.importedGame.findUniqueOrThrow({ where: { id: ownerGame.id } });
   assert.equal(movedGame.userId, other.id);
