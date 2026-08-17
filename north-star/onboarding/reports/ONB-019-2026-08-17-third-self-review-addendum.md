@@ -73,7 +73,7 @@ The third pass adds/extends PostgreSQL coverage for:
 
 ## Final validation
 
-The code-bearing reviewed head `da8e41a0dec2f1280bdc841539a0ba067f36c365` passed GitHub Actions CI run #2986 (`32016829189`) end-to-end. After this report recorded that result, the resulting documentation-only exact PR head `1ba0055f58b8d17cbf487732c78c066741f62435` passed CI run #2987 (`32017371814`) end-to-end as well. Both runs passed dependency audit, lint, build, opening audits, architecture and repository-hygiene guardrails, the complete migration chain from an empty PostgreSQL database, and the full repository test suite including the strengthened lifecycle cascade regressions and the existing scenario-training response contract that originally exposed the `SET NULL` edge case.
+The code-bearing reviewed head `da8e41a0dec2f1280bdc841539a0ba067f36c365` passed GitHub Actions CI run #2986 (`32016829189`) end-to-end. The documentation reconciliation head `1ba0055f58b8d17cbf487732c78c066741f62435` passed CI run #2987 (`32017371814`) end-to-end, and the resulting exact PR head `cfbda4a059a9460ae81d9b662f777d81d3e52ef3` passed CI run #2988 (`32018016039`) end-to-end. These runs passed dependency audit, lint, build, opening audits, architecture and repository-hygiene guardrails, the complete migration chain from an empty PostgreSQL database, and the full repository test suite including the strengthened lifecycle cascade regressions and the existing scenario-training response contract that originally exposed the `SET NULL` edge case.
 
 ## Review conclusion
 
