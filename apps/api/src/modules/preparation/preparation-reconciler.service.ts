@@ -654,8 +654,10 @@ export function pickAnalysisTarget(
       if (target.normalAnalysisBatches > 0) return true;
       if (target.analysisPendingCount >= config.firstAnalysisMinIndexed) return true;
       const importQuiescent = target.importStatus === 'COMPLETED';
+      const smallAccount = target.importedCount < config.firstAnalysisMinIndexed;
       return importQuiescent
         && target.indexPendingCount === 0
+        && smallAccount
         && target.analysisPendingCount >= config.firstAnalysisSmallAccountFallback;
     })
     .sort((left, right) => (
