@@ -1,6 +1,6 @@
 # ONB-008 — Persist onboarding disposition and readiness projection
 
-Status: PROPOSED
+Status: READY
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 80
 
 Delivery class: Implementation
 
-Planning maturity: Decisioned by ONB-001/003/007/016; blocked on ONB-017/018 execution state and durable import delivery
+Planning maturity: Decisioned by ONB-001/003/007/016; ONB-017/018 execution state and durable import/provider delivery are complete
 
 GitHub issue: [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193)
 
@@ -19,6 +19,8 @@ Claim branch: none
 Claimed at: none
 
 Claim scope: none
+
+Promoted at: 2026-08-17 through ONB-018 completion reconciliation
 
 ## Outcome
 
