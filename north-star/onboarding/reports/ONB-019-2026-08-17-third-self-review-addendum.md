@@ -73,10 +73,10 @@ The third pass adds/extends PostgreSQL coverage for:
 
 ## Final validation
 
-The code-bearing reviewed head `da8e41a0dec2f1280bdc841539a0ba067f36c365` passed GitHub Actions CI run #2986 (`32016829189`) end-to-end. The documentation reconciliation head `1ba0055f58b8d17cbf487732c78c066741f62435` passed CI run #2987 (`32017371814`) end-to-end, the next report-only head `cfbda4a059a9460ae81d9b662f777d81d3e52ef3` passed CI run #2988 (`32018016039`), and the final frozen reviewed head `d4a695b4ecc0162735e1be26fef4f0c172416688` passed CI run #2989 (`32018646577`) end-to-end. These runs passed dependency audit, lint, build, opening audits, architecture and repository-hygiene guardrails, the complete migration chain from an empty PostgreSQL database, and the full repository test suite including the strengthened lifecycle cascade regressions and the existing scenario-training response contract that originally exposed the `SET NULL` edge case.
+The code-bearing reviewed head `da8e41a0dec2f1280bdc841539a0ba067f36c365` passed GitHub Actions CI run #2986 (`32016829189`) end-to-end. Subsequent report-only reconciliation heads passed CI #2987, #2988, and #2989. The final exact PR head `198d7b4a595ec711fad8aa0b08c76577fb732a3e` passed CI run #2990 (`32019323325`) end-to-end. The final run passed dependency audit, lint, build, opening audits, architecture and repository-hygiene guardrails, the complete migration chain from an empty PostgreSQL database, and the full repository test suite including the strengthened lifecycle cascade regressions and the existing scenario-training response contract that originally exposed the `SET NULL` edge case.
 
 ## Review conclusion
 
 No destructive executor or public lifecycle API is introduced by these corrections. They strengthen the ONB-019 persistence/admission boundary that downstream ONB work will rely on.
 
-The final frozen reviewed PR head is green. PR #386 remains intentionally open/unmerged pending normal review/merge action.
+The final exact reviewed PR head is green. PR #386 remains intentionally open/unmerged pending normal review/merge action.
