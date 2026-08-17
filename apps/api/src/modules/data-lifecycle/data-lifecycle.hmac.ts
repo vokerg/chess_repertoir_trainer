@@ -80,18 +80,24 @@ function loadKeyring(prefix: string, env: NodeJS.ProcessEnv): LifecycleHmacKeyri
   const versionRaw = env[`${prefix}_KEY_VERSION`]?.trim();
   const previousRaw = env[`${prefix}_PREVIOUS_KEYS`]?.trim();
   const keys: LifecycleHmacKey[] = [];
+  let currentVersion: number | null = null;
 
   if (currentSecret) {
     const version = versionRaw ? Number(versionRaw) : 1;
     if (!Number.isInteger(version) || version <= 0) {
       throw new Error(`${prefix}_KEY_VERSION must be a positive integer.`);
     }
+    currentVersion = version;
     keys.push({ version, secret: currentSecret });
   } else if (versionRaw) {
     throw new Error(`${prefix}_KEY_VERSION requires ${prefix}_KEY.`);
   }
 
   if (previousRaw) {
+    if (currentVersion === null) {
+      throw new Error(`${prefix}_PREVIOUS_KEYS requires ${prefix}_KEY.`);
+    }
+
     let parsed: unknown;
     try {
       parsed = JSON.parse(previousRaw);
@@ -105,6 +111,11 @@ function loadKeyring(prefix: string, env: NodeJS.ProcessEnv): LifecycleHmacKeyri
       const version = Number(rawVersion);
       if (!Number.isInteger(version) || version <= 0 || typeof rawSecret !== 'string' || !rawSecret.trim()) {
         throw new Error(`${prefix}_PREVIOUS_KEYS contains an invalid version or secret.`);
+      }
+      if (version >= currentVersion) {
+        throw new Error(
+          `${prefix}_PREVIOUS_KEYS versions must be lower than ${prefix}_KEY_VERSION.`,
+        );
       }
       keys.push({ version, secret: rawSecret });
     }
