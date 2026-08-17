@@ -50,10 +50,12 @@ Public onboarding lifecycle routes remain ONB-009-owned, readiness/disposition p
 
 - `STATUS.md`: ONB-018 is no longer active/ready; downstream readiness is updated by this reconciliation.
 - `TASKS.md`: ONB-018 moves to `DONE`. ONB-008 and ONB-015 have their explicit ONB-018 execution/control gate satisfied and are promoted to unclaimed `READY`. ONB-019 remains independently `READY`.
-- `ROADMAP.md`: Phase 5 preparation core is complete; ONB-015 remains the sync-cutover/handoff slice while ONB-008 is now executable on the lifecycle-projection path.
+- `ROADMAP.md`: the preparation execution-core phase is complete; ONB-015 is the remaining sync-cutover/handoff slice while ONB-008 is now executable on the lifecycle-projection path.
 - `DECISIONS.md`: no new program-level architecture decision is required; the final atomicity correction implements existing D-060/D-061 evidence/retry semantics rather than changing them.
 - `OPEN_QUESTIONS.md`: no new research question is introduced. ONB-008/015 retain their task-local implementation questions.
-- `GITHUB_ISSUES.md`: #254 is completed through runtime PR #385 and this completion reconciliation; downstream issue readiness should reflect ONB-008/#193 and ONB-015/#203 promotion.
+- `GITHUB_ISSUES.md`: repository issue coordination records ONB-018 as complete and promotes ONB-008/#193 and ONB-015/#203; live issue #254 is closed completed only after this reconciliation PR merges.
+
+The current-state ledgers (`STATUS.md`, `ROADMAP.md`, `GITHUB_ISSUES.md`) were compacted during reconciliation. Duplicated historical validation remains preserved in task records and append-only reports.
 
 ## Queue impact
 
