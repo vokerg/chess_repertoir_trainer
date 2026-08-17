@@ -128,6 +128,13 @@ type RunRow = {
   analysisCompletedAt: Date | null;
 };
 
+type ClaimRow = {
+  id: number;
+  userId: number;
+  status: string;
+  dueAt: Date | null;
+};
+
 type TargetRow = Omit<PreparationTargetSnapshot, 'importedCount'
   | 'indexedCount'
   | 'indexPendingCount'
@@ -164,21 +171,13 @@ export function createPreparationReconcilerRepository(
       validateDate(leaseUntil, 'leaseUntil');
       if (leaseUntil <= now) throw new Error('Preparation reconcile lease must end after now.');
 
-      return database.$transaction(async (transaction) => {
-        const rows = await transaction.$queryRaw<RunRow[]>(Prisma.sql`
+      const rows = await database.$queryRaw<ClaimRow[]>(Prisma.sql`
+        WITH candidate AS (
           SELECT
             run."id",
             run."userId",
             run."status",
-            run."retryGeneration",
-            run."attentionCode",
-            run."attentionDetail",
-            run."reconcileAfter",
-            run."firstImportedAt",
-            run."firstIndexedAt",
-            run."firstAnalysedAt",
-            run."coreReadyAt",
-            run."analysisCompletedAt"
+            run."reconcileAfter" AS "dueAt"
           FROM "DataPreparationRun" AS run
           WHERE (
             (
@@ -195,24 +194,32 @@ export function createPreparationReconcilerRepository(
           ORDER BY COALESCE(run."reconcileAfter", run."createdAt") ASC, run."id" ASC
           FOR UPDATE SKIP LOCKED
           LIMIT 1
-        `);
-        const row = rows[0];
-        if (!row) return null;
-
-        await transaction.$executeRaw(Prisma.sql`
-          UPDATE "DataPreparationRun"
+        ), claimed AS (
+          UPDATE "DataPreparationRun" AS run
           SET "reconcileAfter" = ${leaseUntil}
-          WHERE "id" = ${row.id}
-            AND "status" = ${row.status}
-        `);
+          FROM candidate
+          WHERE run."id" = candidate."id"
+            AND run."status" = candidate."status"
+            AND run."reconcileAfter" IS NOT DISTINCT FROM candidate."dueAt"
+          RETURNING run."id"
+        )
+        SELECT
+          candidate."id",
+          candidate."userId",
+          candidate."status",
+          candidate."dueAt"
+        FROM candidate
+        JOIN claimed ON claimed."id" = candidate."id"
+      `);
+      const row = rows[0];
+      if (!row) return null;
 
-        return {
-          id: row.id,
-          userId: row.userId,
-          status: row.status as PreparationRunStatus,
-          dueAt: row.reconcileAfter,
-        };
-      });
+      return {
+        id: row.id,
+        userId: row.userId,
+        status: row.status as PreparationRunStatus,
+        dueAt: row.dueAt,
+      };
     },
 
     async loadSnapshot(runId) {
