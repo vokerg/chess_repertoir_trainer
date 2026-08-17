@@ -30,7 +30,7 @@ function target(overrides = {}) {
 assert.equal(
   pickAnalysisTarget([target()], DEFAULT_PREPARATION_CONFIG)?.id,
   1,
-  'one eligible game uses the quiescent small-account fallback',
+  'one analysis-eligible game uses the quiescent fallback',
 );
 
 assert.equal(
@@ -38,7 +38,7 @@ assert.equal(
     target({ importedCount: 2, indexedCount: 2, analysisPendingCount: 2 }),
   ], DEFAULT_PREPARATION_CONFIG)?.id,
   1,
-  'two eligible games use the quiescent small-account fallback',
+  'two analysis-eligible games use the quiescent fallback',
 );
 
 assert.equal(
@@ -49,9 +49,9 @@ assert.equal(
       indexFailedCount: 8,
       analysisPendingCount: 2,
     }),
-  ], DEFAULT_PREPARATION_CONFIG),
-  null,
-  'a larger account cannot masquerade as small merely because fewer than three indexed games remain analysable',
+  ], DEFAULT_PREPARATION_CONFIG)?.id,
+  1,
+  'partial indexing failure cannot strand one or two analysis-eligible games after index quiescence',
 );
 
 assert.equal(
@@ -64,7 +64,7 @@ assert.equal(
     }),
   ], DEFAULT_PREPARATION_CONFIG)?.id,
   1,
-  'a larger account still enters the normal first-analysis lane at the configured threshold',
+  'three analysis-eligible games enter the normal first-analysis lane at the configured threshold',
 );
 
 assert.equal(
@@ -78,7 +78,33 @@ assert.equal(
     }),
   ], DEFAULT_PREPARATION_CONFIG)?.id,
   1,
-  'after first analysis, the analysis tail may continue from remaining indexed evidence regardless of account size',
+  'after first analysis, the analysis tail may continue from remaining indexed evidence',
+);
+
+assert.equal(
+  pickAnalysisTarget([
+    target({
+      importStatus: 'RUNNING',
+      importedCount: 2,
+      indexedCount: 2,
+      analysisPendingCount: 2,
+    }),
+  ], DEFAULT_PREPARATION_CONFIG),
+  null,
+  'below-threshold fallback waits for terminal import coverage',
+);
+
+assert.equal(
+  pickAnalysisTarget([
+    target({
+      importedCount: 2,
+      indexedCount: 1,
+      indexPendingCount: 1,
+      analysisPendingCount: 1,
+    }),
+  ], DEFAULT_PREPARATION_CONFIG),
+  null,
+  'below-threshold fallback waits until normal index candidates are exhausted',
 );
 
 const fallbackAdmission = await captureAnalysisAdmission(
@@ -89,6 +115,21 @@ assert.equal(
   fallbackAdmission.maxTasks,
   1,
   'the two-game fallback is a one-game wave rather than a normal three-game FIRST_ANALYSIS batch',
+);
+
+const partialFailureFallback = await captureAnalysisAdmission(
+  target({
+    importedCount: 10,
+    indexedCount: 2,
+    indexFailedCount: 8,
+    analysisPendingCount: 2,
+  }),
+);
+assert.equal(partialFailureFallback.lane, 'FIRST_ANALYSIS');
+assert.equal(
+  partialFailureFallback.maxTasks,
+  1,
+  'index failures do not suppress the one-game fallback once only two analysis-eligible games remain',
 );
 
 const thresholdAdmission = await captureAnalysisAdmission(
