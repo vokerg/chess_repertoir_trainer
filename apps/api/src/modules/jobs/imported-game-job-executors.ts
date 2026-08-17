@@ -20,7 +20,7 @@ interface ImportedGameJobExecutorDependencies {
     'indexOne' | 'analyseOne' | 'processOne'
   >;
   refreshTags: typeof ImportedGamesService.refreshTags;
-  recordAnalysisSetupFailure: typeof ImportedGameAnalysisExecutionService.recordSetupFailure;
+  recordAnalysisSetupFailure?: typeof ImportedGameAnalysisExecutionService.recordSetupFailure;
   loadAnalysisConfig: () => LocalBatchStockfishAnalysisConfig;
   createEngine: (config: LocalBatchStockfishAnalysisConfig) => StockfishEngine;
 }
@@ -108,6 +108,13 @@ export function createImportedGameJobTaskExecutorRegistry(
     {
       kind: 'ANALYSE_GAMES',
       execute(task: ClaimedJobTask, context: JobTaskExecutionContext) {
+        const onSetupFailure = dependencies.recordAnalysisSetupFailure
+          ? (error: unknown) => dependencies.recordAnalysisSetupFailure!(
+              task.userId,
+              task.importedGameId,
+              error,
+            )
+          : undefined;
         return withAnalysisEngine(
           dependencies,
           context,
@@ -123,11 +130,7 @@ export function createImportedGameJobTaskExecutorRegistry(
               signal: context.signal,
             },
           ),
-          (error) => dependencies.recordAnalysisSetupFailure(
-            task.userId,
-            task.importedGameId,
-            error,
-          ),
+          onSetupFailure,
         );
       },
     },
