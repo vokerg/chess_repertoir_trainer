@@ -40,7 +40,7 @@ export const PREPARATION_LANE_PRIORITIES: Readonly<Record<Exclude<PreparationLan
 export function readPreparationConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): PreparationConfig {
-  return {
+  const config: PreparationConfig = {
     firstIndexBatchSize: positiveInteger(
       env['PREPARATION_FIRST_INDEX_BATCH_SIZE'],
       DEFAULT_PREPARATION_CONFIG.firstIndexBatchSize,
@@ -102,6 +102,19 @@ export function readPreparationConfig(
       'PREPARATION_FIRST_ANALYSIS_SMALL_ACCOUNT_FALLBACK',
     ),
   };
+
+  if (config.firstAnalysisSmallAccountFallback >= config.firstAnalysisMinIndexed) {
+    throw new Error(
+      'PREPARATION_FIRST_ANALYSIS_SMALL_ACCOUNT_FALLBACK must be less than PREPARATION_FIRST_ANALYSIS_MIN_INDEXED.',
+    );
+  }
+  if (config.firstAnalysisSmallAccountFallback > config.firstAnalysisBatchSize) {
+    throw new Error(
+      'PREPARATION_FIRST_ANALYSIS_SMALL_ACCOUNT_FALLBACK must not exceed PREPARATION_FIRST_ANALYSIS_BATCH_SIZE.',
+    );
+  }
+
+  return config;
 }
 
 export function preparationBatchLimit(
