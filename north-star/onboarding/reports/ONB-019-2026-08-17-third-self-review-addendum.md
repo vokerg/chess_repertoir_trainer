@@ -40,11 +40,13 @@ Update triggers now guard the previous and destination scope so reparenting cann
 
 `TacticalDetectionRun` creation is guarded at admission while already-admitted runs may still settle during drain. Scenario sessions resolve scope through the direct imported-game snapshot and tactical-detection reference, reject inconsistent dual references, and scenario attempts inherit the resolved session scope.
 
-### Scenario cascade deletion exposed a trigger-order bug
+### Scenario FK cascades exposed trigger-order bugs
 
-An adversarial retained-scenario regression exposed a real AppUser deletion failure. PostgreSQL can delete the referenced `ImportedGame` before the `ScenarioTrainingSession` DELETE trigger executes. Strictly re-resolving the old game then raised `DATA_LIFECYCLE_SCOPE_MISMATCH` and blocked the legitimate FK cascade.
+The adversarial retained-scenario regression first exposed a real AppUser deletion failure. PostgreSQL can delete the referenced `ImportedGame` before a `ScenarioTrainingSession` DELETE trigger executes. Strictly re-resolving the old game then raised `DATA_LIFECYCLE_SCOPE_MISMATCH` and blocked the legitimate FK cascade.
 
-The session DELETE trigger now treats an already-absent referenced game/detection as the cascade case and allows that child delete to continue. Immediate foreign keys prevent that dangling reference from existing outside the parent deletion statement, while INSERT/UPDATE and ordinary direct DELETE remain strict. The regression test now explicitly performs the AppUser cascade instead of discovering this only during test cleanup.
+After that DELETE case was fixed, the full existing suite exposed the adjacent retained-snapshot behavior: `ScenarioTrainingSession.importedGameId` and `tacticalDetectionId` use `ON DELETE SET NULL`. PostgreSQL can therefore invoke the session UPDATE trigger after the referenced parent is already gone, with OLD still containing the now-deleted id. Strict OLD-scope resolution failed in the same way and broke the existing scenario-training contract that a session survives game deletion with `importedGameId = NULL`.
+
+The final trigger keeps ordinary INSERT/UPDATE/direct DELETE strict. It permits only the FK-internal shapes that can observe a missing OLD parent: a cascade child DELETE, or an UPDATE that changes exactly one lifecycle parent reference from its old id to `NULL` while the user and other lifecycle reference remain unchanged and that old parent is already absent. Immediate foreign keys prevent such a dangling OLD reference outside the parent deletion statement, whose parent mutation has already crossed its lifecycle guard. ONB-019 now owns explicit regression coverage for both retained-session `SET NULL` behavior and later whole-user cascade deletion.
 
 ### HMAC rotation configuration could select the wrong signing key
 
@@ -66,6 +68,7 @@ The third pass adds/extends PostgreSQL coverage for:
 - HMAC key rotation and missing historical versions;
 - tactical-run admission;
 - retained scenario behavior when tactical derivations are removed;
+- ImportedGame/TacticalDetection FK `SET NULL` behavior for retained scenario snapshots;
 - whole-user FK cascade through a retained scenario snapshot.
 
 ## Review conclusion
