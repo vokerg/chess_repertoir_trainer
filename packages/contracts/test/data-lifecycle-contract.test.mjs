@@ -26,6 +26,7 @@ assert.equal(dataLifecycleResourceTypeSchema.parse('GAME'), 'GAME');
 assert.equal(dataLifecycleStopRequestSchema.parse('STOP_AFTER_BATCH'), 'STOP_AFTER_BATCH');
 assert.equal(dataLifecycleTerminalResultSchema.parse('CANCELLED_BEFORE_MUTATION'), 'CANCELLED_BEFORE_MUTATION');
 assert.equal(dataLifecycleErrorCodeSchema.parse('DATA_LIFECYCLE_WRITE_BLOCKED'), 'DATA_LIFECYCLE_WRITE_BLOCKED');
+assert.equal(dataLifecycleErrorCodeSchema.parse('DATA_LIFECYCLE_SCOPE_VIOLATION'), 'DATA_LIFECYCLE_SCOPE_VIOLATION');
 assert.equal(importedGameOpeningProvenanceSchema.parse('LOCAL_BOOK'), 'LOCAL_BOOK');
 
 assert.deepEqual(dataLifecycleScopeSchema.parse({
