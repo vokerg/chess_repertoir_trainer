@@ -144,18 +144,21 @@ async function findTombstone(
   provider: string,
   externalSubject: string,
 ): Promise<TombstoneRow | null> {
-  if (!keyring.configured) {
-    const existing = await transaction.deletedAuthIdentityTombstone.findFirst({
-      where: { provider },
-      select: { id: true },
-    });
-    if (existing) {
-      throw new Error(
-        'Deleted identities exist for this provider but DATA_LIFECYCLE_IDENTITY_HMAC_KEY is not configured.',
-      );
-    }
-    return null;
+  const persistedVersions = await transaction.deletedAuthIdentityTombstone.findMany({
+    where: { provider },
+    distinct: ['identityKeyVersion'],
+    select: { identityKeyVersion: true },
+  });
+  const missingVersions = persistedVersions
+    .map((row) => row.identityKeyVersion)
+    .filter((version) => !keyring.hasVersion(version))
+    .sort((left, right) => left - right);
+  if (missingVersions.length > 0) {
+    throw new Error(
+      `Deleted identities exist for provider ${provider} with unconfigured HMAC key version(s): ${missingVersions.join(', ')}.`,
+    );
   }
+  if (!keyring.configured) return null;
 
   const digests = keyring.candidates(identityValue(provider, externalSubject), 'deleted-identity');
   if (digests.length === 0) return null;
