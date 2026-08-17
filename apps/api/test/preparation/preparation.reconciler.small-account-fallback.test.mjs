@@ -107,17 +107,28 @@ assert.equal(
   'below-threshold fallback waits until normal index candidates are exhausted',
 );
 
-const fallbackAdmission = await captureAnalysisAdmission(
+assert.equal(
+  pickAnalysisTarget(
+    [target({ importedCount: 2, indexedCount: 2, analysisPendingCount: 2 })],
+    DEFAULT_PREPARATION_CONFIG,
+    new Set([1]),
+  ),
+  null,
+  'below-threshold fallback waits for the target active index batch to settle',
+);
+
+const fallbackAdmissions = await captureAnalysisAdmissions(
   target({ importedCount: 2, indexedCount: 2, analysisPendingCount: 2 }),
 );
-assert.equal(fallbackAdmission.lane, 'FIRST_ANALYSIS');
+assert.equal(fallbackAdmissions.length, 1);
+assert.equal(fallbackAdmissions[0].lane, 'FIRST_ANALYSIS');
 assert.equal(
-  fallbackAdmission.maxTasks,
+  fallbackAdmissions[0].maxTasks,
   1,
   'the two-game fallback is a one-game wave rather than a normal three-game FIRST_ANALYSIS batch',
 );
 
-const partialFailureFallback = await captureAnalysisAdmission(
+const partialFailureAdmissions = await captureAnalysisAdmissions(
   target({
     importedCount: 10,
     indexedCount: 2,
@@ -125,26 +136,38 @@ const partialFailureFallback = await captureAnalysisAdmission(
     analysisPendingCount: 2,
   }),
 );
-assert.equal(partialFailureFallback.lane, 'FIRST_ANALYSIS');
+assert.equal(partialFailureAdmissions.length, 1);
+assert.equal(partialFailureAdmissions[0].lane, 'FIRST_ANALYSIS');
 assert.equal(
-  partialFailureFallback.maxTasks,
+  partialFailureAdmissions[0].maxTasks,
   1,
   'index failures do not suppress the one-game fallback once only two analysis-eligible games remain',
 );
 
-const thresholdAdmission = await captureAnalysisAdmission(
+const thresholdAdmissions = await captureAnalysisAdmissions(
   target({ importedCount: 10, indexedCount: 3, analysisPendingCount: 3 }),
 );
-assert.equal(thresholdAdmission.lane, 'FIRST_ANALYSIS');
+assert.equal(thresholdAdmissions.length, 1);
+assert.equal(thresholdAdmissions[0].lane, 'FIRST_ANALYSIS');
 assert.equal(
-  thresholdAdmission.maxTasks,
+  thresholdAdmissions[0].maxTasks,
   undefined,
   'normal first analysis keeps the configured three-game lane size',
 );
 
+const activeIndexAdmissions = await captureAnalysisAdmissions(
+  target({ importedCount: 2, indexedCount: 2, analysisPendingCount: 2 }),
+  [activeIndexBatch(1)],
+);
+assert.equal(
+  activeIndexAdmissions.length,
+  0,
+  'the reconciler does not use the fallback while that target still has an active index batch',
+);
+
 console.log('Preparation small-account first-analysis fallback tests passed.');
 
-async function captureAnalysisAdmission(targetSnapshot) {
+async function captureAnalysisAdmissions(targetSnapshot, activeBatches = []) {
   const observedAt = new Date('2026-08-17T00:00:00.000Z');
   const snapshot = {
     run: {
@@ -162,9 +185,9 @@ async function captureAnalysisAdmission(targetSnapshot) {
       completedAt: null,
     },
     targets: [targetSnapshot],
-    activeBatches: [],
+    activeBatches,
     telemetry: {
-      batchCount: 0,
+      batchCount: activeBatches.length,
       maxQueueWaitMs: null,
       maxFirstSettlementMs: null,
       maxTotalSettlementMs: null,
@@ -217,6 +240,24 @@ async function captureAnalysisAdmission(targetSnapshot) {
   });
 
   await reconciler.reconcileOnce();
-  assert.equal(admissions.length, 1, 'one analysis batch is admitted');
-  return admissions[0];
+  return admissions;
+}
+
+function activeIndexBatch(targetId) {
+  const observedAt = new Date('2026-08-17T00:00:00.000Z');
+  return {
+    id: 91,
+    targetId,
+    stage: 'INDEX',
+    status: 'RUNNING',
+    jobRunId: 191,
+    priority: 200,
+    createdAt: observedAt,
+    startedAt: observedAt,
+    firstSettledAt: null,
+    settledAt: null,
+    activeWorkKeys: 1,
+    higherPriorityRunnable: false,
+    workerCapacityAvailable: false,
+  };
 }
