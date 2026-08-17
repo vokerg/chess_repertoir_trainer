@@ -168,7 +168,7 @@ try {
   const releaseLifecycle = new Promise((resolve) => { releaseLifecycleLock = resolve; });
   const lockTransaction = lockClient.$transaction(async (tx) => {
     await tx.$queryRawUnsafe(
-      'SELECT pg_advisory_xact_lock(17000259, $1::integer)',
+      'SELECT 1 AS locked FROM pg_advisory_xact_lock(17000259, $1::integer)',
       owner.id,
     );
     lifecycleLockAcquired();
