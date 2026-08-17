@@ -1,10 +1,6 @@
 import { ImportedGamesService } from '../imported-games/imported-games.service';
 import { refreshTacticalDetectionsForGame } from '../lab/tactical-detections/tactical-detection.service';
 import {
-  createRunningGameAnalysisRun,
-  failGameAnalysisRun,
-} from './analysis.repository.prisma';
-import {
   ImportedGameAnalysisService,
   type ImportedGameAnalysisExecutionStatus,
   type ImportedGameAnalysisOptions,
@@ -13,6 +9,7 @@ import {
   abandonGameAnalysisRun,
   findAbortCleanupCandidate,
   getImportedGameAnalysisExecutionState,
+  recordGameAnalysisSetupFailure,
   type ImportedGameAnalysisExecutionState,
 } from './analysis-run-lifecycle.repository.prisma';
 import type { StockfishEngine } from './stockfish-engine';
@@ -26,8 +23,7 @@ interface ImportedGameAnalysisExecutionDependencies {
   getExecutionState: typeof getImportedGameAnalysisExecutionState;
   findAbortCleanupCandidate: typeof findAbortCleanupCandidate;
   abandonRun: typeof abandonGameAnalysisRun;
-  createRunningRun?: typeof createRunningGameAnalysisRun;
-  failRun?: typeof failGameAnalysisRun;
+  recordFailedRun?: typeof recordGameAnalysisSetupFailure;
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
@@ -59,19 +55,15 @@ export function createImportedGameAnalysisExecutionService(
       force: boolean,
       error: unknown,
     ): Promise<void> {
-      if (!dependencies.createRunningRun || !dependencies.failRun) {
+      if (!dependencies.recordFailedRun) {
         throw new Error('Analysis setup-failure persistence is not configured.');
       }
-      const state = await dependencies.getExecutionState(userId, importedGameId);
-      if (!state) throw new Error('Imported game not found');
-      if (!force && isCurrent(state)) return;
-
-      const run = await dependencies.createRunningRun({
+      await dependencies.recordFailedRun({
+        userId,
         importedGameId,
-        positionsTotal: state.totalPlies,
-        positionsDone: state.analysedPlies,
+        force,
+        error: errorMessage(error),
       });
-      await dependencies.failRun(run.id, errorMessage(error));
     },
 
     async analyseOne(
@@ -140,6 +132,5 @@ export const ImportedGameAnalysisExecutionService = createImportedGameAnalysisEx
   getExecutionState: getImportedGameAnalysisExecutionState,
   findAbortCleanupCandidate,
   abandonRun: abandonGameAnalysisRun,
-  createRunningRun: createRunningGameAnalysisRun,
-  failRun: failGameAnalysisRun,
+  recordFailedRun: recordGameAnalysisSetupFailure,
 });
