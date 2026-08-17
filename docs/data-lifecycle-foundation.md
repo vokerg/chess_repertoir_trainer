@@ -25,9 +25,21 @@ Normal writers and lifecycle fence creation use the same short PostgreSQL transa
 
 The guard is intentionally commit-side. Provider requests, Stockfish analysis, LLM calls, PGN processing, and other long work must happen outside it. Their persistence step must revalidate the authoritative lifecycle scope before writing.
 
-The migration installs database triggers as the final race-safe guard for imported games and their index/analysis/AI/tactical/scenario children, external accounts, AppUser updates/deletes, preparation target admission, and JobTask admission. Account-import and preparation repositories also use the shared application guard. Job workers exclude lifecycle-fenced games while choosing runnable candidates; the trigger remains the commit-side race check.
+Database triggers are the final race-safe guard for imported games and their index/analysis/AI/tactical/scenario children, external accounts, `AppUser`, preparation target admission, `JobTask`, tactical-detection run admission, and OAuth login-state writes. Account-import and preparation repositories also use the shared application guard. Job workers exclude lifecycle-fenced games while choosing runnable candidates; the trigger remains the commit-side race check.
 
-Destructive code must use `DataLifecycleRepository.runDestructiveTransaction(...)` for each short destructive batch. The repository may first run a narrowly scoped `beforeUserLock` callback inside the same database transaction when a prerequisite has a stricter lock order, then acquires the user lock, atomically sets `firstDestructiveCommitAt`/checkpoint evidence, installs the transaction-local operation id used by database triggers, and invokes the destructive mutation callback. If any part fails, the prerequisite changes, destructive writes, and first-commit evidence roll back together. The raw fence-bypass binding is intentionally not exported as a general writer primitive.
+Writers whose scope is derived through another row use **read → lifecycle user lock → re-read** rather than holding parent-row locks. The second read must match the first; otherwise the write fails with `DATA_LIFECYCLE_OWNERSHIP_CHANGED` and the short transaction can retry from current ownership. Redundant user/account/game identifiers are checked for consistency so a direct writer cannot manufacture a contradictory ownership tuple and bypass the intended fence.
+
+Scope transitions validate both the old and new scope. This prevents reparenting an account/game/child out of a fenced scope or into one without crossing the same lifecycle serialization boundary.
+
+A transaction-local lifecycle operation id is not a blanket trigger bypass. A destructive writer must have an active fence belonging to that operation which **contains the resource being mutated**. Out-of-scope writes fail with `DATA_LIFECYCLE_SCOPE_VIOLATION`.
+
+Destructive code must use `DataLifecycleRepository.runDestructiveTransaction(...)` for each short destructive batch. The repository may first run a narrowly scoped `beforeUserLock` callback inside the same database transaction when a prerequisite has a stricter lock order, then acquires the user lock, atomically sets `firstDestructiveCommitAt`/checkpoint evidence, installs the transaction-local operation id used by database triggers, and invokes the destructive mutation callback. If any part fails, prerequisite changes, destructive writes, and first-commit evidence roll back together. The raw operation binding is intentionally not exported as a general writer primitive.
+
+### Cascade-safe retained scenario snapshots
+
+Scenario-training sessions can intentionally outlive tactical derivations during un-analysis. Their lifecycle scope is resolved from the persisted game snapshot and, when present, the tactical detection; inconsistent dual references are rejected.
+
+For INSERT/UPDATE and ordinary direct DELETE, scenario scope resolution is strict and revalidated under the lifecycle lock. One special case exists for FK cascade deletion: PostgreSQL may delete an `ImportedGame`/`TacticalDetection` parent before the retained `ScenarioTrainingSession` DELETE trigger executes. If that referenced parent is already absent inside the deleting statement, the child DELETE is allowed to continue because immediate foreign keys prevent such a dangling reference outside that same parent deletion and the parent mutation has already crossed its lifecycle guard. This keeps whole-user/account cascades compatible with the write fence without weakening normal scenario writes.
 
 ## Cancellation and crash semantics
 
@@ -53,7 +65,9 @@ Opaque receipt tokens are stored only as SHA-256 hashes. Deleted identities may 
 
 Auth provisioning and final user deletion share the lock order **identity, then user**. Identity serialization uses a separate advisory lock derived from the provider/subject pair.
 
-Before normal `AppUser` provisioning, `CurrentAppUserService` checks the deleted-identity HMAC tombstones. A matching tombstone rejects provisioning. A future `DELETE_APP_USER` executor must create the tombstone in `runDestructiveTransaction(...)`'s `beforeUserLock` callback so the identity lock is acquired first; the main destructive callback then deletes the AppUser after the repository acquires the user lock and internally binds the lifecycle operation. The database trigger verifies that the bound operation targets that user and is a `DELETE_APP_USER` operation. Both steps remain part of one database transaction.
+Before normal `AppUser` provisioning, `CurrentAppUserService` checks deleted-identity HMAC tombstones. A matching tombstone rejects provisioning. `AppUser` INSERT is also USER-fence guarded, so another direct creation path cannot recreate the same numeric target while deletion is fenced. `OAuthLoginState` has no `AppUser` foreign key, so its writes have an explicit USER-scope lifecycle guard rather than relying on cascade cleanup.
+
+A future `DELETE_APP_USER` executor must create the tombstone in `runDestructiveTransaction(...)`'s `beforeUserLock` callback so the identity lock is acquired first; the main destructive callback then deletes the AppUser after the repository acquires the user lock and internally binds the lifecycle operation. The database trigger verifies that the bound operation targets that user and is a `DELETE_APP_USER` operation. Both steps remain part of one database transaction.
 
 HMAC configuration is versioned for rotation:
 
@@ -64,7 +78,7 @@ HMAC configuration is versioned for rotation:
 - `DATA_LIFECYCLE_AUDIT_HMAC_KEY_VERSION`
 - `DATA_LIFECYCLE_AUDIT_HMAC_PREVIOUS_KEYS`
 
-If tombstones exist for a provider but the identity keyring is unavailable, provisioning fails closed instead of silently recreating the user.
+The current key must be explicitly configured before previous keys are accepted. Previous-key versions must be strictly lower than the current version; they are verification-only and cannot silently become the signing key. For deleted identities, every persisted tombstone key version for a provider must remain present in the configured keyring while that tombstone is authoritative. Missing historical versions fail provisioning closed rather than silently recreating an identity that can no longer be verified.
 
 ## Opening provenance
 
@@ -81,7 +95,7 @@ The migration backfills historical non-empty openings as `UNKNOWN`. Local openin
 
 Preview expiry is an explicit state transition. Terminal operation cleanup defaults to 90 days and audit cleanup defaults to 365 days; both are configurable through `DATA_LIFECYCLE_OPERATION_RETENTION_DAYS` and `DATA_LIFECYCLE_AUDIT_RETENTION_DAYS`.
 
-Operations referenced by a deleted-identity tombstone are excluded from generic terminal cleanup so post-deletion identity/status lookup remains available for the tombstone horizon. Audit retention is independent of target-row lifetime.
+Operations referenced by a deleted-identity tombstone are excluded from generic terminal cleanup so post-deletion identity/status lookup remains available for the tombstone horizon. Terminal operation cleanup also refuses to remove an operation that still owns an active resource fence. Audit retention is independent of target-row lifetime.
 
 ## Scope not implemented yet
 
