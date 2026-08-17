@@ -2,9 +2,6 @@ import assert from 'node:assert/strict';
 import { DEFAULT_PREPARATION_CONFIG } from '../../dist/modules/preparation/preparation.config.js';
 import { createPreparationReconciler } from '../../dist/modules/preparation/preparation-reconciler.service.js';
 
-await proveParentResumePrecedesImportResume();
-await proveRejectedParentResumeDoesNotTouchImport();
-
 async function proveParentResumePrecedesImportResume() {
   const snapshot = pausedSnapshot();
   const calls = [];
@@ -140,3 +137,6 @@ const silentLogger = {
   warn() {},
   error() {},
 };
+
+await proveParentResumePrecedesImportResume();
+await proveRejectedParentResumeDoesNotTouchImport();
