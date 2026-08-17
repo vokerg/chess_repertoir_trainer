@@ -19,7 +19,7 @@ function hash(value) {
 }
 
 try {
-  const provider = `rotation-provider-${suffix}`;
+  const provider = `rotation-${suffix.slice(0, 24)}`;
   const externalSubject = `deleted-subject-${suffix}`;
   const user = await prisma.appUser.create({
     data: {
