@@ -305,13 +305,14 @@ export function createPreparationReconciler(
     }
 
     const resolved = isImportAttentionResolved(snapshot);
+    const currentAttention = selectImportAttention(snapshot.targets);
     const applied = await repository.applyState({
       runId: snapshot.run.id,
       expectedStatus: 'NEEDS_ATTENTION',
       expectedReconcileAfter: snapshot.run.reconcileAfter,
       status: resolved ? 'RUNNING' : 'NEEDS_ATTENTION',
-      attentionCode: resolved ? null : snapshot.run.attentionCode,
-      attentionDetail: resolved ? null : snapshot.run.attentionDetail,
+      attentionCode: resolved ? null : currentAttention?.code ?? snapshot.run.attentionCode,
+      attentionDetail: resolved ? null : currentAttention?.detail ?? snapshot.run.attentionDetail,
       reconcileAfter: resolved
         ? new Date(now().getTime() + config.reconcileActiveMs)
         : null,
@@ -525,9 +526,7 @@ export function createPreparationReconciler(
     const activeAnalysis = snapshot.activeBatches.some((batch) => batch.stage === 'ANALYSIS');
     const importsCompleted = snapshot.targets.length > 0
       && snapshot.targets.every((target) => target.importStatus === 'COMPLETED');
-    const importFailure = snapshot.targets.find((target) => (
-      target.importStatus === 'FAILED' || target.importStatus === 'CANCELLED' || target.importStatus === 'PAUSED'
-    ));
+    const importAttention = selectImportAttention(snapshot.targets);
     const coreReady = importsCompleted
       && !activeIndex
       && totals.indexPending === 0
@@ -556,11 +555,8 @@ export function createPreparationReconciler(
         code: 'ALL_INDEXING_FAILED',
         detail: 'Every eligible imported game has a terminal indexing failure.',
       };
-    } else if (importFailure && !activeIndex && totals.indexPending === 0) {
-      deterministicAttention = {
-        code: importFailure.importStatus === 'PAUSED' ? 'IMPORT_PAUSED' : 'IMPORT_RETRY_AVAILABLE',
-        detail: `Linked import is ${importFailure.importStatus?.toLowerCase()}.`,
-      };
+    } else if (importAttention && !activeIndex && totals.indexPending === 0) {
+      deterministicAttention = importAttention;
     }
 
     if (deterministicAttention) {
@@ -743,6 +739,21 @@ function pickRetryTarget(
       || left.id - right.id
     ))[0];
   return analysisTarget ? { target: analysisTarget, stage: 'ANALYSIS' } : null;
+}
+
+function selectImportAttention(
+  targets: PreparationTargetSnapshot[],
+): { code: string; detail: string } | null {
+  const target = targets.find((candidate) => (
+    candidate.importStatus === 'FAILED'
+    || candidate.importStatus === 'CANCELLED'
+    || candidate.importStatus === 'PAUSED'
+  ));
+  if (!target) return null;
+  return {
+    code: target.importStatus === 'PAUSED' ? 'IMPORT_PAUSED' : 'IMPORT_RETRY_AVAILABLE',
+    detail: `Linked import is ${target.importStatus?.toLowerCase()}.`,
+  };
 }
 
 function isImportAttentionResolved(snapshot: PreparationReconcileSnapshot): boolean {
