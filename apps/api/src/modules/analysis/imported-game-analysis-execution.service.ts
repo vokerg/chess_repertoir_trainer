@@ -56,6 +56,7 @@ export function createImportedGameAnalysisExecutionService(
     async recordSetupFailure(
       userId: number,
       importedGameId: number,
+      force: boolean,
       error: unknown,
     ): Promise<void> {
       if (!dependencies.createRunningRun || !dependencies.failRun) {
@@ -63,6 +64,7 @@ export function createImportedGameAnalysisExecutionService(
       }
       const state = await dependencies.getExecutionState(userId, importedGameId);
       if (!state) throw new Error('Imported game not found');
+      if (!force && isCurrent(state)) return;
 
       const run = await dependencies.createRunningRun({
         importedGameId,
