@@ -372,12 +372,12 @@ export function createPreparationReconciler(
 
     const target = pickAnalysisTarget(refreshed.targets, config);
     if (!target) return;
-    await admitBatch(
-      refreshed,
-      target,
-      'ANALYSIS',
-      target.normalAnalysisBatches === 0 ? 'FIRST_ANALYSIS' : 'ANALYSIS_TAIL',
-    );
+    const lane = target.normalAnalysisBatches === 0 ? 'FIRST_ANALYSIS' : 'ANALYSIS_TAIL';
+    const maxTasks = lane === 'FIRST_ANALYSIS'
+      && target.analysisPendingCount < config.firstAnalysisMinIndexed
+      ? config.firstAnalysisSmallAccountFallback
+      : undefined;
+    await admitBatch(refreshed, target, 'ANALYSIS', lane, maxTasks);
   }
 
   async function admitBatch(
@@ -385,6 +385,7 @@ export function createPreparationReconciler(
     target: PreparationTargetSnapshot,
     stage: PreparationStage,
     lane: PreparationLane,
+    maxTasks?: number,
   ): Promise<void> {
     const result = await batchRepository.admitNextBatch({
       userId: snapshot.run.userId,
@@ -392,6 +393,7 @@ export function createPreparationReconciler(
       targetId: target.id,
       stage,
       lane,
+      ...(maxTasks === undefined ? {} : { maxTasks }),
     });
     if (result.outcome === 'CREATED') {
       logger.info('Preparation batch admitted.', {
