@@ -86,7 +86,7 @@ try {
     data: {
       userId: owner.id,
       kind: 'ANALYSE_GAMES',
-      source: 'TEST',
+      source: 'MAINTENANCE',
       priority: 0,
       status: 'QUEUED',
       totalTasks: 1,
