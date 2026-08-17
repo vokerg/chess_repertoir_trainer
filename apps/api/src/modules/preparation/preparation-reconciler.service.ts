@@ -370,7 +370,12 @@ export function createPreparationReconciler(
     const hasActiveAnalysis = refreshed.activeBatches.some((batch) => batch.stage === 'ANALYSIS');
     if (hasActiveAnalysis) return;
 
-    const target = pickAnalysisTarget(refreshed.targets, config);
+    const activeIndexTargetIds = new Set(
+      refreshed.activeBatches
+        .filter((batch) => batch.stage === 'INDEX')
+        .map((batch) => batch.targetId),
+    );
+    const target = pickAnalysisTarget(refreshed.targets, config, activeIndexTargetIds);
     if (!target) return;
     const lane = target.normalAnalysisBatches === 0 ? 'FIRST_ANALYSIS' : 'ANALYSIS_TAIL';
     const maxTasks = lane === 'FIRST_ANALYSIS'
@@ -649,13 +654,16 @@ export function pickIndexTarget(targets: PreparationTargetSnapshot[]): Preparati
 export function pickAnalysisTarget(
   targets: PreparationTargetSnapshot[],
   config: Pick<PreparationConfig, 'firstAnalysisMinIndexed'>,
+  activeIndexTargetIds: ReadonlySet<number> = new Set<number>(),
 ): PreparationTargetSnapshot | null {
   return [...targets]
     .filter((target) => {
       if (target.analysisPendingCount <= 0) return false;
       if (target.normalAnalysisBatches > 0) return true;
       if (target.analysisPendingCount >= config.firstAnalysisMinIndexed) return true;
-      return target.importStatus === 'COMPLETED' && target.indexPendingCount === 0;
+      return target.importStatus === 'COMPLETED'
+        && target.indexPendingCount === 0
+        && !activeIndexTargetIds.has(target.id);
     })
     .sort((left, right) => (
       left.normalAnalysisBatches - right.normalAnalysisBatches
