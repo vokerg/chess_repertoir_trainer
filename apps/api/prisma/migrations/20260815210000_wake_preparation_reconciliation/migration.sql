@@ -140,15 +140,23 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    UPDATE "DataPreparationRun"
+    -- ImportRun deletion uses ON DELETE SET NULL on currentImportRunId. During
+    -- AppUser cascading cleanup that target update can fire after the owner row
+    -- has already disappeared, so do not rewrite the transient parent then.
+    UPDATE "DataPreparationRun" AS run
     SET "reconcileAfter" = CURRENT_TIMESTAMP,
         "updatedAt" = CURRENT_TIMESTAMP
-    WHERE "id" = NEW."preparationRunId"
+    WHERE run."id" = NEW."preparationRunId"
+      AND EXISTS (
+          SELECT 1
+          FROM "AppUser" AS owner
+          WHERE owner."id" = run."userId"
+      )
       AND (
-        "status" IN ('QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'CANCEL_REQUESTED')
+        run."status" IN ('QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'CANCEL_REQUESTED')
         OR (
-          "status" = 'NEEDS_ATTENTION'
-          AND "attentionCode" IN ('IMPORT_PAUSED', 'IMPORT_RETRY_AVAILABLE')
+          run."status" = 'NEEDS_ATTENTION'
+          AND run."attentionCode" IN ('IMPORT_PAUSED', 'IMPORT_RETRY_AVAILABLE')
         )
       );
     RETURN NEW;
