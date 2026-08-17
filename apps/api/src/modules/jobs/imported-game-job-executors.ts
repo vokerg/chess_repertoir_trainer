@@ -112,6 +112,7 @@ export function createImportedGameJobTaskExecutorRegistry(
           ? (error: unknown) => dependencies.recordAnalysisSetupFailure!(
               task.userId,
               task.importedGameId,
+              task.force,
               error,
             )
           : undefined;
