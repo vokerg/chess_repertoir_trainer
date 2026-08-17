@@ -16,10 +16,11 @@ const registry = createImportedGameJobTaskExecutorRegistry({
     processOne: async () => 'COMPLETED',
   },
   refreshTags: async () => {},
-  recordAnalysisSetupFailure: async (userId, importedGameId, error) => {
+  recordAnalysisSetupFailure: async (userId, importedGameId, force, error) => {
     setupFailures.push({
       userId,
       importedGameId,
+      force,
       error: error instanceof Error ? error.message : String(error),
     });
   },
@@ -59,6 +60,7 @@ assert.equal(analyseCalls, 0);
 assert.deepEqual(setupFailures, [{
   userId: 5,
   importedGameId: 9,
+  force: false,
   error: 'Local batch Stockfish analysis is disabled',
 }]);
 
