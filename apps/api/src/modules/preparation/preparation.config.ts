@@ -103,11 +103,6 @@ export function readPreparationConfig(
     ),
   };
 
-  if (config.firstAnalysisSmallAccountFallback >= config.firstAnalysisMinIndexed) {
-    throw new Error(
-      'PREPARATION_FIRST_ANALYSIS_SMALL_ACCOUNT_FALLBACK must be less than PREPARATION_FIRST_ANALYSIS_MIN_INDEXED.',
-    );
-  }
   if (config.firstAnalysisSmallAccountFallback > config.firstAnalysisBatchSize) {
     throw new Error(
       'PREPARATION_FIRST_ANALYSIS_SMALL_ACCOUNT_FALLBACK must not exceed PREPARATION_FIRST_ANALYSIS_BATCH_SIZE.',
