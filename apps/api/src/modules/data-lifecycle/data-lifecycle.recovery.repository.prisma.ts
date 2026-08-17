@@ -1,20 +1,7 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import prisma from '../../prisma';
 import { lockDataLifecycleUserScope } from './data-lifecycle.guard';
 import { DataLifecycleInvalidStateError } from './data-lifecycle.repository.prisma';
-
-interface RecoveryRow {
-  id: number;
-  status: string;
-  targetUserId: number;
-  checkpointJson: unknown | null;
-  firstDestructiveCommitAt: Date | null;
-  workKey: string | null;
-}
-
-interface FenceCountRow {
-  count: number;
-}
 
 export interface ResumedDataLifecycleOperation {
   operationId: number;
@@ -43,56 +30,48 @@ export async function resumeDataLifecycleNeedsAttention(
   return database.$transaction(async (transaction) => {
     await lockDataLifecycleUserScope(transaction, targetUserId);
 
-    const rows = await transaction.$queryRaw<RecoveryRow[]>(Prisma.sql`
-      SELECT
-        "id",
-        "status",
-        "targetUserId",
-        "checkpointJson",
-        "firstDestructiveCommitAt",
-        "workKey"
-      FROM "DataLifecycleOperation"
-      WHERE "id" = ${operationId}
-        AND "targetUserId" = ${targetUserId}
-      FOR UPDATE
-    `);
-    const operation = rows[0];
-    if (!operation) {
-      throw new DataLifecycleInvalidStateError('Data lifecycle operation was not found.');
-    }
-    if (
-      operation.status !== 'NEEDS_ATTENTION'
-      || operation.firstDestructiveCommitAt === null
-      || operation.workKey !== null
-    ) {
+    const updated = await transaction.dataLifecycleOperation.updateMany({
+      where: {
+        id: operationId,
+        targetUserId,
+        status: 'NEEDS_ATTENTION',
+        firstDestructiveCommitAt: { not: null },
+        workKey: null,
+      },
+      data: {
+        status: 'WAITING_FOR_DRAIN',
+        stopRequest: 'NONE',
+        stopRequestedAt: null,
+        terminalResult: null,
+        errorCode: null,
+        completedAt: null,
+      },
+    });
+    if (updated.count !== 1) {
       throw new DataLifecycleInvalidStateError(
         'Only an unclaimed partially-applied NEEDS_ATTENTION operation can be resumed.',
       );
     }
 
-    const fenceRows = await transaction.$queryRaw<FenceCountRow[]>(Prisma.sql`
-      SELECT COUNT(*)::int AS "count"
-      FROM "DataLifecycleResourceFence"
-      WHERE "operationId" = ${operationId}
-        AND "releasedAt" IS NULL
-    `);
-    if ((fenceRows[0]?.count ?? 0) === 0) {
+    const operation = await transaction.dataLifecycleOperation.findUnique({
+      where: { id: operationId },
+      select: {
+        checkpointJson: true,
+        firstDestructiveCommitAt: true,
+      },
+    });
+    if (!operation?.firstDestructiveCommitAt) {
+      throw new DataLifecycleInvalidStateError('Data lifecycle operation was not found.');
+    }
+
+    const activeFenceCount = await transaction.dataLifecycleResourceFence.count({
+      where: { operationId, releasedAt: null },
+    });
+    if (activeFenceCount === 0) {
       throw new DataLifecycleInvalidStateError(
         'A partially-applied lifecycle operation cannot resume without its durable fence.',
       );
     }
-
-    await transaction.$executeRaw(Prisma.sql`
-      UPDATE "DataLifecycleOperation"
-      SET "status" = 'WAITING_FOR_DRAIN',
-          "stopRequest" = 'NONE',
-          "stopRequestedAt" = NULL,
-          "terminalResult" = NULL,
-          "errorCode" = NULL,
-          "completedAt" = NULL,
-          "updatedAt" = NOW()
-      WHERE "id" = ${operationId}
-    `);
 
     return {
       operationId,
