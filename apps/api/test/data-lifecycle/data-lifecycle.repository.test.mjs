@@ -262,8 +262,8 @@ try {
         const jobRun = await tx.jobRun.create({
           data: {
             userId: user.id,
-            kind: 'ANALYSE',
-            source: 'TEST',
+            kind: 'ANALYSE_GAMES',
+            source: 'MAINTENANCE',
             priority: 0,
             status: 'QUEUED',
             totalTasks: 1,
