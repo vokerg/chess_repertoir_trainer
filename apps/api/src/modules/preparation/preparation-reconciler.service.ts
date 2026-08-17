@@ -648,19 +648,14 @@ export function pickIndexTarget(targets: PreparationTargetSnapshot[]): Preparati
 
 export function pickAnalysisTarget(
   targets: PreparationTargetSnapshot[],
-  config: Pick<PreparationConfig, 'firstAnalysisMinIndexed' | 'firstAnalysisSmallAccountFallback'>,
+  config: Pick<PreparationConfig, 'firstAnalysisMinIndexed'>,
 ): PreparationTargetSnapshot | null {
   return [...targets]
     .filter((target) => {
       if (target.analysisPendingCount <= 0) return false;
       if (target.normalAnalysisBatches > 0) return true;
       if (target.analysisPendingCount >= config.firstAnalysisMinIndexed) return true;
-      const importQuiescent = target.importStatus === 'COMPLETED';
-      const smallAccount = target.importedCount < config.firstAnalysisMinIndexed;
-      return importQuiescent
-        && target.indexPendingCount === 0
-        && smallAccount
-        && target.analysisPendingCount >= config.firstAnalysisSmallAccountFallback;
+      return target.importStatus === 'COMPLETED' && target.indexPendingCount === 0;
     })
     .sort((left, right) => (
       left.normalAnalysisBatches - right.normalAnalysisBatches
