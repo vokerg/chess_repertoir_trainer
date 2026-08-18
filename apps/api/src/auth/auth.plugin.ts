@@ -3,6 +3,7 @@ import { FastifyRequest } from 'fastify';
 import { AuthConfig, loadAuthConfig } from './auth.config';
 import { CurrentAppUserService } from './current-app-user.service';
 import { normalizeVerifiedSessionContext } from './verified-session-context';
+import { DeletedIdentityBlockedError } from '../modules/data-lifecycle/deleted-identity.guard';
 
 const PUBLIC_PATHS = new Set([
   '/health',
@@ -88,9 +89,16 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
     if (isPublicRequest(request)) return;
 
     if (config.mode === 'dev-single-user') {
-      const resolved = await CurrentAppUserService.resolveDevUser(config.userId);
-      request.auth = resolved.auth;
-      return;
+      try {
+        const resolved = await CurrentAppUserService.resolveDevUser(config.userId);
+        request.auth = resolved.auth;
+        return;
+      } catch (error) {
+        if (error instanceof DeletedIdentityBlockedError) {
+          return reply.code(403).send({ message: 'Application account has been deleted.' });
+        }
+        throw error;
+      }
     }
 
     const token = readToken(request);
@@ -148,12 +156,20 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
     }
 
     request.verifiedSession = normalizeVerifiedSessionContext(payload, subject);
-    const resolved = await CurrentAppUserService.resolveExternalUser({
-      provider: 'clerk',
-      externalSubject: subject,
-      email: readEmail(payload),
-      displayName: readDisplayName(payload),
-    });
-    request.auth = resolved.auth;
+    try {
+      const resolved = await CurrentAppUserService.resolveExternalUser({
+        provider: 'clerk',
+        externalSubject: subject,
+        email: readEmail(payload),
+        displayName: readDisplayName(payload),
+      });
+      request.auth = resolved.auth;
+    } catch (error) {
+      if (error instanceof DeletedIdentityBlockedError) {
+        request.log.info({ operationId: error.operationId }, 'Rejected provisioning for deleted auth identity');
+        return reply.code(403).send({ message: 'Application account has been deleted.' });
+      }
+      throw error;
+    }
   });
 });

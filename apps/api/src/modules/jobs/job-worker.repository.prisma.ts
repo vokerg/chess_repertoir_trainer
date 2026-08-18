@@ -90,6 +90,7 @@ export function createJobWorkerRepository(
           SELECT 1
           FROM "JobTask" AS task
           JOIN "JobRun" AS job ON job."id" = task."jobRunId"
+          JOIN "ImportedGame" AS game ON game."id" = task."importedGameId"
           WHERE task."status" = 'QUEUED'
             AND task."importedGameId" IS NOT NULL
             AND job."status" IN ('QUEUED', 'RUNNING')
@@ -100,6 +101,23 @@ export function createJobWorkerRepository(
               FROM "JobTask" AS active_task
               WHERE active_task."workKey" IS NOT NULL
                 AND active_task."importedGameId" = task."importedGameId"
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM "DataLifecycleResourceFence" AS lifecycle_fence
+              WHERE lifecycle_fence."releasedAt" IS NULL
+                AND lifecycle_fence."ownerUserId" = job."userId"
+                AND (
+                  lifecycle_fence."resourceType" = 'USER'
+                  OR (
+                    lifecycle_fence."resourceType" = 'ACCOUNT'
+                    AND lifecycle_fence."resourceId" = game."accountId"
+                  )
+                  OR (
+                    lifecycle_fence."resourceType" = 'GAME'
+                    AND lifecycle_fence."resourceId" = game."id"
+                  )
+                )
             )
         ) AS "exists"
       `);
@@ -224,6 +242,7 @@ async function claimNextTaskOnce(
         SELECT task."id"
         FROM "JobTask" AS task
         JOIN "JobRun" AS job ON job."id" = task."jobRunId"
+        JOIN "ImportedGame" AS game ON game."id" = task."importedGameId"
         WHERE task."status" = 'QUEUED'
           AND task."importedGameId" IS NOT NULL
           AND job."status" IN ('QUEUED', 'RUNNING')
@@ -234,6 +253,23 @@ async function claimNextTaskOnce(
             FROM "JobTask" AS active_task
             WHERE active_task."workKey" IS NOT NULL
               AND active_task."importedGameId" = task."importedGameId"
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM "DataLifecycleResourceFence" AS lifecycle_fence
+            WHERE lifecycle_fence."releasedAt" IS NULL
+              AND lifecycle_fence."ownerUserId" = job."userId"
+              AND (
+                lifecycle_fence."resourceType" = 'USER'
+                OR (
+                  lifecycle_fence."resourceType" = 'ACCOUNT'
+                  AND lifecycle_fence."resourceId" = game."accountId"
+                )
+                OR (
+                  lifecycle_fence."resourceType" = 'GAME'
+                  AND lifecycle_fence."resourceId" = game."id"
+                )
+              )
           )
           AND NOT EXISTS (
             SELECT 1

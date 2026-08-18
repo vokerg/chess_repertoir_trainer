@@ -18,4 +18,5 @@ export * from './repertoire-coverage';
 export * from './lichess';
 export * from './lichess-puzzles';
 export * from './jobs';
+export * from './data-lifecycle';
 export * from './rating-normalization';
