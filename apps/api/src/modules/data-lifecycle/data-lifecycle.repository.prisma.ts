@@ -673,7 +673,13 @@ export function createDataLifecycleRepository(
         DELETE FROM "DataLifecycleOperation" AS operation
         WHERE operation."status" IN ('COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED')
           AND operation."completedAt" < ${cutoff}
-          AND (operation."receiptExpiresAt" IS NULL OR operation."receiptExpiresAt" < ${cutoff})
+          AND (
+            operation."receiptTokenHash" IS NULL
+            OR (
+              operation."receiptExpiresAt" IS NOT NULL
+              AND operation."receiptExpiresAt" < ${cutoff}
+            )
+          )
           AND NOT EXISTS (
             SELECT 1
             FROM "DataLifecycleResourceFence" AS fence
