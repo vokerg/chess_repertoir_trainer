@@ -1,6 +1,6 @@
 # ONB-008 — Persist onboarding disposition and readiness projection
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 80
 
 Delivery class: Implementation
 
-Planning maturity: Decisioned by ONB-001/003/007/016; ONB-017/018 execution state and durable import/provider delivery are complete
+Planning maturity: Decisioned by ONB-001/003/007/016; ONB-017/018 execution state and durable import/provider delivery are complete; implementation is now under review in PR #398
 
 GitHub issue: [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193)
 
@@ -105,6 +105,12 @@ ONB-017/018 own the physical `DataPreparationRun`, target, batch, and reconciler
 
 Report: none
 
-Pull request: none
+Pull request: [#398](https://github.com/vokerg/chess_repertoir_trainer/pull/398)
 
-Completed at: none
+Initial implementation head: `df009f1a1e242a3a11b4b61eb08f41a1dc91cb85`
+
+Self-review head: `3f520b9b97def091fc7c36027cdc4d617053345b`
+
+Validation: local checkout was unavailable because `github.com` DNS resolution failed in the execution environment; exact-head GitHub Actions validation is required before merge readiness.
+
+Completed at: none — task remains `REVIEW` until accepted merge/completion reconciliation.
