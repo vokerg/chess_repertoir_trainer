@@ -148,13 +148,16 @@ function presentationState(
 ): OnboardingReadinessResponse['presentationState'] {
   if (run?.analysisCompletedAt) return 'COMPLETE';
   if (run?.coreReadyAt) return 'CORE_READY';
+  // Skip dismisses first-run guidance without cancelling accepted background work.
+  // Keep the preparation projection populated, but do not re-open onboarding UI
+  // merely because that work is still running or needs attention.
+  if (disposition === 'SKIPPED') return 'SKIPPED';
   if (run?.status === 'NEEDS_ATTENTION') return 'NEEDS_ATTENTION';
   if (run?.status === 'PAUSED' || run?.status === 'PAUSE_REQUESTED') return 'PAUSED';
   if (run?.status === 'CANCELLED' || run?.status === 'CANCEL_REQUESTED') return 'CANCELLED';
   if (run?.status === 'FAILED') return 'FAILED';
   if (run && ['QUEUED', 'RUNNING'].includes(run.status)) return 'PREPARING';
   if (disposition === 'COMPLETED') return 'COMPLETE';
-  if (disposition === 'SKIPPED') return 'SKIPPED';
   return 'NOT_STARTED';
 }
 

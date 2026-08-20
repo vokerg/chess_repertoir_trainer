@@ -53,6 +53,22 @@ assert.equal(running.readiness.find((item) => item.feature === 'analysis').state
 assert.equal('eta' in running.preparation, false);
 assert.equal('overallPercentage' in running.preparation, false);
 
+const skipped = await createOnboardingReadinessService({
+  repository: {
+    ...runningRepository,
+    async getDisposition() {
+      return {
+        disposition: 'SKIPPED',
+        reason: 'USER_SKIPPED',
+        changedAt: new Date('2026-08-20T07:05:00.000Z'),
+      };
+    },
+  },
+}).get(1);
+assert.equal(skipped.presentationState, 'SKIPPED');
+assert.equal(skipped.preparation.status, 'RUNNING');
+assert.deepEqual(skipped.actions.map((action) => action.code), ['VIEW_HOME', 'START_ONBOARDING']);
+
 const terminalRepository = {
   ...runningRepository,
   async getScopeTotals() {
