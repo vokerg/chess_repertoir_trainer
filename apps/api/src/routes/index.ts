@@ -26,6 +26,7 @@ import playerChessProfileModule from '../modules/player-chess-profile/player-che
 import aiModule from '../modules/ai/ai.routes';
 import ratingNormalizationModule from '../modules/rating-normalization/rating-normalization.routes';
 import activityFeedModule from '../modules/activity-feed/activity-feed.routes';
+import onboardingModule from '../modules/onboarding/onboarding.routes';
 
 export interface RegisterRoutesOptions {
   admin: AdminModuleOptions;
@@ -57,6 +58,7 @@ export default function registerRoutes(app: FastifyInstance, options: RegisterRo
   app.register(aiModule);
   app.register(ratingNormalizationModule);
   app.register(activityFeedModule);
+  app.register(onboardingModule);
   app.register(lichessAuthRoutes);
   app.register(externalAccountsRoutes);
 }

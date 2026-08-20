@@ -20,6 +20,9 @@ model AppUser {
   authSubject                     String?
   email                           String?
   timeZone                        String                           @default("UTC") @db.VarChar(64)
+  onboardingDisposition           String                           @default("PENDING") @db.VarChar(16)
+  onboardingDispositionReason     String?                          @db.VarChar(64)
+  onboardingDispositionAt         DateTime?
   defaultProgressAccountId        Int?                             @unique
   defaultProgressAccount          ExternalAccount?                 @relation("DefaultProgressAccount", fields: [defaultProgressAccountId], references: [id], onDelete: SetNull)
   externalAccounts                ExternalAccount[]

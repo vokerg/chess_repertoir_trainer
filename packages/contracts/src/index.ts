@@ -19,4 +19,5 @@ export * from './lichess';
 export * from './lichess-puzzles';
 export * from './jobs';
 export * from './data-lifecycle';
+export * from './onboarding';
 export * from './rating-normalization';
