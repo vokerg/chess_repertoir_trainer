@@ -15,6 +15,7 @@ try {
   assert.equal(user.onboardingDisposition, 'PENDING');
 
   const account = await prisma.externalAccount.create({ data: { userId: user.id, provider: 'lichess', username: `onboarding-${suffix}` } });
+  const secondAccount = await prisma.externalAccount.create({ data: { userId: user.id, provider: 'chess.com', username: `onboarding-second-${suffix}` } });
   const otherAccount = await prisma.externalAccount.create({ data: { userId: otherUser.id, provider: 'lichess', username: `other-${suffix}` } });
   const now = new Date('2026-08-20T07:30:00.000Z');
   const requestedFrom = new Date('2026-05-20T00:00:00.000Z');
@@ -26,6 +27,13 @@ try {
       requestedFrom, requestedTo, windowsTotal: 4, windowsCompleted: 2,
     },
   });
+  const secondImportRun = await prisma.importRun.create({
+    data: {
+      userId: user.id, accountId: secondAccount.id, provider: 'chess.com', mode: 'BOUNDED_INITIAL', source: 'ONBOARDING', status: 'RUNNING',
+      scopeVersion: 1, scopeHash: `scope-second-${suffix}`.slice(0, 64), scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
+      requestedFrom, requestedTo, windowsTotal: 2, windowsCompleted: 1,
+    },
+  });
   const preparation = await prisma.dataPreparationRun.create({
     data: {
       userId: user.id, purpose: 'ONBOARDING', status: 'RUNNING', recipeVersion: 1, recipeJson: {},
@@ -34,9 +42,13 @@ try {
         accountId: account.id, accountProvider: 'lichess', accountUsername: account.username, ordinal: 0,
         scopeVersion: 1, scopeHash: `scope-${suffix}`.slice(0, 64), scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
         requestedFrom, requestedTo, currentImportRunId: importRun.id, firstImportedAt: now,
+      }, {
+        accountId: secondAccount.id, accountProvider: 'chess.com', accountUsername: secondAccount.username, ordinal: 1,
+        scopeVersion: 1, scopeHash: `scope-second-${suffix}`.slice(0, 64), scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
+        requestedFrom, requestedTo, currentImportRunId: secondImportRun.id, firstImportedAt: now,
       }] },
     },
-    include: { targets: true },
+    include: { targets: { orderBy: { ordinal: 'asc' } } },
   });
   await prisma.importedGame.create({
     data: {
@@ -47,8 +59,14 @@ try {
   });
   await prisma.importedGame.create({
     data: {
+      userId: user.id, accountId: secondAccount.id, provider: 'chess.com', providerGameId: `second-game-${suffix}`,
+      pgn: '1. d4 d5', rated: true, variant: 'standard', speedCategory: 'blitz', endedAt: now,
+    },
+  });
+  await prisma.importedGame.create({
+    data: {
       userId: otherUser.id, accountId: otherAccount.id, provider: 'lichess', providerGameId: `other-game-${suffix}`,
-      pgn: '1. d4 d5', endedAt: now, plyIndexedAt: now,
+      pgn: '1. c4 e5', endedAt: now, plyIndexedAt: now,
     },
   });
   await prisma.dataPreparationBatch.create({
@@ -66,9 +84,14 @@ try {
     const body = onboardingReadinessResponseSchema.parse(response.json());
     assert.equal(body.disposition.value, 'PENDING');
     assert.equal(body.presentationState, 'PREPARING');
+    assert.equal(body.preparation.targetsTotal, 2);
+    assert.equal(body.preparation.targets.length, 2);
+    assert.equal(body.preparation.providerWindows.completed, 3);
+    assert.equal(body.preparation.providerWindows.total, 6);
     assert.equal(body.preparation.providerWindows.percentage, 50);
-    assert.equal(body.preparation.games.committed, 1);
+    assert.equal(body.preparation.games.committed, 2);
     assert.equal(body.preparation.games.indexed, 1);
+    assert.equal(body.preparation.games.indexPending, 1);
     assert.equal(body.preparation.latestBatches[0].selected, 2);
     assert.equal(body.preparation.latestBatches[0].remaining, 1);
     assert.equal(body.preparation.latestBatches[0].percentage, 50);
@@ -85,6 +108,12 @@ try {
         onboardingDispositionAt: now,
       },
     });
+    const skippedResponse = await app.inject({ method: 'GET', url: '/api/me/onboarding' });
+    assert.equal(skippedResponse.statusCode, 200, skippedResponse.body);
+    const skippedBody = onboardingReadinessResponseSchema.parse(skippedResponse.json());
+    assert.equal(skippedBody.presentationState, 'SKIPPED');
+    assert.equal(skippedBody.preparation.status, 'RUNNING');
+
     await prisma.dataPreparationRun.update({
       where: { id: preparation.id },
       data: { coreReadyAt: new Date('2026-08-20T07:31:00.000Z') },

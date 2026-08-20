@@ -223,7 +223,9 @@ function featureReadiness(
 
 function fixedCoverage(scope: OnboardingScopeTotals) {
   const importComplete = scope.targetCount > 0 && scope.completedImportTargets === scope.targetCount;
-  const index = importComplete ? {
+  // A zero-game import is an attention/checked-empty outcome, not a meaningful
+  // "100% indexed" progress surface.
+  const index = importComplete && scope.committedCount > 0 ? {
     settled: scope.indexedCount + scope.indexFailedCount,
     total: scope.committedCount,
     remaining: scope.indexPendingCount,

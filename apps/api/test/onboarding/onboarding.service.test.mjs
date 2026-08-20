@@ -69,6 +69,81 @@ assert.equal(skipped.presentationState, 'SKIPPED');
 assert.equal(skipped.preparation.status, 'RUNNING');
 assert.deepEqual(skipped.actions.map((action) => action.code), ['VIEW_HOME', 'START_ONBOARDING']);
 
+const rateLimited = await createOnboardingReadinessService({
+  repository: {
+    ...runningRepository,
+    async getScopeTotals() {
+      return {
+        ...(await runningRepository.getScopeTotals()),
+        rateLimitUntil: new Date('2026-08-20T08:10:00.000Z'),
+      };
+    },
+  },
+  now: () => new Date('2026-08-20T08:00:00.000Z'),
+}).get(1);
+assert.equal(rateLimited.presentationState, 'PREPARING');
+assert.equal(rateLimited.attention.code, 'IMPORT_RATE_LIMITED');
+assert.deepEqual(rateLimited.actions.map((action) => action.code), ['RESUME_ONBOARDING']);
+
+const noDataRepository = {
+  ...runningRepository,
+  async getLatestRun() {
+    return {
+      ...(await runningRepository.getLatestRun()),
+      status: 'NEEDS_ATTENTION',
+      attentionCode: 'NO_RECENT_GAMES',
+      attentionDetail: 'No eligible recent games.',
+    };
+  },
+  async getScopeTotals() {
+    return { targetCount: 1, completedImportTargets: 1, windowsCompleted: 4, windowsTotal: 4, unknownWindowTargets: 0, nonTerminalImportTargets: 0, rateLimitUntil: null, activeIndexBatches: 0, activeAnalysisBatches: 0, committedCount: 0, indexedCount: 0, indexPendingCount: 0, indexFailedCount: 0, analysedCount: 0, analysisPendingCount: 0, analysisRunningCount: 0, analysisFailedCount: 0 };
+  },
+  async getProductEvidence() { return { importedCount: 0, indexedCount: 0, indexFailedCount: 0, openingCount: 0, analysedCount: 0, analysisRunningCount: 0, analysisFailedCount: 0, tacticalCount: 0 }; },
+};
+const noData = await createOnboardingReadinessService({ repository: noDataRepository }).get(1);
+assert.equal(noData.presentationState, 'NEEDS_ATTENTION');
+assert.equal(noData.attention.code, 'NO_RECENT_GAMES');
+assert.equal(noData.preparation.fixedCoverage.index, null);
+assert.equal(noData.readiness.find((item) => item.feature === 'games').state, 'checked-empty');
+assert.deepEqual(noData.actions.map((action) => action.code), ['EXPAND_RANGE', 'ADD_ACCOUNT', 'FINISH_ONBOARDING', 'SKIP_ONBOARDING']);
+
+const allIndexFailedRepository = {
+  ...noDataRepository,
+  async getLatestRun() {
+    return {
+      ...(await runningRepository.getLatestRun()),
+      status: 'NEEDS_ATTENTION',
+      attentionCode: 'ALL_INDEXING_FAILED',
+      attentionDetail: 'All eligible games failed indexing.',
+    };
+  },
+  async getScopeTotals() {
+    return { targetCount: 1, completedImportTargets: 1, windowsCompleted: 4, windowsTotal: 4, unknownWindowTargets: 0, nonTerminalImportTargets: 0, rateLimitUntil: null, activeIndexBatches: 0, activeAnalysisBatches: 0, committedCount: 3, indexedCount: 0, indexPendingCount: 0, indexFailedCount: 3, analysedCount: 0, analysisPendingCount: 0, analysisRunningCount: 0, analysisFailedCount: 0 };
+  },
+  async getProductEvidence() { return { importedCount: 3, indexedCount: 0, indexFailedCount: 3, openingCount: 0, analysedCount: 0, analysisRunningCount: 0, analysisFailedCount: 0, tacticalCount: 0 }; },
+};
+const allIndexFailed = await createOnboardingReadinessService({ repository: allIndexFailedRepository }).get(1);
+assert.equal(allIndexFailed.attention.code, 'ALL_INDEXING_FAILED');
+assert.equal(allIndexFailed.preparation.fixedCoverage.index.percentage, 100);
+assert.equal(allIndexFailed.readiness.find((item) => item.feature === 'openings').state, 'locked');
+assert.deepEqual(allIndexFailed.actions.map((action) => action.code), ['RETRY_PREPARATION', 'FINISH_ONBOARDING']);
+
+const stalled = await createOnboardingReadinessService({
+  repository: {
+    ...runningRepository,
+    async getLatestRun() {
+      return {
+        ...(await runningRepository.getLatestRun()),
+        attentionCode: 'INDEX_NO_SETTLEMENT_WARNING',
+        attentionDetail: 'No index task settled recently.',
+      };
+    },
+  },
+}).get(1);
+assert.equal(stalled.presentationState, 'PREPARING');
+assert.equal(stalled.attention.code, 'INDEX_NO_SETTLEMENT_WARNING');
+assert.deepEqual(stalled.actions.map((action) => action.code), ['RESUME_ONBOARDING']);
+
 const terminalRepository = {
   ...runningRepository,
   async getScopeTotals() {
