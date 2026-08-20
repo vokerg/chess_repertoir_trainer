@@ -1,6 +1,6 @@
 # ONB-008 — Persist onboarding disposition and readiness projection
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P0
 
@@ -12,13 +12,13 @@ Planning maturity: Decisioned by ONB-001/003/007/016; ONB-017/018 execution stat
 
 GitHub issue: [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT
 
-Claim branch: none
+Claim branch: `onb-008/issue-193-onboarding-readiness`
 
-Claimed at: none
+Claimed at: 2026-08-20
 
-Claim scope: none
+Claim scope: minimal user disposition persistence, server-owned onboarding/readiness projection, shared HTTP contract, authenticated read route, bounded ownership-scoped aggregates, migration and focused tests; excludes ONB-009 lifecycle commands and Angular UI
 
 Promoted at: 2026-08-17 through ONB-018 completion reconciliation
 
