@@ -1,6 +1,6 @@
 # ONB-015 — Cut over account sync and preparation handoff
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -12,13 +12,13 @@ Planning maturity: Researched; ONB-013/014 provider adapters and ONB-017/018 pre
 
 GitHub issue: [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT
 
-Claim branch: none
+Claim branch: `account-import/onb-015-account-cutover`
 
-Claimed at: none
+Claimed at: 2026-08-21
 
-Claim scope: none
+Claim scope: durable normal account-refresh cutover over the existing account-import lifecycle, persisted Angular import-run status/control and reload restoration, provider-neutral rating/activity and preparation handoff, compatibility/rollout documentation, and focused regression coverage; no provider-adapter internals, lifecycle-fence persistence, destructive execution, ONB-009/010 onboarding commands/UI, broker, or new deployable service
 
 Promoted at: 2026-08-17 through ONB-018 completion reconciliation
 
