@@ -22,6 +22,7 @@ export interface CreateAccountImportWorkerInput {
   config: AccountImportWorkerConfig;
   logger?: AccountImportWorkerLogger;
   now?: () => number;
+  onCompleted?: (run: StoredAccountImportRun) => Promise<void>;
 }
 
 export interface AccountImportWorker {
@@ -325,7 +326,18 @@ export function createAccountImportWorker(input: CreateAccountImportWorkerInput)
 
       try {
         const completed = await input.repository.completeRun(run.id, run.workKey);
-        if (!completed) await settleLostOrControlled(run);
+        if (!completed) {
+          await settleLostOrControlled(run);
+        } else if (input.onCompleted) {
+          try {
+            await input.onCompleted(run);
+          } catch (error) {
+            logger.warn(
+              { ...safeErrorContext(error), importRunId: run.id, provider: run.provider },
+              'Account import completed but derived-data reconciliation failed',
+            );
+          }
+        }
       } catch (error) {
         if (error instanceof AccountImportIncompleteCoverageError) {
           const failed = await input.repository.failRun(
