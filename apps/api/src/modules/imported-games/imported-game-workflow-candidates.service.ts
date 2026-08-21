@@ -1,56 +1,47 @@
+import { Prisma } from '@prisma/client';
+import type { ExternalAccountWorkflowSummaryResponse } from '@chess-trainer/contracts/external-accounts';
 import prisma from '../../prisma';
-import {
-  isStandardImportedGameSpeed,
-  isStandardImportedGameVariant,
-  normalizeSpeedCategory,
-} from './imported-game-workflow-eligibility';
 
-export interface ImportedGameWorkflowCandidates {
-  accountId: number;
-  eligibleImportedGameIds: number[];
-  eligibleUnindexedGameIds: number[];
-  eligibleIndexedGameIds: number[];
-  eligibleMissingOpeningGameIds: number[];
+interface WorkflowSummaryRow {
+  eligibleCount: number;
+  unindexedCount: number;
+  indexedCount: number;
+  missingOpeningCount: number;
 }
 
 export const ImportedGameWorkflowCandidatesService = {
-  forAccount: async (userId: number, accountId: number): Promise<ImportedGameWorkflowCandidates> => {
-    const games = await prisma.importedGame.findMany({
-      where: {
-        userId,
-        accountId,
-      },
-      select: {
-        id: true,
-        speedCategory: true,
-        variant: true,
-        plyIndexedAt: true,
-        openingEco: true,
-        openingName: true,
-      },
-      orderBy: [
-        { endedAt: 'desc' },
-        { id: 'desc' },
-      ],
-    });
-
-    const eligibleGames = games.filter((game) =>
-      isStandardImportedGameSpeed(normalizeSpeedCategory(game.speedCategory))
-      && isStandardImportedGameVariant(game.variant),
-    );
+  forAccount: async (
+    userId: number,
+    accountId: number,
+  ): Promise<ExternalAccountWorkflowSummaryResponse> => {
+    const rows = await prisma.$queryRaw<WorkflowSummaryRow[]>(Prisma.sql`
+      SELECT
+        COUNT(*)::int AS "eligibleCount",
+        COUNT(*) FILTER (WHERE game."plyIndexedAt" IS NULL)::int AS "unindexedCount",
+        COUNT(*) FILTER (WHERE game."plyIndexedAt" IS NOT NULL)::int AS "indexedCount",
+        COUNT(*) FILTER (
+          WHERE game."plyIndexedAt" IS NOT NULL
+            AND (game."openingEco" IS NULL OR game."openingName" IS NULL)
+        )::int AS "missingOpeningCount"
+      FROM "ImportedGame" AS game
+      WHERE game."userId" = ${userId}
+        AND game."accountId" = ${accountId}
+        AND LOWER(BTRIM(COALESCE(game."speedCategory", ''))) IN ('blitz', 'rapid')
+        AND COALESCE(NULLIF(LOWER(BTRIM(game."variant")), ''), 'standard') IN ('standard', 'chess')
+    `);
+    const row = rows[0] ?? {
+      eligibleCount: 0,
+      unindexedCount: 0,
+      indexedCount: 0,
+      missingOpeningCount: 0,
+    };
 
     return {
       accountId,
-      eligibleImportedGameIds: eligibleGames.map((game) => game.id),
-      eligibleUnindexedGameIds: eligibleGames
-        .filter((game) => !game.plyIndexedAt)
-        .map((game) => game.id),
-      eligibleIndexedGameIds: eligibleGames
-        .filter((game) => Boolean(game.plyIndexedAt))
-        .map((game) => game.id),
-      eligibleMissingOpeningGameIds: eligibleGames
-        .filter((game) => Boolean(game.plyIndexedAt) && (!game.openingEco || !game.openingName))
-        .map((game) => game.id),
+      eligibleCount: row.eligibleCount,
+      unindexedCount: row.unindexedCount,
+      indexedCount: row.indexedCount,
+      missingOpeningCount: row.missingOpeningCount,
     };
   },
 };
