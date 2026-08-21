@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {
   ONBOARDING_CONTRACT_VERSION,
+  onboardingActionCodeSchema,
+  onboardingAttentionCodeSchema,
   onboardingDispositionSchema,
   onboardingFeatureStateSchema,
   onboardingReadinessResponseSchema,
@@ -9,6 +11,8 @@ import {
 assert.equal(onboardingDispositionSchema.safeParse('PENDING').success, true);
 assert.equal(onboardingDispositionSchema.safeParse('IN_PROGRESS').success, false);
 assert.equal(onboardingFeatureStateSchema.safeParse('checked-empty').success, true);
+assert.equal(onboardingActionCodeSchema.safeParse('RESTART_PREPARATION').success, true);
+assert.equal(onboardingAttentionCodeSchema.safeParse('PREPARATION_CANCEL_REQUESTED').success, true);
 
 const response = onboardingReadinessResponseSchema.parse({
   contractVersion: ONBOARDING_CONTRACT_VERSION,

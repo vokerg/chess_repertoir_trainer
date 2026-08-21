@@ -69,6 +69,63 @@ assert.equal(skipped.presentationState, 'SKIPPED');
 assert.equal(skipped.preparation.status, 'RUNNING');
 assert.deepEqual(skipped.actions.map((action) => action.code), ['VIEW_HOME', 'START_ONBOARDING']);
 
+const pauseRequested = await createOnboardingReadinessService({
+  repository: {
+    ...runningRepository,
+    async getLatestRun() {
+      return { ...(await runningRepository.getLatestRun()), status: 'PAUSE_REQUESTED' };
+    },
+  },
+}).get(1);
+assert.equal(pauseRequested.presentationState, 'PAUSED');
+assert.equal(pauseRequested.attention.code, 'PREPARATION_PAUSE_REQUESTED');
+assert.deepEqual(pauseRequested.actions.map((action) => action.code), ['VIEW_HOME']);
+
+const paused = await createOnboardingReadinessService({
+  repository: {
+    ...runningRepository,
+    async getLatestRun() {
+      return { ...(await runningRepository.getLatestRun()), status: 'PAUSED' };
+    },
+  },
+}).get(1);
+assert.equal(paused.attention.code, 'PREPARATION_PAUSED');
+assert.deepEqual(paused.actions.map((action) => action.code), ['RESUME_ONBOARDING']);
+
+const cancelRequested = await createOnboardingReadinessService({
+  repository: {
+    ...runningRepository,
+    async getLatestRun() {
+      return { ...(await runningRepository.getLatestRun()), status: 'CANCEL_REQUESTED' };
+    },
+  },
+}).get(1);
+assert.equal(cancelRequested.presentationState, 'CANCELLED');
+assert.equal(cancelRequested.attention.code, 'PREPARATION_CANCEL_REQUESTED');
+assert.deepEqual(cancelRequested.actions.map((action) => action.code), ['VIEW_HOME']);
+
+const cancelled = await createOnboardingReadinessService({
+  repository: {
+    ...runningRepository,
+    async getLatestRun() {
+      return { ...(await runningRepository.getLatestRun()), status: 'CANCELLED' };
+    },
+  },
+}).get(1);
+assert.equal(cancelled.attention.code, 'PREPARATION_CANCELLED');
+assert.deepEqual(cancelled.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME']);
+
+const failed = await createOnboardingReadinessService({
+  repository: {
+    ...runningRepository,
+    async getLatestRun() {
+      return { ...(await runningRepository.getLatestRun()), status: 'FAILED', attentionDetail: 'Terminal failure.' };
+    },
+  },
+}).get(1);
+assert.equal(failed.attention.code, 'PREPARATION_FAILED');
+assert.deepEqual(failed.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME']);
+
 const rateLimited = await createOnboardingReadinessService({
   repository: {
     ...runningRepository,

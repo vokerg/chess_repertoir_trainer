@@ -161,13 +161,21 @@ function presentationState(
   return 'NOT_STARTED';
 }
 
-function allowedActions(state: OnboardingReadinessResponse['presentationState'], attention: OnboardingAttentionCode | null): OnboardingAction[] {
+function allowedActions(
+  state: OnboardingReadinessResponse['presentationState'],
+  attention: OnboardingAttentionCode | null,
+): OnboardingAction[] {
   if (state === 'NOT_STARTED') return [
     { code: 'START_ONBOARDING', destination: '/onboarding' },
     { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
   ];
   if (state === 'PREPARING') return [{ code: 'RESUME_ONBOARDING', destination: '/onboarding' }];
-  if (state === 'PAUSED') return [{ code: 'RESUME_ONBOARDING', destination: '/onboarding' }];
+  if (state === 'PAUSED') {
+    if (attention === 'PREPARATION_PAUSE_REQUESTED') {
+      return [{ code: 'VIEW_HOME', destination: '/home' }];
+    }
+    return [{ code: 'RESUME_ONBOARDING', destination: '/onboarding' }];
+  }
   if (state === 'NEEDS_ATTENTION') {
     if (attention === 'NO_RECENT_GAMES') return [
       { code: 'EXPAND_RANGE', destination: '/onboarding' },
@@ -181,10 +189,19 @@ function allowedActions(state: OnboardingReadinessResponse['presentationState'],
     ];
     return [{ code: 'RESUME_ONBOARDING', destination: '/onboarding' }];
   }
-  if (state === 'FAILED' || state === 'CANCELLED') return [
-    { code: 'RETRY_PREPARATION', destination: '/onboarding' },
+  if (state === 'FAILED') return [
+    { code: 'RESTART_PREPARATION', destination: '/onboarding' },
     { code: 'VIEW_HOME', destination: '/home' },
   ];
+  if (state === 'CANCELLED') {
+    if (attention === 'PREPARATION_CANCEL_REQUESTED') {
+      return [{ code: 'VIEW_HOME', destination: '/home' }];
+    }
+    return [
+      { code: 'RESTART_PREPARATION', destination: '/onboarding' },
+      { code: 'VIEW_HOME', destination: '/home' },
+    ];
+  }
   if (state === 'SKIPPED') return [
     { code: 'VIEW_HOME', destination: '/home' },
     { code: 'START_ONBOARDING', destination: '/onboarding' },
@@ -255,8 +272,10 @@ function attentionFor(
   if (scope?.rateLimitUntil && scope.rateLimitUntil > observedAt) {
     return { code: 'IMPORT_RATE_LIMITED', detail: `Provider import is rate limited until ${scope.rateLimitUntil.toISOString()}.` };
   }
-  if (run.status === 'PAUSED' || run.status === 'PAUSE_REQUESTED') return { code: 'PREPARATION_PAUSED', detail: null };
-  if (run.status === 'CANCELLED' || run.status === 'CANCEL_REQUESTED') return { code: 'PREPARATION_CANCELLED', detail: null };
+  if (run.status === 'PAUSE_REQUESTED') return { code: 'PREPARATION_PAUSE_REQUESTED', detail: null };
+  if (run.status === 'PAUSED') return { code: 'PREPARATION_PAUSED', detail: null };
+  if (run.status === 'CANCEL_REQUESTED') return { code: 'PREPARATION_CANCEL_REQUESTED', detail: null };
+  if (run.status === 'CANCELLED') return { code: 'PREPARATION_CANCELLED', detail: null };
   if (run.status === 'FAILED') return { code: 'PREPARATION_FAILED', detail: run.attentionDetail };
   if (!run.attentionCode) return null;
   const code = KNOWN_ATTENTION_CODES.has(run.attentionCode as OnboardingAttentionCode)

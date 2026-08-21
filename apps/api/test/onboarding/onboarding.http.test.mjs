@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { onboardingReadinessResponseSchema } from '@chess-trainer/contracts/onboarding';
 import { buildApp } from '../../dist/app.js';
 import prismaModule from '../../dist/prisma.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
+const primaryScopeHash = createHash('sha256').update(`primary:${suffix}`).digest('hex');
+const secondaryScopeHash = createHash('sha256').update(`secondary:${suffix}`).digest('hex');
 let user = null;
 let otherUser = null;
 
@@ -23,14 +25,14 @@ try {
   const importRun = await prisma.importRun.create({
     data: {
       userId: user.id, accountId: account.id, provider: 'lichess', mode: 'BOUNDED_INITIAL', source: 'ONBOARDING', status: 'RUNNING',
-      scopeVersion: 1, scopeHash: `scope-${suffix}`.slice(0, 64), scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
+      scopeVersion: 1, scopeHash: primaryScopeHash, scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
       requestedFrom, requestedTo, windowsTotal: 4, windowsCompleted: 2,
     },
   });
   const secondImportRun = await prisma.importRun.create({
     data: {
       userId: user.id, accountId: secondAccount.id, provider: 'chess.com', mode: 'BOUNDED_INITIAL', source: 'ONBOARDING', status: 'RUNNING',
-      scopeVersion: 1, scopeHash: `scope-second-${suffix}`.slice(0, 64), scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
+      scopeVersion: 1, scopeHash: secondaryScopeHash, scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
       requestedFrom, requestedTo, windowsTotal: 2, windowsCompleted: 1,
     },
   });
@@ -40,11 +42,11 @@ try {
       firstImportedAt: now,
       targets: { create: [{
         accountId: account.id, accountProvider: 'lichess', accountUsername: account.username, ordinal: 0,
-        scopeVersion: 1, scopeHash: `scope-${suffix}`.slice(0, 64), scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
+        scopeVersion: 1, scopeHash: primaryScopeHash, scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
         requestedFrom, requestedTo, currentImportRunId: importRun.id, firstImportedAt: now,
       }, {
         accountId: secondAccount.id, accountProvider: 'chess.com', accountUsername: secondAccount.username, ordinal: 1,
-        scopeVersion: 1, scopeHash: `scope-second-${suffix}`.slice(0, 64), scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
+        scopeVersion: 1, scopeHash: secondaryScopeHash, scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
         requestedFrom, requestedTo, currentImportRunId: secondImportRun.id, firstImportedAt: now,
       }] },
     },
