@@ -15,6 +15,7 @@ import {
   STANDARD_IMPORTED_GAME_VARIANTS,
   isStandardImportedGameVariant,
 } from '../modules/imported-games/imported-game-workflow-eligibility';
+import { assertDataLifecycleWriteAllowed } from '../modules/data-lifecycle/data-lifecycle.guard';
 
 export type RatingStatsSpeed = RatingSpeed;
 export type DashboardPeriodKey = '1M' | '3M' | '6M' | 'YTD' | '1Y' | '3Y' | '5Y' | 'ALL';
@@ -357,22 +358,38 @@ export const AccountRatingStatsService = {
 
     const projection = buildDashboardProjection(games);
     const computedAt = new Date();
-    const stats = await prisma.accountRatingStats.upsert({
-      where: { accountId },
-      update: {
-        computedAt,
-        gamesCount: projection.gamesCount,
-        data: projection.data as unknown as Prisma.InputJsonValue,
-      },
-      create: {
-        accountId,
-        computedAt,
-        gamesCount: projection.gamesCount,
-        data: projection.data as unknown as Prisma.InputJsonValue,
-      },
-    });
+    const persisted = await prisma.$transaction(async (transaction) => {
+      await assertDataLifecycleWriteAllowed(transaction, { userId, accountId });
+      const currentAccount = await transaction.externalAccount.findFirst({
+        where: { id: accountId, userId },
+        select: {
+          id: true,
+          provider: true,
+          username: true,
+          displayName: true,
+        },
+      });
+      if (!currentAccount) return null;
 
-    return toResponse(account, stats);
+      const stats = await transaction.accountRatingStats.upsert({
+        where: { accountId },
+        update: {
+          computedAt,
+          gamesCount: projection.gamesCount,
+          data: projection.data as unknown as Prisma.InputJsonValue,
+        },
+        create: {
+          accountId,
+          computedAt,
+          gamesCount: projection.gamesCount,
+          data: projection.data as unknown as Prisma.InputJsonValue,
+        },
+      });
+      return { account: currentAccount, stats };
+    });
+    if (!persisted) return null;
+
+    return toResponse(persisted.account, persisted.stats);
   },
 
   getForAccount: async (userId: number, accountId: number): Promise<AccountRatingStatsResponse | null> => {
