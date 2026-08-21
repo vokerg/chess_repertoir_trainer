@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict';
 import { createOnboardingReadinessService } from '../../dist/modules/onboarding/onboarding.service.js';
 
+const noTacticalEvidenceRepository = {
+  async get() { return { eligibleCount: 0, processedCount: 0, detectionCount: 0 }; },
+};
+
+function createService(dependencies = {}) {
+  return createOnboardingReadinessService({
+    tacticalEvidenceRepository: noTacticalEvidenceRepository,
+    ...dependencies,
+  });
+}
+
 const baseRepository = {
   async getDisposition() { return { disposition: 'PENDING', reason: null, changedAt: null }; },
   async getLatestRun() { return null; },
@@ -14,7 +25,7 @@ const baseRepository = {
   async listReveals() { return []; },
 };
 
-const notStarted = await createOnboardingReadinessService({
+const notStarted = await createService({
   repository: baseRepository,
   now: () => new Date('2026-08-20T08:00:00.000Z'),
 }).get(1);
@@ -40,7 +51,7 @@ const runningRepository = {
   async listLatestBatches() { return [{ id: 1, targetId: 1, stage: 'INDEX', lane: 'FIRST_INDEX', status: 'RUNNING', totalTasks: 4, queuedTasks: 2, runningTasks: 0, completedTasks: 2, skippedTasks: 0, failedTasks: 0, cancelledTasks: 0 }]; },
   async getProductEvidence() { return { importedCount: 4, indexedCount: 2, indexFailedCount: 0, openingCount: 1, analysedCount: 0, analysisRunningCount: 0, analysisFailedCount: 0, tacticalCount: 0 }; },
 };
-const running = await createOnboardingReadinessService({ repository: runningRepository }).get(1);
+const running = await createService({ repository: runningRepository }).get(1);
 assert.equal(running.presentationState, 'PREPARING');
 assert.equal(running.preparation.providerWindows.total, null);
 assert.equal(running.preparation.providerWindows.percentage, null);
@@ -53,7 +64,7 @@ assert.equal(running.readiness.find((item) => item.feature === 'analysis').state
 assert.equal('eta' in running.preparation, false);
 assert.equal('overallPercentage' in running.preparation, false);
 
-const skipped = await createOnboardingReadinessService({
+const skipped = await createService({
   repository: {
     ...runningRepository,
     async getDisposition() {
@@ -69,7 +80,7 @@ assert.equal(skipped.presentationState, 'SKIPPED');
 assert.equal(skipped.preparation.status, 'RUNNING');
 assert.deepEqual(skipped.actions.map((action) => action.code), ['VIEW_HOME', 'START_ONBOARDING']);
 
-const pauseRequested = await createOnboardingReadinessService({
+const pauseRequested = await createService({
   repository: {
     ...runningRepository,
     async getLatestRun() {
@@ -81,7 +92,7 @@ assert.equal(pauseRequested.presentationState, 'PAUSED');
 assert.equal(pauseRequested.attention.code, 'PREPARATION_PAUSE_REQUESTED');
 assert.deepEqual(pauseRequested.actions.map((action) => action.code), ['VIEW_HOME']);
 
-const paused = await createOnboardingReadinessService({
+const paused = await createService({
   repository: {
     ...runningRepository,
     async getLatestRun() {
@@ -92,7 +103,7 @@ const paused = await createOnboardingReadinessService({
 assert.equal(paused.attention.code, 'PREPARATION_PAUSED');
 assert.deepEqual(paused.actions.map((action) => action.code), ['RESUME_ONBOARDING']);
 
-const cancelRequested = await createOnboardingReadinessService({
+const cancelRequested = await createService({
   repository: {
     ...runningRepository,
     async getLatestRun() {
@@ -104,7 +115,7 @@ assert.equal(cancelRequested.presentationState, 'CANCELLED');
 assert.equal(cancelRequested.attention.code, 'PREPARATION_CANCEL_REQUESTED');
 assert.deepEqual(cancelRequested.actions.map((action) => action.code), ['VIEW_HOME']);
 
-const cancelled = await createOnboardingReadinessService({
+const cancelled = await createService({
   repository: {
     ...runningRepository,
     async getLatestRun() {
@@ -115,7 +126,7 @@ const cancelled = await createOnboardingReadinessService({
 assert.equal(cancelled.attention.code, 'PREPARATION_CANCELLED');
 assert.deepEqual(cancelled.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME']);
 
-const failed = await createOnboardingReadinessService({
+const failed = await createService({
   repository: {
     ...runningRepository,
     async getLatestRun() {
@@ -126,7 +137,7 @@ const failed = await createOnboardingReadinessService({
 assert.equal(failed.attention.code, 'PREPARATION_FAILED');
 assert.deepEqual(failed.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME']);
 
-const rateLimited = await createOnboardingReadinessService({
+const rateLimited = await createService({
   repository: {
     ...runningRepository,
     async getScopeTotals() {
@@ -157,7 +168,7 @@ const noDataRepository = {
   },
   async getProductEvidence() { return { importedCount: 0, indexedCount: 0, indexFailedCount: 0, openingCount: 0, analysedCount: 0, analysisRunningCount: 0, analysisFailedCount: 0, tacticalCount: 0 }; },
 };
-const noData = await createOnboardingReadinessService({ repository: noDataRepository }).get(1);
+const noData = await createService({ repository: noDataRepository }).get(1);
 assert.equal(noData.presentationState, 'NEEDS_ATTENTION');
 assert.equal(noData.attention.code, 'NO_RECENT_GAMES');
 assert.equal(noData.preparation.fixedCoverage.index, null);
@@ -179,13 +190,13 @@ const allIndexFailedRepository = {
   },
   async getProductEvidence() { return { importedCount: 3, indexedCount: 0, indexFailedCount: 3, openingCount: 0, analysedCount: 0, analysisRunningCount: 0, analysisFailedCount: 0, tacticalCount: 0 }; },
 };
-const allIndexFailed = await createOnboardingReadinessService({ repository: allIndexFailedRepository }).get(1);
+const allIndexFailed = await createService({ repository: allIndexFailedRepository }).get(1);
 assert.equal(allIndexFailed.attention.code, 'ALL_INDEXING_FAILED');
 assert.equal(allIndexFailed.preparation.fixedCoverage.index.percentage, 100);
 assert.equal(allIndexFailed.readiness.find((item) => item.feature === 'openings').state, 'locked');
 assert.deepEqual(allIndexFailed.actions.map((action) => action.code), ['RETRY_PREPARATION', 'FINISH_ONBOARDING']);
 
-const stalled = await createOnboardingReadinessService({
+const stalled = await createService({
   repository: {
     ...runningRepository,
     async getLatestRun() {
@@ -206,9 +217,36 @@ const terminalRepository = {
   async getScopeTotals() {
     return { targetCount: 1, completedImportTargets: 1, windowsCompleted: 4, windowsTotal: 4, unknownWindowTargets: 0, nonTerminalImportTargets: 0, rateLimitUntil: null, activeIndexBatches: 0, activeAnalysisBatches: 0, committedCount: 4, indexedCount: 3, indexPendingCount: 0, indexFailedCount: 1, analysedCount: 2, analysisPendingCount: 1, analysisRunningCount: 0, analysisFailedCount: 0 };
   },
+  async getProductEvidence() { return { importedCount: 4, indexedCount: 3, indexFailedCount: 1, openingCount: 2, analysedCount: 2, analysisRunningCount: 0, analysisFailedCount: 0, tacticalCount: 0 }; },
 };
-const terminal = await createOnboardingReadinessService({ repository: terminalRepository }).get(1);
+const terminal = await createService({ repository: terminalRepository }).get(1);
 assert.deepEqual(terminal.preparation.fixedCoverage.index, { settled: 4, total: 4, remaining: 0, percentage: 100 });
 assert.deepEqual(terminal.preparation.fixedCoverage.analysis, { settled: 2, total: 3, remaining: 1, percentage: 66.67 });
+
+const tacticalPartial = await createService({
+  repository: terminalRepository,
+  tacticalEvidenceRepository: {
+    async get() { return { eligibleCount: 2, processedCount: 1, detectionCount: 0 }; },
+  },
+}).get(1);
+assert.equal(tacticalPartial.readiness.find((item) => item.feature === 'tactics').state, 'partial');
+
+const tacticalCheckedEmpty = await createService({
+  repository: terminalRepository,
+  tacticalEvidenceRepository: {
+    async get() { return { eligibleCount: 2, processedCount: 2, detectionCount: 0 }; },
+  },
+}).get(1);
+assert.equal(tacticalCheckedEmpty.readiness.find((item) => item.feature === 'tactics').state, 'checked-empty');
+
+const tacticalReady = await createService({
+  repository: terminalRepository,
+  tacticalEvidenceRepository: {
+    async get() { return { eligibleCount: 2, processedCount: 2, detectionCount: 1 }; },
+  },
+}).get(1);
+const tacticalReadyState = tacticalReady.readiness.find((item) => item.feature === 'tactics');
+assert.equal(tacticalReadyState.state, 'ready');
+assert.equal(tacticalReadyState.evidenceCount, 1);
 
 console.log('Onboarding readiness service tests passed.');

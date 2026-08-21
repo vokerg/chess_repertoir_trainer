@@ -7,6 +7,10 @@ import {
   type OnboardingReadinessResponse,
 } from '@chess-trainer/contracts/onboarding';
 import {
+  currentTacticalDetectionThresholdsHash,
+  currentTacticalDetectionVersion,
+} from '../lab/tactical-detections/tactical-detection.service';
+import {
   OnboardingReadRepository,
   type OnboardingBatchRecord,
   type OnboardingReadRepository as OnboardingRepositoryBoundary,
@@ -14,6 +18,11 @@ import {
   type OnboardingScopeTotals,
   type OnboardingTargetRecord,
 } from './onboarding.repository.prisma';
+import {
+  OnboardingTacticalEvidenceRepository,
+  type OnboardingTacticalEvidence,
+  type OnboardingTacticalEvidenceRepository as OnboardingTacticalEvidenceRepositoryBoundary,
+} from './onboarding-tactical-evidence.repository.prisma';
 
 const KNOWN_ATTENTION_CODES = new Set<OnboardingAttentionCode>([
   'NO_RECENT_GAMES', 'ALL_INDEXING_FAILED', 'IMPORT_PAUSED', 'IMPORT_RETRY_AVAILABLE',
@@ -26,6 +35,7 @@ type LatestMilestoneKind = NonNullable<OnboardingLatestMilestone>['kind'];
 
 interface Dependencies {
   repository?: OnboardingRepositoryBoundary;
+  tacticalEvidenceRepository?: OnboardingTacticalEvidenceRepositoryBoundary;
   now?: () => Date;
 }
 
@@ -216,6 +226,7 @@ function allowedActions(
 
 function featureReadiness(
   evidence: Awaited<ReturnType<OnboardingRepositoryBoundary['getProductEvidence']>>,
+  tacticalEvidence: OnboardingTacticalEvidence,
   importChecked: boolean,
   indexChecked: boolean,
   analysisChecked: boolean,
@@ -227,14 +238,16 @@ function featureReadiness(
   const analysis: OnboardingFeatureReadiness['state'] = evidence.analysedCount > 0 ? 'ready'
     : analysisChecked ? 'checked-empty'
       : evidence.indexedCount > 0 ? 'partial' : 'locked';
-  const tactics: OnboardingFeatureReadiness['state'] = evidence.tacticalCount > 0 ? 'ready'
-    : analysisChecked ? 'checked-empty'
-      : evidence.analysedCount > 0 ? 'partial' : 'locked';
+  const tacticsChecked = tacticalEvidence.eligibleCount > 0
+    && tacticalEvidence.processedCount >= tacticalEvidence.eligibleCount;
+  const tactics: OnboardingFeatureReadiness['state'] = tacticalEvidence.detectionCount > 0 ? 'ready'
+    : tacticsChecked ? 'checked-empty'
+      : tacticalEvidence.processedCount > 0 || evidence.analysedCount > 0 ? 'partial' : 'locked';
   return [
     { feature: 'games', state: games, evidenceCount: evidence.importedCount },
     { feature: 'openings', state: openings, evidenceCount: evidence.openingCount },
     { feature: 'analysis', state: analysis, evidenceCount: evidence.analysedCount },
-    { feature: 'tactics', state: tactics, evidenceCount: evidence.tacticalCount },
+    { feature: 'tactics', state: tactics, evidenceCount: tacticalEvidence.detectionCount },
   ];
 }
 
@@ -286,15 +299,21 @@ function attentionFor(
 
 export function createOnboardingReadinessService(dependencies: Dependencies = {}) {
   const repository = dependencies.repository ?? OnboardingReadRepository;
+  const tacticalEvidenceRepository = dependencies.tacticalEvidenceRepository ?? OnboardingTacticalEvidenceRepository;
   const now = dependencies.now ?? (() => new Date());
 
   return {
     async get(userId: number): Promise<OnboardingReadinessResponse> {
       const observedAt = now();
-      const [disposition, run, evidence, reveals] = await Promise.all([
+      const tacticalPolicy = {
+        thresholdsHash: currentTacticalDetectionThresholdsHash(),
+        detectionVersion: currentTacticalDetectionVersion(),
+      };
+      const [disposition, run, evidence, tacticalEvidence, reveals] = await Promise.all([
         repository.getDisposition(userId),
         repository.getLatestRun(userId),
         repository.getProductEvidence(userId),
+        tacticalEvidenceRepository.get(userId, tacticalPolicy),
         repository.listReveals(userId),
       ]);
 
@@ -350,7 +369,7 @@ export function createOnboardingReadinessService(dependencies: Dependencies = {}
           latestMilestone: latestMilestone(run),
         } : null,
         attention,
-        readiness: featureReadiness(evidence, importChecked, indexChecked, analysisChecked),
+        readiness: featureReadiness(evidence, tacticalEvidence, importChecked, indexChecked, analysisChecked),
         actions: allowedActions(state, attention?.code ?? null),
         reveals: reveals.map((reveal) => ({
           kind: reveal.kind,
