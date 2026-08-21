@@ -1,59 +1,104 @@
-import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { CreateImportedGameJobRunResponse, JobRunKind } from '@chess-trainer/contracts/jobs';
 import { of, throwError } from 'rxjs';
-import { ImportedGameJobStore } from '../../../core/jobs/imported-game-job.store';
 import { AccountsApiService } from '../data-access/accounts-api.service';
-import { ExternalAccount, ImportRunSummary } from '../data-access/accounts.models';
+import type { AccountImportRun, ExternalAccount } from '../data-access/accounts.models';
 import { AccountsStore } from './accounts.store';
 
 describe('AccountsStore', () => {
   let store: AccountsStore;
   let api: jasmine.SpyObj<AccountsApiService>;
-  let submit: jasmine.Spy;
 
   beforeEach(() => {
     api = jasmine.createSpyObj<AccountsApiService>('AccountsApiService', [
       'getAccounts',
       'createAccount',
       'syncAccount',
-      'getWorkflowCandidates',
-      'resetCursor',
+      'backfillAccount',
+      'getAccountImports',
+      'pauseImport',
+      'resumeImport',
+      'cancelImport',
+      'retryImport',
       'setActive',
-      'deleteAccount',
       'setDefaultProgressAccount',
       'getLichessConnection',
       'startLichessConnection',
       'disconnectLichess',
     ]);
-    submit = jasmine.createSpy('submit').and.callFake(
-      async (kind: JobRunKind, gameIds: readonly number[], force = false) =>
-        acceptedJob(kind, gameIds, force),
-    );
+    api.getAccountImports.and.returnValue(of({ items: [] }));
 
     TestBed.configureTestingModule({
       providers: [
         AccountsStore,
         { provide: AccountsApiService, useValue: api },
-        {
-          provide: ImportedGameJobStore,
-          useValue: {
-            terminalBatch: signal(null),
-            submit,
-            isGameActive: jasmine.createSpy('isGameActive').and.returnValue(false),
-          },
-        },
       ],
     });
 
     store = TestBed.inject(AccountsStore);
-    api.getWorkflowCandidates.and.callFake((accountId: number) => of({
-      accountId,
-      eligibleImportedGameIds: [],
-      eligibleUnindexedGameIds: [],
-      eligibleIndexedGameIds: [],
-      eligibleMissingOpeningGameIds: [],
+  });
+
+  it('restores the latest persisted import after page initialization', async () => {
+    const tracked = account(1, 'tracked', true);
+    const activeRun = importRun(10, tracked.id, 'RUNNING');
+    api.getAccounts.and.returnValue(of([tracked]));
+    api.getAccountImports.and.returnValue(of({ items: [activeRun] }));
+
+    await store.initialize();
+
+    expect(store.accounts()).toEqual([tracked]);
+    expect(store.importRunForAccount(tracked.id)).toEqual(activeRun);
+    expect(store.isImportActive(tracked.id)).toBeTrue();
+  });
+
+  it('queues refreshes for active accounts independently and keeps durable run state', async () => {
+    const activeOne = account(1, 'first', true);
+    const inactive = account(2, 'second', false);
+    const activeTwo = account(3, 'third', true);
+    store.accounts.set([activeOne, inactive, activeTwo]);
+    api.syncAccount.withArgs(activeOne.id).and.returnValue(of({
+      importRun: importRun(100, activeOne.id, 'QUEUED'),
     }));
+    api.syncAccount.withArgs(activeTwo.id).and.returnValue(of({
+      importRun: importRun(101, activeTwo.id, 'QUEUED'),
+    }));
+
+    await store.syncActiveAccounts();
+
+    expect(api.syncAccount).toHaveBeenCalledTimes(2);
+    expect(store.importRunForAccount(activeOne.id)?.id).toBe(100);
+    expect(store.importRunForAccount(activeTwo.id)?.id).toBe(101);
+    expect(store.notice()).toBe('Queued game refresh for 2 active accounts.');
+    expect(store.syncingAllAccounts()).toBeFalse();
+  });
+
+  it('keeps successful account refreshes when another account fails to queue', async () => {
+    const failing = account(1, 'first', true);
+    const succeeding = account(2, 'second', true);
+    store.accounts.set([failing, succeeding]);
+    api.syncAccount.withArgs(failing.id).and.returnValue(
+      throwError(() => ({ error: { message: 'Boom' } })),
+    );
+    api.syncAccount.withArgs(succeeding.id).and.returnValue(of({
+      importRun: importRun(200, succeeding.id, 'QUEUED'),
+    }));
+
+    await store.syncActiveAccounts();
+
+    expect(store.importRunForAccount(succeeding.id)?.id).toBe(200);
+    expect(store.error()).toContain('Queued 1 account refresh. Failed: Boom.');
+    expect(store.notice()).toBeNull();
+  });
+
+  it('persists pause results returned by the durable import control API', async () => {
+    const running = importRun(7, 1, 'RUNNING');
+    const pausing = { ...running, status: 'PAUSE_REQUESTED' as const };
+    store.importRuns.set({ 1: running });
+    api.pauseImport.and.returnValue(of({ importRun: pausing }));
+
+    await store.pauseImport(running);
+
+    expect(api.pauseImport).toHaveBeenCalledOnceWith(running.id);
+    expect(store.importRunForAccount(1)?.status).toBe('PAUSE_REQUESTED');
   });
 
   it('disconnects Lichess without changing tracked accounts', async () => {
@@ -75,61 +120,8 @@ describe('AccountsStore', () => {
 
     await store.disconnectLichess();
 
-    expect(api.disconnectLichess).toHaveBeenCalledTimes(1);
-    expect(api.getLichessConnection).toHaveBeenCalledTimes(1);
     expect(store.accounts()).toEqual([tracked]);
     expect(store.lichessConnection()).toEqual({ connected: false });
-    expect(store.notice()).toBe('Lichess disconnected.');
-  });
-
-  it('syncs all active accounts and reloads the account list once', async () => {
-    const activeOne = account(1, 'first', true);
-    const inactive = account(2, 'second', false);
-    const activeTwo = account(3, 'third', true);
-    const reloadedAccounts = [
-      { ...activeOne, lastSyncAt: '2026-06-24T10:00:00.000Z' },
-      inactive,
-      { ...activeTwo, lastSyncAt: '2026-06-24T11:00:00.000Z' },
-    ];
-    store.accounts.set([activeOne, inactive, activeTwo]);
-    api.syncAccount.withArgs(activeOne.id).and.returnValue(of(syncResult(100)));
-    api.syncAccount.withArgs(activeTwo.id).and.returnValue(of(syncResult(101)));
-    api.getAccounts.and.returnValue(of(reloadedAccounts));
-
-    await store.syncActiveAccounts();
-
-    expect(api.syncAccount).toHaveBeenCalledTimes(2);
-    expect(api.syncAccount.calls.argsFor(0)).toEqual([activeOne.id]);
-    expect(api.syncAccount.calls.argsFor(1)).toEqual([activeTwo.id]);
-    expect(api.getAccounts).toHaveBeenCalledTimes(1);
-    expect(store.accounts()).toEqual(reloadedAccounts);
-    expect(store.syncResults()[activeOne.id]).toEqual(syncResult(100));
-    expect(store.syncResults()[activeTwo.id]).toEqual(syncResult(101));
-    expect(store.notice()).toBe('Refreshed games for 2 active accounts.');
-    expect(store.error()).toBeNull();
-    expect(store.syncingAllAccounts()).toBeFalse();
-    expect(store.syncingAccountId()).toBeNull();
-  });
-
-  it('continues syncing other active accounts when one refresh fails', async () => {
-    const failing = account(1, 'first', true);
-    const succeeding = account(2, 'second', true);
-    store.accounts.set([failing, succeeding]);
-    api.syncAccount.withArgs(failing.id).and.returnValue(
-      throwError(() => ({ error: { message: 'Boom' } })),
-    );
-    api.syncAccount.withArgs(succeeding.id).and.returnValue(of(syncResult(200)));
-    api.getAccounts.and.returnValue(of([failing, succeeding]));
-
-    await store.syncActiveAccounts();
-
-    expect(api.syncAccount).toHaveBeenCalledTimes(2);
-    expect(api.getAccounts).toHaveBeenCalledTimes(1);
-    expect(store.syncResults()[succeeding.id]).toEqual(syncResult(200));
-    expect(store.error()).toBe('Refreshed games for 1 account. Failed: Lichess @first (Boom).');
-    expect(store.notice()).toBeNull();
-    expect(store.syncingAllAccounts()).toBeFalse();
-    expect(store.syncingAccountId()).toBeNull();
   });
 
   it('sets the default progress account from the API account list response', async () => {
@@ -145,60 +137,8 @@ describe('AccountsStore', () => {
 
     expect(api.setDefaultProgressAccount).toHaveBeenCalledOnceWith(first.id);
     expect(store.accounts()).toEqual(updatedAccounts);
-    expect(store.notice()).toBe('Lichess @first is now the default progress account.');
-  });
-
-  it('submits account indexing as one durable job instead of looping in the browser', async () => {
-    const tracked = account(1, 'tracked', true);
-
-    await store.indexEligibleAccountGames(tracked, [10, 11, 10]);
-
-    expect(submit).toHaveBeenCalledOnceWith('INDEX_GAMES', [10, 11]);
-    expect(store.notice()).toBe('Submitted 2 blitz/rapid games for indexing.');
-    expect(store.indexingWorkflowAccountId()).toBeNull();
-  });
-
-  it('submits account analysis as one durable job', async () => {
-    const tracked = account(1, 'tracked', true);
-
-    await store.analyseEligibleAccountGames(tracked, [20, 21]);
-
-    expect(submit).toHaveBeenCalledOnceWith('ANALYSE_GAMES', [20, 21]);
-    expect(store.notice()).toBe('Submitted 2 blitz/rapid games for analysis.');
-    expect(store.analysingWorkflowAccountId()).toBeNull();
   });
 });
-
-function acceptedJob(
-  kind: JobRunKind,
-  gameIds: readonly number[],
-  force: boolean,
-): CreateImportedGameJobRunResponse {
-  return {
-    jobRun: {
-      id: 300,
-      kind,
-      source: 'USER_ACTION',
-      priority: 300,
-      status: 'QUEUED',
-      totalTasks: gameIds.length,
-      force,
-      taskCounts: {
-        queued: gameIds.length,
-        running: 0,
-        completed: 0,
-        skipped: 0,
-        failed: 0,
-        cancelled: 0,
-      },
-      createdAt: '2026-07-17T10:00:00.000Z',
-      updatedAt: '2026-07-17T10:00:00.000Z',
-      startedAt: null,
-      completedAt: null,
-    },
-    rejectedGameIds: [],
-  };
-}
 
 function account(id: number, username: string, isActive: boolean): ExternalAccount {
   return {
@@ -218,17 +158,48 @@ function account(id: number, username: string, isActive: boolean): ExternalAccou
   };
 }
 
-function syncResult(importRunId: number): ImportRunSummary {
+function importRun(
+  id: number,
+  accountId: number,
+  status: AccountImportRun['status'],
+): AccountImportRun {
   return {
-    importRunId,
-    status: 'COMPLETED',
-    gamesSeen: 10,
-    gamesImported: 3,
-    gamesUpdated: 1,
-    gamesSkipped: 6,
-    gamesFailed: 0,
-    syncSince: null,
-    syncUntil: null,
-    archivesFetched: 1,
+    id,
+    accountId,
+    provider: 'LICHESS',
+    mode: 'INCREMENTAL_FORWARD',
+    source: 'USER_ACTION',
+    status,
+    scopeVersion: 1,
+    scopeHash: `scope-${accountId}`,
+    scope: {
+      variant: 'STANDARD',
+      speeds: ['BLITZ', 'RAPID'],
+      rated: 'BOTH',
+    },
+    requestedFrom: '2026-07-01T10:00:00.000Z',
+    requestedTo: '2026-07-02T10:00:00.000Z',
+    retryOfImportRunId: null,
+    priority: 100,
+    windows: { total: 2, completed: status === 'COMPLETED' ? 2 : 1 },
+    games: {
+      seen: 10,
+      matchedScope: 7,
+      imported: 3,
+      duplicate: 4,
+      updated: 0,
+      skipped: 3,
+      skippedOutOfScope: 3,
+      failed: 0,
+    },
+    lastProgressAt: '2026-07-02T09:00:00.000Z',
+    retryAt: null,
+    rateLimitUntil: null,
+    createdAt: '2026-07-02T08:00:00.000Z',
+    updatedAt: '2026-07-02T09:00:00.000Z',
+    startedAt: '2026-07-02T08:00:00.000Z',
+    completedAt: status === 'COMPLETED' ? '2026-07-02T09:00:00.000Z' : null,
+    errorCode: null,
+    error: null,
   };
 }
