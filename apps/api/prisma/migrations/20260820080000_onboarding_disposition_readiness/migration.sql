@@ -1,6 +1,14 @@
 -- ONB-008: persist the minimal user onboarding disposition.
 -- Existing users are adopted as complete; rows created after this migration
 -- inherit PENDING from the column default.
+--
+-- Keep the adoption boundary atomic. The lock permits ordinary reads but blocks
+-- concurrent AppUser writes, so a user provisioned during rollout cannot land
+-- between the schema change and legacy backfill and be misclassified as legacy.
+BEGIN;
+
+LOCK TABLE "AppUser" IN SHARE ROW EXCLUSIVE MODE;
+
 ALTER TABLE "AppUser"
   ADD COLUMN "onboardingDisposition" VARCHAR(16) NOT NULL DEFAULT 'PENDING',
   ADD COLUMN "onboardingDispositionReason" VARCHAR(64),
@@ -42,3 +50,5 @@ CREATE TRIGGER "DataPreparationRun_complete_onboarding_disposition"
 AFTER UPDATE OF "coreReadyAt" ON "DataPreparationRun"
 FOR EACH ROW
 EXECUTE FUNCTION "complete_onboarding_disposition_from_core_ready"();
+
+COMMIT;

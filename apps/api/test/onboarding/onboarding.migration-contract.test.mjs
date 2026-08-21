@@ -9,6 +9,8 @@ const migration = await readFile(path.join(
   '../../prisma/migrations/20260820080000_onboarding_disposition_readiness/migration.sql',
 ), 'utf8');
 
+assert.match(migration, /^BEGIN;/m);
+assert.match(migration, /LOCK TABLE "AppUser" IN SHARE ROW EXCLUSIVE MODE;/);
 assert.match(migration, /"onboardingDisposition" VARCHAR\(16\) NOT NULL DEFAULT 'PENDING'/);
 assert.match(migration, /SET "onboardingDisposition" = 'COMPLETED'/);
 assert.match(migration, /"onboardingDispositionReason" = 'LEGACY_ADOPTION'/);
@@ -16,5 +18,6 @@ assert.match(migration, /CHECK \("onboardingDisposition" IN \('PENDING', 'COMPLE
 assert.match(migration, /NEW\."purpose" = 'ONBOARDING'/);
 assert.match(migration, /NEW\."coreReadyAt" IS NOT NULL/);
 assert.match(migration, /"onboardingDispositionReason" = 'CORE_READY'/);
+assert.match(migration, /COMMIT;\s*$/);
 
 console.log('Onboarding migration contract tests passed.');
