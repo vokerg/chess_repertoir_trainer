@@ -18,6 +18,7 @@ import { settlesWithin } from './modules/jobs/job-worker-shutdown';
 import { createJobWorker } from './modules/jobs/job-worker.service';
 import { readPreparationConfig } from './modules/preparation/preparation.config';
 import { createPreparationReconciler } from './modules/preparation/preparation-reconciler.service';
+import { AccountRatingStatsService } from './services/accountRatingStatsService';
 
 const DAY_MS = 24 * 60 * 60_000;
 const TERMINAL_RETENTION_INTERVAL_MS = 60 * 60_000;
@@ -39,6 +40,9 @@ async function bootstrap() {
     repository: AccountImportLifecycleRepository,
     executors: defaultAccountImportExecutorRegistry,
     config: accountImportConfig,
+    onCompleted: async (run) => {
+      await AccountRatingStatsService.recomputeForAccount(run.userId, run.accountId);
+    },
   });
   const preparationWorker = createPreparationReconciler({ config: preparationConfig });
   let shuttingDown = false;
