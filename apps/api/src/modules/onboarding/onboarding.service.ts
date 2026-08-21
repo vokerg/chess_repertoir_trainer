@@ -231,8 +231,9 @@ function featureReadiness(
     : indexChecked ? 'checked-empty'
       : evidence.indexedCount > 0 ? 'partial' : 'locked';
   const analysis: OnboardingFeatureReadiness['state'] = evidence.analysedCount > 0 ? 'ready'
-    : analysisChecked ? 'checked-empty'
-      : evidence.indexedCount > 0 ? 'partial' : 'locked';
+    : evidence.analysisFailedCount > 0 || evidence.analysisRunningCount > 0 ? 'partial'
+      : analysisChecked ? 'checked-empty'
+        : evidence.indexedCount > 0 ? 'partial' : 'locked';
   const tacticsChecked = tacticalEvidence.eligibleCount > 0
     && tacticalEvidence.processedCount >= tacticalEvidence.eligibleCount;
   const tactics: OnboardingFeatureReadiness['state'] = tacticalEvidence.detectionCount > 0 ? 'ready'
