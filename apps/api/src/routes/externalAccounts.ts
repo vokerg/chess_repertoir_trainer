@@ -1,19 +1,26 @@
 import type { ExternalAccount as PrismaExternalAccount } from '@prisma/client';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
+import {
+  accountImportErrorResponseSchema,
+  createAccountImportRunResponseSchema,
+} from '@chess-trainer/contracts';
 import { CurrentAppUserService } from '../auth/current-app-user.service';
 import { requireAuth } from '../auth/request-auth';
 import { ExternalAccountService } from '../services/externalAccountService';
 import { AccountRatingHistoryService, RatingSpeed } from '../services/accountRatingHistoryService';
 import { AccountPerformanceStatsService } from '../services/accountPerformanceStatsService';
 import { AccountRatingStatsService } from '../services/accountRatingStatsService';
-import { LichessImportService } from '../services/lichessImportService';
-import { ChessComImportService } from '../services/chessComImportService';
 import { ImportedGamesService } from '../modules/imported-games/imported-games.service';
 import { ImportedGameWorkflowCandidatesService } from '../modules/imported-games/imported-game-workflow-candidates.service';
 import { importedGameSearchQuerySchema } from '../modules/imported-games/imported-games.schemas';
+import { AccountImportAdmissionBlockedError } from '../modules/account-imports/account-import-admission.guard';
+import { AccountImportActiveRunError } from '../modules/account-imports/account-import.repository.prisma';
 import {
-  apiErrorResponseSchema,
+  AccountImportRangeUnavailableError,
+  AccountImportService,
+} from '../modules/account-imports/account-import.service';
+import {
   legacyOpaqueResponseSchema,
   messageResponseSchema,
   unauthorizedResponseSchema,
@@ -29,6 +36,7 @@ import {
   externalAccountDeleteResponseSchema,
   externalAccountListResponseSchema,
   externalAccountResponseSchema,
+  externalAccountWorkflowSummaryResponseSchema,
 } from '@chess-trainer/contracts/external-accounts';
 
 const createAccountSchema = z.object({
@@ -111,6 +119,14 @@ type ExternalAccountWithDefaultFlag = PrismaExternalAccount & {
   isDefaultProgressAccount: boolean;
 };
 
+type AccountImportCommandError = {
+  statusCode: 409;
+  body: {
+    error: string;
+    code: 'ACCOUNT_IMPORT_ACTIVE' | 'ACCOUNT_IMPORT_ADMISSION_BLOCKED' | 'ACCOUNT_IMPORT_INVALID_RANGE';
+  };
+};
+
 function toExternalAccountResponse(account: ExternalAccountWithDefaultFlag) {
   return {
     ...account,
@@ -119,6 +135,28 @@ function toExternalAccountResponse(account: ExternalAccountWithDefaultFlag) {
     createdAt: account.createdAt.toISOString(),
     updatedAt: account.updatedAt.toISOString(),
   };
+}
+
+function mapAccountImportCommandError(error: unknown): AccountImportCommandError | null {
+  if (error instanceof AccountImportActiveRunError) {
+    return {
+      statusCode: 409,
+      body: { error: error.message, code: 'ACCOUNT_IMPORT_ACTIVE' },
+    };
+  }
+  if (error instanceof AccountImportAdmissionBlockedError) {
+    return {
+      statusCode: 409,
+      body: { error: error.message, code: error.code },
+    };
+  }
+  if (error instanceof AccountImportRangeUnavailableError) {
+    return {
+      statusCode: 409,
+      body: { error: error.message, code: error.code },
+    };
+  }
+  return null;
 }
 
 const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
@@ -405,18 +443,15 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/api/me/accounts/:id/sync',
     {
-      schema: accountSchema('syncExternalAccount', 'Synchronize games for an external account', {
-        description: 'Bodyless action: provider and cursor state come from the selected account.',
+      schema: accountSchema('syncExternalAccount', 'Queue a durable game refresh for an external account', {
+        description: 'Compatibility action for normal account refresh. Persists a bounded recent or forward import and returns 202 without provider traversal in the HTTP request.',
         params: accountIdParamsSchema,
         response: {
-          200: legacyOpaqueResponseSchema,
-          400: z.union([
-            apiErrorResponseSchema,
-            messageResponseSchema,
-            validationErrorResponseSchema,
-          ]),
+          202: createAccountImportRunResponseSchema,
+          400: validationErrorResponseSchema,
           401: unauthorizedResponseSchema,
           404: messageResponseSchema,
+          409: accountImportErrorResponseSchema,
         },
       }),
     },
@@ -431,21 +466,56 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
       }
 
       try {
-        let result;
-        if (account.provider === 'LICHESS') {
-          result = await LichessImportService.syncAccount(auth.userId, id);
-        } else if (account.provider === 'CHESS_COM') {
-          result = await ChessComImportService.syncAccount(auth.userId, id);
-        } else {
-          reply.code(400);
-          return { message: `Unsupported provider: ${account.provider}` };
-        }
-
-        await AccountRatingStatsService.recomputeForAccount(auth.userId, id);
+        const result = await AccountImportService.createNormalRefreshForUser(auth.userId, id);
+        reply.code(202);
         return result;
-      } catch (err: any) {
-        reply.code(400);
-        return { error: err.message ?? String(err) };
+      } catch (error) {
+        const mapped = mapAccountImportCommandError(error);
+        if (mapped) {
+          reply.code(mapped.statusCode);
+          return mapped.body;
+        }
+        throw error;
+      }
+    },
+  );
+
+  app.post(
+    '/api/me/accounts/:id/backfill',
+    {
+      schema: accountSchema('backfillExternalAccount', 'Queue older account history for import', {
+        description: 'Queues the three calendar months immediately before proved normal account coverage. Historical backfill never resets or rewinds the forward refresh boundary.',
+        params: accountIdParamsSchema,
+        response: {
+          202: createAccountImportRunResponseSchema,
+          400: validationErrorResponseSchema,
+          401: unauthorizedResponseSchema,
+          404: messageResponseSchema,
+          409: accountImportErrorResponseSchema,
+        },
+      }),
+    },
+    async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      const id = request.params.id;
+      const account = await ExternalAccountService.getForUser(auth.userId, id);
+      if (!account) {
+        reply.code(404);
+        return { message: 'External account not found' };
+      }
+
+      try {
+        const result = await AccountImportService.createHistoricalBackfillForUser(auth.userId, id);
+        reply.code(202);
+        return result;
+      } catch (error) {
+        const mapped = mapAccountImportCommandError(error);
+        if (mapped) {
+          reply.code(mapped.statusCode);
+          return mapped.body;
+        }
+        throw error;
       }
     },
   );
@@ -454,12 +524,13 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
     '/api/me/accounts/:id/imported-game-workflow-candidates',
     {
       schema: accountSchema(
-        'getImportedGameWorkflowCandidates',
-        'List standard workflow candidates for an external account',
+        'getImportedGameWorkflowSummary',
+        'Get standard workflow counts for an external account',
         {
+          description: 'Compatibility endpoint returning bounded aggregate counts only. Game IDs are selected server-side by durable preparation workflows.',
           params: accountIdParamsSchema,
           response: {
-            200: legacyOpaqueResponseSchema,
+            200: externalAccountWorkflowSummaryResponseSchema,
             400: validationErrorResponseSchema,
             401: unauthorizedResponseSchema,
             404: messageResponseSchema,
@@ -477,7 +548,9 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
         return { message: 'External account not found' };
       }
 
-      return ImportedGameWorkflowCandidatesService.forAccount(auth.userId, id);
+      return externalAccountWorkflowSummaryResponseSchema.parse(
+        await ImportedGameWorkflowCandidatesService.forAccount(auth.userId, id),
+      );
     },
   );
 
@@ -488,7 +561,8 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
         'resetExternalAccountSyncCursor',
         'Reset the sync cursor for an external account',
         {
-          description: 'Bodyless action: resets the persisted cursor for the selected account.',
+          deprecated: true,
+          description: 'Deprecated compatibility action. Normal clients should queue explicit historical backfill instead of mutating the forward cursor.',
           params: accountIdParamsSchema,
           response: {
             200: legacyOpaqueResponseSchema,
