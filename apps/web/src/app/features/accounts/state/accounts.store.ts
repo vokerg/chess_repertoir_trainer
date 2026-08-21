@@ -1,78 +1,83 @@
 import { DOCUMENT } from '@angular/common';
-import { effect, inject, Injectable, signal } from '@angular/core';
-import type { JobRunKind } from '@chess-trainer/contracts/jobs';
+import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { ImportedGameJobStore } from '../../../core/jobs/imported-game-job.store';
 import { AccountsApiService } from '../data-access/accounts-api.service';
-import {
+import type {
   AccountForm,
+  AccountImportRun,
+  AccountImportStatus,
   ExternalAccount,
-  ImportedGameWorkflowCandidates,
-  ImportRunSummary,
   LichessConnectionStatus,
 } from '../data-access/accounts.models';
 import { providerLabel } from '../helpers/account-labels';
 
+const IMPORT_POLL_INTERVAL_MS = 2_000;
+const ACTIVE_IMPORT_STATUSES = new Set<AccountImportStatus>([
+  'QUEUED',
+  'RUNNING',
+  'PAUSE_REQUESTED',
+  'PAUSED',
+  'CANCEL_REQUESTED',
+]);
+
 @Injectable()
 export class AccountsStore {
   private readonly api = inject(AccountsApiService);
-  private readonly jobs = inject(ImportedGameJobStore);
   private readonly document = inject(DOCUMENT);
-  private lastTerminalSequence = 0;
+  private readonly destroyRef = inject(DestroyRef);
+  private importPollTimer: number | null = null;
+  private importRefreshInFlight = false;
 
   readonly accounts = signal<ExternalAccount[]>([]);
+  readonly importRuns = signal<Record<number, AccountImportRun>>({});
   readonly lichessConnection = signal<LichessConnectionStatus | null>(null);
   readonly loading = signal(false);
   readonly loadingLichessConnection = signal(false);
   readonly saving = signal(false);
   readonly syncingAllAccounts = signal(false);
   readonly syncingAccountId = signal<number | null>(null);
-  readonly resettingCursorAccountId = signal<number | null>(null);
-  readonly deletingAccountId = signal<number | null>(null);
+  readonly backfillingAccountId = signal<number | null>(null);
+  readonly controllingImportRunId = signal<number | null>(null);
   readonly settingDefaultProgressAccountId = signal<number | null>(null);
   readonly disconnectingLichess = signal(false);
   readonly error = signal<string | null>(null);
   readonly notice = signal<string | null>(null);
-  readonly syncResults = signal<Record<number, ImportRunSummary>>({});
-  readonly workflowCandidates = signal<Record<number, ImportedGameWorkflowCandidates>>({});
-  readonly indexingWorkflowAccountId = signal<number | null>(null);
-  readonly indexWorkflowCompleted = signal(0);
-  readonly indexWorkflowTotal = signal(0);
-  readonly analysingWorkflowAccountId = signal<number | null>(null);
   readonly form = signal<AccountForm>(defaultForm());
 
   constructor() {
-    effect(() => {
-      const batch = this.jobs.terminalBatch();
-      if (!batch || batch.sequence === this.lastTerminalSequence) return;
-      this.lastTerminalSequence = batch.sequence;
-      const completedIds = new Set(batch.gameIds);
-      for (const [accountIdText, candidates] of Object.entries(this.workflowCandidates())) {
-        const candidateIds = [
-          ...candidates.eligibleImportedGameIds,
-          ...candidates.eligibleUnindexedGameIds,
-          ...candidates.eligibleIndexedGameIds,
-          ...candidates.eligibleMissingOpeningGameIds,
-        ];
-        if (!candidateIds.some((gameId) => completedIds.has(gameId))) continue;
-        const accountId = Number(accountIdText);
-        void this.loadWorkflowCandidates(accountId).catch((error) => {
-          this.error.set(readApiError(error, 'Job finished, but account workflow data could not be refreshed.'));
-        });
-      }
-    });
+    this.destroyRef.onDestroy(() => this.stopImportPolling());
   }
 
-  async loadAccounts(): Promise<void> {
+  async initialize(): Promise<void> {
     this.loading.set(true);
+    this.error.set(null);
+    try {
+      await Promise.all([this.loadAccounts(false), this.loadImportRuns(false)]);
+    } catch (error) {
+      this.error.set(readApiError(error, 'Could not load account settings.'));
+    } finally {
+      this.loading.set(false);
+      this.syncImportPolling();
+    }
+  }
+
+  async loadAccounts(manageLoading = true): Promise<void> {
+    if (manageLoading) this.loading.set(true);
     this.error.set(null);
     try {
       this.accounts.set((await firstValueFrom(this.api.getAccounts())) || []);
     } catch (error) {
       this.error.set(readApiError(error, 'Could not load accounts.'));
+      throw error;
     } finally {
-      this.loading.set(false);
+      if (manageLoading) this.loading.set(false);
     }
+  }
+
+  async loadImportRuns(managePolling = true): Promise<void> {
+    const response = await firstValueFrom(this.api.getAccountImports());
+    this.importRuns.set(latestRunByAccount(response.items));
+    if (managePolling) this.syncImportPolling();
   }
 
   updateForm<K extends keyof AccountForm>(key: K, value: AccountForm[K]): void {
@@ -101,7 +106,7 @@ export class AccountsStore {
             || left.username.localeCompare(right.username),
         ),
       );
-      this.notice.set(`Account ${account.username} is ready to sync.`);
+      this.notice.set(`Account ${account.username} is ready to refresh.`);
       this.resetForm();
     } catch (error) {
       this.error.set(readApiError(error, 'Could not add account.'));
@@ -111,19 +116,117 @@ export class AccountsStore {
   }
 
   async syncAccount(account: ExternalAccount): Promise<void> {
+    if (this.isImportActive(account.id)) return;
     this.syncingAccountId.set(account.id);
     this.clearMessages();
     try {
-      const result = await firstValueFrom(this.api.syncAccount(account.id));
-      this.syncResults.update((results) => ({ ...results, [account.id]: result }));
-      await this.loadWorkflowCandidates(account.id);
-      this.notice.set(`${providerLabel(account.provider)} account ${account.username} synced.`);
-      await this.loadAccounts();
+      const response = await firstValueFrom(this.api.syncAccount(account.id));
+      this.patchImportRun(response.importRun);
+      this.notice.set(`${providerLabel(account.provider)} account ${account.username} refresh queued.`);
+      this.syncImportPolling();
     } catch (error) {
-      this.error.set(readApiError(error, `Could not sync ${account.username}.`));
+      this.error.set(readApiError(error, `Could not queue ${account.username}.`));
     } finally {
       this.syncingAccountId.set(null);
     }
+  }
+
+  async syncActiveAccounts(): Promise<void> {
+    const activeAccounts = this.accounts().filter(
+      (account) => account.isActive && !this.isImportActive(account.id),
+    );
+    this.clearMessages();
+
+    if (activeAccounts.length === 0) {
+      this.notice.set('No active accounts are available for a new game refresh.');
+      return;
+    }
+
+    this.syncingAllAccounts.set(true);
+    try {
+      const results = await Promise.allSettled(
+        activeAccounts.map(async (account) => ({
+          account,
+          response: await firstValueFrom(this.api.syncAccount(account.id)),
+        })),
+      );
+      const failures: string[] = [];
+      let queued = 0;
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          queued += 1;
+          this.patchImportRun(result.value.response.importRun);
+        } else {
+          failures.push(readApiError(result.reason, 'refresh could not be queued'));
+        }
+      }
+      if (failures.length > 0) {
+        this.error.set(
+          `Queued ${queued} account ${queued === 1 ? 'refresh' : 'refreshes'}. Failed: ${failures.join('; ')}.`,
+        );
+      } else {
+        this.notice.set(`Queued game refresh for ${queued} active ${queued === 1 ? 'account' : 'accounts'}.`);
+      }
+      this.syncImportPolling();
+    } finally {
+      this.syncingAllAccounts.set(false);
+    }
+  }
+
+  async backfillAccount(account: ExternalAccount): Promise<void> {
+    if (this.isImportActive(account.id)) return;
+    this.backfillingAccountId.set(account.id);
+    this.clearMessages();
+    try {
+      const response = await firstValueFrom(this.api.backfillAccount(account.id));
+      this.patchImportRun(response.importRun);
+      this.notice.set(`Queued three older months for ${account.username}.`);
+      this.syncImportPolling();
+    } catch (error) {
+      this.error.set(readApiError(error, `Could not queue older history for ${account.username}.`));
+    } finally {
+      this.backfillingAccountId.set(null);
+    }
+  }
+
+  async pauseImport(run: AccountImportRun): Promise<void> {
+    await this.controlImport(run, 'pause');
+  }
+
+  async resumeImport(run: AccountImportRun): Promise<void> {
+    await this.controlImport(run, 'resume');
+  }
+
+  async cancelImport(run: AccountImportRun): Promise<void> {
+    await this.controlImport(run, 'cancel');
+  }
+
+  async retryImport(run: AccountImportRun): Promise<void> {
+    this.controllingImportRunId.set(run.id);
+    this.clearMessages();
+    try {
+      const response = await firstValueFrom(this.api.retryImport(run.id));
+      this.patchImportRun(response.importRun);
+      this.notice.set('Account import retry queued.');
+      this.syncImportPolling();
+    } catch (error) {
+      this.error.set(readApiError(error, 'Could not retry account import.'));
+    } finally {
+      this.controllingImportRunId.set(null);
+    }
+  }
+
+  importRunForAccount(accountId: number): AccountImportRun | null {
+    return this.importRuns()[accountId] ?? null;
+  }
+
+  isImportActive(accountId: number): boolean {
+    const run = this.importRuns()[accountId];
+    return Boolean(run && ACTIVE_IMPORT_STATUSES.has(run.status));
+  }
+
+  isImportControlling(runId: number): boolean {
+    return this.controllingImportRunId() === runId;
   }
 
   async loadLichessConnection(): Promise<void> {
@@ -171,61 +274,6 @@ export class AccountsStore {
     this.error.set(message);
   }
 
-  async syncActiveAccounts(): Promise<void> {
-    const activeAccounts = this.accounts().filter((account) => account.isActive);
-    this.clearMessages();
-
-    if (activeAccounts.length === 0) {
-      this.notice.set('No active accounts are enabled for game refresh.');
-      return;
-    }
-
-    this.syncingAllAccounts.set(true);
-    const failedAccounts: string[] = [];
-    let syncedCount = 0;
-
-    try {
-      for (const account of activeAccounts) {
-        this.syncingAccountId.set(account.id);
-        try {
-          const result = await firstValueFrom(this.api.syncAccount(account.id));
-          this.syncResults.update((results) => ({ ...results, [account.id]: result }));
-          await this.loadWorkflowCandidates(account.id);
-          syncedCount += 1;
-        } catch (error) {
-          failedAccounts.push(`${accountSummary(account)} (${readApiError(error, 'sync failed')})`);
-        }
-      }
-
-      await this.loadAccounts();
-      if (failedAccounts.length > 0) {
-        const summary = `Refreshed games for ${syncedCount} ${syncedCount === 1 ? 'account' : 'accounts'}.`;
-        this.error.set(`${summary} Failed: ${failedAccounts.join('; ')}.`);
-      } else {
-        this.notice.set(
-          `Refreshed games for ${syncedCount} active ${syncedCount === 1 ? 'account' : 'accounts'}.`,
-        );
-      }
-    } finally {
-      this.syncingAccountId.set(null);
-      this.syncingAllAccounts.set(false);
-    }
-  }
-
-  async resetCursor(account: ExternalAccount): Promise<void> {
-    this.resettingCursorAccountId.set(account.id);
-    this.clearMessages();
-    try {
-      const updated = await firstValueFrom(this.api.resetCursor(account.id));
-      this.patchAccount(updated);
-      this.notice.set(`${providerLabel(updated.provider)} account ${updated.username} will fully re-scan on the next sync.`);
-    } catch (error) {
-      this.error.set(readApiError(error, `Could not reset ${account.username}'s cursor.`));
-    } finally {
-      this.resettingCursorAccountId.set(null);
-    }
-  }
-
   async toggleActive(account: ExternalAccount): Promise<void> {
     this.clearMessages();
     try {
@@ -256,103 +304,29 @@ export class AccountsStore {
     }
   }
 
-  async deleteAccount(account: ExternalAccount): Promise<void> {
-    this.deletingAccountId.set(account.id);
-    this.clearMessages();
-    try {
-      const result = await firstValueFrom(this.api.deleteAccount(account.id));
-      this.accounts.update((accounts) => accounts.filter((item) => item.id !== account.id));
-      this.syncResults.update((results) => omitKey(results, account.id));
-      this.workflowCandidates.update((candidates) => omitKey(candidates, account.id));
-      this.notice.set(`${providerLabel(result.account.provider)} account ${result.account.username} was deleted with its imported data.`);
-    } catch (error) {
-      this.error.set(readApiError(error, `Could not delete ${account.username}.`));
-    } finally {
-      this.deletingAccountId.set(null);
-    }
-  }
-
   resetForm(): void {
     this.form.set(defaultForm());
   }
 
-  async refreshWorkflowCandidates(accountId: number): Promise<ImportedGameWorkflowCandidates> {
-    return this.loadWorkflowCandidates(accountId);
-  }
-
-  async indexEligibleAccountGames(
-    account: ExternalAccount,
-    gameIds?: readonly number[],
+  private async controlImport(
+    run: AccountImportRun,
+    action: 'pause' | 'resume' | 'cancel',
   ): Promise<void> {
-    const candidates = gameIds ? null : await this.ensureWorkflowCandidates(account.id);
-    const selectedGameIds = Array.from(
-      new Set(gameIds ?? candidates?.eligibleUnindexedGameIds ?? []),
-    );
-    if (!selectedGameIds.length || this.isAccountIndexing(account.id)) return;
-
-    await this.submitAccountJob('INDEX_GAMES', account, selectedGameIds);
-  }
-
-  async analyseEligibleAccountGames(
-    account: ExternalAccount,
-    gameIds?: readonly number[],
-  ): Promise<void> {
-    const candidates = gameIds ? null : await this.ensureWorkflowCandidates(account.id);
-    const selectedGameIds = Array.from(
-      new Set(gameIds ?? candidates?.eligibleIndexedGameIds ?? []),
-    );
-    if (!selectedGameIds.length || this.isAccountAnalysing(account.id)) return;
-
-    await this.submitAccountJob('ANALYSE_GAMES', account, selectedGameIds);
-  }
-
-  isAccountIndexing(accountId: number): boolean {
-    if (this.indexingWorkflowAccountId() === accountId) return true;
-    const gameIds = this.workflowCandidates()[accountId]?.eligibleUnindexedGameIds ?? [];
-    return gameIds.some((gameId) =>
-      this.jobs.isGameActive(gameId, ['INDEX_GAMES', 'PROCESS_GAMES']),
-    );
-  }
-
-  isAccountAnalysing(accountId: number): boolean {
-    if (this.analysingWorkflowAccountId() === accountId) return true;
-    const gameIds = this.workflowCandidates()[accountId]?.eligibleIndexedGameIds ?? [];
-    return gameIds.some((gameId) =>
-      this.jobs.isGameActive(gameId, ['ANALYSE_GAMES', 'PROCESS_GAMES']),
-    );
-  }
-
-  private async submitAccountJob(
-    kind: JobRunKind,
-    account: ExternalAccount,
-    gameIds: readonly number[],
-  ): Promise<void> {
+    this.controllingImportRunId.set(run.id);
     this.clearMessages();
-    if (kind === 'INDEX_GAMES') {
-      this.indexingWorkflowAccountId.set(account.id);
-      this.indexWorkflowCompleted.set(0);
-      this.indexWorkflowTotal.set(gameIds.length);
-    } else {
-      this.analysingWorkflowAccountId.set(account.id);
-    }
-
     try {
-      const response = await this.jobs.submit(kind, gameIds);
-      const acceptedCount = response.jobRun.totalTasks;
-      const action = kind === 'INDEX_GAMES' ? 'indexing' : 'analysis';
-      this.notice.set(
-        `Submitted ${acceptedCount} blitz/rapid ${acceptedCount === 1 ? 'game' : 'games'} for ${action}.`,
-      );
-      if (response.rejectedGameIds.length) {
-        this.error.set(
-          `${response.rejectedGameIds.length} ${response.rejectedGameIds.length === 1 ? 'game was' : 'games were'} not available for this job.`,
-        );
-      }
+      const response = action === 'pause'
+        ? await firstValueFrom(this.api.pauseImport(run.id))
+        : action === 'resume'
+          ? await firstValueFrom(this.api.resumeImport(run.id))
+          : await firstValueFrom(this.api.cancelImport(run.id));
+      this.patchImportRun(response.importRun);
+      this.notice.set(`Account import ${action} request accepted.`);
+      this.syncImportPolling();
     } catch (error) {
-      this.error.set(readApiError(error, 'Could not submit standard game workflow.'));
+      this.error.set(readApiError(error, `Could not ${action} account import.`));
     } finally {
-      if (kind === 'INDEX_GAMES') this.indexingWorkflowAccountId.set(null);
-      else this.analysingWorkflowAccountId.set(null);
+      this.controllingImportRunId.set(null);
     }
   }
 
@@ -362,26 +336,61 @@ export class AccountsStore {
     );
   }
 
+  private patchImportRun(run: AccountImportRun): void {
+    this.importRuns.update((runs) => ({ ...runs, [run.accountId]: run }));
+  }
+
+  private async refreshImportRuns(): Promise<void> {
+    if (this.importRefreshInFlight) return;
+    this.importRefreshInFlight = true;
+    const previous = this.importRuns();
+    try {
+      const response = await firstValueFrom(this.api.getAccountImports());
+      const next = latestRunByAccount(response.items);
+      this.importRuns.set(next);
+      const settled = Object.values(next).some((run) => {
+        const prior = previous[run.accountId];
+        return prior && ACTIVE_IMPORT_STATUSES.has(prior.status) && !ACTIVE_IMPORT_STATUSES.has(run.status);
+      });
+      if (settled) await this.loadAccounts(false).catch(() => undefined);
+    } catch (error) {
+      this.error.set(readApiError(error, 'Could not refresh account import progress.'));
+    } finally {
+      this.importRefreshInFlight = false;
+      this.syncImportPolling();
+    }
+  }
+
+  private syncImportPolling(): void {
+    const shouldPoll = Object.values(this.importRuns()).some((run) => ACTIVE_IMPORT_STATUSES.has(run.status));
+    if (shouldPoll && this.importPollTimer === null) {
+      this.importPollTimer = this.document.defaultView?.setInterval(
+        () => void this.refreshImportRuns(),
+        IMPORT_POLL_INTERVAL_MS,
+      ) ?? null;
+    } else if (!shouldPoll) {
+      this.stopImportPolling();
+    }
+  }
+
+  private stopImportPolling(): void {
+    if (this.importPollTimer === null) return;
+    this.document.defaultView?.clearInterval(this.importPollTimer);
+    this.importPollTimer = null;
+  }
+
   private clearMessages(): void {
     this.error.set(null);
     this.notice.set(null);
   }
+}
 
-  private async ensureWorkflowCandidates(
-    accountId: number,
-  ): Promise<ImportedGameWorkflowCandidates> {
-    const existing = this.workflowCandidates()[accountId];
-    if (existing) return existing;
-    return this.loadWorkflowCandidates(accountId);
+function latestRunByAccount(runs: readonly AccountImportRun[]): Record<number, AccountImportRun> {
+  const latest: Record<number, AccountImportRun> = {};
+  for (const run of runs) {
+    if (!latest[run.accountId]) latest[run.accountId] = run;
   }
-
-  private async loadWorkflowCandidates(
-    accountId: number,
-  ): Promise<ImportedGameWorkflowCandidates> {
-    const candidates = await firstValueFrom(this.api.getWorkflowCandidates(accountId));
-    this.workflowCandidates.update((items) => ({ ...items, [accountId]: candidates }));
-    return candidates;
-  }
+  return latest;
 }
 
 function defaultForm(): AccountForm {
@@ -390,12 +399,6 @@ function defaultForm(): AccountForm {
 
 function accountSummary(account: ExternalAccount): string {
   return `${providerLabel(account.provider)} @${account.username}`;
-}
-
-function omitKey<T>(record: Record<number, T>, key: number): Record<number, T> {
-  const next = { ...record };
-  delete next[key];
-  return next;
 }
 
 function readApiError(error: unknown, fallback: string): string {
