@@ -163,8 +163,10 @@ function presentationState(
   // merely because that work is still running or needs attention.
   if (disposition === 'SKIPPED') return 'SKIPPED';
   if (run?.status === 'NEEDS_ATTENTION') return 'NEEDS_ATTENTION';
-  if (run?.status === 'PAUSED' || run?.status === 'PAUSE_REQUESTED') return 'PAUSED';
-  if (run?.status === 'CANCELLED' || run?.status === 'CANCEL_REQUESTED') return 'CANCELLED';
+  if (run?.status === 'PAUSE_REQUESTED') return 'PAUSE_REQUESTED';
+  if (run?.status === 'PAUSED') return 'PAUSED';
+  if (run?.status === 'CANCEL_REQUESTED') return 'CANCEL_REQUESTED';
+  if (run?.status === 'CANCELLED') return 'CANCELLED';
   if (run?.status === 'FAILED') return 'FAILED';
   if (run && ['QUEUED', 'RUNNING'].includes(run.status)) return 'PREPARING';
   if (disposition === 'COMPLETED') return 'COMPLETE';
@@ -180,12 +182,10 @@ function allowedActions(
     { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
   ];
   if (state === 'PREPARING') return [{ code: 'RESUME_ONBOARDING', destination: '/onboarding' }];
-  if (state === 'PAUSED') {
-    if (attention === 'PREPARATION_PAUSE_REQUESTED') {
-      return [{ code: 'VIEW_HOME', destination: '/home' }];
-    }
-    return [{ code: 'RESUME_ONBOARDING', destination: '/onboarding' }];
+  if (state === 'PAUSE_REQUESTED' || state === 'CANCEL_REQUESTED') {
+    return [{ code: 'VIEW_HOME', destination: '/home' }];
   }
+  if (state === 'PAUSED') return [{ code: 'RESUME_ONBOARDING', destination: '/onboarding' }];
   if (state === 'NEEDS_ATTENTION') {
     if (attention === 'NO_RECENT_GAMES') return [
       { code: 'EXPAND_RANGE', destination: '/onboarding' },
@@ -203,15 +203,10 @@ function allowedActions(
     { code: 'RESTART_PREPARATION', destination: '/onboarding' },
     { code: 'VIEW_HOME', destination: '/home' },
   ];
-  if (state === 'CANCELLED') {
-    if (attention === 'PREPARATION_CANCEL_REQUESTED') {
-      return [{ code: 'VIEW_HOME', destination: '/home' }];
-    }
-    return [
-      { code: 'RESTART_PREPARATION', destination: '/onboarding' },
-      { code: 'VIEW_HOME', destination: '/home' },
-    ];
-  }
+  if (state === 'CANCELLED') return [
+    { code: 'RESTART_PREPARATION', destination: '/onboarding' },
+    { code: 'VIEW_HOME', destination: '/home' },
+  ];
   if (state === 'SKIPPED') return [
     { code: 'VIEW_HOME', destination: '/home' },
     { code: 'START_ONBOARDING', destination: '/onboarding' },

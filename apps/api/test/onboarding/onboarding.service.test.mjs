@@ -88,7 +88,7 @@ const pauseRequested = await createService({
     },
   },
 }).get(1);
-assert.equal(pauseRequested.presentationState, 'PAUSED');
+assert.equal(pauseRequested.presentationState, 'PAUSE_REQUESTED');
 assert.equal(pauseRequested.attention.code, 'PREPARATION_PAUSE_REQUESTED');
 assert.deepEqual(pauseRequested.actions.map((action) => action.code), ['VIEW_HOME']);
 
@@ -100,6 +100,7 @@ const paused = await createService({
     },
   },
 }).get(1);
+assert.equal(paused.presentationState, 'PAUSED');
 assert.equal(paused.attention.code, 'PREPARATION_PAUSED');
 assert.deepEqual(paused.actions.map((action) => action.code), ['RESUME_ONBOARDING']);
 
@@ -111,7 +112,7 @@ const cancelRequested = await createService({
     },
   },
 }).get(1);
-assert.equal(cancelRequested.presentationState, 'CANCELLED');
+assert.equal(cancelRequested.presentationState, 'CANCEL_REQUESTED');
 assert.equal(cancelRequested.attention.code, 'PREPARATION_CANCEL_REQUESTED');
 assert.deepEqual(cancelRequested.actions.map((action) => action.code), ['VIEW_HOME']);
 
@@ -123,6 +124,7 @@ const cancelled = await createService({
     },
   },
 }).get(1);
+assert.equal(cancelled.presentationState, 'CANCELLED');
 assert.equal(cancelled.attention.code, 'PREPARATION_CANCELLED');
 assert.deepEqual(cancelled.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME']);
 
@@ -134,6 +136,7 @@ const failed = await createService({
     },
   },
 }).get(1);
+assert.equal(failed.presentationState, 'FAILED');
 assert.equal(failed.attention.code, 'PREPARATION_FAILED');
 assert.deepEqual(failed.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME']);
 

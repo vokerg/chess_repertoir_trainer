@@ -8,8 +8,10 @@ export type OnboardingDisposition = z.infer<typeof onboardingDispositionSchema>;
 export const onboardingPresentationStateSchema = z.enum([
   'NOT_STARTED',
   'PREPARING',
+  'PAUSE_REQUESTED',
   'PAUSED',
   'NEEDS_ATTENTION',
+  'CANCEL_REQUESTED',
   'CANCELLED',
   'FAILED',
   'CORE_READY',
