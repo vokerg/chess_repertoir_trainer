@@ -20,10 +20,12 @@ The projection intentionally has no weighted overall percentage and no ETA. A pe
 
 Feature states are `locked`, `partial`, `ready`, or `checked-empty`. Games, openings, analysis, and tactics use their own persisted evidence rather than one global readiness boolean.
 
-Allowed actions are derived from both durable disposition and the current preparation lifecycle. Active work exposes pause/cancel controls, paused work exposes resume/cancel, acknowledgement states do not advertise another conflicting control, and terminal failure/cancellation exposes restart. `SKIPPED` dismisses first-run guidance but does not make an already active preparation disappear: a skipped user with accepted background work receives controls for that run and is never told to start a second concurrent preparation. A skipped user with no current run may start onboarding again.
+Allowed actions are derived from both durable disposition and the current preparation lifecycle. `VIEW_ONBOARDING` means navigation to the progress/recovery surface and never mutates work; `RESUME_PREPARATION` is reserved for an actually paused preparation. Active work exposes pause/cancel controls, paused work exposes resume/cancel, acknowledgement states do not advertise another conflicting work control, and terminal failure/cancellation exposes restart. While first-run disposition is still `PENDING`, skip remains available independently of those work controls and does not cancel accepted work. Completed expansion runs never receive onboarding-only finish/skip actions.
+
+`SKIPPED` dismisses first-run guidance but does not make an already active preparation disappear: a skipped user with accepted background work receives valid controls for that run and is never told to start a second concurrent preparation. A skipped user with no current run may start onboarding again.
 
 ## Ownership and query bounds
 
 Every query is scoped by authenticated `userId`. Run-specific aggregates join through the owned preparation run. Potentially large game sets are counted or ranked in PostgreSQL; Node receives only aggregate rows, at most 16 targets, at most eight latest batches, and at most three reveal references.
 
-Lifecycle commands remain outside this module. Action codes such as pause, cancel, retry, restart, expansion, finish, and skip are recommendations/destinations consumed by later ONB-009 command surfaces; this endpoint does not mutate preparation state.
+Lifecycle commands remain outside this module. Action codes such as resume, pause, cancel, retry, restart, expansion, finish, and skip are recommendations/destinations consumed by later ONB-009 command surfaces; this endpoint does not mutate preparation state.
