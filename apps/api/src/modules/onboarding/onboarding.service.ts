@@ -32,6 +32,7 @@ const KNOWN_ATTENTION_CODES = new Set<OnboardingAttentionCode>([
 ]);
 
 type LatestMilestoneKind = NonNullable<OnboardingLatestMilestone>['kind'];
+type OnboardingDispositionValue = 'PENDING' | 'COMPLETED' | 'SKIPPED';
 
 interface Dependencies {
   repository?: OnboardingRepositoryBoundary;
@@ -153,7 +154,7 @@ function mapTarget(target: OnboardingTargetRecord) {
 }
 
 function presentationState(
-  disposition: 'PENDING' | 'COMPLETED' | 'SKIPPED',
+  disposition: OnboardingDispositionValue,
   run: OnboardingRunRecord | null,
 ): OnboardingReadinessResponse['presentationState'] {
   if (run?.analysisCompletedAt) return 'COMPLETE';
@@ -173,22 +174,51 @@ function presentationState(
   return 'NOT_STARTED';
 }
 
-function attentionActions(attention: OnboardingAttentionCode | null): OnboardingAction[] {
-  if (attention === 'NO_RECENT_GAMES') return [
-    { code: 'EXPAND_RANGE', destination: '/onboarding' },
-    { code: 'ADD_ACCOUNT', destination: '/settings/accounts' },
-    { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
-    { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
-  ];
-  if (attention === 'ALL_INDEXING_FAILED' || attention === 'IMPORT_RETRY_AVAILABLE') return [
-    { code: 'RETRY_PREPARATION', destination: '/onboarding' },
-    { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
-    { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
-  ];
-  return [
+function withPendingSkip(
+  actions: OnboardingAction[],
+  disposition: OnboardingDispositionValue,
+): OnboardingAction[] {
+  if (disposition !== 'PENDING' || actions.some((action) => action.code === 'SKIP_ONBOARDING')) return actions;
+  return [...actions, { code: 'SKIP_ONBOARDING', destination: '/onboarding' }];
+}
+
+function attentionActions(
+  attention: OnboardingAttentionCode | null,
+  disposition: OnboardingDispositionValue,
+): OnboardingAction[] {
+  if (attention === 'NO_RECENT_GAMES') {
+    if (disposition === 'PENDING') return [
+      { code: 'EXPAND_RANGE', destination: '/onboarding' },
+      { code: 'ADD_ACCOUNT', destination: '/settings/accounts' },
+      { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
+      { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
+    ];
+    return [
+      { code: 'EXPAND_RANGE', destination: '/onboarding' },
+      { code: 'ADD_ACCOUNT', destination: '/settings/accounts' },
+      { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+      { code: 'VIEW_HOME', destination: '/home' },
+    ];
+  }
+  if (attention === 'ALL_INDEXING_FAILED' || attention === 'IMPORT_RETRY_AVAILABLE') {
+    const actions: OnboardingAction[] = [
+      { code: 'RETRY_PREPARATION', destination: '/onboarding' },
+      { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+    ];
+    if (disposition === 'PENDING') {
+      return [
+        { code: 'RETRY_PREPARATION', destination: '/onboarding' },
+        { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
+        { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+        { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
+      ];
+    }
+    return [...actions, { code: 'VIEW_HOME', destination: '/home' }];
+  }
+  return withPendingSkip([
     { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
     { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
-  ];
+  ], disposition);
 }
 
 function skippedActions(
@@ -246,32 +276,33 @@ function allowedActions(
   state: OnboardingReadinessResponse['presentationState'],
   attention: OnboardingAttentionCode | null,
   run: OnboardingRunRecord | null,
+  disposition: OnboardingDispositionValue,
 ): OnboardingAction[] {
   if (state === 'NOT_STARTED') return [
     { code: 'START_ONBOARDING', destination: '/onboarding' },
     { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
   ];
-  if (state === 'PREPARING') return [
+  if (state === 'PREPARING') return withPendingSkip([
     { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
     { code: 'PAUSE_PREPARATION', destination: '/onboarding' },
     { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
-  ];
+  ], disposition);
   if (state === 'PAUSE_REQUESTED' || state === 'CANCEL_REQUESTED') {
-    return [{ code: 'VIEW_HOME', destination: '/home' }];
+    return withPendingSkip([{ code: 'VIEW_HOME', destination: '/home' }], disposition);
   }
-  if (state === 'PAUSED') return [
+  if (state === 'PAUSED') return withPendingSkip([
     { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
     { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
-  ];
-  if (state === 'NEEDS_ATTENTION') return attentionActions(attention);
-  if (state === 'FAILED') return [
+  ], disposition);
+  if (state === 'NEEDS_ATTENTION') return attentionActions(attention, disposition);
+  if (state === 'FAILED') return withPendingSkip([
     { code: 'RESTART_PREPARATION', destination: '/onboarding' },
     { code: 'VIEW_HOME', destination: '/home' },
-  ];
-  if (state === 'CANCELLED') return [
+  ], disposition);
+  if (state === 'CANCELLED') return withPendingSkip([
     { code: 'RESTART_PREPARATION', destination: '/onboarding' },
     { code: 'VIEW_HOME', destination: '/home' },
-  ];
+  ], disposition);
   if (state === 'SKIPPED') return skippedActions(run, attention);
   return [
     { code: 'VIEW_HOME', destination: '/home' },
@@ -432,7 +463,7 @@ export function createOnboardingReadinessService(dependencies: Dependencies = {}
         } : null,
         attention,
         readiness: featureReadiness(evidence, tacticalEvidence, importChecked, indexChecked, analysisChecked),
-        actions: allowedActions(state, attention?.code ?? null, run),
+        actions: allowedActions(state, attention?.code ?? null, run, disposition.disposition),
         reveals: reveals.map((reveal) => ({
           kind: reveal.kind,
           importedGameId: reveal.importedGameId,
