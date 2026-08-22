@@ -17,6 +17,7 @@ assert.match(migration, /"onboardingDispositionReason" = 'LEGACY_ADOPTION'/);
 assert.match(migration, /CHECK \("onboardingDisposition" IN \('PENDING', 'COMPLETED', 'SKIPPED'\)\)/);
 assert.match(migration, /WITH RECURSIVE lineage AS/);
 assert.match(migration, /parent\."id" = child\."retryOfRunId"/);
+assert.match(migration, /parent\."userId" = NEW\."userId"/);
 assert.match(migration, /WHERE "purpose" = 'ONBOARDING'/);
 assert.match(migration, /NEW\."coreReadyAt" IS NOT NULL/);
 assert.match(migration, /"onboardingDispositionReason" = 'CORE_READY'/);
