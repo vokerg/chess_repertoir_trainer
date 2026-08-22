@@ -15,6 +15,7 @@ describe('AccountsStore', () => {
       'syncAccount',
       'backfillAccount',
       'getAccountImports',
+      'getActiveAccountImports',
       'pauseImport',
       'resumeImport',
       'cancelImport',
@@ -26,6 +27,7 @@ describe('AccountsStore', () => {
       'disconnectLichess',
     ]);
     api.getAccountImports.and.returnValue(of({ items: [] }));
+    api.getActiveAccountImports.and.returnValue(of({ items: [] }));
 
     TestBed.configureTestingModule({
       providers: [
@@ -37,14 +39,17 @@ describe('AccountsStore', () => {
     store = TestBed.inject(AccountsStore);
   });
 
-  it('restores the latest persisted import after page initialization', async () => {
+  it('restores persisted active imports separately from bounded recent history', async () => {
     const tracked = account(1, 'tracked', true);
-    const activeRun = importRun(10, tracked.id, 'RUNNING');
+    const staleCompleted = importRun(9, tracked.id, 'COMPLETED');
+    const activeRun = importRun(10, tracked.id, 'PAUSED');
     api.getAccounts.and.returnValue(of([tracked]));
-    api.getAccountImports.and.returnValue(of({ items: [activeRun] }));
+    api.getAccountImports.and.returnValue(of({ items: [staleCompleted] }));
+    api.getActiveAccountImports.and.returnValue(of({ items: [activeRun] }));
 
     await store.initialize();
 
+    expect(api.getActiveAccountImports).toHaveBeenCalledTimes(1);
     expect(store.accounts()).toEqual([tracked]);
     expect(store.importRunForAccount(tracked.id)).toEqual(activeRun);
     expect(store.isImportActive(tracked.id)).toBeTrue();
@@ -71,21 +76,25 @@ describe('AccountsStore', () => {
     expect(store.syncingAllAccounts()).toBeFalse();
   });
 
-  it('keeps successful account refreshes when another account fails to queue', async () => {
+  it('keeps successful account refreshes and reconciles persisted state when another account conflicts', async () => {
     const failing = account(1, 'first', true);
     const succeeding = account(2, 'second', true);
+    const persistedActive = importRun(199, failing.id, 'RUNNING');
     store.accounts.set([failing, succeeding]);
     api.syncAccount.withArgs(failing.id).and.returnValue(
-      throwError(() => ({ error: { message: 'Boom' } })),
+      throwError(() => ({ error: { message: 'Account already has an active import.' } })),
     );
     api.syncAccount.withArgs(succeeding.id).and.returnValue(of({
       importRun: importRun(200, succeeding.id, 'QUEUED'),
     }));
+    api.getActiveAccountImports.and.returnValue(of({ items: [persistedActive] }));
+    api.getAccountImports.and.returnValue(of({ items: [importRun(200, succeeding.id, 'QUEUED')] }));
 
     await store.syncActiveAccounts();
 
+    expect(store.importRunForAccount(failing.id)?.id).toBe(199);
     expect(store.importRunForAccount(succeeding.id)?.id).toBe(200);
-    expect(store.error()).toContain('Queued 1 account refresh. Failed: Boom.');
+    expect(store.error()).toContain('Queued 1 account refresh. Failed: Account already has an active import.');
     expect(store.notice()).toBeNull();
   });
 
