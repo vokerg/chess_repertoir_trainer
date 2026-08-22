@@ -148,7 +148,36 @@ ACCOUNT_IMPORT_WORKER_BACKLOG_AGE_MS=300000
 ACCOUNT_IMPORT_WORKER_BACKLOG_SUSTAINED_MS=300000
 ```
 
-Account-import stale-after must also remain more than twice its heartbeat interval. Backlog telemetry warns when oldest queue age exceeds five minutes, or when more than 20 queued runs persist for five minutes. The ONB-012 worker registry is intentionally provider-neutral: until provider executors register in follow-up provider tasks, accepted durable imports remain queued and the worker performs no provider network I/O.
+Account-import stale-after must also remain more than twice its heartbeat interval. Backlog telemetry warns when oldest queue age exceeds five minutes, or when more than 20 queued runs persist for five minutes. The worker registers both bounded Lichess and Chess.com account-import executors. It also reconciles persisted account-import/preparation handoff and post-completion account projections; these are restart-safe database scans rather than in-memory completion notifications. A deployment that accepts account refreshes therefore **must** have this worker version running.
+
+### Account-import cutover rollout and rollback
+
+The normal account refresh endpoint now returns `202 Accepted` after persisting a durable import; it no longer performs provider traversal inside the HTTP request. Roll out this cutover in this order:
+
+1. Apply the database migrations and deploy the worker version that understands durable account imports, both provider executors, preparation handoff, and post-completion reconciliation.
+2. Verify the worker is healthy and can claim durable import rows before exposing the new API behavior.
+3. Deploy the API version whose account refresh/backfill routes persist `AccountImportRun` commands.
+4. Deploy the Angular account page that restores persisted import state and uses pause/resume/cancel/retry commands.
+
+Do not deploy the API cutover ahead of the worker. An accepted import is intentionally durable and may remain queued while a worker is unavailable, but production rollout should not create an avoidable backlog of user-visible accepted work.
+
+Compatibility boundaries during this phase:
+
+- `POST /api/me/accounts/:id/sync` is the compatibility refresh URL, but now returns a durable import run with `202` and performs no provider I/O in HTTP.
+- `POST /api/me/accounts/:id/backfill` queues the next bounded three-month historical range without rewinding forward coverage.
+- deprecated `POST /api/me/accounts/:id/reset-cursor` is a safe alias for the same bounded backfill operation; it no longer mutates the legacy `syncCursorTime` field.
+- immediate `DELETE /api/me/accounts/:id` is temporarily disabled with `409` until the ONB-020 destructive lifecycle coordinator replaces the old unfenced cascade.
+- `ExternalAccount.lastSyncAt` / `lastSyncRunId` remain compatibility projections of the latest completed forward import; historical backfill does not advance them.
+
+Rollback must preserve already accepted durable work. If durable imports have been accepted, keep the compatible worker running until those imports and linked preparation work are terminal or explicitly paused/cancelled. Do not roll the API back to the former synchronous-provider implementation while durable work for the same accounts is still active. The old Angular account page is also incompatible with the new `202` response shape, so API and web rollback should be coordinated only after durable work is drained. Database migrations are forward-compatible persistence for retained import/preparation history and should not be reverted as an application rollback mechanism.
+
+Operational verification after deploy should include:
+
+- account refresh returns `202` quickly and a persisted run remains visible after reload;
+- the worker claims the run and provider progress advances without an open browser session;
+- an unlinked user-action import is attached to an `EXPANSION` preparation target, or waits durably while another preparation run for that user is active;
+- completed imports eventually refresh rating/account sync projections from persisted state;
+- worker backlog warnings remain below the configured count/age thresholds.
 
 Terminal job retention runs at worker startup and hourly. It removes only terminal imported-game jobs whose `completedAt` is older than `JOB_WORKER_TERMINAL_RETENTION_DAYS`; task rows are deleted by cascade. Active jobs and account-import history are never removed by that retention pass.
 
@@ -242,7 +271,7 @@ Worker terminal:
 npm run dev:worker
 ```
 
-To execute analysis-backed jobs locally, enable batch Stockfish and ensure the selected engine is available in the worker terminal environment. Durable account imports require a provider executor to be registered; ONB-012 itself only supplies the provider-neutral lifecycle/worker seam.
+To execute analysis-backed jobs locally, enable batch Stockfish and ensure the selected engine is available in the worker terminal environment. Durable Lichess and Chess.com account imports are executed only by this worker process; the API merely persists accepted commands.
 
 Mobile also runs separately:
 
