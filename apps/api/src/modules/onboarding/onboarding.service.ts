@@ -183,6 +183,16 @@ function withPendingSkip(
   return [...actions, { code: 'SKIP_ONBOARDING', destination: '/onboarding' }];
 }
 
+function withDispositionNavigation(
+  actions: OnboardingAction[],
+  disposition: OnboardingDispositionValue,
+): OnboardingAction[] {
+  const navigable = disposition === 'COMPLETED' && !actions.some((action) => action.code === 'VIEW_HOME')
+    ? [{ code: 'VIEW_HOME' as const, destination: '/home' }, ...actions]
+    : actions;
+  return withPendingSkip(navigable, disposition);
+}
+
 function attentionActions(
   attention: OnboardingAttentionCode | null,
   disposition: OnboardingDispositionValue,
@@ -215,7 +225,7 @@ function attentionActions(
     ];
   }
   const primaryCode = attention === 'IMPORT_PAUSED' ? 'RESUME_PREPARATION' : 'VIEW_ONBOARDING';
-  return withPendingSkip([
+  return withDispositionNavigation([
     { code: primaryCode, destination: '/onboarding' },
     { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
   ], disposition);
@@ -309,7 +319,7 @@ function allowedActions(
     { code: 'START_ONBOARDING', destination: '/onboarding' },
     { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
   ];
-  if (state === 'PREPARING') return withPendingSkip([
+  if (state === 'PREPARING') return withDispositionNavigation([
     { code: 'VIEW_ONBOARDING', destination: '/onboarding' },
     { code: 'PAUSE_PREPARATION', destination: '/onboarding' },
     { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
@@ -317,7 +327,7 @@ function allowedActions(
   if (state === 'PAUSE_REQUESTED' || state === 'CANCEL_REQUESTED') {
     return withPendingSkip([{ code: 'VIEW_HOME', destination: '/home' }], disposition);
   }
-  if (state === 'PAUSED') return withPendingSkip([
+  if (state === 'PAUSED') return withDispositionNavigation([
     { code: 'RESUME_PREPARATION', destination: '/onboarding' },
     { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
   ], disposition);
