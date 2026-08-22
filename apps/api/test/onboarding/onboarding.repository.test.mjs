@@ -51,6 +51,12 @@ try {
       totalTasks: 2,
       startedAt: now,
       completedAt: now,
+      tasks: {
+        create: [
+          { ordinal: 0, status: 'COMPLETED', settledAt: now },
+          { ordinal: 1, status: 'SKIPPED', settledAt: now },
+        ],
+      },
     },
   });
   const batch = await prisma.dataPreparationBatch.create({
