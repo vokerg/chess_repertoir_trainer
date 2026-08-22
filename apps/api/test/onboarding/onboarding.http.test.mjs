@@ -226,6 +226,7 @@ try {
       'RESUME_ONBOARDING',
       'PAUSE_PREPARATION',
       'CANCEL_PREPARATION',
+      'SKIP_ONBOARDING',
     ]);
     assert.equal(body.reveals.length >= 1, true);
     assert.equal(
