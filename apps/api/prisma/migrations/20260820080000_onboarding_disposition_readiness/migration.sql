@@ -23,24 +23,45 @@ ALTER TABLE "AppUser"
   ADD CONSTRAINT "AppUser_onboardingDisposition_check"
   CHECK ("onboardingDisposition" IN ('PENDING', 'COMPLETED', 'SKIPPED'));
 
--- Core readiness is a durable preparation invariant. Keep disposition
--- convergence in PostgreSQL so every writer that legitimately advances an
--- ONBOARDING run to core-ready produces the same cross-session result.
+-- Core readiness is a durable onboarding invariant. Keep disposition
+-- convergence in PostgreSQL so every writer that legitimately advances the
+-- initial preparation or one of its linked recovery runs produces the same
+-- cross-session result. Expansion-only recovery does not complete onboarding.
 CREATE OR REPLACE FUNCTION "complete_onboarding_disposition_from_core_ready"()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
+DECLARE
+  completes_onboarding BOOLEAN;
 BEGIN
-  IF NEW."purpose" = 'ONBOARDING'
-     AND NEW."coreReadyAt" IS NOT NULL
+  IF NEW."coreReadyAt" IS NOT NULL
      AND OLD."coreReadyAt" IS NULL THEN
-    UPDATE "AppUser"
-    SET "onboardingDisposition" = 'COMPLETED',
-        "onboardingDispositionReason" = 'CORE_READY',
-        "onboardingDispositionAt" = NOW(),
-        "updatedAt" = NOW()
-    WHERE "id" = NEW."userId"
-      AND "onboardingDisposition" <> 'COMPLETED';
+    WITH RECURSIVE lineage AS (
+      SELECT run."id", run."purpose", run."retryOfRunId"
+      FROM "DataPreparationRun" AS run
+      WHERE run."id" = NEW."id"
+
+      UNION
+
+      SELECT parent."id", parent."purpose", parent."retryOfRunId"
+      FROM "DataPreparationRun" AS parent
+      JOIN lineage AS child ON parent."id" = child."retryOfRunId"
+    )
+    SELECT EXISTS (
+      SELECT 1
+      FROM lineage
+      WHERE "purpose" = 'ONBOARDING'
+    ) INTO completes_onboarding;
+
+    IF completes_onboarding THEN
+      UPDATE "AppUser"
+      SET "onboardingDisposition" = 'COMPLETED',
+          "onboardingDispositionReason" = 'CORE_READY',
+          "onboardingDispositionAt" = NOW(),
+          "updatedAt" = NOW()
+      WHERE "id" = NEW."userId"
+        AND "onboardingDisposition" <> 'COMPLETED';
+    END IF;
   END IF;
   RETURN NEW;
 END;
