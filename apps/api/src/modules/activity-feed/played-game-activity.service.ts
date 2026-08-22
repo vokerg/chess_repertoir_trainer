@@ -12,10 +12,7 @@ import {
   type PlayedGameDaySummary,
   type PlayedGameHistoryBounds,
 } from './played-game-activity.repository.prisma';
-import {
-  DataLifecycleWriteBlockedError,
-  assertDataLifecycleWriteAllowed,
-} from '../data-lifecycle/data-lifecycle.guard';
+import { assertDataLifecycleWriteAllowed } from '../data-lifecycle/data-lifecycle.guard';
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 export const PLAYED_GAME_RECONCILIATION_CHUNK_DAYS = 31;
@@ -63,6 +60,7 @@ interface ActivityRepositoryBoundary {
 export interface PlayedGameActivityWriteScope {
   userId: number;
   accountId?: number;
+  snapshotStartedAt: Date;
   reason: 'PLAYED_GAME_ACTIVITY_RECONCILIATION';
 }
 
@@ -170,6 +168,7 @@ export function createPlayedGameActivityReconciliationService(dependencies: Depe
         await assertDataLifecycleWriteAllowed(transaction, {
           userId: scope.userId,
           ...(scope.accountId === undefined ? {} : { accountId: scope.accountId }),
+          snapshotStartedAt: scope.snapshotStartedAt,
         });
         return work(transaction);
       });
@@ -200,6 +199,7 @@ export function createPlayedGameActivityReconciliationService(dependencies: Depe
         input.toDate,
       );
       const bounds = paddedUtcBounds(chunkStart, chunkEnd);
+      const snapshotStartedAt = new Date();
       const [summaries, existingAggregateDates] = await Promise.all([
         repository.summarizeDays({
           userId: input.userId,
@@ -225,6 +225,7 @@ export function createPlayedGameActivityReconciliationService(dependencies: Depe
       const chunkResult = await writeGuard.run({
         userId: input.userId,
         ...(input.accountId === undefined ? {} : { accountId: input.accountId }),
+        snapshotStartedAt,
         reason: 'PLAYED_GAME_ACTIVITY_RECONCILIATION',
       }, async (transaction) => {
         const activeTimeZone = await activityRepository.getTimeZoneForWrite(
@@ -278,25 +279,13 @@ export function createPlayedGameActivityReconciliationService(dependencies: Depe
     }): Promise<PlayedGameActivityReconciliationResult> {
       assertValidRange(input.from, input.to);
       const timeZone = await activityRepository.getTimeZone(input.userId);
-      try {
-        return await reconcileDateRange({
-          userId: input.userId,
-          accountId: input.accountId,
-          timeZone,
-          fromDate: dateOnlyInTimeZone(input.from, timeZone),
-          toDate: dateOnlyInTimeZone(input.to, timeZone),
-        });
-      } catch (error) {
-        if (!(error instanceof DataLifecycleWriteBlockedError)) throw error;
-        return {
-          userId: input.userId,
-          fromDate: null,
-          toDate: null,
-          daysReconciled: 0,
-          gamesCounted: 0,
-          chunksProcessed: 0,
-        };
-      }
+      return reconcileDateRange({
+        userId: input.userId,
+        accountId: input.accountId,
+        timeZone,
+        fromDate: dateOnlyInTimeZone(input.from, timeZone),
+        toDate: dateOnlyInTimeZone(input.to, timeZone),
+      });
     },
 
     async reconcileAllForUser(userId: number): Promise<PlayedGameActivityReconciliationResult> {

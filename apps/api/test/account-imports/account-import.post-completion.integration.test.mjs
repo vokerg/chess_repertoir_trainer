@@ -2,13 +2,15 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import prismaModule from '../../dist/prisma.js';
 import { createAccountImportRepository } from '../../dist/modules/account-imports/account-import.repository.prisma.js';
+import { canonicalizeAccountImportScope } from '../../dist/modules/account-imports/account-import.scope.js';
 import { createAccountImportPostCompletionService } from '../../dist/modules/account-imports/account-import.post-completion.service.js';
 
 const prisma = prismaModule.default;
 const accountImports = createAccountImportRepository(prisma);
 const service = createAccountImportPostCompletionService();
 const suffix = randomUUID();
-const scope = { variant: 'STANDARD', speeds: ['BLITZ', 'RAPID'], rated: 'BOTH' };
+const scope = { variant: 'STANDARD', speeds: ['BULLET', 'BLITZ', 'RAPID'], rated: 'BOTH' };
+const canonicalScope = canonicalizeAccountImportScope(scope);
 let userId;
 
 try {
@@ -59,6 +61,17 @@ try {
     where: { id: forward.id },
     data: { status: 'COMPLETED', completedAt: forwardCompletedAt },
   });
+  const coverage = await prisma.accountImportCoverage.create({
+    data: {
+      accountId: account.id,
+      scopeVersion: canonicalScope.scopeVersion,
+      scopeHash: canonicalScope.scopeHash,
+      scopeJson: canonicalScope.scope,
+      coveredFrom: forward.requestedFrom,
+      coveredThrough: forward.requestedTo,
+      lastCompletedImportRunId: forward.id,
+    },
+  });
 
   assert.equal(await service.reconcileNext(), true);
   const firstStats = await prisma.accountRatingStats.findUnique({ where: { accountId: account.id } });
@@ -89,7 +102,7 @@ try {
     source: 'USER_ACTION',
     scope,
     requestedFrom: new Date('2026-02-20T00:00:00.000Z'),
-    requestedTo: new Date('2026-05-20T00:00:00.000Z'),
+    requestedTo: forward.requestedFrom,
     priority: 100,
     windowsTotal: null,
   });
@@ -100,6 +113,13 @@ try {
   await prisma.importRun.update({
     where: { id: backfill.id },
     data: { status: 'COMPLETED', completedAt: backfillCompletedAt },
+  });
+  await prisma.accountImportCoverage.update({
+    where: { id: coverage.id },
+    data: {
+      coveredFrom: backfill.requestedFrom,
+      lastCompletedImportRunId: backfill.id,
+    },
   });
 
   assert.equal(await service.reconcileNext(), true);
@@ -119,6 +139,29 @@ try {
   );
   assert.equal(afterBackfill?.lastSyncAt?.getTime(), forwardCompletedAt.getTime());
   assert.equal(await service.reconcileNext(), false, 'clean derived state does not reconcile repeatedly');
+
+  await prisma.$transaction([
+    prisma.accountImportCoverage.deleteMany({ where: { accountId: account.id } }),
+    prisma.accountRatingStats.deleteMany({ where: { accountId: account.id } }),
+    prisma.externalAccount.update({
+      where: { id: account.id },
+      data: { lastSyncAt: null, lastSyncRunId: null, syncCursorTime: null },
+    }),
+  ]);
+  assert.equal(
+    await prisma.importRun.count({ where: { accountId: account.id, status: 'COMPLETED' } }),
+    2,
+    'terminal import history survives the simulated ONB-020 account purge',
+  );
+  assert.equal(
+    await service.reconcileNext(),
+    false,
+    'retained terminal import history alone cannot resurrect purged derived state',
+  );
+  assert.equal(await prisma.accountRatingStats.count({ where: { accountId: account.id } }), 0);
+  const afterPurge = await prisma.externalAccount.findUnique({ where: { id: account.id } });
+  assert.equal(afterPurge?.lastSyncAt, null);
+  assert.equal(afterPurge?.lastSyncRunId, null);
 
   console.log('Account-import post-completion integration tests passed.');
 } finally {

@@ -6,7 +6,7 @@ import { canonicalizeAccountImportScope } from '../../dist/modules/account-impor
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
-const scope = { variant: 'STANDARD', speeds: ['BLITZ', 'RAPID'], rated: 'BOTH' };
+const scope = { variant: 'STANDARD', speeds: ['BULLET', 'BLITZ', 'RAPID'], rated: 'BOTH' };
 let userId;
 
 try {
@@ -57,6 +57,7 @@ try {
     assert.equal(run.accountId, account.id);
     assert.equal(run.mode, 'HISTORICAL_BACKFILL');
     assert.equal(run.status, 'QUEUED');
+    assert.deepEqual(run.scope, scope);
     assert.equal(run.requestedTo, coveredFrom.toISOString());
     assert.equal(Date.parse(run.requestedFrom) < Date.parse(run.requestedTo), true);
 

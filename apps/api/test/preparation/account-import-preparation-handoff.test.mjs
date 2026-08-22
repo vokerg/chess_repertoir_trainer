@@ -9,7 +9,7 @@ const accountImports = createAccountImportRepository(prisma);
 const handoff = createAccountImportPreparationHandoffRepository(prisma);
 const suffix = randomUUID();
 const userIds = [];
-const scope = { variant: 'STANDARD', speeds: ['BLITZ', 'RAPID'], rated: 'BOTH' };
+const scope = { variant: 'STANDARD', speeds: ['BULLET', 'BLITZ', 'RAPID'], rated: 'BOTH' };
 
 try {
   {
@@ -21,45 +21,39 @@ try {
     const secondRun = await createImport(user.id, secondAccount.id, '2026-05-01', '2026-08-01');
 
     assert.equal(await handoff.reconcileNext(), true);
-    const firstPreparation = await prisma.dataPreparationRun.findFirst({
+    const preparation = await prisma.dataPreparationRun.findFirst({
       where: { userId: user.id },
-      include: { targets: true },
-      orderBy: { id: 'asc' },
+      include: { targets: { orderBy: { ordinal: 'asc' } } },
     });
-    assert.ok(firstPreparation);
-    assert.equal(firstPreparation.purpose, 'EXPANSION');
-    assert.equal(firstPreparation.status, 'QUEUED');
-    assert.equal(firstPreparation.targets.length, 1);
-    assert.equal(firstPreparation.targets[0].accountId, firstAccount.id);
-    assert.equal(firstPreparation.targets[0].currentImportRunId, firstRun.id);
-    assert.deepEqual(firstPreparation.targets[0].scopeJson, {
-      rated: 'ANY',
-      speedCategories: ['BLITZ', 'RAPID'],
-      variants: ['STANDARD'],
-    });
-
+    assert.ok(preparation);
+    assert.equal(preparation.purpose, 'EXPANSION');
+    assert.equal(preparation.status, 'QUEUED');
+    assert.equal(preparation.targets.length, 2);
+    assert.deepEqual(
+      preparation.targets.map((target) => [target.accountId, target.currentImportRunId, target.ordinal]),
+      [
+        [firstAccount.id, firstRun.id, 0],
+        [secondAccount.id, secondRun.id, 1],
+      ],
+    );
+    for (const target of preparation.targets) {
+      assert.deepEqual(target.scopeJson, {
+        rated: 'ANY',
+        speedCategories: ['BLITZ', 'RAPID'],
+        variants: ['STANDARD'],
+      });
+      assert.equal(target.scopeHash.length, 64);
+    }
+    assert.equal(
+      preparation.targets[0].scopeHash,
+      preparation.targets[1].scopeHash,
+      'identical preparation scopes have identical canonical hashes',
+    );
     assert.equal(
       await handoff.reconcileNext(),
       false,
-      'a second accepted account refresh waits while the user already has active preparation',
+      'already linked imports do not create duplicate expansion runs',
     );
-    assert.equal(
-      await prisma.dataPreparationTarget.count({ where: { currentImportRunId: secondRun.id } }),
-      0,
-    );
-
-    await prisma.dataPreparationRun.update({
-      where: { id: firstPreparation.id },
-      data: { status: 'COMPLETED', completedAt: new Date() },
-    });
-    assert.equal(await handoff.reconcileNext(), true);
-    const secondTarget = await prisma.dataPreparationTarget.findFirst({
-      where: { currentImportRunId: secondRun.id },
-      include: { preparationRun: true },
-    });
-    assert.ok(secondTarget);
-    assert.equal(secondTarget.accountId, secondAccount.id);
-    assert.equal(secondTarget.preparationRun.purpose, 'EXPANSION');
   }
 
   {
@@ -120,6 +114,26 @@ try {
     );
   }
 
+  {
+    const user = await createUser('bullet-only');
+    userIds.push(user.id);
+    const account = await createAccount(user.id, 'bullet-only');
+    const bulletOnly = await createImport(
+      user.id,
+      account.id,
+      '2026-05-01',
+      '2026-08-01',
+      { variant: 'STANDARD', speeds: ['BULLET'], rated: 'BOTH' },
+    );
+
+    assert.equal(await handoff.reconcileNext(), false);
+    assert.equal(
+      await prisma.dataPreparationTarget.count({ where: { currentImportRunId: bulletOnly.id } }),
+      0,
+      'bullet-only durable imports do not enter the standard Blitz/Rapid preparation pipeline',
+    );
+  }
+
   console.log('Account-import preparation handoff tests passed.');
 } finally {
   if (userIds.length > 0) {
@@ -148,13 +162,13 @@ async function createAccount(userId, label) {
   });
 }
 
-function createImport(userId, accountId, fromDate, toDate) {
+function createImport(userId, accountId, fromDate, toDate, importScope = scope) {
   return accountImports.createRun({
     userId,
     accountId,
     mode: 'BOUNDED_INITIAL',
     source: 'USER_ACTION',
-    scope,
+    scope: importScope,
     requestedFrom: new Date(`${fromDate}T00:00:00.000Z`),
     requestedTo: new Date(`${toDate}T00:00:00.000Z`),
     priority: 100,

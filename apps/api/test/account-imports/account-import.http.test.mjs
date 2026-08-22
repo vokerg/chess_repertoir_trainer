@@ -163,7 +163,7 @@ try {
     assert.equal(compatibilityRun.status, 'QUEUED');
     assert.deepEqual(compatibilityRun.scope, {
       variant: 'STANDARD',
-      speeds: ['BLITZ', 'RAPID'],
+      speeds: ['BULLET', 'BLITZ', 'RAPID'],
       rated: 'BOTH',
     });
     assert.equal(

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { accountImportScopeSchema, type AccountImportScope } from '@chess-trainer/contracts';
 import prisma from '../../prisma';
@@ -8,6 +9,8 @@ import {
 import type { PreparationScopeSnapshot } from './preparation.types';
 
 const ACCOUNT_IMPORT_PREPARATION_HANDOFF_LOCK_KEY = 17_000_315;
+const PREPARATION_SCOPE_VERSION = 1;
+const MAX_EXPANSION_TARGETS_PER_RUN = 20;
 const NON_TERMINAL_PREPARATION_STATUSES = [
   'QUEUED',
   'RUNNING',
@@ -49,6 +52,10 @@ interface IdRow {
   id: number;
 }
 
+interface UserIdRow {
+  userId: number;
+}
+
 export interface AccountImportPreparationHandoffRepository {
   reconcileNext(): Promise<boolean>;
 }
@@ -81,22 +88,23 @@ export function createAccountImportPreparationHandoffRepository(
             return updated === 1;
           }
 
-          const candidate = await findExpansionHandoff(transaction);
-          if (!candidate) return false;
+          const candidateUserId = await findExpansionUserId(transaction);
+          if (candidateUserId === null) return false;
+          const candidates = await findExpansionHandoffsForUser(transaction, candidateUserId);
+          if (candidates.length === 0) return false;
 
-          await admissionGuard.assertAllowed(transaction, {
-            userId: candidate.userId,
-            accountId: candidate.accountId,
-          });
+          for (const candidate of candidates) {
+            await admissionGuard.assertAllowed(transaction, {
+              userId: candidate.userId,
+              accountId: candidate.accountId,
+            });
+          }
 
-          const scope = accountImportScopeSchema.parse(candidate.scopeJson);
-          const preparationScope = toPreparationScope(scope);
           const recipe = {
             kind: 'ACCOUNT_IMPORT_EXPANSION',
-            importRunId: candidate.id,
-            mode: candidate.mode,
+            importRunIds: candidates.map((candidate) => candidate.id),
+            modes: candidates.map((candidate) => candidate.mode),
           };
-
           const runRows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
             INSERT INTO "DataPreparationRun" (
               "userId",
@@ -110,7 +118,7 @@ export function createAccountImportPreparationHandoffRepository(
               "updatedAt"
             )
             VALUES (
-              ${candidate.userId},
+              ${candidateUserId},
               'EXPANSION',
               'QUEUED',
               1,
@@ -127,38 +135,44 @@ export function createAccountImportPreparationHandoffRepository(
             throw new Error('Account-import preparation handoff did not create a preparation run.');
           }
 
-          await transaction.$executeRaw(Prisma.sql`
-            INSERT INTO "DataPreparationTarget" (
-              "preparationRunId",
-              "accountId",
-              "accountProvider",
-              "accountUsername",
-              "ordinal",
-              "scopeVersion",
-              "scopeHash",
-              "scopeJson",
-              "requestedFrom",
-              "requestedTo",
-              "currentImportRunId",
-              "createdAt",
-              "updatedAt"
-            )
-            VALUES (
-              ${preparationRunId},
-              ${candidate.accountId},
-              ${candidate.accountProvider},
-              ${candidate.accountUsername},
-              0,
-              ${candidate.scopeVersion},
-              ${candidate.scopeHash},
-              ${JSON.stringify(preparationScope)}::jsonb,
-              ${candidate.requestedFrom},
-              ${candidate.requestedTo},
-              ${candidate.id},
-              NOW(),
-              NOW()
-            )
-          `);
+          for (const [ordinal, candidate] of candidates.entries()) {
+            const importScope = accountImportScopeSchema.parse(candidate.scopeJson);
+            const canonicalPreparationScope = canonicalizePreparationScope(
+              toPreparationScope(importScope),
+            );
+            await transaction.$executeRaw(Prisma.sql`
+              INSERT INTO "DataPreparationTarget" (
+                "preparationRunId",
+                "accountId",
+                "accountProvider",
+                "accountUsername",
+                "ordinal",
+                "scopeVersion",
+                "scopeHash",
+                "scopeJson",
+                "requestedFrom",
+                "requestedTo",
+                "currentImportRunId",
+                "createdAt",
+                "updatedAt"
+              )
+              VALUES (
+                ${preparationRunId},
+                ${candidate.accountId},
+                ${candidate.accountProvider},
+                ${candidate.accountUsername},
+                ${ordinal},
+                ${canonicalPreparationScope.scopeVersion},
+                ${canonicalPreparationScope.scopeHash},
+                ${JSON.stringify(canonicalPreparationScope.scope)}::jsonb,
+                ${candidate.requestedFrom},
+                ${candidate.requestedTo},
+                ${candidate.id},
+                NOW(),
+                NOW()
+              )
+            `);
+          }
 
           return true;
         });
@@ -211,7 +225,6 @@ async function findRetryHandoff(
       AND retry."requestedFrom" IS NOT NULL
       AND retry."requestedTo" IS NOT NULL
       AND target."accountId" = retry."accountId"
-      AND target."scopeHash" = retry."scopeHash"
       AND target."requestedFrom" = retry."requestedFrom"
       AND target."requestedTo" = retry."requestedTo"
       AND preparation."userId" = retry."userId"
@@ -228,10 +241,33 @@ async function findRetryHandoff(
   return rows[0] ?? null;
 }
 
-async function findExpansionHandoff(
+async function findExpansionUserId(
   transaction: Prisma.TransactionClient,
-): Promise<ImportHandoffRow | null> {
-  const rows = await transaction.$queryRaw<ImportHandoffRow[]>(Prisma.sql`
+): Promise<number | null> {
+  const rows = await transaction.$queryRaw<UserIdRow[]>(Prisma.sql`
+    SELECT run."userId"
+    FROM "ImportRun" AS run
+    JOIN "ExternalAccount" AS account
+      ON account."id" = run."accountId"
+     AND account."userId" = run."userId"
+    WHERE ${expansionImportPredicate()}
+      AND NOT EXISTS (
+        SELECT 1
+        FROM "DataPreparationRun" AS preparation
+        WHERE preparation."userId" = run."userId"
+          AND preparation."status" IN (${Prisma.join(NON_TERMINAL_PREPARATION_STATUSES.map((status) => Prisma.sql`${status}`))})
+      )
+    ORDER BY run."createdAt" ASC, run."id" ASC
+    LIMIT 1
+  `);
+  return rows[0]?.userId ?? null;
+}
+
+async function findExpansionHandoffsForUser(
+  transaction: Prisma.TransactionClient,
+  userId: number,
+): Promise<ImportHandoffRow[]> {
+  return transaction.$queryRaw<ImportHandoffRow[]>(Prisma.sql`
     SELECT
       run."id",
       run."userId",
@@ -245,41 +281,79 @@ async function findExpansionHandoff(
       run."retryOfImportRunId",
       account."provider" AS "accountProvider",
       account."username" AS "accountUsername"
-    FROM "ImportRun" AS run
-    JOIN "ExternalAccount" AS account
-      ON account."id" = run."accountId"
-     AND account."userId" = run."userId"
-    WHERE run."mode" <> 'LEGACY_SYNC'
-      AND run."source" = 'USER_ACTION'
-      AND run."status" IN (${Prisma.join(HANDOFF_IMPORT_STATUSES.map((status) => Prisma.sql`${status}`))})
-      AND run."scopeVersion" IS NOT NULL
-      AND run."scopeHash" IS NOT NULL
-      AND run."scopeJson" IS NOT NULL
-      AND run."requestedFrom" IS NOT NULL
-      AND run."requestedTo" IS NOT NULL
-      AND NOT EXISTS (
-        SELECT 1
-        FROM "DataPreparationTarget" AS target
-        WHERE target."currentImportRunId" = run."id"
-      )
+    FROM "ExternalAccount" AS account
+    JOIN LATERAL (
+      SELECT candidate.*
+      FROM "ImportRun" AS candidate
+      WHERE candidate."userId" = ${userId}
+        AND candidate."accountId" = account."id"
+        AND ${expansionImportPredicate('candidate')}
+      ORDER BY candidate."createdAt" ASC, candidate."id" ASC
+      FOR UPDATE SKIP LOCKED
+      LIMIT 1
+    ) AS run ON TRUE
+    WHERE account."userId" = ${userId}
       AND NOT EXISTS (
         SELECT 1
         FROM "DataPreparationRun" AS preparation
-        WHERE preparation."userId" = run."userId"
+        WHERE preparation."userId" = ${userId}
           AND preparation."status" IN (${Prisma.join(NON_TERMINAL_PREPARATION_STATUSES.map((status) => Prisma.sql`${status}`))})
       )
     ORDER BY run."createdAt" ASC, run."id" ASC
-    FOR UPDATE OF run, account SKIP LOCKED
-    LIMIT 1
+    LIMIT ${MAX_EXPANSION_TARGETS_PER_RUN}
   `);
-  return rows[0] ?? null;
+}
+
+function expansionImportPredicate(alias = 'run'): Prisma.Sql {
+  const prefix = Prisma.raw(`"${alias}".`);
+  return Prisma.sql`
+    ${prefix}"mode" <> 'LEGACY_SYNC'
+    AND ${prefix}"source" = 'USER_ACTION'
+    AND ${prefix}"status" IN (${Prisma.join(HANDOFF_IMPORT_STATUSES.map((status) => Prisma.sql`${status}`))})
+    AND ${prefix}"scopeVersion" IS NOT NULL
+    AND ${prefix}"scopeHash" IS NOT NULL
+    AND ${prefix}"scopeJson" IS NOT NULL
+    AND ${prefix}"requestedFrom" IS NOT NULL
+    AND ${prefix}"requestedTo" IS NOT NULL
+    AND (${prefix}"scopeJson" -> 'speeds') ?| ARRAY['BLITZ', 'RAPID']
+    AND NOT EXISTS (
+      SELECT 1
+      FROM "DataPreparationTarget" AS target
+      WHERE target."currentImportRunId" = ${prefix}"id"
+    )
+  `;
 }
 
 function toPreparationScope(scope: AccountImportScope): PreparationScopeSnapshot {
+  const speedCategories = ['BLITZ', 'RAPID'].filter((speed) => scope.speeds.includes(speed as 'BLITZ' | 'RAPID'));
+  if (speedCategories.length === 0) {
+    throw new Error('Account import has no games eligible for standard preparation.');
+  }
   return {
     rated: scope.rated === 'BOTH' ? 'ANY' : scope.rated,
-    speedCategories: [...scope.speeds],
+    speedCategories,
     variants: [scope.variant],
+  };
+}
+
+function canonicalizePreparationScope(scope: PreparationScopeSnapshot): {
+  scopeVersion: number;
+  scopeHash: string;
+  scope: PreparationScopeSnapshot;
+} {
+  const canonicalScope: PreparationScopeSnapshot = {
+    ...(scope.rated === undefined ? {} : { rated: scope.rated }),
+    speedCategories: [...(scope.speedCategories ?? [])],
+    variants: [...(scope.variants ?? [])],
+  };
+  const serialized = JSON.stringify({
+    scopeVersion: PREPARATION_SCOPE_VERSION,
+    ...canonicalScope,
+  });
+  return {
+    scopeVersion: PREPARATION_SCOPE_VERSION,
+    scopeHash: createHash('sha256').update(serialized).digest('hex'),
+    scope: canonicalScope,
   };
 }
 

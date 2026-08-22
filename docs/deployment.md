@@ -152,7 +152,9 @@ Account-import stale-after must also remain more than twice its heartbeat interv
 
 ### Account-import cutover rollout and rollback
 
-The normal account refresh endpoint now returns `202 Accepted` after persisting a durable import; it no longer performs provider traversal inside the HTTP request. Roll out this cutover in this order:
+The normal account refresh endpoint now returns `202 Accepted` after persisting a durable import; it no longer performs provider traversal inside the HTTP request. Normal account refresh preserves Bullet, Blitz, and Rapid ingestion for rating/performance compatibility, while preparation targets narrow that imported scope to the standard Blitz/Rapid pipeline.
+
+Roll out this cutover in this order:
 
 1. Apply the database migrations and deploy the worker version that understands durable account imports, both provider executors, preparation handoff, and post-completion reconciliation.
 2. Verify the worker is healthy and can claim durable import rows before exposing the new API behavior.
@@ -165,9 +167,10 @@ Compatibility boundaries during this phase:
 
 - `POST /api/me/accounts/:id/sync` is the compatibility refresh URL, but now returns a durable import run with `202` and performs no provider I/O in HTTP.
 - `POST /api/me/accounts/:id/backfill` queues the next bounded three-month historical range without rewinding forward coverage.
-- deprecated `POST /api/me/accounts/:id/reset-cursor` is a safe alias for the same bounded backfill operation; it no longer mutates the legacy `syncCursorTime` field.
-- immediate `DELETE /api/me/accounts/:id` is temporarily disabled with `409` until the ONB-020 destructive lifecycle coordinator replaces the old unfenced cascade.
-- `ExternalAccount.lastSyncAt` / `lastSyncRunId` remain compatibility projections of the latest completed forward import; historical backfill does not advance them.
+- deprecated `POST /api/me/accounts/:id/reset-cursor` is a compatibility alias for the same bounded backfill operation; it no longer mutates the legacy `syncCursorTime` field.
+- immediate `DELETE /api/me/accounts/:id` is temporarily disabled with `409` until the ONB-020 destructive lifecycle coordinator replaces the old unfenced cascade. A deprecated endpoint that is intentionally unavailable may therefore expose only explicit 4xx responses during this cutover.
+- `ExternalAccount.lastSyncAt` / `lastSyncRunId` remain compatibility projections of the latest completed forward import in the normal Bullet/Blitz/Rapid coverage. Historical backfill does not advance them.
+- post-completion reconciliation is driven by surviving `AccountImportCoverage`; retained terminal `ImportRun` history alone cannot recreate rating stats or sync-frontier compatibility state after a future account purge removes coverage.
 
 Rollback must preserve already accepted durable work. If durable imports have been accepted, keep the compatible worker running until those imports and linked preparation work are terminal or explicitly paused/cancelled. Do not roll the API back to the former synchronous-provider implementation while durable work for the same accounts is still active. The old Angular account page is also incompatible with the new `202` response shape, so API and web rollback should be coordinated only after durable work is drained. Database migrations are forward-compatible persistence for retained import/preparation history and should not be reverted as an application rollback mechanism.
 
@@ -175,8 +178,8 @@ Operational verification after deploy should include:
 
 - account refresh returns `202` quickly and a persisted run remains visible after reload;
 - the worker claims the run and provider progress advances without an open browser session;
-- an unlinked user-action import is attached to an `EXPANSION` preparation target, or waits durably while another preparation run for that user is active;
-- completed imports eventually refresh rating/account sync projections from persisted state;
+- simultaneous refreshes for multiple accounts can become ordered targets of one bounded `EXPANSION` preparation run; Bullet remains imported but does not enter the standard preparation target scope;
+- completed imports eventually refresh rating/account sync projections from surviving persisted coverage;
 - worker backlog warnings remain below the configured count/age thresholds.
 
 Terminal job retention runs at worker startup and hourly. It removes only terminal imported-game jobs whose `completedAt` is older than `JOB_WORKER_TERMINAL_RETENTION_DAYS`; task rows are deleted by cascade. Active jobs and account-import history are never removed by that retention pass.
@@ -271,7 +274,7 @@ Worker terminal:
 npm run dev:worker
 ```
 
-To execute analysis-backed jobs locally, enable batch Stockfish and ensure the selected engine is available in the worker terminal environment. Durable Lichess and Chess.com account imports are executed only by this worker process; the API merely persists accepted commands.
+To execute analysis-backed jobs locally, enable batch Stockfish and ensure the selected engine is available in the worker terminal environment. Durable account imports require the existing worker deployment to be running with the provider executors registered.
 
 Mobile also runs separately:
 

@@ -40,6 +40,10 @@ interface ForwardRunRow {
   completedAt: Date;
 }
 
+interface CoverageIdentityRow {
+  scopeHash: string;
+}
+
 export interface AccountImportPostCompletionRepository {
   findNextCandidate(): Promise<AccountImportPostCompletionCandidate | null>;
   getState(userId: number, accountId: number): Promise<AccountImportPostCompletionState>;
@@ -52,25 +56,31 @@ export function createAccountImportPostCompletionRepository(
   return {
     async findNextCandidate() {
       const rows = await database.$queryRaw<CandidateRow[]>(Prisma.sql`
-        WITH latest_completed AS (
-          SELECT DISTINCT ON (run."accountId")
+        WITH current_completed AS (
+          SELECT DISTINCT ON (coverage."accountId")
             run."id",
             run."userId",
             run."accountId",
             run."completedAt"
-          FROM "ImportRun" AS run
+          FROM "AccountImportCoverage" AS coverage
+          JOIN "ImportRun" AS run
+            ON run."id" = coverage."lastCompletedImportRunId"
           WHERE run."mode" <> 'LEGACY_SYNC'
             AND run."status" = 'COMPLETED'
             AND run."completedAt" IS NOT NULL
-          ORDER BY run."accountId", run."completedAt" DESC, run."id" DESC
+          ORDER BY coverage."accountId", run."completedAt" DESC, run."id" DESC
         ),
         latest_forward AS (
           SELECT DISTINCT ON (run."accountId")
             run."id",
             run."accountId",
             run."completedAt"
-          FROM "ImportRun" AS run
-          WHERE run."mode" IN ('BOUNDED_INITIAL', 'INCREMENTAL_FORWARD')
+          FROM "AccountImportCoverage" AS coverage
+          JOIN "ImportRun" AS run
+            ON run."accountId" = coverage."accountId"
+           AND run."scopeHash" = coverage."scopeHash"
+          WHERE ${normalRefreshCoveragePredicate()}
+            AND run."mode" IN ('BOUNDED_INITIAL', 'INCREMENTAL_FORWARD')
             AND run."status" = 'COMPLETED'
             AND run."completedAt" IS NOT NULL
           ORDER BY run."accountId", run."completedAt" DESC, run."id" DESC
@@ -80,7 +90,7 @@ export function createAccountImportPostCompletionRepository(
           latest."accountId",
           latest."id" AS "latestCompletedImportRunId",
           latest."completedAt" AS "latestCompletedAt"
-        FROM latest_completed AS latest
+        FROM current_completed AS latest
         JOIN "ExternalAccount" AS account
           ON account."id" = latest."accountId"
          AND account."userId" = latest."userId"
@@ -114,28 +124,8 @@ export function createAccountImportPostCompletionRepository(
     async getState(userId, accountId) {
       const rows = await database.$queryRaw<StateRow[]>(Prisma.sql`
         SELECT
-          (
-            SELECT completed."id"
-            FROM "ImportRun" AS completed
-            WHERE completed."userId" = ${userId}
-              AND completed."accountId" = ${accountId}
-              AND completed."mode" <> 'LEGACY_SYNC'
-              AND completed."status" = 'COMPLETED'
-              AND completed."completedAt" IS NOT NULL
-            ORDER BY completed."completedAt" DESC, completed."id" DESC
-            LIMIT 1
-          ) AS "latestCompletedImportRunId",
-          (
-            SELECT completed."completedAt"
-            FROM "ImportRun" AS completed
-            WHERE completed."userId" = ${userId}
-              AND completed."accountId" = ${accountId}
-              AND completed."mode" <> 'LEGACY_SYNC'
-              AND completed."status" = 'COMPLETED'
-              AND completed."completedAt" IS NOT NULL
-            ORDER BY completed."completedAt" DESC, completed."id" DESC
-            LIMIT 1
-          ) AS "latestCompletedAt",
+          current_completed."id" AS "latestCompletedImportRunId",
+          current_completed."completedAt" AS "latestCompletedAt",
           EXISTS (
             SELECT 1
             FROM "ImportRun" AS active
@@ -143,6 +133,21 @@ export function createAccountImportPostCompletionRepository(
               AND active."accountId" = ${accountId}
               AND active."status" IN (${Prisma.join(NON_TERMINAL_IMPORT_STATUSES.map((status) => Prisma.sql`${status}`))})
           ) AS "hasActiveImport"
+        FROM (SELECT 1) AS anchor
+        LEFT JOIN LATERAL (
+          SELECT completed."id", completed."completedAt"
+          FROM "AccountImportCoverage" AS coverage
+          JOIN "ImportRun" AS completed
+            ON completed."id" = coverage."lastCompletedImportRunId"
+          WHERE coverage."accountId" = ${accountId}
+            AND completed."userId" = ${userId}
+            AND completed."accountId" = ${accountId}
+            AND completed."mode" <> 'LEGACY_SYNC'
+            AND completed."status" = 'COMPLETED'
+            AND completed."completedAt" IS NOT NULL
+          ORDER BY completed."completedAt" DESC, completed."id" DESC
+          LIMIT 1
+        ) AS current_completed ON TRUE
       `);
       return rows[0] ?? {
         latestCompletedImportRunId: null,
@@ -153,6 +158,8 @@ export function createAccountImportPostCompletionRepository(
 
     async synchronizeForwardSyncMetadata(userId, accountId) {
       return database.$transaction(async (transaction) => {
+        await assertDataLifecycleWriteAllowed(transaction, { userId, accountId });
+
         const accountRows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
           SELECT "id"
           FROM "ExternalAccount"
@@ -162,13 +169,23 @@ export function createAccountImportPostCompletionRepository(
         `);
         if (!accountRows[0]) return false;
 
-        await assertDataLifecycleWriteAllowed(transaction, { userId, accountId });
+        const coverageRows = await transaction.$queryRaw<CoverageIdentityRow[]>(Prisma.sql`
+          SELECT coverage."scopeHash"
+          FROM "AccountImportCoverage" AS coverage
+          WHERE coverage."accountId" = ${accountId}
+            AND ${normalRefreshCoveragePredicate()}
+          FOR UPDATE
+          LIMIT 1
+        `);
+        const coverage = coverageRows[0];
+        if (!coverage) return false;
 
         const forwardRows = await transaction.$queryRaw<ForwardRunRow[]>(Prisma.sql`
           SELECT "id", "completedAt"
           FROM "ImportRun"
           WHERE "userId" = ${userId}
             AND "accountId" = ${accountId}
+            AND "scopeHash" = ${coverage.scopeHash}
             AND "mode" IN ('BOUNDED_INITIAL', 'INCREMENTAL_FORWARD')
             AND "status" = 'COMPLETED'
             AND "completedAt" IS NOT NULL
@@ -194,6 +211,16 @@ export function createAccountImportPostCompletionRepository(
       });
     },
   };
+}
+
+function normalRefreshCoveragePredicate(): Prisma.Sql {
+  return Prisma.sql`
+    coverage."scopeJson" ->> 'variant' = 'STANDARD'
+    AND coverage."scopeJson" ->> 'rated' = 'BOTH'
+    AND jsonb_typeof(coverage."scopeJson" -> 'speeds') = 'array'
+    AND jsonb_array_length(coverage."scopeJson" -> 'speeds') = 3
+    AND (coverage."scopeJson" -> 'speeds') ?& ARRAY['BULLET', 'BLITZ', 'RAPID']
+  `;
 }
 
 export const AccountImportPostCompletionRepository =

@@ -323,6 +323,7 @@ function toResponse(
 
 export const AccountRatingStatsService = {
   recomputeForAccount: async (userId: number, accountId: number): Promise<AccountRatingStatsResponse | null> => {
+    const snapshotStartedAt = new Date();
     const account = await ExternalAccountService.getForUser(userId, accountId);
     if (!account) return null;
 
@@ -359,7 +360,11 @@ export const AccountRatingStatsService = {
     const projection = buildDashboardProjection(games);
     const computedAt = new Date();
     const persisted = await prisma.$transaction(async (transaction) => {
-      await assertDataLifecycleWriteAllowed(transaction, { userId, accountId });
+      await assertDataLifecycleWriteAllowed(transaction, {
+        userId,
+        accountId,
+        snapshotStartedAt,
+      });
       const currentAccount = await transaction.externalAccount.findFirst({
         where: { id: accountId, userId },
         select: {

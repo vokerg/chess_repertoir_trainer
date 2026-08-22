@@ -43,6 +43,7 @@ const reconcileCalls = [];
 const lockCalls = [];
 const transactions = [];
 const events = [];
+const writeScopes = [];
 const repository = {
   async summarizeDays(input, transaction) {
     events.push('summary');
@@ -110,7 +111,8 @@ const service = createPlayedGameActivityReconciliationService({
   activityRepository,
   activityFeed,
   writeGuard: {
-    async run(_scope, work) {
+    async run(scope, work) {
+      writeScopes.push(scope);
       return activityRepository.transaction(work);
     },
   },
@@ -144,6 +146,9 @@ assert.deepEqual(events.slice(0, 3), ['summary', 'existing', 'lock:1']);
 assert.equal(summaryCalls[0].timeZone, 'Europe/Copenhagen');
 assert.ok(summaryCalls[0].fromUtc < new Date('2026-08-01T00:00:00.000Z'));
 assert.ok(summaryCalls[0].toUtcExclusive > new Date('2026-08-04T00:00:00.000Z'));
+assert.equal(writeScopes.length, 1);
+assert.ok(writeScopes[0].snapshotStartedAt instanceof Date);
+assert.equal(writeScopes[0].accountId, 22);
 
 resetCalls();
 const overlapReplay = await service.reconcileCommittedRange({
@@ -180,6 +185,8 @@ assert.equal(longRange.chunksProcessed, 2);
 assert.equal(summaryCalls.length, 2);
 assert.equal(transactions.length, 2);
 assert.equal(lockCalls.length, 2);
+assert.equal(writeScopes.length, 2);
+assert.ok(writeScopes.every((scope) => scope.snapshotStartedAt instanceof Date));
 assert.equal(summaryCalls[0].transaction, undefined);
 assert.equal(summaryCalls[1].transaction, undefined);
 assert.equal(summaryCalls[0].fromDate, '2026-08-01');
@@ -256,27 +263,27 @@ const fencedService = createPlayedGameActivityReconciliationService({
     async reconcileDaily() { fencedWrites += 1; },
   },
   writeGuard: {
-    async run() {
+    async run(scope) {
+      assert.ok(scope.snapshotStartedAt instanceof Date);
       throw new DataLifecycleWriteBlockedError(77, 'ACCOUNT', 22);
     },
   },
 });
-const fenced = await fencedService.reconcileCommittedRange({
-  userId: 7,
-  accountId: 22,
-  from: new Date('2026-08-01T08:00:00.000Z'),
-  to: new Date('2026-08-01T10:00:00.000Z'),
-});
+await assert.rejects(
+  fencedService.reconcileCommittedRange({
+    userId: 7,
+    accountId: 22,
+    from: new Date('2026-08-01T08:00:00.000Z'),
+    to: new Date('2026-08-01T10:00:00.000Z'),
+  }),
+  (error) => {
+    assert.ok(error instanceof DataLifecycleWriteBlockedError);
+    assert.equal(error.operationId, 77);
+    return true;
+  },
+);
 assert.equal(fencedSummaryCalled, true);
 assert.equal(fencedWrites, 0);
-assert.deepEqual(fenced, {
-  userId: 7,
-  fromDate: null,
-  toDate: null,
-  daysReconciled: 0,
-  gamesCounted: 0,
-  chunksProcessed: 0,
-});
 
 console.log('Played-game activity reconciliation service tests passed.');
 
@@ -287,4 +294,5 @@ function resetCalls() {
   lockCalls.length = 0;
   transactions.length = 0;
   events.length = 0;
+  writeScopes.length = 0;
 }
