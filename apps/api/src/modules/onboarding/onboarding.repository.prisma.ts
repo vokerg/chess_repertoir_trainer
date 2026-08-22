@@ -294,10 +294,16 @@ export function createOnboardingReadRepository(database: PrismaClient = prisma):
             )
         ), batch_activity AS (
           SELECT
-            COUNT(*) FILTER (WHERE "stage" = 'INDEX' AND "status" IN ('QUEUED', 'RUNNING'))::int AS "activeIndexBatches",
-            COUNT(*) FILTER (WHERE "stage" = 'ANALYSIS' AND "status" IN ('QUEUED', 'RUNNING'))::int AS "activeAnalysisBatches"
-          FROM "DataPreparationBatch"
-          WHERE "preparationRunId" = ${runId}
+            COUNT(*) FILTER (WHERE batch."stage" = 'INDEX' AND batch."status" IN ('QUEUED', 'RUNNING'))::int AS "activeIndexBatches",
+            COUNT(*) FILTER (WHERE batch."stage" = 'ANALYSIS' AND batch."status" IN ('QUEUED', 'RUNNING'))::int AS "activeAnalysisBatches"
+          FROM "DataPreparationBatch" AS batch
+          WHERE batch."preparationRunId" = ${runId}
+            AND EXISTS (
+              SELECT 1
+              FROM "DataPreparationRun" AS run
+              WHERE run."id" = batch."preparationRunId"
+                AND run."userId" = ${userId}
+            )
         )
         SELECT
           (SELECT COUNT(*)::int FROM owned_targets) AS "targetCount",
