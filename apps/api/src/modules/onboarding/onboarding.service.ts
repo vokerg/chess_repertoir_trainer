@@ -201,22 +201,21 @@ function attentionActions(
     ];
   }
   if (attention === 'ALL_INDEXING_FAILED' || attention === 'IMPORT_RETRY_AVAILABLE') {
-    const actions: OnboardingAction[] = [
+    if (disposition === 'PENDING') return [
+      { code: 'RETRY_PREPARATION', destination: '/onboarding' },
+      { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
+      { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+      { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
+    ];
+    return [
       { code: 'RETRY_PREPARATION', destination: '/onboarding' },
       { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+      { code: 'VIEW_HOME', destination: '/home' },
     ];
-    if (disposition === 'PENDING') {
-      return [
-        { code: 'RETRY_PREPARATION', destination: '/onboarding' },
-        { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
-        { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
-        { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
-      ];
-    }
-    return [...actions, { code: 'VIEW_HOME', destination: '/home' }];
   }
+  const primaryCode = attention === 'IMPORT_PAUSED' ? 'RESUME_PREPARATION' : 'VIEW_ONBOARDING';
   return withPendingSkip([
-    { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
+    { code: primaryCode, destination: '/onboarding' },
     { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
   ], disposition);
 }
@@ -231,13 +230,13 @@ function skippedActions(
   ];
   if (run.status === 'QUEUED' || run.status === 'RUNNING') return [
     { code: 'VIEW_HOME', destination: '/home' },
-    { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
+    { code: 'VIEW_ONBOARDING', destination: '/onboarding' },
     { code: 'PAUSE_PREPARATION', destination: '/onboarding' },
     { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
   ];
   if (run.status === 'PAUSED') return [
     { code: 'VIEW_HOME', destination: '/home' },
-    { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
+    { code: 'RESUME_PREPARATION', destination: '/onboarding' },
     { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
   ];
   if (run.status === 'PAUSE_REQUESTED' || run.status === 'CANCEL_REQUESTED') {
@@ -258,7 +257,7 @@ function skippedActions(
     ];
     return [
       { code: 'VIEW_HOME', destination: '/home' },
-      { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
+      { code: attention === 'IMPORT_PAUSED' ? 'RESUME_PREPARATION' : 'VIEW_ONBOARDING', destination: '/onboarding' },
       { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
     ];
   }
@@ -283,7 +282,7 @@ function allowedActions(
     { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
   ];
   if (state === 'PREPARING') return withPendingSkip([
-    { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
+    { code: 'VIEW_ONBOARDING', destination: '/onboarding' },
     { code: 'PAUSE_PREPARATION', destination: '/onboarding' },
     { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
   ], disposition);
@@ -291,7 +290,7 @@ function allowedActions(
     return withPendingSkip([{ code: 'VIEW_HOME', destination: '/home' }], disposition);
   }
   if (state === 'PAUSED') return withPendingSkip([
-    { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
+    { code: 'RESUME_PREPARATION', destination: '/onboarding' },
     { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
   ], disposition);
   if (state === 'NEEDS_ATTENTION') return attentionActions(attention, disposition);
