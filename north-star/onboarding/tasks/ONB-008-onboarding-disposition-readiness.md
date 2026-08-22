@@ -109,7 +109,7 @@ Pull request: [#398](https://github.com/vokerg/chess_repertoir_trainer/pull/398)
 
 Initial implementation head: `df009f1a1e242a3a11b4b61eb08f41a1dc91cb85`
 
-Latest self-review code head: `798102648d1095a51cde6d12fa006d1739afcbb1`
+Latest self-review code head: `dd8408d4e18b741f9c32c97382e5ca4b476206af`
 
 Validation: GitHub Actions is the merge-readiness gate for this connector-only implementation; the exact branch head must pass lint, build, architecture/repository guardrails, the full migration chain, imported-game audits, and the complete test suite.
 
