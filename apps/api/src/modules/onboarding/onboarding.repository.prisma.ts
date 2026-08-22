@@ -107,7 +107,6 @@ export interface OnboardingProductEvidence {
   analysedCount: number;
   analysisRunningCount: number;
   analysisFailedCount: number;
-  tacticalCount: number;
 }
 
 export interface OnboardingRevealRecord {
@@ -466,8 +465,7 @@ export function createOnboardingReadRepository(database: PrismaClient = prisma):
           COUNT(*) FILTER (WHERE game."pgn" IS NOT NULL AND game."plyIndexedAt" IS NOT NULL AND game."openingName" IS NOT NULL)::int AS "openingCount",
           COUNT(*) FILTER (WHERE game."pgn" IS NOT NULL AND game."plyIndexedAt" IS NOT NULL AND game."latestAnalysisStatus" = 'COMPLETED')::int AS "analysedCount",
           COUNT(*) FILTER (WHERE game."pgn" IS NOT NULL AND game."plyIndexedAt" IS NOT NULL AND game."latestAnalysisStatus" = 'RUNNING')::int AS "analysisRunningCount",
-          COUNT(*) FILTER (WHERE game."pgn" IS NOT NULL AND game."plyIndexedAt" IS NOT NULL AND game."latestAnalysisStatus" = 'FAILED')::int AS "analysisFailedCount",
-          (SELECT COUNT(*)::int FROM "TacticalDetection" AS detection WHERE detection."userId" = ${userId}) AS "tacticalCount"
+          COUNT(*) FILTER (WHERE game."pgn" IS NOT NULL AND game."plyIndexedAt" IS NOT NULL AND game."latestAnalysisStatus" = 'FAILED')::int AS "analysisFailedCount"
         FROM "ImportedGame" AS game
         WHERE game."userId" = ${userId}
       `);
@@ -479,7 +477,6 @@ export function createOnboardingReadRepository(database: PrismaClient = prisma):
         analysedCount: 0,
         analysisRunningCount: 0,
         analysisFailedCount: 0,
-        tacticalCount: 0,
       };
     },
 
