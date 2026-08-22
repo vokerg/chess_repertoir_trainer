@@ -4,7 +4,6 @@ import {
   accountRatingHistoryResponseSchema,
   accountRatingStatsResponseSchema,
   defaultProgressAccountResponseSchema,
-  externalAccountDeleteResponseSchema,
   externalAccountListResponseSchema,
   externalAccountResponseSchema,
 } from '@chess-trainer/contracts/external-accounts';
@@ -117,10 +116,6 @@ assert.deepEqual(
   }),
   { defaultProgressAccountId: null, account: null, accounts: [account] },
 );
-assert.deepEqual(
-  externalAccountDeleteResponseSchema.parse({ deleted: true, account }),
-  { deleted: true, account },
-);
 assert.deepEqual(accountRatingHistoryResponseSchema.parse(ratingHistory), ratingHistory);
 assert.deepEqual(accountRatingStatsResponseSchema.parse(ratingStats), ratingStats);
 
@@ -139,11 +134,6 @@ assert.equal(
   externalAccountResponseSchema.safeParse({ ...account, provider: 'OTHER' }).success,
   false,
   'provider must stay within the supported account literals',
-);
-assert.equal(
-  externalAccountDeleteResponseSchema.safeParse({ deleted: false, account }).success,
-  false,
-  'delete acknowledgement is the literal true success response',
 );
 assert.equal(
   accountRatingHistoryResponseSchema.safeParse({ ...ratingHistory, bucket: 'week' }).success,
@@ -186,7 +176,8 @@ async function verifyOpenApi() {
       ['GET', '/api/me/accounts/{id}/rating-history', '200', 'getExternalAccountRatingHistory'],
       ['GET', '/api/me/accounts/{id}/rating-stats', '200', 'getExternalAccountRatingStats'],
       ['PATCH', '/api/me/accounts/{id}', '200', 'updateExternalAccount'],
-      ['DELETE', '/api/me/accounts/{id}', '200', 'deleteExternalAccount'],
+      ['DELETE', '/api/me/accounts/{id}', '409', 'deleteExternalAccount'],
+      ['POST', '/api/me/accounts/{id}/reset-cursor', '202', 'resetExternalAccountSyncCursor'],
     ];
 
     for (const [method, path, status, operationId] of operations) {
@@ -214,10 +205,11 @@ async function verifyOpenApi() {
 
     const deleteSchema = resolveSchema(
       document,
-      document.paths['/api/me/accounts/{id}'].delete.responses['200'].content['application/json'].schema,
+      document.paths['/api/me/accounts/{id}'].delete.responses['409'].content['application/json'].schema,
     );
-    assert.ok(deleteSchema.properties?.deleted);
-    assert.ok(deleteSchema.properties?.account);
+    assert.ok(deleteSchema.properties?.message);
+    assert.equal(document.paths['/api/me/accounts/{id}'].delete.deprecated, true);
+    assert.equal(document.paths['/api/me/accounts/{id}/reset-cursor'].post.deprecated, true);
   } finally {
     await app.close();
   }
@@ -353,20 +345,19 @@ async function verifyHttpBoundary() {
       method: 'DELETE',
       url: `/api/me/accounts/${created.id}`,
     });
-    assert.equal(deleteResponse.statusCode, 200, deleteResponse.body);
-    const deleted = externalAccountDeleteResponseSchema.parse(deleteResponse.json());
-    assert.equal(deleted.deleted, true);
-    assert.equal(deleted.account.id, created.id);
-    assert.equal(deleted.account.displayName, null);
-    assert.equal(deleted.account.lastSyncAt, lastSyncAt.toISOString());
-    assert.equal(deleted.account.isDefaultProgressAccount, true);
+    assert.equal(deleteResponse.statusCode, 409, deleteResponse.body);
+    assert.match(deleteResponse.json().message, /temporarily disabled/i);
 
     const persistedUser = await prisma.appUser.findUnique({
       where: { id: user.id },
       select: { defaultProgressAccountId: true },
     });
-    assert.equal(persistedUser?.defaultProgressAccountId, null);
-    assert.equal(await prisma.externalAccount.count({ where: { id: created.id } }), 0);
+    assert.equal(persistedUser?.defaultProgressAccountId, created.id);
+    assert.equal(
+      await prisma.externalAccount.count({ where: { id: created.id } }),
+      1,
+      'deprecated immediate deletion cannot bypass the lifecycle coordinator',
+    );
   } finally {
     await app.close();
     await prisma.appUser.delete({ where: { id: user.id } });
