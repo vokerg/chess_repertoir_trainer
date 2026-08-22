@@ -37,6 +37,7 @@ assert.equal(resolveCommittedImportReconciliationRange({
 }), null);
 
 let firstDayCount = 2;
+let databaseClockTick = 0;
 const summaryCalls = [];
 const existingCalls = [];
 const reconcileCalls = [];
@@ -44,6 +45,7 @@ const lockCalls = [];
 const transactions = [];
 const events = [];
 const writeScopes = [];
+const databaseTimes = [];
 const repository = {
   async summarizeDays(input, transaction) {
     events.push('summary');
@@ -86,6 +88,12 @@ const repository = {
   },
 };
 const activityRepository = {
+  async getDatabaseTime() {
+    const value = new Date(Date.parse('2026-08-01T00:00:00.000Z') + databaseClockTick * 1_000);
+    databaseClockTick += 1;
+    databaseTimes.push(value);
+    return value;
+  },
   async getTimeZone() { return 'Europe/Copenhagen'; },
   async getTimeZoneForWrite(_userId, transaction) {
     events.push(`lock:${transaction.id}`);
@@ -147,7 +155,7 @@ assert.equal(summaryCalls[0].timeZone, 'Europe/Copenhagen');
 assert.ok(summaryCalls[0].fromUtc < new Date('2026-08-01T00:00:00.000Z'));
 assert.ok(summaryCalls[0].toUtcExclusive > new Date('2026-08-04T00:00:00.000Z'));
 assert.equal(writeScopes.length, 1);
-assert.ok(writeScopes[0].snapshotStartedAt instanceof Date);
+assert.equal(writeScopes[0].snapshotStartedAt, databaseTimes[0]);
 assert.equal(writeScopes[0].accountId, 22);
 
 resetCalls();
@@ -159,6 +167,7 @@ const overlapReplay = await service.reconcileCommittedRange({
 });
 assert.equal(overlapReplay.gamesCounted, 3);
 assert.equal(reconcileCalls.find((call) => call.input.activityDate === '2026-08-01').input.count, 2);
+assert.equal(writeScopes[0].snapshotStartedAt, databaseTimes[0]);
 
 firstDayCount = 3;
 resetCalls();
@@ -186,7 +195,9 @@ assert.equal(summaryCalls.length, 2);
 assert.equal(transactions.length, 2);
 assert.equal(lockCalls.length, 2);
 assert.equal(writeScopes.length, 2);
-assert.ok(writeScopes.every((scope) => scope.snapshotStartedAt instanceof Date));
+assert.equal(databaseTimes.length, 2);
+assert.equal(writeScopes[0].snapshotStartedAt, databaseTimes[0]);
+assert.equal(writeScopes[1].snapshotStartedAt, databaseTimes[1]);
 assert.equal(summaryCalls[0].transaction, undefined);
 assert.equal(summaryCalls[1].transaction, undefined);
 assert.equal(summaryCalls[0].fromDate, '2026-08-01');
@@ -295,4 +306,5 @@ function resetCalls() {
   transactions.length = 0;
   events.length = 0;
   writeScopes.length = 0;
+  databaseTimes.length = 0;
 }

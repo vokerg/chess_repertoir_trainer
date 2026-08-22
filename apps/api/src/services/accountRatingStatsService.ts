@@ -325,9 +325,18 @@ function toResponse(
   };
 }
 
+async function readDatabaseClock(): Promise<Date> {
+  const rows = await prisma.$queryRaw<DatabaseClockRow[]>(Prisma.sql`
+    SELECT NOW() AS "now"
+  `);
+  const now = rows[0]?.now;
+  if (!now) throw new Error('Could not read database clock for account rating projection.');
+  return now;
+}
+
 export const AccountRatingStatsService = {
   recomputeForAccount: async (userId: number, accountId: number): Promise<AccountRatingStatsResponse | null> => {
-    const snapshotStartedAt = new Date();
+    const snapshotStartedAt = await readDatabaseClock();
     const account = await ExternalAccountService.getForUser(userId, accountId);
     if (!account) return null;
 

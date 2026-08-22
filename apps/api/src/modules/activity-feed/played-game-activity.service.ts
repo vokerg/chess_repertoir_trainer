@@ -50,6 +50,7 @@ interface ActivityFeedBoundary {
 
 interface ActivityRepositoryBoundary {
   transaction<T>(work: (transaction: ActivityFeedTransaction) => Promise<T>): Promise<T>;
+  getDatabaseTime(): Promise<Date>;
   getTimeZone(userId: number): Promise<string>;
   getTimeZoneForWrite(
     userId: number,
@@ -199,7 +200,7 @@ export function createPlayedGameActivityReconciliationService(dependencies: Depe
         input.toDate,
       );
       const bounds = paddedUtcBounds(chunkStart, chunkEnd);
-      const snapshotStartedAt = new Date();
+      const snapshotStartedAt = await activityRepository.getDatabaseTime();
       const [summaries, existingAggregateDates] = await Promise.all([
         repository.summarizeDays({
           userId: input.userId,
