@@ -77,7 +77,7 @@ assert.equal(running.preparation.latestBatches[0].remaining, 2);
 assert.equal(running.preparation.latestBatches[0].percentage, 50);
 assert.equal(running.readiness.find((item) => item.feature === 'analysis').state, 'partial');
 assert.deepEqual(running.actions.map((action) => action.code), [
-  'RESUME_ONBOARDING',
+  'VIEW_ONBOARDING',
   'PAUSE_PREPARATION',
   'CANCEL_PREPARATION',
   'SKIP_ONBOARDING',
@@ -101,7 +101,7 @@ assert.equal(skipped.presentationState, 'SKIPPED');
 assert.equal(skipped.preparation.status, 'RUNNING');
 assert.deepEqual(skipped.actions.map((action) => action.code), [
   'VIEW_HOME',
-  'RESUME_ONBOARDING',
+  'VIEW_ONBOARDING',
   'PAUSE_PREPARATION',
   'CANCEL_PREPARATION',
 ]);
@@ -129,7 +129,7 @@ const paused = await createService({
 }).get(1);
 assert.equal(paused.presentationState, 'PAUSED');
 assert.equal(paused.attention.code, 'PREPARATION_PAUSED');
-assert.deepEqual(paused.actions.map((action) => action.code), ['RESUME_ONBOARDING', 'CANCEL_PREPARATION', 'SKIP_ONBOARDING']);
+assert.deepEqual(paused.actions.map((action) => action.code), ['RESUME_PREPARATION', 'CANCEL_PREPARATION', 'SKIP_ONBOARDING']);
 
 const cancelRequested = await createService({
   repository: {
@@ -182,8 +182,29 @@ const rateLimited = await createService({
 assert.equal(rateLimited.presentationState, 'PREPARING');
 assert.equal(rateLimited.attention.code, 'IMPORT_RATE_LIMITED');
 assert.deepEqual(rateLimited.actions.map((action) => action.code), [
-  'RESUME_ONBOARDING',
+  'VIEW_ONBOARDING',
   'PAUSE_PREPARATION',
+  'CANCEL_PREPARATION',
+  'SKIP_ONBOARDING',
+]);
+
+const importPaused = await createService({
+  repository: {
+    ...runningRepository,
+    async getLatestRun() {
+      return {
+        ...(await runningRepository.getLatestRun()),
+        status: 'NEEDS_ATTENTION',
+        attentionCode: 'IMPORT_PAUSED',
+        attentionDetail: 'Provider import is paused.',
+      };
+    },
+  },
+}).get(1);
+assert.equal(importPaused.presentationState, 'NEEDS_ATTENTION');
+assert.equal(importPaused.attention.code, 'IMPORT_PAUSED');
+assert.deepEqual(importPaused.actions.map((action) => action.code), [
+  'RESUME_PREPARATION',
   'CANCEL_PREPARATION',
   'SKIP_ONBOARDING',
 ]);
@@ -279,7 +300,7 @@ const stalled = await createService({
 assert.equal(stalled.presentationState, 'PREPARING');
 assert.equal(stalled.attention.code, 'INDEX_NO_SETTLEMENT_WARNING');
 assert.deepEqual(stalled.actions.map((action) => action.code), [
-  'RESUME_ONBOARDING',
+  'VIEW_ONBOARDING',
   'PAUSE_PREPARATION',
   'CANCEL_PREPARATION',
   'SKIP_ONBOARDING',
