@@ -86,7 +86,9 @@ export class AccountsPageComponent implements OnInit {
             {
               id: 'last-import',
               label: 'Last completed',
-              value: dateLabel(run?.completedAt ?? account.lastSyncAt),
+              value: dateLabel(
+                run?.status === 'COMPLETED' ? run.completedAt : account.lastSyncAt,
+              ),
             },
             { id: 'created', label: 'Created', value: dateLabel(account.createdAt) },
           ] satisfies readonly UiFactItem[],
