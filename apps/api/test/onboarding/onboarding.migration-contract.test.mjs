@@ -20,6 +20,7 @@ assert.match(migration, /parent\."id" = child\."retryOfRunId"/);
 assert.match(migration, /parent\."userId" = NEW\."userId"/);
 assert.match(migration, /WHERE "purpose" = 'ONBOARDING'/);
 assert.match(migration, /NEW\."coreReadyAt" IS NOT NULL/);
+assert.match(migration, /NEW\."purpose" IN \('ONBOARDING', 'RECOVERY'\)/);
 assert.match(migration, /"onboardingDispositionReason" = 'CORE_READY'/);
 assert.match(migration, /COMMIT;\s*$/);
 
