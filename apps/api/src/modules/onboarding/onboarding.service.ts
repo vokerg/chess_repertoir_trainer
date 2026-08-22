@@ -247,12 +247,11 @@ function skippedActions(
       { code: 'VIEW_HOME', destination: '/home' },
       { code: 'EXPAND_RANGE', destination: '/onboarding' },
       { code: 'ADD_ACCOUNT', destination: '/settings/accounts' },
-      { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
+      { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
     ];
     if (attention === 'ALL_INDEXING_FAILED' || attention === 'IMPORT_RETRY_AVAILABLE') return [
       { code: 'VIEW_HOME', destination: '/home' },
       { code: 'RETRY_PREPARATION', destination: '/onboarding' },
-      { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
       { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
     ];
     return [
