@@ -75,8 +75,7 @@ export class AccountsStore {
   }
 
   async loadImportRuns(managePolling = true): Promise<void> {
-    const response = await firstValueFrom(this.api.getAccountImports());
-    this.importRuns.set(latestRunByAccount(response.items));
+    this.importRuns.set(await this.fetchImportRuns());
     if (managePolling) this.syncImportPolling();
   }
 
@@ -126,6 +125,7 @@ export class AccountsStore {
       this.syncImportPolling();
     } catch (error) {
       this.error.set(readApiError(error, `Could not queue ${account.username}.`));
+      await this.loadImportRuns().catch(() => undefined);
     } finally {
       this.syncingAccountId.set(null);
     }
@@ -164,6 +164,7 @@ export class AccountsStore {
         this.error.set(
           `Queued ${queued} account ${queued === 1 ? 'refresh' : 'refreshes'}. Failed: ${failures.join('; ')}.`,
         );
+        await this.loadImportRuns().catch(() => undefined);
       } else {
         this.notice.set(`Queued game refresh for ${queued} active ${queued === 1 ? 'account' : 'accounts'}.`);
       }
@@ -184,6 +185,7 @@ export class AccountsStore {
       this.syncImportPolling();
     } catch (error) {
       this.error.set(readApiError(error, `Could not queue older history for ${account.username}.`));
+      await this.loadImportRuns().catch(() => undefined);
     } finally {
       this.backfillingAccountId.set(null);
     }
@@ -211,6 +213,7 @@ export class AccountsStore {
       this.syncImportPolling();
     } catch (error) {
       this.error.set(readApiError(error, 'Could not retry account import.'));
+      await this.loadImportRuns().catch(() => undefined);
     } finally {
       this.controllingImportRunId.set(null);
     }
@@ -325,6 +328,7 @@ export class AccountsStore {
       this.syncImportPolling();
     } catch (error) {
       this.error.set(readApiError(error, `Could not ${action} account import.`));
+      await this.loadImportRuns().catch(() => undefined);
     } finally {
       this.controllingImportRunId.set(null);
     }
@@ -345,8 +349,7 @@ export class AccountsStore {
     this.importRefreshInFlight = true;
     const previous = this.importRuns();
     try {
-      const response = await firstValueFrom(this.api.getAccountImports());
-      const next = latestRunByAccount(response.items);
+      const next = await this.fetchImportRuns();
       this.importRuns.set(next);
       const settled = Object.values(next).some((run) => {
         const prior = previous[run.accountId];
@@ -359,6 +362,14 @@ export class AccountsStore {
       this.importRefreshInFlight = false;
       this.syncImportPolling();
     }
+  }
+
+  private async fetchImportRuns(): Promise<Record<number, AccountImportRun>> {
+    const [active, recent] = await Promise.all([
+      firstValueFrom(this.api.getActiveAccountImports()),
+      firstValueFrom(this.api.getAccountImports()),
+    ]);
+    return latestRunByAccount([...active.items, ...recent.items]);
   }
 
   private syncImportPolling(): void {
