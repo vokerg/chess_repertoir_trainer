@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import prisma from '../../prisma';
+import type { PreparationPurpose } from '../preparation/preparation.types';
 
 export const ONBOARDING_MAX_TARGETS = 16;
 export const ONBOARDING_MAX_LATEST_BATCHES = 8;
@@ -13,7 +14,7 @@ export interface OnboardingUserDispositionRecord {
 export interface OnboardingRunRecord {
   id: number;
   userId: number;
-  purpose: 'ONBOARDING';
+  purpose: PreparationPurpose;
   status: string;
   attentionCode: string | null;
   attentionDetail: string | null;
@@ -137,6 +138,8 @@ type UserDispositionRow = {
 type RunRow = Omit<OnboardingRunRecord, 'purpose'> & { purpose: string };
 type BatchRow = Omit<OnboardingBatchRecord, 'stage'> & { stage: string };
 
+const PREPARATION_PURPOSES = new Set<PreparationPurpose>(['ONBOARDING', 'EXPANSION', 'RECOVERY']);
+
 const EMPTY_SCOPE_TOTALS: OnboardingScopeTotals = {
   targetCount: 0,
   completedImportTargets: 0,
@@ -219,12 +222,15 @@ export function createOnboardingReadRepository(database: PrismaClient = prisma):
           (SELECT COUNT(*)::int FROM "DataPreparationTarget" AS target WHERE target."preparationRunId" = run."id") AS "targetCount"
         FROM "DataPreparationRun" AS run
         WHERE run."userId" = ${userId}
-          AND run."purpose" = 'ONBOARDING'
         ORDER BY run."createdAt" DESC, run."id" DESC
         LIMIT 1
       `);
       const row = rows[0];
-      return row ? { ...row, purpose: 'ONBOARDING' } : null;
+      if (!row) return null;
+      if (!PREPARATION_PURPOSES.has(row.purpose as PreparationPurpose)) {
+        throw new Error(`Unsupported preparation purpose: ${row.purpose}`);
+      }
+      return { ...row, purpose: row.purpose as PreparationPurpose };
     },
 
     async getScopeTotals(userId, runId) {
