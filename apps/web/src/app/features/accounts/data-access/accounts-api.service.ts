@@ -84,6 +84,12 @@ export class AccountsApiService {
     return this.api.get<AccountImportRunListResponse>(`/me/account-imports?limit=${limit}`);
   }
 
+  getActiveAccountImports(limit = 100): Observable<AccountImportRunListResponse> {
+    return this.api.get<AccountImportRunListResponse>(
+      `/me/account-imports?active=true&limit=${limit}`,
+    );
+  }
+
   pauseImport(importRunId: number): Observable<AccountImportRunResponse> {
     return this.api.post<AccountImportRunResponse>(`/me/account-imports/${importRunId}/pause`, {});
   }
