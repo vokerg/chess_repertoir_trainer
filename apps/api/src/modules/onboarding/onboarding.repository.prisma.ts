@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import prisma from '../../prisma';
-import type { PreparationPurpose } from '../preparation/preparation.types';
+import { preparationPurposes, type PreparationPurpose } from '../preparation/preparation.types';
 
 export const ONBOARDING_MAX_TARGETS = 16;
 export const ONBOARDING_MAX_LATEST_BATCHES = 8;
@@ -138,7 +138,7 @@ type UserDispositionRow = {
 type RunRow = Omit<OnboardingRunRecord, 'purpose'> & { purpose: string };
 type BatchRow = Omit<OnboardingBatchRecord, 'stage'> & { stage: string };
 
-const PREPARATION_PURPOSES = new Set<PreparationPurpose>(['ONBOARDING', 'EXPANSION', 'RECOVERY']);
+const PREPARATION_PURPOSES = new Set<PreparationPurpose>(preparationPurposes);
 
 const EMPTY_SCOPE_TOTALS: OnboardingScopeTotals = {
   targetCount: 0,
