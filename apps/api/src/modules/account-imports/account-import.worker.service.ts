@@ -22,7 +22,8 @@ export interface CreateAccountImportWorkerInput {
   config: AccountImportWorkerConfig;
   logger?: AccountImportWorkerLogger;
   now?: () => number;
-  onCompleted?: (run: StoredAccountImportRun) => Promise<void>;
+  reconcilePreparationHandoff?: () => Promise<boolean>;
+  reconcilePostCompletion?: () => Promise<boolean>;
 }
 
 export interface AccountImportWorker {
@@ -89,6 +90,20 @@ export function createAccountImportWorker(input: CreateAccountImportWorkerInput)
 
       try {
         while (!stopRequested) {
+          if (input.reconcilePreparationHandoff) {
+            try {
+              const reconciled = await input.reconcilePreparationHandoff();
+              if (reconciled) {
+                logger.info({}, 'Account import preparation handoff reconciled');
+              }
+            } catch (error) {
+              logger.warn(
+                safeErrorContext(error),
+                'Account import preparation handoff reconciliation failed',
+              );
+            }
+          }
+
           if (now() >= nextMaintenanceAt) {
             try {
               await runMaintenance();
@@ -326,18 +341,7 @@ export function createAccountImportWorker(input: CreateAccountImportWorkerInput)
 
       try {
         const completed = await input.repository.completeRun(run.id, run.workKey);
-        if (!completed) {
-          await settleLostOrControlled(run);
-        } else if (input.onCompleted) {
-          try {
-            await input.onCompleted(run);
-          } catch (error) {
-            logger.warn(
-              { ...safeErrorContext(error), importRunId: run.id, provider: run.provider },
-              'Account import completed but derived-data reconciliation failed',
-            );
-          }
-        }
+        if (!completed) await settleLostOrControlled(run);
       } catch (error) {
         if (error instanceof AccountImportIncompleteCoverageError) {
           const failed = await input.repository.failRun(
@@ -433,6 +437,13 @@ export function createAccountImportWorker(input: CreateAccountImportWorkerInput)
 
     if (recovered > 0) {
       logger.info({ recoveredStaleImports: recovered }, 'Account import stale-claim recovery completed');
+    }
+
+    if (input.reconcilePostCompletion) {
+      const reconciled = await input.reconcilePostCompletion();
+      if (reconciled) {
+        logger.info({}, 'Account import post-completion state reconciled');
+      }
     }
 
     const oldestQueueAgeMs = queue.oldestQueuedAt === null
