@@ -4,18 +4,25 @@ import { createOnboardingReadinessService } from '../../dist/modules/onboarding/
 const coreReadyAt = new Date('2026-08-22T09:00:00.000Z');
 const analysisCompletedAt = new Date('2026-08-22T09:30:00.000Z');
 
-function repositoryFor({ disposition = 'COMPLETED', purpose = 'ONBOARDING', status = 'RUNNING', analysisComplete = false } = {}) {
+function repositoryFor({
+  disposition = 'COMPLETED',
+  purpose = 'ONBOARDING',
+  status = 'RUNNING',
+  coreReady = true,
+  analysisComplete = false,
+  attentionCode = null,
+} = {}) {
   const run = {
     id: 41,
     userId: 1,
     purpose,
     status,
-    attentionCode: null,
+    attentionCode,
     attentionDetail: status === 'FAILED' ? 'Post-core analysis orchestration failed.' : null,
     firstImportedAt: new Date('2026-08-22T08:00:00.000Z'),
     firstIndexedAt: new Date('2026-08-22T08:15:00.000Z'),
     firstAnalysedAt: new Date('2026-08-22T08:30:00.000Z'),
-    coreReadyAt,
+    coreReadyAt: coreReady ? coreReadyAt : null,
     analysisCompletedAt: analysisComplete ? analysisCompletedAt : null,
     targetCount: 1,
   };
@@ -120,6 +127,47 @@ assert.equal(failed.presentationState, 'CORE_READY');
 assert.equal(failed.attention.code, 'PREPARATION_FAILED');
 assert.deepEqual(failed.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME']);
 
+const returningExpansion = await project({
+  disposition: 'COMPLETED',
+  purpose: 'EXPANSION',
+  status: 'RUNNING',
+  coreReady: false,
+});
+assert.equal(returningExpansion.presentationState, 'PREPARING');
+assert.deepEqual(returningExpansion.actions.map((action) => action.code), [
+  'VIEW_HOME',
+  'VIEW_ONBOARDING',
+  'PAUSE_PREPARATION',
+  'CANCEL_PREPARATION',
+]);
+
+const returningPausedExpansion = await project({
+  disposition: 'COMPLETED',
+  purpose: 'EXPANSION',
+  status: 'PAUSED',
+  coreReady: false,
+});
+assert.equal(returningPausedExpansion.presentationState, 'PAUSED');
+assert.deepEqual(returningPausedExpansion.actions.map((action) => action.code), [
+  'VIEW_HOME',
+  'RESUME_PREPARATION',
+  'CANCEL_PREPARATION',
+]);
+
+const returningAttentionExpansion = await project({
+  disposition: 'COMPLETED',
+  purpose: 'EXPANSION',
+  status: 'NEEDS_ATTENTION',
+  coreReady: false,
+  attentionCode: 'INDEX_NO_SETTLEMENT_WARNING',
+});
+assert.equal(returningAttentionExpansion.presentationState, 'NEEDS_ATTENTION');
+assert.deepEqual(returningAttentionExpansion.actions.map((action) => action.code), [
+  'VIEW_HOME',
+  'VIEW_ONBOARDING',
+  'CANCEL_PREPARATION',
+]);
+
 const skippedExpansion = await project({
   disposition: 'SKIPPED',
   purpose: 'EXPANSION',
@@ -145,4 +193,4 @@ assert.deepEqual(skippedCompletedExpansion.actions.map((action) => action.code),
   'START_ONBOARDING',
 ]);
 
-console.log('Onboarding post-core action and skipped expansion presentation tests passed.');
+console.log('Onboarding post-core action and returning/skipped expansion presentation tests passed.');
