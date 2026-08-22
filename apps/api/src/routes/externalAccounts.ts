@@ -565,7 +565,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
           description: 'Deprecated legacy-field action. It clears syncCursorTime only; durable account refresh uses exact AccountImportCoverage. Use /backfill to request older durable history.',
           params: accountIdParamsSchema,
           response: {
-            200: legacyOpaqueResponseSchema,
+            200: externalAccountResponseSchema,
             400: validationErrorResponseSchema,
             401: unauthorizedResponseSchema,
             404: messageResponseSchema,
@@ -583,7 +583,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
         return { message: 'External account not found' };
       }
 
-      return account;
+      return externalAccountResponseSchema.parse(toExternalAccountResponse(account));
     },
   );
 
