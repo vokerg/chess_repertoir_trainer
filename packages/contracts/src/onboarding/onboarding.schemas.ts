@@ -5,6 +5,9 @@ export const ONBOARDING_CONTRACT_VERSION = '2026-08-v1' as const;
 export const onboardingDispositionSchema = z.enum(['PENDING', 'COMPLETED', 'SKIPPED']);
 export type OnboardingDisposition = z.infer<typeof onboardingDispositionSchema>;
 
+export const onboardingPreparationPurposeSchema = z.enum(['ONBOARDING', 'EXPANSION', 'RECOVERY']);
+export type OnboardingPreparationPurpose = z.infer<typeof onboardingPreparationPurposeSchema>;
+
 export const onboardingPresentationStateSchema = z.enum([
   'NOT_STARTED',
   'PREPARING',
@@ -204,7 +207,7 @@ export const onboardingReadinessResponseSchema = z.object({
   preparation: z.object({
     runId: z.number().int().positive(),
     status: z.string().min(1),
-    purpose: z.literal('ONBOARDING'),
+    purpose: onboardingPreparationPurposeSchema,
     targetsTotal: countSchema,
     targetsTruncated: z.boolean(),
     providerWindows: onboardingProviderWindowProgressSchema,
