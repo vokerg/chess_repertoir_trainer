@@ -33,7 +33,6 @@ import {
   accountRatingHistoryResponseSchema,
   accountRatingStatsResponseSchema,
   defaultProgressAccountResponseSchema,
-  externalAccountDeleteResponseSchema,
   externalAccountListResponseSchema,
   externalAccountResponseSchema,
   externalAccountWorkflowSummaryResponseSchema,
@@ -414,12 +413,14 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
     '/api/me/accounts/:id',
     {
       schema: accountSchema('deleteExternalAccount', 'Delete one external account', {
+        deprecated: true,
+        description: 'Temporarily disabled during lifecycle cutover. ONB-020 replaces this immediate unfenced cascade with the durable destructive coordinator.',
         params: accountIdParamsSchema,
         response: {
-          200: externalAccountDeleteResponseSchema,
           400: validationErrorResponseSchema,
           401: unauthorizedResponseSchema,
           404: messageResponseSchema,
+          409: messageResponseSchema,
         },
       }),
     },
@@ -427,16 +428,16 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       const id = request.params.id;
-      const account = await ExternalAccountService.deleteForUser(auth.userId, id);
+      const account = await ExternalAccountService.getForUser(auth.userId, id);
       if (!account) {
         reply.code(404);
         return { message: 'External account not found' };
       }
 
-      return externalAccountDeleteResponseSchema.parse({
-        deleted: true,
-        account: toExternalAccountResponse(account),
-      });
+      reply.code(409);
+      return {
+        message: 'Account deletion is temporarily disabled until the safe lifecycle coordinator is available.',
+      };
     },
   );
 
@@ -559,16 +560,17 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: accountSchema(
         'resetExternalAccountSyncCursor',
-        'Reset the sync cursor for an external account',
+        'Queue older account history for import',
         {
           deprecated: true,
-          description: 'Deprecated compatibility action. Normal clients should queue explicit historical backfill instead of mutating the forward cursor.',
+          description: 'Deprecated compatibility wrapper. It no longer mutates the legacy forward cursor and instead queues the same bounded three-month historical backfill as /backfill.',
           params: accountIdParamsSchema,
           response: {
-            200: legacyOpaqueResponseSchema,
+            202: createAccountImportRunResponseSchema,
             400: validationErrorResponseSchema,
             401: unauthorizedResponseSchema,
             404: messageResponseSchema,
+            409: accountImportErrorResponseSchema,
           },
         },
       ),
@@ -577,13 +579,24 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       const id = request.params.id;
-      const account = await ExternalAccountService.resetSyncCursorForUser(auth.userId, id);
+      const account = await ExternalAccountService.getForUser(auth.userId, id);
       if (!account) {
         reply.code(404);
         return { message: 'External account not found' };
       }
 
-      return account;
+      try {
+        const result = await AccountImportService.createHistoricalBackfillForUser(auth.userId, id);
+        reply.code(202);
+        return result;
+      } catch (error) {
+        const mapped = mapAccountImportCommandError(error);
+        if (mapped) {
+          reply.code(mapped.statusCode);
+          return mapped.body;
+        }
+        throw error;
+      }
     },
   );
 
