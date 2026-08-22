@@ -1,6 +1,6 @@
 # ONB-008 — Persist onboarding disposition and readiness projection
 
-Status: READY
+Status: REVIEW
 
 Priority: P0
 
@@ -8,17 +8,17 @@ Order: 80
 
 Delivery class: Implementation
 
-Planning maturity: Decisioned by ONB-001/003/007/016; ONB-017/018 execution state and durable import/provider delivery are complete
+Planning maturity: Decisioned by ONB-001/003/007/016; ONB-017/018 execution state and durable import/provider delivery are complete; implementation is now under review in PR #398
 
 GitHub issue: [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT
 
-Claim branch: none
+Claim branch: `onb-008/issue-193-onboarding-readiness`
 
-Claimed at: none
+Claimed at: 2026-08-20
 
-Claim scope: none
+Claim scope: minimal user disposition persistence, server-owned onboarding/readiness projection, shared HTTP contract, authenticated read route, bounded ownership-scoped aggregates, migration and focused tests; excludes ONB-009 lifecycle commands and Angular UI
 
 Promoted at: 2026-08-17 through ONB-018 completion reconciliation
 
@@ -105,6 +105,12 @@ ONB-017/018 own the physical `DataPreparationRun`, target, batch, and reconciler
 
 Report: none
 
-Pull request: none
+Pull request: [#398](https://github.com/vokerg/chess_repertoir_trainer/pull/398)
 
-Completed at: none
+Initial implementation head: `df009f1a1e242a3a11b4b61eb08f41a1dc91cb85`
+
+Latest self-review code head: `f68b9618a3fffd543c218df473f6aa04ca57ec20`
+
+Validation: GitHub Actions is the merge-readiness gate for this connector-only implementation; the current branch head must pass dependency audit, lint, build, opening audits, architecture/repository guardrails, the full migration chain, imported-game audits, and the complete test suite.
+
+Completed at: none — task remains `REVIEW` until accepted merge/completion reconciliation.
