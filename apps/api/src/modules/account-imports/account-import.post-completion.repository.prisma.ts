@@ -79,7 +79,8 @@ export function createAccountImportPostCompletionRepository(
           JOIN "ImportRun" AS run
             ON run."accountId" = coverage."accountId"
            AND run."scopeHash" = coverage."scopeHash"
-          WHERE ${normalRefreshCoveragePredicate()}
+          WHERE run."source" = 'ACCOUNT_REFRESH'
+            AND ${normalRefreshCoveragePredicate()}
             AND run."mode" IN ('BOUNDED_INITIAL', 'INCREMENTAL_FORWARD')
             AND run."status" = 'COMPLETED'
             AND run."completedAt" IS NOT NULL
@@ -186,6 +187,7 @@ export function createAccountImportPostCompletionRepository(
           WHERE "userId" = ${userId}
             AND "accountId" = ${accountId}
             AND "scopeHash" = ${coverage.scopeHash}
+            AND "source" = 'ACCOUNT_REFRESH'
             AND "mode" IN ('BOUNDED_INITIAL', 'INCREMENTAL_FORWARD')
             AND "status" = 'COMPLETED'
             AND "completedAt" IS NOT NULL
