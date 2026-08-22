@@ -8,7 +8,7 @@
 
 `DataPreparationRun`, `DataPreparationTarget`, `DataPreparationBatch`, `ImportRun`, and current `ImportedGame` evidence remain authoritative for physical execution and readiness. ONB-008 does not add a second workflow aggregate.
 
-When the initial `ONBOARDING` preparation or a linked `RECOVERY` descendant first persists `coreReadyAt`, PostgreSQL converges any pending or skipped disposition to `COMPLETED` with reason `CORE_READY`. A recovery descended only from `EXPANSION` does not alter onboarding disposition. Skipping guidance therefore does not cancel already accepted first-run work.
+When the initial `ONBOARDING` preparation or a linked `RECOVERY` descendant first persists `coreReadyAt`, PostgreSQL converges any pending or skipped disposition to `COMPLETED` with reason `CORE_READY`. A recovery descended only from `EXPANSION` does not alter onboarding disposition, and an `EXPANSION` run itself is never disposition-completing even if malformed data attaches it to an onboarding retry lineage. Skipping guidance therefore does not cancel already accepted first-run work.
 
 ## Projection rules
 
