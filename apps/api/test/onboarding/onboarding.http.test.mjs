@@ -223,7 +223,7 @@ try {
     assert.equal(body.readiness.find((item) => item.feature === 'games').state, 'ready');
     assert.equal(body.readiness.find((item) => item.feature === 'openings').state, 'ready');
     assert.deepEqual(body.actions.map((action) => action.code), [
-      'RESUME_ONBOARDING',
+      'VIEW_ONBOARDING',
       'PAUSE_PREPARATION',
       'CANCEL_PREPARATION',
       'SKIP_ONBOARDING',
@@ -251,7 +251,7 @@ try {
     assert.equal(skippedBody.preparation.status, 'RUNNING');
     assert.deepEqual(skippedBody.actions.map((action) => action.code), [
       'VIEW_HOME',
-      'RESUME_ONBOARDING',
+      'VIEW_ONBOARDING',
       'PAUSE_PREPARATION',
       'CANCEL_PREPARATION',
     ]);
