@@ -8,11 +8,11 @@
 
 `DataPreparationRun`, `DataPreparationTarget`, `DataPreparationBatch`, `ImportRun`, and current `ImportedGame` evidence remain authoritative for physical execution and readiness. ONB-008 does not add a second workflow aggregate.
 
-When an `ONBOARDING` preparation run first persists `coreReadyAt`, PostgreSQL converges any pending or skipped disposition to `COMPLETED` with reason `CORE_READY`. Skipping guidance therefore does not cancel already accepted work.
+When the initial `ONBOARDING` preparation or a linked `RECOVERY` descendant first persists `coreReadyAt`, PostgreSQL converges any pending or skipped disposition to `COMPLETED` with reason `CORE_READY`. A recovery descended only from `EXPANSION` does not alter onboarding disposition. Skipping guidance therefore does not cancel already accepted first-run work.
 
 ## Projection rules
 
-The endpoint is authenticated and read-only. It returns the latest onboarding run, bounded target detail (maximum 16), bounded latest immutable child batches (maximum 8), aggregate current game evidence, persisted milestones, deterministic attention/action codes, feature readiness, and at most three canonical game/opening/analysis references.
+The endpoint is authenticated and read-only. It returns the latest user preparation across the existing `ONBOARDING`, `RECOVERY`, and `EXPANSION` purposes, bounded target detail (maximum 16), bounded latest immutable child batches (maximum 8), aggregate current game evidence, persisted milestones, deterministic attention/action codes, feature readiness, and at most three canonical game/opening/analysis references.
 
 Current `ImportedGame` evidence is the product-readiness authority. Historical batch counts are exposed separately as technical execution evidence and are never treated as proof that a product capability is ready.
 
@@ -24,4 +24,4 @@ Feature states are `locked`, `partial`, `ready`, or `checked-empty`. Games, open
 
 Every query is scoped by authenticated `userId`. Run-specific aggregates join through the owned preparation run. Potentially large game sets are counted or ranked in PostgreSQL; Node receives only aggregate rows, at most 16 targets, at most eight latest batches, and at most three reveal references.
 
-Lifecycle commands remain outside this module. Action codes such as retry, expansion, finish, and skip are recommendations/destinations consumed by later ONB-009 command surfaces; this endpoint does not mutate preparation state.
+Lifecycle commands remain outside this module. Action codes such as retry, restart, expansion, finish, and skip are recommendations/destinations consumed by later ONB-009 command surfaces; this endpoint does not mutate preparation state.
