@@ -2,6 +2,7 @@ import 'dotenv/config';
 import prisma from './prisma';
 import { defaultAccountImportExecutorRegistry } from './modules/account-imports/account-import.executor';
 import { AccountImportLifecycleRepository } from './modules/account-imports/account-import.lifecycle.repository.prisma';
+import { AccountImportPostCompletionService } from './modules/account-imports/account-import.post-completion.service';
 import { loadAccountImportWorkerConfig } from './modules/account-imports/account-import.worker.config';
 import { createAccountImportWorker } from './modules/account-imports/account-import.worker.service';
 import {
@@ -16,9 +17,9 @@ import { loadJobWorkerConfig } from './modules/jobs/job-worker.config';
 import { JobWorkerRepository } from './modules/jobs/job-worker.repository.prisma';
 import { settlesWithin } from './modules/jobs/job-worker-shutdown';
 import { createJobWorker } from './modules/jobs/job-worker.service';
+import { AccountImportPreparationHandoffRepository } from './modules/preparation/account-import-preparation-handoff.repository.prisma';
 import { readPreparationConfig } from './modules/preparation/preparation.config';
 import { createPreparationReconciler } from './modules/preparation/preparation-reconciler.service';
-import { AccountRatingStatsService } from './services/accountRatingStatsService';
 
 const DAY_MS = 24 * 60 * 60_000;
 const TERMINAL_RETENTION_INTERVAL_MS = 60 * 60_000;
@@ -40,9 +41,8 @@ async function bootstrap() {
     repository: AccountImportLifecycleRepository,
     executors: defaultAccountImportExecutorRegistry,
     config: accountImportConfig,
-    onCompleted: async (run) => {
-      await AccountRatingStatsService.recomputeForAccount(run.userId, run.accountId);
-    },
+    reconcilePreparationHandoff: () => AccountImportPreparationHandoffRepository.reconcileNext(),
+    reconcilePostCompletion: () => AccountImportPostCompletionService.reconcileNext(),
   });
   const preparationWorker = createPreparationReconciler({ config: preparationConfig });
   let shuttingDown = false;
