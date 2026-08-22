@@ -12,9 +12,12 @@ import {
 assert.equal(onboardingDispositionSchema.safeParse('PENDING').success, true);
 assert.equal(onboardingDispositionSchema.safeParse('IN_PROGRESS').success, false);
 assert.equal(onboardingFeatureStateSchema.safeParse('checked-empty').success, true);
+assert.equal(onboardingActionCodeSchema.safeParse('VIEW_ONBOARDING').success, true);
+assert.equal(onboardingActionCodeSchema.safeParse('RESUME_PREPARATION').success, true);
 assert.equal(onboardingActionCodeSchema.safeParse('PAUSE_PREPARATION').success, true);
 assert.equal(onboardingActionCodeSchema.safeParse('CANCEL_PREPARATION').success, true);
 assert.equal(onboardingActionCodeSchema.safeParse('RESTART_PREPARATION').success, true);
+assert.equal(onboardingActionCodeSchema.safeParse('RESUME_ONBOARDING').success, false);
 assert.equal(onboardingAttentionCodeSchema.safeParse('PREPARATION_CANCEL_REQUESTED').success, true);
 assert.equal(onboardingPreparationPurposeSchema.safeParse('ONBOARDING').success, true);
 assert.equal(onboardingPreparationPurposeSchema.safeParse('RECOVERY').success, true);
@@ -92,9 +95,10 @@ const response = onboardingReadinessResponseSchema.parse({
     { feature: 'tactics', state: 'locked', evidenceCount: 0 },
   ],
   actions: [
-    { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
+    { code: 'VIEW_ONBOARDING', destination: '/onboarding' },
     { code: 'PAUSE_PREPARATION', destination: '/onboarding' },
     { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+    { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
   ],
   reveals: [],
   observedAt: '2026-08-20T07:02:00.000Z',
