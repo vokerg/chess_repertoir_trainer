@@ -1,7 +1,9 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import type { UiFactItem } from '../../../shared/ui/fact-grid/fact-grid.component';
 import type { AccountImportRun, ExternalAccount } from '../data-access/accounts.models';
+import { dateLabel } from '../helpers/account-labels';
 import { AccountsStore } from '../state/accounts.store';
 import { AccountsPageComponent } from './accounts-page.component';
 
@@ -98,6 +100,21 @@ describe('AccountsPageComponent', () => {
     expect(buttons).not.toContain('Analyse indexed games');
   });
 
+  it('does not present failed settlement as a successful completion', () => {
+    store.importRunForAccount.withArgs(account.id).and.returnValue({
+      ...run,
+      status: 'FAILED',
+      completedAt: '2026-08-20T12:00:00.000Z',
+      errorCode: 'TEST_FAILURE',
+      error: 'Import failed.',
+    });
+    fixture.detectChanges();
+
+    const lastCompleted = page().accountFactsById()[account.id]
+      .find((fact) => fact.id === 'last-import');
+    expect(lastCompleted?.value).toBe(dateLabel(account.lastSyncAt));
+  });
+
   it('keeps historical expansion explicit and raw cursor reset absent', () => {
     const root = fixture.nativeElement as HTMLElement;
     const buttons = buttonLabels(root);
@@ -133,9 +150,13 @@ describe('AccountsPageComponent', () => {
     expect(store.syncActiveAccounts).toHaveBeenCalled();
   });
 
-  function page(): { headerActions(): readonly { run: () => void }[] } {
+  function page(): {
+    headerActions(): readonly { run: () => void }[];
+    accountFactsById(): Readonly<Record<number, readonly UiFactItem[]>>;
+  } {
     return fixture.componentInstance as unknown as {
       headerActions(): readonly { run: () => void }[];
+      accountFactsById(): Readonly<Record<number, readonly UiFactItem[]>>;
     };
   }
 });
@@ -146,11 +167,11 @@ function importRun(): AccountImportRun {
     accountId: 7,
     provider: 'LICHESS',
     mode: 'INCREMENTAL_FORWARD',
-    source: 'USER_ACTION',
+    source: 'ACCOUNT_REFRESH',
     status: 'RUNNING',
     scopeVersion: 1,
     scopeHash: 'scope-7',
-    scope: { variant: 'STANDARD', speeds: ['BLITZ', 'RAPID'], rated: 'BOTH' },
+    scope: { variant: 'STANDARD', speeds: ['BULLET', 'BLITZ', 'RAPID'], rated: 'BOTH' },
     requestedFrom: '2026-08-01T00:00:00.000Z',
     requestedTo: '2026-08-05T04:00:00.000Z',
     retryOfImportRunId: null,
