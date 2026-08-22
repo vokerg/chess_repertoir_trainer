@@ -26,7 +26,8 @@ ALTER TABLE "AppUser"
 -- Core readiness is a durable onboarding invariant. Keep disposition
 -- convergence in PostgreSQL so every writer that legitimately advances the
 -- initial preparation or one of its linked recovery runs produces the same
--- cross-session result. Expansion-only recovery does not complete onboarding.
+-- cross-session result. EXPANSION is never a disposition-completing purpose,
+-- even if malformed data attaches it to a retry lineage.
 CREATE OR REPLACE FUNCTION "complete_onboarding_disposition_from_core_ready"()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -35,7 +36,8 @@ DECLARE
   completes_onboarding BOOLEAN;
 BEGIN
   IF NEW."coreReadyAt" IS NOT NULL
-     AND OLD."coreReadyAt" IS NULL THEN
+     AND OLD."coreReadyAt" IS NULL
+     AND NEW."purpose" IN ('ONBOARDING', 'RECOVERY') THEN
     WITH RECURSIVE lineage AS (
       SELECT run."id", run."purpose", run."retryOfRunId"
       FROM "DataPreparationRun" AS run
