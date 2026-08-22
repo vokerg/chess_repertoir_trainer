@@ -2,6 +2,8 @@ import 'dotenv/config';
 import prisma from './prisma';
 import { defaultAccountImportExecutorRegistry } from './modules/account-imports/account-import.executor';
 import { AccountImportLifecycleRepository } from './modules/account-imports/account-import.lifecycle.repository.prisma';
+import { drainAccountImportPostCompletion } from './modules/account-imports/account-import.post-completion-drain';
+import { AccountImportPostCompletionService } from './modules/account-imports/account-import.post-completion.service';
 import { loadAccountImportWorkerConfig } from './modules/account-imports/account-import.worker.config';
 import { createAccountImportWorker } from './modules/account-imports/account-import.worker.service';
 import {
@@ -16,6 +18,7 @@ import { loadJobWorkerConfig } from './modules/jobs/job-worker.config';
 import { JobWorkerRepository } from './modules/jobs/job-worker.repository.prisma';
 import { settlesWithin } from './modules/jobs/job-worker-shutdown';
 import { createJobWorker } from './modules/jobs/job-worker.service';
+import { AccountImportPreparationHandoffRepository } from './modules/preparation/account-import-preparation-handoff.repository.prisma';
 import { readPreparationConfig } from './modules/preparation/preparation.config';
 import { createPreparationReconciler } from './modules/preparation/preparation-reconciler.service';
 
@@ -39,6 +42,12 @@ async function bootstrap() {
     repository: AccountImportLifecycleRepository,
     executors: defaultAccountImportExecutorRegistry,
     config: accountImportConfig,
+    reconcilePreparationHandoff: () => AccountImportPreparationHandoffRepository.reconcileNext(),
+    reconcilePostCompletion: async () => (
+      await drainAccountImportPostCompletion(
+        () => AccountImportPostCompletionService.reconcileNext(),
+      )
+    ) > 0,
   });
   const preparationWorker = createPreparationReconciler({ config: preparationConfig });
   let shuttingDown = false;

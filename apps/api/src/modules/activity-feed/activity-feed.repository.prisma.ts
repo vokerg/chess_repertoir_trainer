@@ -17,6 +17,10 @@ type TimeZoneRow = {
   timeZone: string;
 };
 
+type DatabaseClockRow = {
+  now: Date;
+};
+
 function firstRow<T>(rows: readonly T[], message: string): T {
   const row = rows[0];
   if (!row) throw new Error(message);
@@ -40,6 +44,13 @@ export function createActivityFeedRepository(database: PrismaClient = prisma) {
   return {
     transaction<T>(work: (tx: ActivityFeedTransaction) => Promise<T>): Promise<T> {
       return database.$transaction(work);
+    },
+
+    async getDatabaseTime(): Promise<Date> {
+      const rows = await database.$queryRaw<DatabaseClockRow[]>(Prisma.sql`
+        SELECT NOW() AS "now"
+      `);
+      return firstRow(rows, 'Database clock query did not return a row').now;
     },
 
     async getTimeZone(

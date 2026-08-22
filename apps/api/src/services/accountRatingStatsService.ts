@@ -15,6 +15,7 @@ import {
   STANDARD_IMPORTED_GAME_VARIANTS,
   isStandardImportedGameVariant,
 } from '../modules/imported-games/imported-game-workflow-eligibility';
+import { assertDataLifecycleWriteAllowed } from '../modules/data-lifecycle/data-lifecycle.guard';
 
 export type RatingStatsSpeed = RatingSpeed;
 export type DashboardPeriodKey = '1M' | '3M' | '6M' | 'YTD' | '1Y' | '3Y' | '5Y' | 'ALL';
@@ -87,6 +88,10 @@ type AccountSummary = {
   provider: string;
   username: string;
   displayName?: string | null;
+};
+
+type DatabaseClockRow = {
+  now: Date;
 };
 
 type ImportedRatingGame = {
@@ -320,8 +325,18 @@ function toResponse(
   };
 }
 
+async function readDatabaseClock(): Promise<Date> {
+  const rows = await prisma.$queryRaw<DatabaseClockRow[]>(Prisma.sql`
+    SELECT NOW() AS "now"
+  `);
+  const now = rows[0]?.now;
+  if (!now) throw new Error('Could not read database clock for account rating projection.');
+  return now;
+}
+
 export const AccountRatingStatsService = {
   recomputeForAccount: async (userId: number, accountId: number): Promise<AccountRatingStatsResponse | null> => {
+    const snapshotStartedAt = await readDatabaseClock();
     const account = await ExternalAccountService.getForUser(userId, accountId);
     if (!account) return null;
 
@@ -356,23 +371,48 @@ export const AccountRatingStatsService = {
     });
 
     const projection = buildDashboardProjection(games);
-    const computedAt = new Date();
-    const stats = await prisma.accountRatingStats.upsert({
-      where: { accountId },
-      update: {
-        computedAt,
-        gamesCount: projection.gamesCount,
-        data: projection.data as unknown as Prisma.InputJsonValue,
-      },
-      create: {
+    const persisted = await prisma.$transaction(async (transaction) => {
+      await assertDataLifecycleWriteAllowed(transaction, {
+        userId,
         accountId,
-        computedAt,
-        gamesCount: projection.gamesCount,
-        data: projection.data as unknown as Prisma.InputJsonValue,
-      },
-    });
+        snapshotStartedAt,
+      });
+      const currentAccount = await transaction.externalAccount.findFirst({
+        where: { id: accountId, userId },
+        select: {
+          id: true,
+          provider: true,
+          username: true,
+          displayName: true,
+        },
+      });
+      if (!currentAccount) return null;
 
-    return toResponse(account, stats);
+      const clockRows = await transaction.$queryRaw<DatabaseClockRow[]>(Prisma.sql`
+        SELECT NOW() AS "now"
+      `);
+      const computedAt = clockRows[0]?.now;
+      if (!computedAt) throw new Error('Could not read database clock for account rating projection.');
+
+      const stats = await transaction.accountRatingStats.upsert({
+        where: { accountId },
+        update: {
+          computedAt,
+          gamesCount: projection.gamesCount,
+          data: projection.data as unknown as Prisma.InputJsonValue,
+        },
+        create: {
+          accountId,
+          computedAt,
+          gamesCount: projection.gamesCount,
+          data: projection.data as unknown as Prisma.InputJsonValue,
+        },
+      });
+      return { account: currentAccount, stats };
+    });
+    if (!persisted) return null;
+
+    return toResponse(persisted.account, persisted.stats);
   },
 
   getForAccount: async (userId: number, accountId: number): Promise<AccountRatingStatsResponse | null> => {
@@ -384,6 +424,25 @@ export const AccountRatingStatsService = {
     });
 
     if (stats && getStoredProjection(stats.data)) return toResponse(account, stats);
+
+    if (!stats) {
+      const [coverage, retainedCompletedDurableImport] = await Promise.all([
+        prisma.accountImportCoverage.findFirst({
+          where: { accountId },
+          select: { id: true },
+        }),
+        prisma.importRun.findFirst({
+          where: {
+            userId,
+            accountId,
+            status: 'COMPLETED',
+            mode: { not: 'LEGACY_SYNC' },
+          },
+          select: { id: true },
+        }),
+      ]);
+      if (retainedCompletedDurableImport && !coverage) return null;
+    }
 
     return AccountRatingStatsService.recomputeForAccount(userId, accountId);
   },

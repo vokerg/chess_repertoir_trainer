@@ -64,8 +64,9 @@ const bodylessActions = new Map([
   ['POST /api/lichess-puzzles/rounds/{roundId}/abandon', 'A round abandoned before any wrong move is not submitted to Lichess'],
   ['POST /api/lichess-puzzles/rounds/{roundId}/retry-sync', 'The already persisted immutable upstream outcome is reused'],
   ['POST /api/me/lichess-connection/start', 'creates an authorization URL for the authenticated user'],
-  ['POST /api/me/accounts/{id}/sync', 'provider and cursor state come from the selected account'],
-  ['POST /api/me/accounts/{id}/reset-cursor', 'resets the persisted cursor for the selected account'],
+  ['POST /api/me/accounts/{id}/sync', 'returns 202 without provider traversal in the HTTP request'],
+  ['POST /api/me/accounts/{id}/backfill', 'Queues the three calendar months immediately before proved normal account coverage'],
+  ['POST /api/me/accounts/{id}/reset-cursor', 'clears syncCursorTime only'],
   ['POST /api/me/account-imports/{importRunId}/pause', 'the import run id selects the persisted run to pause'],
   ['POST /api/me/account-imports/{importRunId}/resume', 'the import run id selects the persisted paused run to return to the durable queue'],
   ['POST /api/me/account-imports/{importRunId}/cancel', 'the import run id selects the persisted run to cancel'],
@@ -87,6 +88,12 @@ assert.deepEqual(
   [...bodylessActions.keys()].sort(),
   'the bodyless action allowlist must stay exact',
 );
+
+const syncOperation = first.paths['/api/me/accounts/{id}/sync']?.post;
+assert.ok(syncOperation?.responses?.['202'], 'account sync must document durable 202 acceptance');
+assert.equal(syncOperation?.responses?.['200'], undefined, 'account sync no longer completes provider traversal in HTTP');
+const backfillOperation = first.paths['/api/me/accounts/{id}/backfill']?.post;
+assert.ok(backfillOperation?.responses?.['202'], 'account backfill must document durable 202 acceptance');
 
 const operationIds = operations.map(({ operation }) => operation.operationId);
 assert.equal(new Set(operationIds).size, operationIds.length, 'Operation IDs must be unique');

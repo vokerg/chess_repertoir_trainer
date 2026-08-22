@@ -2,7 +2,6 @@ import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import {
   FactGridComponent,
   type UiFactItem,
@@ -15,12 +14,11 @@ import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
 import { type UiShellStat } from '../../../shared/ui/ui-shell.model';
 import { AccountsApiService } from '../data-access/accounts-api.service';
-import { ExternalAccount, ImportRunSummary } from '../data-access/accounts.models';
-import {
-  buildNewImportedWorkflowState,
-  type NewImportedWorkflowState,
-} from '../helpers/account-settings-view';
-import { dateLabel, providerClass, providerLabel, syncStatusLabel } from '../helpers/account-labels';
+import type {
+  AccountImportRun,
+  AccountImportStatus,
+} from '../data-access/accounts.models';
+import { dateLabel, providerClass, providerLabel } from '../helpers/account-labels';
 import { AccountsStore } from '../state/accounts.store';
 
 @Component({
@@ -42,21 +40,19 @@ import { AccountsStore } from '../state/accounts.store';
 })
 export class AccountsPageComponent implements OnInit {
   protected readonly store = inject(AccountsStore);
-  private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly providerLabel = providerLabel;
   protected readonly providerClass = providerClass;
-  protected readonly syncStatusLabel = syncStatusLabel;
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
     {
       id: 'refresh-games',
-      label: this.store.syncingAllAccounts() ? 'Refreshing games...' : 'Refresh games',
+      label: this.store.syncingAllAccounts() ? 'Queueing refreshes...' : 'Refresh games',
       disabled:
-        this.store.loading() ||
-        this.store.saving() ||
-        this.store.syncingAllAccounts() ||
-        this.store.syncingAccountId() !== null ||
-        this.store.resettingCursorAccountId() !== null ||
-        this.store.deletingAccountId() !== null,
+        this.store.loading()
+        || this.store.saving()
+        || this.store.syncingAllAccounts()
+        || this.store.syncingAccountId() !== null
+        || this.store.backfillingAccountId() !== null
+        || this.store.controllingImportRunId() !== null,
       run: () => this.store.syncActiveAccounts(),
     },
   ]);
@@ -67,136 +63,91 @@ export class AccountsPageComponent implements OnInit {
       label: 'Active',
       value: this.store.accounts().filter((account) => account.isActive).length,
     },
+    {
+      id: 'imports-running',
+      label: 'Importing',
+      value: this.store.accounts().filter((account) => this.store.isImportActive(account.id)).length,
+    },
   ]);
   protected readonly accountFactsById = computed<
     Readonly<Record<number, readonly UiFactItem[]>>
   >(() =>
     Object.fromEntries(
-      this.store.accounts().map((account) => [
-        account.id,
-        [
-          { id: 'last-sync', label: 'Last sync', value: dateLabel(account.lastSyncAt) },
-          { id: 'import-cursor', label: 'Import cursor', value: dateLabel(account.syncCursorTime) },
-          { id: 'created', label: 'Created', value: dateLabel(account.createdAt) },
-        ] satisfies readonly UiFactItem[],
-      ]),
+      this.store.accounts().map((account) => {
+        const run = this.store.importRunForAccount(account.id);
+        return [
+          account.id,
+          [
+            {
+              id: 'import-status',
+              label: 'Import status',
+              value: run ? this.importStatusLabel(run.status) : 'Not started',
+            },
+            {
+              id: 'last-import',
+              label: 'Last completed',
+              value: dateLabel(
+                run?.status === 'COMPLETED' ? run.completedAt : account.lastSyncAt,
+              ),
+            },
+            { id: 'created', label: 'Created', value: dateLabel(account.createdAt) },
+          ] satisfies readonly UiFactItem[],
+        ];
+      }),
     ),
   );
-  protected readonly newImportedWorkflowStates = computed<
-    Readonly<Record<number, NewImportedWorkflowState>>
-  >(() => {
-    const candidatesByAccount = this.store.workflowCandidates();
-    return Object.fromEntries(
-      Object.entries(this.store.syncResults()).map(([accountId, result]) => [
-        Number(accountId),
-        buildNewImportedWorkflowState(result, candidatesByAccount[Number(accountId)]),
-      ]),
-    );
-  });
 
   ngOnInit(): void {
-    void this.store.loadAccounts();
+    void this.store.initialize();
   }
 
-  protected async confirmResetCursor(account: ExternalAccount): Promise<void> {
-    const confirmed = await this.confirmDialog.confirm({
-      title: 'Reset import cursor?',
-      message: `The next sync will re-scan the full history for ${providerLabel(account.provider)} @${account.username}. Already imported games will be skipped rather than duplicated.`,
-      tone: 'warning',
-      confirmLabel: 'Reset cursor',
-      cancelLabel: 'Cancel',
-    });
-
-    if (confirmed) void this.store.resetCursor(account);
-  }
-
-  protected async confirmDeleteAccount(account: ExternalAccount): Promise<void> {
-    const accountLabel = account.username ? `@${account.username}` : `account #${account.id}`;
-    const confirmed = await this.confirmDialog.confirm({
-      title: 'Delete account and imported data?',
-      message: `Delete ${providerLabel(account.provider)} ${accountLabel} and all imported games, ply indexes, analysis, and sync history linked to it? This cannot be undone.`,
-      tone: 'danger',
-      confirmLabel: 'Delete account',
-      cancelLabel: 'Cancel',
-      requireTypedConfirmation: accountLabel,
-    });
-
-    if (confirmed) void this.store.deleteAccount(account);
-  }
-
-  protected async confirmIndexEligibleAccountGames(account: ExternalAccount): Promise<void> {
-    const candidates = await this.store.refreshWorkflowCandidates(account.id);
-    const gameIds = candidates.eligibleUnindexedGameIds;
-    if (!gameIds.length) {
-      this.store.showNotice('No unindexed blitz/rapid games found for this account.');
-      return;
+  protected importStatusLabel(status: AccountImportStatus): string {
+    switch (status) {
+      case 'QUEUED': return 'Queued';
+      case 'RUNNING': return 'Importing';
+      case 'PAUSE_REQUESTED': return 'Pausing';
+      case 'PAUSED': return 'Paused';
+      case 'CANCEL_REQUESTED': return 'Cancelling';
+      case 'CANCELLED': return 'Cancelled';
+      case 'COMPLETED': return 'Completed';
+      case 'FAILED': return 'Failed';
     }
-
-    const confirmed = await this.confirmDialog.confirm({
-      title: 'Index blitz/rapid games?',
-      message: `Index ${gameIds.length} blitz/rapid ${gameIds.length === 1 ? 'game' : 'games'} for ${providerLabel(account.provider)} @${account.username}?`,
-      tone: 'warning',
-      confirmLabel: 'Index games',
-      cancelLabel: 'Cancel',
-    });
-
-    if (confirmed) void this.store.indexEligibleAccountGames(account, gameIds);
   }
 
-  protected async confirmAnalyseEligibleAccountGames(account: ExternalAccount): Promise<void> {
-    const candidates = await this.store.refreshWorkflowCandidates(account.id);
-    const gameIds = candidates.eligibleIndexedGameIds;
-    if (!gameIds.length) {
-      this.store.showNotice('No indexed blitz/rapid games found for this account.');
-      return;
+  protected importModeLabel(run: AccountImportRun): string {
+    switch (run.mode) {
+      case 'BOUNDED_INITIAL': return 'Recent history';
+      case 'INCREMENTAL_FORWARD': return 'Forward refresh';
+      case 'HISTORICAL_BACKFILL': return 'Older history';
+      case 'LEGACY_SYNC': return 'Legacy sync';
     }
-
-    const confirmed = await this.confirmDialog.confirm({
-      title: 'Analyse indexed blitz/rapid games?',
-      message: `Submit ${gameIds.length} indexed blitz/rapid ${gameIds.length === 1 ? 'game' : 'games'} for ${providerLabel(account.provider)} @${account.username}?`,
-      tone: 'warning',
-      confirmLabel: 'Analyse games',
-      cancelLabel: 'Cancel',
-    });
-
-    if (confirmed) void this.store.analyseEligibleAccountGames(account, gameIds);
   }
 
-  protected async confirmIndexNewImportedGames(account: ExternalAccount, result: ImportRunSummary): Promise<void> {
-    const candidates = await this.store.refreshWorkflowCandidates(account.id);
-    const gameIds = buildNewImportedWorkflowState(result, candidates).unindexedGameIds;
-    if (!gameIds.length) {
-      this.store.showNotice('No newly imported blitz/rapid games need indexing.');
-      return;
-    }
-
-    const confirmed = await this.confirmDialog.confirm({
-      title: 'Index newly imported games?',
-      message: `Index ${gameIds.length} newly imported blitz/rapid ${gameIds.length === 1 ? 'game' : 'games'} for ${providerLabel(account.provider)} @${account.username}?`,
-      tone: 'warning',
-      confirmLabel: 'Index new games',
-      cancelLabel: 'Cancel',
-    });
-
-    if (confirmed) void this.store.indexEligibleAccountGames(account, gameIds);
+  protected importRangeLabel(run: AccountImportRun): string {
+    if (!run.requestedFrom || !run.requestedTo) return 'Legacy range';
+    return `${dateLabel(run.requestedFrom)} – ${dateLabel(run.requestedTo)}`;
   }
 
-  protected async confirmAnalyseNewImportedGames(account: ExternalAccount, result: ImportRunSummary): Promise<void> {
-    const candidates = await this.store.refreshWorkflowCandidates(account.id);
-    const gameIds = buildNewImportedWorkflowState(result, candidates).indexedGameIds;
-    if (!gameIds.length) {
-      this.store.showNotice('Index the newly imported blitz/rapid games before analysing them.');
-      return;
-    }
+  protected importProgressLabel(run: AccountImportRun): string {
+    const windowProgress = run.windows.total === null
+      ? ''
+      : ` · ${run.windows.completed}/${run.windows.total} windows`;
+    return `${run.games.seen} seen · ${run.games.imported} imported · ${run.games.duplicate} already present · ${run.games.failed} failed${windowProgress}`;
+  }
 
-    const confirmed = await this.confirmDialog.confirm({
-      title: 'Analyse newly imported games?',
-      message: `Submit ${gameIds.length} newly imported indexed blitz/rapid ${gameIds.length === 1 ? 'game' : 'games'} for analysis?`,
-      tone: 'warning',
-      confirmLabel: 'Analyse new games',
-      cancelLabel: 'Cancel',
-    });
+  protected canPause(run: AccountImportRun): boolean {
+    return run.status === 'QUEUED' || run.status === 'RUNNING';
+  }
 
-    if (confirmed) void this.store.analyseEligibleAccountGames(account, gameIds);
+  protected canResume(run: AccountImportRun): boolean {
+    return run.status === 'PAUSED';
+  }
+
+  protected canCancel(run: AccountImportRun): boolean {
+    return ['QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'PAUSED'].includes(run.status);
+  }
+
+  protected canRetry(run: AccountImportRun): boolean {
+    return run.status === 'FAILED' || run.status === 'CANCELLED';
   }
 }

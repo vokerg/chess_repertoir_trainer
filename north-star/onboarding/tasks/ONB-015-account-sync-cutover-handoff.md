@@ -1,6 +1,6 @@
 # ONB-015 — Cut over account sync and preparation handoff
 
-Status: READY
+Status: REVIEW
 
 Priority: P1
 
@@ -8,19 +8,21 @@ Order: 150
 
 Delivery class: Implementation
 
-Planning maturity: Researched; ONB-013/014 provider adapters and ONB-017/018 preparation execution/control are complete
+Planning maturity: Implemented on PR #400 after adversarial self-review; exact runtime/report head `38fee2471413af370b8e333a7d5d77ff9c6fe937` passed CI #3111 (`32571198497`) end to end
 
 GitHub issue: [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT
 
-Claim branch: none
+Claim branch: `account-import/onb-015-account-cutover`
 
-Claimed at: none
+Claimed at: 2026-08-21
 
-Claim scope: none
+Claim scope: durable normal account-refresh cutover over the existing account-import lifecycle, persisted Angular import-run status/control and reload restoration, provider-neutral rating/activity and preparation handoff, compatibility/rollout documentation, and focused regression coverage; no provider-adapter internals, lifecycle-fence persistence, destructive execution, ONB-009/010 onboarding commands/UI, broker, or new deployable service
 
 Promoted at: 2026-08-17 through ONB-018 completion reconciliation
+
+Review promoted at: 2026-08-22 after exact-head CI #3111 and completion-report reconciliation
 
 ## Outcome
 
@@ -81,8 +83,21 @@ Normal background refresh may cut over before ONB-020 only if destructive contro
 - Tests proving destructive controls do not bypass or duplicate ONB-020.
 - Architecture and full web/API/contracts gates.
 
+## Review evidence
+
+- Runtime/report reviewed head: `38fee2471413af370b8e333a7d5d77ff9c6fe937`.
+- CI #3111 / run `32571198497` passed dependency audit, lint, full domain/contracts/API/web/mobile build, opening audits, architecture and repository-hygiene guardrails, empty-database migrations, imported-game audits, and the complete repository test suite.
+- No unresolved PR review threads were present at review promotion.
+- The branch remained based on unchanged `main` SHA `bc04bed0fadc3f898c1d87a75b0cb99842cdf0f5` during the runtime review.
+
 ## Completion
 
-Report: none
+Report: [ONB-015 account sync cutover and preparation handoff](../reports/ONB-015-2026-08-22-account-sync-cutover-handoff.md)
 
-Completed at: none
+Runtime pull request: [#400](https://github.com/vokerg/chess_repertoir_trainer/pull/400)
+
+Validated runtime/report head: `38fee2471413af370b8e333a7d5d77ff9c6fe937`
+
+Validated CI: #3111 / run `32571198497`
+
+Completed at: none — `DONE` remains gated on review acceptance/merge and completion reconciliation.

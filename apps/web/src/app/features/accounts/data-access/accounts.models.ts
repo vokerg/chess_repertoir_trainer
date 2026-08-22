@@ -1,5 +1,12 @@
 export type { LichessConnectionStatus } from '@chess-trainer/contracts/lichess';
 export type {
+  AccountImportRun,
+  AccountImportRunListResponse,
+  AccountImportRunResponse,
+  AccountImportStatus,
+  CreateAccountImportRunResponse,
+} from '@chess-trainer/contracts';
+export type {
   AccountPerformanceGameHighlight,
   AccountPerformanceRecentGame,
   AccountPerformanceStatsResponse,
@@ -13,6 +20,7 @@ export type {
   AccountRatingStatsResponse,
   AccountRatingStatsSpeedProjection,
   AccountRatingStatsYearlyPeak,
+  ExternalAccountWorkflowSummaryResponse,
 } from '@chess-trainer/contracts/external-accounts';
 
 import type {
@@ -25,32 +33,8 @@ import type {
 
 export type AccountProvider = ExternalAccountResponse['provider'];
 export type ExternalAccount = ExternalAccountResponse;
-
-export interface ImportRunSummary {
-  importRunId: number;
-  status: string;
-  gamesSeen: number;
-  gamesImported: number;
-  gamesUpdated: number;
-  gamesSkipped?: number;
-  gamesFailed: number;
-  syncSince?: string | null;
-  syncUntil?: string | null;
-  archivesFetched?: number | null;
-  importedGameIds?: number[];
-  eligibleImportedGameIds?: number[];
-  eligibleUnindexedGameIds?: number[];
-}
-
 export type DeleteAccountResponse = ExternalAccountDeleteResponse;
-
-export interface ImportedGameWorkflowCandidates {
-  accountId: number;
-  eligibleImportedGameIds: number[];
-  eligibleUnindexedGameIds: number[];
-  eligibleIndexedGameIds: number[];
-  eligibleMissingOpeningGameIds: number[];
-}
+export type DefaultProgressAccountResponse = SharedDefaultProgressAccountResponse;
 
 export interface ImportedGameIndexWorkflowResult {
   importedGameId: number;
@@ -77,8 +61,6 @@ export interface BatchAnalysisAcceptedResponse {
   accepted: boolean;
   gameIds: number[];
 }
-
-export type DefaultProgressAccountResponse = SharedDefaultProgressAccountResponse;
 
 export interface AccountForm {
   provider: AccountProvider;

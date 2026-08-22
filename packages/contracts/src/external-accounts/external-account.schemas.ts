@@ -32,6 +32,14 @@ export const defaultProgressAccountResponseSchema = z.object({
   accounts: externalAccountListResponseSchema,
 });
 
+export const externalAccountWorkflowSummaryResponseSchema = z.object({
+  accountId: z.number().int().positive(),
+  eligibleCount: z.number().int().nonnegative(),
+  unindexedCount: z.number().int().nonnegative(),
+  indexedCount: z.number().int().nonnegative(),
+  missingOpeningCount: z.number().int().nonnegative(),
+});
+
 const externalAccountSummarySchema = z.object({
   id: z.number().int().positive(),
   provider: externalAccountProviderSchema,
@@ -108,6 +116,9 @@ export type ExternalAccountProvider = z.infer<typeof externalAccountProviderSche
 export type ExternalAccountResponse = z.infer<typeof externalAccountResponseSchema>;
 export type ExternalAccountDeleteResponse = z.infer<typeof externalAccountDeleteResponseSchema>;
 export type DefaultProgressAccountResponse = z.infer<typeof defaultProgressAccountResponseSchema>;
+export type ExternalAccountWorkflowSummaryResponse = z.infer<
+  typeof externalAccountWorkflowSummaryResponseSchema
+>;
 export type AccountRatingHistoryPoint = z.infer<typeof accountRatingHistoryPointSchema>;
 export type AccountRatingHistorySeries = z.infer<typeof accountRatingHistorySeriesSchema>;
 export type AccountRatingHistoryResponse = z.infer<typeof accountRatingHistoryResponseSchema>;

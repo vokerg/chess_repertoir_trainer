@@ -3,8 +3,10 @@ import {
   type AccountImportRun,
   type AccountImportRunListResponse,
   type AccountImportRunResponse,
+  type AccountImportScope,
   type CreateAccountImportRunBody,
   type CreateAccountImportRunResponse,
+  type DurableAccountImportSource,
 } from '@chess-trainer/contracts';
 import {
   AccountImportRepository,
@@ -17,6 +19,12 @@ import {
 import type { StoredAccountImportRun } from './account-import.types';
 
 export const USER_ACTION_ACCOUNT_IMPORT_PRIORITY = 100;
+export const NORMAL_ACCOUNT_REFRESH_SCOPE: AccountImportScope = {
+  variant: 'STANDARD',
+  speeds: ['BULLET', 'BLITZ', 'RAPID'],
+  rated: 'BOTH',
+};
+export const NORMAL_ACCOUNT_REFRESH_MONTHS = 3;
 
 export class AccountImportNotFoundError extends Error {
   readonly code = 'ACCOUNT_IMPORT_NOT_FOUND' as const;
@@ -36,12 +44,21 @@ export class AccountImportNotControllableError extends Error {
   }
 }
 
+export class AccountImportRangeUnavailableError extends Error {
+  readonly code = 'ACCOUNT_IMPORT_INVALID_RANGE' as const;
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'AccountImportRangeUnavailableError';
+  }
+}
+
 export const AccountImportService = {
   async createUserAction(
     userId: number,
     body: CreateAccountImportRunBody,
   ): Promise<CreateAccountImportRunResponse> {
-    const run = await AccountImportRepository.createRun({
+    return createRun({
       userId,
       accountId: body.accountId,
       mode: body.mode,
@@ -49,10 +66,63 @@ export const AccountImportService = {
       scope: body.scope,
       requestedFrom: new Date(body.requestedFrom),
       requestedTo: new Date(body.requestedTo),
-      priority: USER_ACTION_ACCOUNT_IMPORT_PRIORITY,
-      windowsTotal: null,
     });
-    return { importRun: toAccountImportRun(run) };
+  },
+
+  async createNormalRefreshForUser(
+    userId: number,
+    accountId: number,
+    requestedTo = new Date(),
+  ): Promise<CreateAccountImportRunResponse> {
+    const coverage = await AccountImportRepository.getCoverage(
+      userId,
+      accountId,
+      NORMAL_ACCOUNT_REFRESH_SCOPE,
+    );
+    const requestedFrom = coverage?.coveredThrough
+      ?? shiftUtcMonths(requestedTo, -NORMAL_ACCOUNT_REFRESH_MONTHS);
+
+    if (requestedFrom >= requestedTo) {
+      throw new AccountImportRangeUnavailableError('Account import coverage is already current.');
+    }
+
+    return createRun({
+      userId,
+      accountId,
+      mode: coverage?.coveredThrough ? 'INCREMENTAL_FORWARD' : 'BOUNDED_INITIAL',
+      source: 'ACCOUNT_REFRESH',
+      scope: NORMAL_ACCOUNT_REFRESH_SCOPE,
+      requestedFrom,
+      requestedTo,
+    });
+  },
+
+  async createHistoricalBackfillForUser(
+    userId: number,
+    accountId: number,
+  ): Promise<CreateAccountImportRunResponse> {
+    const coverage = await AccountImportRepository.getCoverage(
+      userId,
+      accountId,
+      NORMAL_ACCOUNT_REFRESH_SCOPE,
+    );
+    if (!coverage?.coveredFrom) {
+      throw new AccountImportRangeUnavailableError(
+        'Import the recent account range before requesting older history.',
+      );
+    }
+
+    const requestedTo = coverage.coveredFrom;
+    const requestedFrom = shiftUtcMonths(requestedTo, -NORMAL_ACCOUNT_REFRESH_MONTHS);
+    return createRun({
+      userId,
+      accountId,
+      mode: 'HISTORICAL_BACKFILL',
+      source: 'ACCOUNT_REFRESH',
+      scope: NORMAL_ACCOUNT_REFRESH_SCOPE,
+      requestedFrom,
+      requestedTo,
+    });
   },
 
   async listForUser(
@@ -104,7 +174,7 @@ export const AccountImportService = {
         userId,
         accountId: source.accountId,
         mode: source.mode,
-        source: 'USER_ACTION',
+        source: source.source === 'ACCOUNT_REFRESH' ? 'ACCOUNT_REFRESH' : 'USER_ACTION',
         scope: source.scope,
         requestedFrom: source.requestedFrom,
         requestedTo: source.requestedTo,
@@ -125,6 +195,34 @@ export const AccountImportService = {
     return AccountImportRepository.hasActiveClaimForAccount(userId, accountId);
   },
 };
+
+async function createRun(input: {
+  userId: number;
+  accountId: number;
+  mode: 'BOUNDED_INITIAL' | 'INCREMENTAL_FORWARD' | 'HISTORICAL_BACKFILL';
+  source: DurableAccountImportSource;
+  scope: AccountImportScope;
+  requestedFrom: Date;
+  requestedTo: Date;
+}): Promise<CreateAccountImportRunResponse> {
+  const run = await AccountImportRepository.createRun({
+    ...input,
+    priority: USER_ACTION_ACCOUNT_IMPORT_PRIORITY,
+    windowsTotal: null,
+  });
+  return { importRun: toAccountImportRun(run) };
+}
+
+function shiftUtcMonths(value: Date, months: number): Date {
+  if (Number.isNaN(value.getTime())) throw new AccountImportRangeUnavailableError('Invalid import date.');
+  const result = new Date(value.getTime());
+  const day = result.getUTCDate();
+  result.setUTCDate(1);
+  result.setUTCMonth(result.getUTCMonth() + months);
+  const lastDay = new Date(Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0)).getUTCDate();
+  result.setUTCDate(Math.min(day, lastDay));
+  return result;
+}
 
 async function requireRun(userId: number, importRunId: number): Promise<StoredAccountImportRun> {
   const run = await AccountImportLifecycleRepository.getRunForUser(userId, importRunId);
