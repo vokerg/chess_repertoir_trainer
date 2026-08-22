@@ -20,7 +20,7 @@ import type { StoredAccountImportRun } from './account-import.types';
 export const USER_ACTION_ACCOUNT_IMPORT_PRIORITY = 100;
 export const NORMAL_ACCOUNT_REFRESH_SCOPE: AccountImportScope = {
   variant: 'STANDARD',
-  speeds: ['BLITZ', 'RAPID'],
+  speeds: ['BULLET', 'BLITZ', 'RAPID'],
   rated: 'BOTH',
 };
 export const NORMAL_ACCOUNT_REFRESH_MONTHS = 3;
