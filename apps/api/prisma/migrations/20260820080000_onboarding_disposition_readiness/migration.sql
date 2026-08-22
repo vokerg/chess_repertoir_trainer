@@ -40,12 +40,14 @@ BEGIN
       SELECT run."id", run."purpose", run."retryOfRunId"
       FROM "DataPreparationRun" AS run
       WHERE run."id" = NEW."id"
+        AND run."userId" = NEW."userId"
 
       UNION
 
       SELECT parent."id", parent."purpose", parent."retryOfRunId"
       FROM "DataPreparationRun" AS parent
       JOIN lineage AS child ON parent."id" = child."retryOfRunId"
+      WHERE parent."userId" = NEW."userId"
     )
     SELECT EXISTS (
       SELECT 1
