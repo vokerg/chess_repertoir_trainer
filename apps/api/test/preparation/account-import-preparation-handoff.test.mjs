@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import prismaModule from '../../dist/prisma.js';
 import { createAccountImportRepository } from '../../dist/modules/account-imports/account-import.repository.prisma.js';
+import { canonicalizeAccountImportScope } from '../../dist/modules/account-imports/account-import.scope.js';
 import { createAccountImportPreparationHandoffRepository } from '../../dist/modules/preparation/account-import-preparation-handoff.repository.prisma.js';
 
 const prisma = prismaModule.default;
@@ -91,7 +92,7 @@ try {
       userId: user.id,
       accountId: account.id,
       mode: 'BOUNDED_INITIAL',
-      source: 'USER_ACTION',
+      source: 'ACCOUNT_REFRESH',
       scope,
       requestedFrom: original.requestedFrom,
       requestedTo: original.requestedTo,
@@ -111,6 +112,62 @@ try {
       await prisma.dataPreparationRun.count({ where: { userId: user.id } }),
       1,
       'retry relinks the existing recoverable parent instead of creating duplicate preparation',
+    );
+  }
+
+  {
+    const user = await createUser('generic-user-action');
+    userIds.push(user.id);
+    const account = await createAccount(user.id, 'generic-user-action');
+    const generic = await createImport(
+      user.id,
+      account.id,
+      '2026-05-01',
+      '2026-08-01',
+      scope,
+      'USER_ACTION',
+    );
+
+    assert.equal(await handoff.reconcileNext(), false);
+    assert.equal(
+      await prisma.dataPreparationTarget.count({ where: { currentImportRunId: generic.id } }),
+      0,
+      'generic durable user actions are not silently adopted into account-refresh preparation',
+    );
+  }
+
+  {
+    const user = await createUser('completed-coverage');
+    userIds.push(user.id);
+    const account = await createAccount(user.id, 'completed-coverage');
+    const completed = await createImport(user.id, account.id, '2026-05-01', '2026-08-01');
+    const completedAt = new Date('2026-08-01T01:00:00.000Z');
+    await prisma.importRun.update({
+      where: { id: completed.id },
+      data: { status: 'COMPLETED', completedAt },
+    });
+
+    assert.equal(
+      await handoff.reconcileNext(),
+      false,
+      'retained completed import history without exact coverage cannot manufacture preparation',
+    );
+    const canonical = canonicalizeAccountImportScope(scope);
+    await prisma.accountImportCoverage.create({
+      data: {
+        accountId: account.id,
+        scopeVersion: canonical.scopeVersion,
+        scopeHash: canonical.scopeHash,
+        scopeJson: canonical.scope,
+        coveredFrom: completed.requestedFrom,
+        coveredThrough: completed.requestedTo,
+        lastCompletedImportRunId: completed.id,
+      },
+    });
+    assert.equal(
+      await handoff.reconcileNext(),
+      true,
+      'surviving exact coverage makes a completed account refresh eligible for restart-safe handoff',
     );
   }
 
@@ -162,12 +219,19 @@ async function createAccount(userId, label) {
   });
 }
 
-function createImport(userId, accountId, fromDate, toDate, importScope = scope) {
+function createImport(
+  userId,
+  accountId,
+  fromDate,
+  toDate,
+  importScope = scope,
+  source = 'ACCOUNT_REFRESH',
+) {
   return accountImports.createRun({
     userId,
     accountId,
     mode: 'BOUNDED_INITIAL',
-    source: 'USER_ACTION',
+    source,
     scope: importScope,
     requestedFrom: new Date(`${fromDate}T00:00:00.000Z`),
     requestedTo: new Date(`${toDate}T00:00:00.000Z`),

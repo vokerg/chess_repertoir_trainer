@@ -4,6 +4,7 @@ import prismaModule from '../../dist/prisma.js';
 import { createAccountImportRepository } from '../../dist/modules/account-imports/account-import.repository.prisma.js';
 import { canonicalizeAccountImportScope } from '../../dist/modules/account-imports/account-import.scope.js';
 import { createAccountImportPostCompletionService } from '../../dist/modules/account-imports/account-import.post-completion.service.js';
+import { AccountRatingStatsService } from '../../dist/services/accountRatingStatsService.js';
 
 const prisma = prismaModule.default;
 const accountImports = createAccountImportRepository(prisma);
@@ -49,7 +50,7 @@ try {
     userId: user.id,
     accountId: account.id,
     mode: 'BOUNDED_INITIAL',
-    source: 'USER_ACTION',
+    source: 'ACCOUNT_REFRESH',
     scope,
     requestedFrom: new Date('2026-05-20T00:00:00.000Z'),
     requestedTo: new Date('2026-08-20T10:00:00.000Z'),
@@ -99,7 +100,7 @@ try {
     userId: user.id,
     accountId: account.id,
     mode: 'HISTORICAL_BACKFILL',
-    source: 'USER_ACTION',
+    source: 'ACCOUNT_REFRESH',
     scope,
     requestedFrom: new Date('2026-02-20T00:00:00.000Z'),
     requestedTo: forward.requestedFrom,
@@ -159,6 +160,16 @@ try {
     'retained terminal import history alone cannot resurrect purged derived state',
   );
   assert.equal(await prisma.accountRatingStats.count({ where: { accountId: account.id } }), 0);
+  assert.equal(
+    await AccountRatingStatsService.getForAccount(user.id, account.id),
+    null,
+    'rating reads do not recreate a projection after durable coverage was explicitly cleared',
+  );
+  assert.equal(
+    await prisma.accountRatingStats.count({ where: { accountId: account.id } }),
+    0,
+    'read-through projection remains absent after purge',
+  );
   const afterPurge = await prisma.externalAccount.findUnique({ where: { id: account.id } });
   assert.equal(afterPurge?.lastSyncAt, null);
   assert.equal(afterPurge?.lastSyncRunId, null);

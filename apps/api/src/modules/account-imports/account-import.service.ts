@@ -6,6 +6,7 @@ import {
   type AccountImportScope,
   type CreateAccountImportRunBody,
   type CreateAccountImportRunResponse,
+  type DurableAccountImportSource,
 } from '@chess-trainer/contracts';
 import {
   AccountImportRepository,
@@ -61,6 +62,7 @@ export const AccountImportService = {
       userId,
       accountId: body.accountId,
       mode: body.mode,
+      source: 'USER_ACTION',
       scope: body.scope,
       requestedFrom: new Date(body.requestedFrom),
       requestedTo: new Date(body.requestedTo),
@@ -88,6 +90,7 @@ export const AccountImportService = {
       userId,
       accountId,
       mode: coverage?.coveredThrough ? 'INCREMENTAL_FORWARD' : 'BOUNDED_INITIAL',
+      source: 'ACCOUNT_REFRESH',
       scope: NORMAL_ACCOUNT_REFRESH_SCOPE,
       requestedFrom,
       requestedTo,
@@ -115,6 +118,7 @@ export const AccountImportService = {
       userId,
       accountId,
       mode: 'HISTORICAL_BACKFILL',
+      source: 'ACCOUNT_REFRESH',
       scope: NORMAL_ACCOUNT_REFRESH_SCOPE,
       requestedFrom,
       requestedTo,
@@ -170,7 +174,7 @@ export const AccountImportService = {
         userId,
         accountId: source.accountId,
         mode: source.mode,
-        source: 'USER_ACTION',
+        source: source.source === 'ACCOUNT_REFRESH' ? 'ACCOUNT_REFRESH' : 'USER_ACTION',
         scope: source.scope,
         requestedFrom: source.requestedFrom,
         requestedTo: source.requestedTo,
@@ -196,13 +200,13 @@ async function createRun(input: {
   userId: number;
   accountId: number;
   mode: 'BOUNDED_INITIAL' | 'INCREMENTAL_FORWARD' | 'HISTORICAL_BACKFILL';
+  source: DurableAccountImportSource;
   scope: AccountImportScope;
   requestedFrom: Date;
   requestedTo: Date;
 }): Promise<CreateAccountImportRunResponse> {
   const run = await AccountImportRepository.createRun({
     ...input,
-    source: 'USER_ACTION',
     priority: USER_ACTION_ACCOUNT_IMPORT_PRIORITY,
     windowsTotal: null,
   });

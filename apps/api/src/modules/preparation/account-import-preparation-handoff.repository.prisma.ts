@@ -217,7 +217,7 @@ async function findRetryHandoff(
       ON account."id" = retry."accountId"
      AND account."userId" = retry."userId"
     WHERE retry."mode" <> 'LEGACY_SYNC'
-      AND retry."source" = 'USER_ACTION'
+      AND retry."source" = 'ACCOUNT_REFRESH'
       AND retry."status" IN (${Prisma.join(HANDOFF_IMPORT_STATUSES.map((status) => Prisma.sql`${status}`))})
       AND retry."scopeVersion" IS NOT NULL
       AND retry."scopeHash" IS NOT NULL
@@ -308,7 +308,7 @@ function expansionImportPredicate(alias = 'run'): Prisma.Sql {
   const prefix = Prisma.raw(`"${alias}".`);
   return Prisma.sql`
     ${prefix}"mode" <> 'LEGACY_SYNC'
-    AND ${prefix}"source" = 'USER_ACTION'
+    AND ${prefix}"source" = 'ACCOUNT_REFRESH'
     AND ${prefix}"status" IN (${Prisma.join(HANDOFF_IMPORT_STATUSES.map((status) => Prisma.sql`${status}`))})
     AND ${prefix}"scopeVersion" IS NOT NULL
     AND ${prefix}"scopeHash" IS NOT NULL
@@ -316,6 +316,19 @@ function expansionImportPredicate(alias = 'run'): Prisma.Sql {
     AND ${prefix}"requestedFrom" IS NOT NULL
     AND ${prefix}"requestedTo" IS NOT NULL
     AND (${prefix}"scopeJson" -> 'speeds') ?| ARRAY['BLITZ', 'RAPID']
+    AND (
+      ${prefix}"status" <> 'COMPLETED'
+      OR EXISTS (
+        SELECT 1
+        FROM "AccountImportCoverage" AS coverage
+        WHERE coverage."accountId" = ${prefix}"accountId"
+          AND coverage."scopeHash" = ${prefix}"scopeHash"
+          AND coverage."coveredFrom" IS NOT NULL
+          AND coverage."coveredThrough" IS NOT NULL
+          AND coverage."coveredFrom" <= ${prefix}"requestedFrom"
+          AND coverage."coveredThrough" >= ${prefix}"requestedTo"
+      )
+    )
     AND NOT EXISTS (
       SELECT 1
       FROM "DataPreparationTarget" AS target

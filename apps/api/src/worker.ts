@@ -2,6 +2,7 @@ import 'dotenv/config';
 import prisma from './prisma';
 import { defaultAccountImportExecutorRegistry } from './modules/account-imports/account-import.executor';
 import { AccountImportLifecycleRepository } from './modules/account-imports/account-import.lifecycle.repository.prisma';
+import { drainAccountImportPostCompletion } from './modules/account-imports/account-import.post-completion-drain';
 import { AccountImportPostCompletionService } from './modules/account-imports/account-import.post-completion.service';
 import { loadAccountImportWorkerConfig } from './modules/account-imports/account-import.worker.config';
 import { createAccountImportWorker } from './modules/account-imports/account-import.worker.service';
@@ -42,7 +43,11 @@ async function bootstrap() {
     executors: defaultAccountImportExecutorRegistry,
     config: accountImportConfig,
     reconcilePreparationHandoff: () => AccountImportPreparationHandoffRepository.reconcileNext(),
-    reconcilePostCompletion: () => AccountImportPostCompletionService.reconcileNext(),
+    reconcilePostCompletion: async () => (
+      await drainAccountImportPostCompletion(
+        () => AccountImportPostCompletionService.reconcileNext(),
+      )
+    ) > 0,
   });
   const preparationWorker = createPreparationReconciler({ config: preparationConfig });
   let shuttingDown = false;

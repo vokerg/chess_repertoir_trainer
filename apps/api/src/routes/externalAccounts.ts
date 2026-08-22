@@ -33,6 +33,7 @@ import {
   accountRatingHistoryResponseSchema,
   accountRatingStatsResponseSchema,
   defaultProgressAccountResponseSchema,
+  externalAccountDeleteResponseSchema,
   externalAccountListResponseSchema,
   externalAccountResponseSchema,
   externalAccountWorkflowSummaryResponseSchema,
@@ -413,14 +414,12 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
     '/api/me/accounts/:id',
     {
       schema: accountSchema('deleteExternalAccount', 'Delete one external account', {
-        deprecated: true,
-        description: 'Temporarily disabled during lifecycle cutover. ONB-020 replaces this immediate unfenced cascade with the durable destructive coordinator.',
         params: accountIdParamsSchema,
         response: {
+          200: externalAccountDeleteResponseSchema,
           400: validationErrorResponseSchema,
           401: unauthorizedResponseSchema,
           404: messageResponseSchema,
-          409: messageResponseSchema,
         },
       }),
     },
@@ -428,16 +427,16 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       const id = request.params.id;
-      const account = await ExternalAccountService.getForUser(auth.userId, id);
+      const account = await ExternalAccountService.deleteForUser(auth.userId, id);
       if (!account) {
         reply.code(404);
         return { message: 'External account not found' };
       }
 
-      reply.code(409);
-      return {
-        message: 'Account deletion is temporarily disabled until the safe lifecycle coordinator is available.',
-      };
+      return externalAccountDeleteResponseSchema.parse({
+        deleted: true,
+        account: toExternalAccountResponse(account),
+      });
     },
   );
 
@@ -525,7 +524,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
     '/api/me/accounts/:id/imported-game-workflow-candidates',
     {
       schema: accountSchema(
-        'getImportedGameWorkflowSummary',
+        'getImportedGameWorkflowCandidates',
         'Get standard workflow counts for an external account',
         {
           description: 'Compatibility endpoint returning bounded aggregate counts only. Game IDs are selected server-side by durable preparation workflows.',
@@ -560,17 +559,16 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: accountSchema(
         'resetExternalAccountSyncCursor',
-        'Queue older account history for import',
+        'Reset the legacy sync cursor for an external account',
         {
           deprecated: true,
-          description: 'Deprecated compatibility wrapper. It no longer mutates the legacy forward cursor and instead queues the same bounded three-month historical backfill as /backfill.',
+          description: 'Deprecated legacy-field action. It clears syncCursorTime only; durable account refresh uses exact AccountImportCoverage. Use /backfill to request older durable history.',
           params: accountIdParamsSchema,
           response: {
-            202: createAccountImportRunResponseSchema,
+            200: legacyOpaqueResponseSchema,
             400: validationErrorResponseSchema,
             401: unauthorizedResponseSchema,
             404: messageResponseSchema,
-            409: accountImportErrorResponseSchema,
           },
         },
       ),
@@ -579,24 +577,13 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       const id = request.params.id;
-      const account = await ExternalAccountService.getForUser(auth.userId, id);
+      const account = await ExternalAccountService.resetSyncCursorForUser(auth.userId, id);
       if (!account) {
         reply.code(404);
         return { message: 'External account not found' };
       }
 
-      try {
-        const result = await AccountImportService.createHistoricalBackfillForUser(auth.userId, id);
-        reply.code(202);
-        return result;
-      } catch (error) {
-        const mapped = mapAccountImportCommandError(error);
-        if (mapped) {
-          reply.code(mapped.statusCode);
-          return mapped.body;
-        }
-        throw error;
-      }
+      return account;
     },
   );
 

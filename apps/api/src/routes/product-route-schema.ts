@@ -6,17 +6,11 @@ export function ensureProductRouteSchema(route: RouteOptions): void {
   const schema = route.schema;
   if (schema?.hide) return;
 
-  const responseStatuses = schema?.response ? Object.keys(schema.response) : [];
-  const hasSuccessfulResponse = responseStatuses.some((status) => /^[23]\d\d$/.test(status));
-  const isDeprecatedUnavailableRoute = schema?.deprecated === true
-    && !hasSuccessfulResponse
-    && responseStatuses.some((status) => /^4\d\d$/.test(status));
-
   const missing = [
     !schema?.operationId && 'operationId',
     (!schema?.tags || schema.tags.length === 0) && 'tags',
     !schema?.summary && 'summary',
-    (!hasSuccessfulResponse && !isDeprecatedUnavailableRoute) && 'successful response',
+    (!schema?.response || !Object.keys(schema.response).some((status) => /^[23]\d\d$/.test(status))) && 'successful response',
   ].filter(Boolean);
 
   if (missing.length > 0) {

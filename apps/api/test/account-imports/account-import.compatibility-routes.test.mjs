@@ -52,21 +52,31 @@ try {
       method: 'POST',
       url: `/api/me/accounts/${account.id}/reset-cursor`,
     });
-    assert.equal(reset.statusCode, 202, reset.body);
-    const run = reset.json().importRun;
+    assert.equal(reset.statusCode, 200, reset.body);
+    const persistedAfterReset = await prisma.externalAccount.findUnique({ where: { id: account.id } });
+    assert.equal(persistedAfterReset?.syncCursorTime, null);
+    const coverageAfterReset = await prisma.accountImportCoverage.findUnique({
+      where: { accountId_scopeHash: { accountId: account.id, scopeHash: canonical.scopeHash } },
+    });
+    assert.equal(
+      coverageAfterReset?.coveredFrom?.getTime(),
+      coveredFrom.getTime(),
+      'deprecated legacy cursor reset does not rewind durable coverage',
+    );
+    assert.equal(coverageAfterReset?.coveredThrough?.getTime(), coveredThrough.getTime());
+
+    const backfill = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${account.id}/backfill`,
+    });
+    assert.equal(backfill.statusCode, 202, backfill.body);
+    const run = backfill.json().importRun;
     assert.equal(run.accountId, account.id);
     assert.equal(run.mode, 'HISTORICAL_BACKFILL');
+    assert.equal(run.source, 'ACCOUNT_REFRESH');
     assert.equal(run.status, 'QUEUED');
-    assert.deepEqual(run.scope, scope);
     assert.equal(run.requestedTo, coveredFrom.toISOString());
     assert.equal(Date.parse(run.requestedFrom) < Date.parse(run.requestedTo), true);
-
-    const persisted = await prisma.externalAccount.findUnique({ where: { id: account.id } });
-    assert.equal(
-      persisted?.syncCursorTime?.getTime(),
-      legacyCursor.getTime(),
-      'deprecated reset no longer mutates the legacy forward cursor',
-    );
 
     const duplicateBackfill = await app.inject({
       method: 'POST',

@@ -176,8 +176,11 @@ async function verifyOpenApi() {
       ['GET', '/api/me/accounts/{id}/rating-history', '200', 'getExternalAccountRatingHistory'],
       ['GET', '/api/me/accounts/{id}/rating-stats', '200', 'getExternalAccountRatingStats'],
       ['PATCH', '/api/me/accounts/{id}', '200', 'updateExternalAccount'],
-      ['DELETE', '/api/me/accounts/{id}', '409', 'deleteExternalAccount'],
-      ['POST', '/api/me/accounts/{id}/reset-cursor', '202', 'resetExternalAccountSyncCursor'],
+      ['DELETE', '/api/me/accounts/{id}', '200', 'deleteExternalAccount'],
+      ['POST', '/api/me/accounts/{id}/sync', '202', 'syncExternalAccount'],
+      ['POST', '/api/me/accounts/{id}/backfill', '202', 'backfillExternalAccount'],
+      ['GET', '/api/me/accounts/{id}/imported-game-workflow-candidates', '200', 'getImportedGameWorkflowCandidates'],
+      ['POST', '/api/me/accounts/{id}/reset-cursor', '200', 'resetExternalAccountSyncCursor'],
     ];
 
     for (const [method, path, status, operationId] of operations) {
@@ -205,10 +208,10 @@ async function verifyOpenApi() {
 
     const deleteSchema = resolveSchema(
       document,
-      document.paths['/api/me/accounts/{id}'].delete.responses['409'].content['application/json'].schema,
+      document.paths['/api/me/accounts/{id}'].delete.responses['200'].content['application/json'].schema,
     );
-    assert.ok(deleteSchema.properties?.message);
-    assert.equal(document.paths['/api/me/accounts/{id}'].delete.deprecated, true);
+    assert.ok(deleteSchema.properties?.deleted);
+    assert.equal(document.paths['/api/me/accounts/{id}'].delete.deprecated, undefined);
     assert.equal(document.paths['/api/me/accounts/{id}/reset-cursor'].post.deprecated, true);
   } finally {
     await app.close();
@@ -345,19 +348,16 @@ async function verifyHttpBoundary() {
       method: 'DELETE',
       url: `/api/me/accounts/${created.id}`,
     });
-    assert.equal(deleteResponse.statusCode, 409, deleteResponse.body);
-    assert.match(deleteResponse.json().message, /temporarily disabled/i);
+    assert.equal(deleteResponse.statusCode, 200, deleteResponse.body);
+    assert.equal(deleteResponse.json().deleted, true);
+    assert.equal(deleteResponse.json().account.id, created.id);
 
     const persistedUser = await prisma.appUser.findUnique({
       where: { id: user.id },
       select: { defaultProgressAccountId: true },
     });
-    assert.equal(persistedUser?.defaultProgressAccountId, created.id);
-    assert.equal(
-      await prisma.externalAccount.count({ where: { id: created.id } }),
-      1,
-      'deprecated immediate deletion cannot bypass the lifecycle coordinator',
-    );
+    assert.equal(persistedUser?.defaultProgressAccountId, null);
+    assert.equal(await prisma.externalAccount.count({ where: { id: created.id } }), 0);
   } finally {
     await app.close();
     await prisma.appUser.delete({ where: { id: user.id } });

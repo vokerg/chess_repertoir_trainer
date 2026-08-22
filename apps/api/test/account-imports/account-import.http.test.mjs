@@ -134,6 +134,7 @@ try {
     const retryRun = retry.json().importRun;
     assert.equal(retryRun.retryOfImportRunId, created.id);
     assert.equal(retryRun.status, 'QUEUED');
+    assert.equal(retryRun.source, 'USER_ACTION');
     assert.deepEqual(retryRun.scope, created.scope);
     assert.equal(retryRun.requestedFrom, created.requestedFrom);
     assert.equal(retryRun.requestedTo, created.requestedTo);
@@ -160,6 +161,7 @@ try {
     const compatibilityRun = compatibilitySync.json().importRun;
     assert.equal(compatibilityRun.accountId, compatibilityAccount.id);
     assert.equal(compatibilityRun.mode, 'BOUNDED_INITIAL');
+    assert.equal(compatibilityRun.source, 'ACCOUNT_REFRESH');
     assert.equal(compatibilityRun.status, 'QUEUED');
     assert.deepEqual(compatibilityRun.scope, {
       variant: 'STANDARD',
@@ -184,6 +186,21 @@ try {
       url: `/api/me/account-imports/${compatibilityRun.id}/cancel`,
     });
     assert.equal(compatibilityCancel.statusCode, 200);
+
+    const compatibilityRetry = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${compatibilityRun.id}/retry`,
+    });
+    assert.equal(compatibilityRetry.statusCode, 202);
+    const compatibilityRetryRun = compatibilityRetry.json().importRun;
+    assert.equal(compatibilityRetryRun.retryOfImportRunId, compatibilityRun.id);
+    assert.equal(compatibilityRetryRun.source, 'ACCOUNT_REFRESH');
+
+    const compatibilityRetryCancel = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${compatibilityRetryRun.id}/cancel`,
+    });
+    assert.equal(compatibilityRetryCancel.statusCode, 200);
 
     const backfillWithoutCoverage = await app.inject({
       method: 'POST',

@@ -90,6 +90,10 @@ type AccountSummary = {
   displayName?: string | null;
 };
 
+type DatabaseClockRow = {
+  now: Date;
+};
+
 type ImportedRatingGame = {
   id: number;
   endedAt: Date | null;
@@ -358,7 +362,6 @@ export const AccountRatingStatsService = {
     });
 
     const projection = buildDashboardProjection(games);
-    const computedAt = new Date();
     const persisted = await prisma.$transaction(async (transaction) => {
       await assertDataLifecycleWriteAllowed(transaction, {
         userId,
@@ -375,6 +378,12 @@ export const AccountRatingStatsService = {
         },
       });
       if (!currentAccount) return null;
+
+      const clockRows = await transaction.$queryRaw<DatabaseClockRow[]>(Prisma.sql`
+        SELECT NOW() AS "now"
+      `);
+      const computedAt = clockRows[0]?.now;
+      if (!computedAt) throw new Error('Could not read database clock for account rating projection.');
 
       const stats = await transaction.accountRatingStats.upsert({
         where: { accountId },
@@ -406,6 +415,25 @@ export const AccountRatingStatsService = {
     });
 
     if (stats && getStoredProjection(stats.data)) return toResponse(account, stats);
+
+    if (!stats) {
+      const [coverage, retainedCompletedDurableImport] = await Promise.all([
+        prisma.accountImportCoverage.findFirst({
+          where: { accountId },
+          select: { id: true },
+        }),
+        prisma.importRun.findFirst({
+          where: {
+            userId,
+            accountId,
+            status: 'COMPLETED',
+            mode: { not: 'LEGACY_SYNC' },
+          },
+          select: { id: true },
+        }),
+      ]);
+      if (retainedCompletedDurableImport && !coverage) return null;
+    }
 
     return AccountRatingStatsService.recomputeForAccount(userId, accountId);
   },
