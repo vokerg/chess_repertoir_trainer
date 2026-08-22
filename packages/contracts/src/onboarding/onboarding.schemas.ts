@@ -48,6 +48,8 @@ export type OnboardingAttentionCode = z.infer<typeof onboardingAttentionCodeSche
 export const onboardingActionCodeSchema = z.enum([
   'START_ONBOARDING',
   'RESUME_ONBOARDING',
+  'PAUSE_PREPARATION',
+  'CANCEL_PREPARATION',
   'RETRY_PREPARATION',
   'RESTART_PREPARATION',
   'EXPAND_RANGE',
