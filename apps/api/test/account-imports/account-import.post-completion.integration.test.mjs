@@ -141,6 +141,45 @@ try {
   assert.equal(afterBackfill?.lastSyncAt?.getTime(), forwardCompletedAt.getTime());
   assert.equal(await service.reconcileNext(), false, 'clean derived state does not reconcile repeatedly');
 
+  const genericForward = await accountImports.createRun({
+    userId: user.id,
+    accountId: account.id,
+    mode: 'INCREMENTAL_FORWARD',
+    source: 'USER_ACTION',
+    scope,
+    requestedFrom: forward.requestedTo,
+    requestedTo: new Date('2026-08-21T10:00:00.000Z'),
+    priority: 100,
+    windowsTotal: null,
+  });
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  const genericCompletedAt = new Date();
+  await prisma.importRun.update({
+    where: { id: genericForward.id },
+    data: { status: 'COMPLETED', completedAt: genericCompletedAt },
+  });
+  await prisma.accountImportCoverage.update({
+    where: { id: coverage.id },
+    data: {
+      coveredThrough: genericForward.requestedTo,
+      lastCompletedImportRunId: genericForward.id,
+    },
+  });
+
+  assert.equal(
+    await service.reconcileNext(),
+    true,
+    'generic durable imports may still trigger provider-neutral derived-state reconciliation',
+  );
+  const afterGenericForward = await prisma.externalAccount.findUnique({ where: { id: account.id } });
+  assert.equal(
+    afterGenericForward?.lastSyncRunId,
+    forward.id,
+    'generic durable imports must not impersonate the account-settings refresh frontier',
+  );
+  assert.equal(afterGenericForward?.lastSyncAt?.getTime(), forwardCompletedAt.getTime());
+  assert.equal(await service.reconcileNext(), false);
+
   await prisma.$transaction([
     prisma.accountImportCoverage.deleteMany({ where: { accountId: account.id } }),
     prisma.accountRatingStats.deleteMany({ where: { accountId: account.id } }),
@@ -151,7 +190,7 @@ try {
   ]);
   assert.equal(
     await prisma.importRun.count({ where: { accountId: account.id, status: 'COMPLETED' } }),
-    2,
+    3,
     'terminal import history survives the simulated ONB-020 account purge',
   );
   assert.equal(
