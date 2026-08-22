@@ -55,6 +55,23 @@ describe('AccountsStore', () => {
     expect(store.isImportActive(tracked.id)).toBeTrue();
   });
 
+  it('restores completed and failed terminal imports from persisted history', async () => {
+    const completedAccount = account(1, 'completed', true);
+    const failedAccount = account(2, 'failed', true);
+    const completed = importRun(20, completedAccount.id, 'COMPLETED');
+    const failed = importRun(21, failedAccount.id, 'FAILED');
+    api.getAccounts.and.returnValue(of([completedAccount, failedAccount]));
+    api.getAccountImports.and.returnValue(of({ items: [failed, completed] }));
+    api.getActiveAccountImports.and.returnValue(of({ items: [] }));
+
+    await store.initialize();
+
+    expect(store.importRunForAccount(completedAccount.id)?.status).toBe('COMPLETED');
+    expect(store.importRunForAccount(failedAccount.id)?.status).toBe('FAILED');
+    expect(store.isImportActive(completedAccount.id)).toBeFalse();
+    expect(store.isImportActive(failedAccount.id)).toBeFalse();
+  });
+
   it('queues refreshes for active accounts independently and keeps durable run state', async () => {
     const activeOne = account(1, 'first', true);
     const inactive = account(2, 'second', false);
@@ -108,6 +125,49 @@ describe('AccountsStore', () => {
 
     expect(api.pauseImport).toHaveBeenCalledOnceWith(running.id);
     expect(store.importRunForAccount(1)?.status).toBe('PAUSE_REQUESTED');
+  });
+
+  it('resumes a persisted paused import back into the durable queue', async () => {
+    const paused = importRun(8, 1, 'PAUSED');
+    const resumed = { ...paused, status: 'QUEUED' as const };
+    store.importRuns.set({ 1: paused });
+    api.resumeImport.and.returnValue(of({ importRun: resumed }));
+
+    await store.resumeImport(paused);
+
+    expect(api.resumeImport).toHaveBeenCalledOnceWith(paused.id);
+    expect(store.importRunForAccount(1)?.status).toBe('QUEUED');
+    expect(store.notice()).toBe('Account import resume request accepted.');
+  });
+
+  it('persists cancellation acknowledgement state for a running import', async () => {
+    const running = importRun(9, 1, 'RUNNING');
+    const cancelling = { ...running, status: 'CANCEL_REQUESTED' as const };
+    store.importRuns.set({ 1: running });
+    api.cancelImport.and.returnValue(of({ importRun: cancelling }));
+
+    await store.cancelImport(running);
+
+    expect(api.cancelImport).toHaveBeenCalledOnceWith(running.id);
+    expect(store.importRunForAccount(1)?.status).toBe('CANCEL_REQUESTED');
+    expect(store.isImportActive(1)).toBeTrue();
+  });
+
+  it('replaces a failed terminal import with its persisted retry run', async () => {
+    const failed = importRun(10, 1, 'FAILED');
+    const retry = {
+      ...importRun(11, 1, 'QUEUED'),
+      retryOfImportRunId: failed.id,
+    };
+    store.importRuns.set({ 1: failed });
+    api.retryImport.and.returnValue(of({ importRun: retry }));
+
+    await store.retryImport(failed);
+
+    expect(api.retryImport).toHaveBeenCalledOnceWith(failed.id);
+    expect(store.importRunForAccount(1)?.id).toBe(retry.id);
+    expect(store.importRunForAccount(1)?.retryOfImportRunId).toBe(failed.id);
+    expect(store.notice()).toBe('Account import retry queued.');
   });
 
   it('disconnects Lichess without changing tracked accounts', async () => {
@@ -172,18 +232,19 @@ function importRun(
   accountId: number,
   status: AccountImportRun['status'],
 ): AccountImportRun {
+  const terminal = status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED';
   return {
     id,
     accountId,
     provider: 'LICHESS',
     mode: 'INCREMENTAL_FORWARD',
-    source: 'USER_ACTION',
+    source: 'ACCOUNT_REFRESH',
     status,
     scopeVersion: 1,
     scopeHash: `scope-${accountId}`,
     scope: {
       variant: 'STANDARD',
-      speeds: ['BLITZ', 'RAPID'],
+      speeds: ['BULLET', 'BLITZ', 'RAPID'],
       rated: 'BOTH',
     },
     requestedFrom: '2026-07-01T10:00:00.000Z',
@@ -199,7 +260,7 @@ function importRun(
       updated: 0,
       skipped: 3,
       skippedOutOfScope: 3,
-      failed: 0,
+      failed: status === 'FAILED' ? 1 : 0,
     },
     lastProgressAt: '2026-07-02T09:00:00.000Z',
     retryAt: null,
@@ -207,8 +268,8 @@ function importRun(
     createdAt: '2026-07-02T08:00:00.000Z',
     updatedAt: '2026-07-02T09:00:00.000Z',
     startedAt: '2026-07-02T08:00:00.000Z',
-    completedAt: status === 'COMPLETED' ? '2026-07-02T09:00:00.000Z' : null,
-    errorCode: null,
-    error: null,
+    completedAt: terminal ? '2026-07-02T09:00:00.000Z' : null,
+    errorCode: status === 'FAILED' ? 'TEST_FAILURE' : null,
+    error: status === 'FAILED' ? 'Test import failure.' : null,
   };
 }
