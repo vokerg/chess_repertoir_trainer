@@ -349,7 +349,7 @@ export function createOnboardingReadinessService(dependencies: Dependencies = {}
         preparation: run && scope && batchSummary ? {
           runId: run.id,
           status: run.status,
-          purpose: 'ONBOARDING',
+          purpose: run.purpose,
           targetsTotal: scope.targetCount,
           targetsTruncated: scope.targetCount > targets.length,
           providerWindows: {
