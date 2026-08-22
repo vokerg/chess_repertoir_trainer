@@ -173,32 +173,97 @@ function presentationState(
   return 'NOT_STARTED';
 }
 
+function attentionActions(attention: OnboardingAttentionCode | null): OnboardingAction[] {
+  if (attention === 'NO_RECENT_GAMES') return [
+    { code: 'EXPAND_RANGE', destination: '/onboarding' },
+    { code: 'ADD_ACCOUNT', destination: '/settings/accounts' },
+    { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
+    { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
+  ];
+  if (attention === 'ALL_INDEXING_FAILED' || attention === 'IMPORT_RETRY_AVAILABLE') return [
+    { code: 'RETRY_PREPARATION', destination: '/onboarding' },
+    { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
+    { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+  ];
+  return [
+    { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
+    { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+  ];
+}
+
+function skippedActions(
+  run: OnboardingRunRecord | null,
+  attention: OnboardingAttentionCode | null,
+): OnboardingAction[] {
+  if (!run) return [
+    { code: 'VIEW_HOME', destination: '/home' },
+    { code: 'START_ONBOARDING', destination: '/onboarding' },
+  ];
+  if (run.status === 'QUEUED' || run.status === 'RUNNING') return [
+    { code: 'VIEW_HOME', destination: '/home' },
+    { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
+    { code: 'PAUSE_PREPARATION', destination: '/onboarding' },
+    { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+  ];
+  if (run.status === 'PAUSED') return [
+    { code: 'VIEW_HOME', destination: '/home' },
+    { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
+    { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+  ];
+  if (run.status === 'PAUSE_REQUESTED' || run.status === 'CANCEL_REQUESTED') {
+    return [{ code: 'VIEW_HOME', destination: '/home' }];
+  }
+  if (run.status === 'NEEDS_ATTENTION') {
+    if (attention === 'NO_RECENT_GAMES') return [
+      { code: 'VIEW_HOME', destination: '/home' },
+      { code: 'EXPAND_RANGE', destination: '/onboarding' },
+      { code: 'ADD_ACCOUNT', destination: '/settings/accounts' },
+      { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
+    ];
+    if (attention === 'ALL_INDEXING_FAILED' || attention === 'IMPORT_RETRY_AVAILABLE') return [
+      { code: 'VIEW_HOME', destination: '/home' },
+      { code: 'RETRY_PREPARATION', destination: '/onboarding' },
+      { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
+      { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+    ];
+    return [
+      { code: 'VIEW_HOME', destination: '/home' },
+      { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
+      { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+    ];
+  }
+  if (run.status === 'FAILED' || run.status === 'CANCELLED') return [
+    { code: 'VIEW_HOME', destination: '/home' },
+    { code: 'RESTART_PREPARATION', destination: '/onboarding' },
+  ];
+  return [
+    { code: 'VIEW_HOME', destination: '/home' },
+    { code: 'START_ONBOARDING', destination: '/onboarding' },
+  ];
+}
+
 function allowedActions(
   state: OnboardingReadinessResponse['presentationState'],
   attention: OnboardingAttentionCode | null,
+  run: OnboardingRunRecord | null,
 ): OnboardingAction[] {
   if (state === 'NOT_STARTED') return [
     { code: 'START_ONBOARDING', destination: '/onboarding' },
     { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
   ];
-  if (state === 'PREPARING') return [{ code: 'RESUME_ONBOARDING', destination: '/onboarding' }];
+  if (state === 'PREPARING') return [
+    { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
+    { code: 'PAUSE_PREPARATION', destination: '/onboarding' },
+    { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+  ];
   if (state === 'PAUSE_REQUESTED' || state === 'CANCEL_REQUESTED') {
     return [{ code: 'VIEW_HOME', destination: '/home' }];
   }
-  if (state === 'PAUSED') return [{ code: 'RESUME_ONBOARDING', destination: '/onboarding' }];
-  if (state === 'NEEDS_ATTENTION') {
-    if (attention === 'NO_RECENT_GAMES') return [
-      { code: 'EXPAND_RANGE', destination: '/onboarding' },
-      { code: 'ADD_ACCOUNT', destination: '/settings/accounts' },
-      { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
-      { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
-    ];
-    if (attention === 'ALL_INDEXING_FAILED' || attention === 'IMPORT_RETRY_AVAILABLE') return [
-      { code: 'RETRY_PREPARATION', destination: '/onboarding' },
-      { code: 'FINISH_ONBOARDING', destination: '/onboarding' },
-    ];
-    return [{ code: 'RESUME_ONBOARDING', destination: '/onboarding' }];
-  }
+  if (state === 'PAUSED') return [
+    { code: 'RESUME_ONBOARDING', destination: '/onboarding' },
+    { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+  ];
+  if (state === 'NEEDS_ATTENTION') return attentionActions(attention);
   if (state === 'FAILED') return [
     { code: 'RESTART_PREPARATION', destination: '/onboarding' },
     { code: 'VIEW_HOME', destination: '/home' },
@@ -207,10 +272,7 @@ function allowedActions(
     { code: 'RESTART_PREPARATION', destination: '/onboarding' },
     { code: 'VIEW_HOME', destination: '/home' },
   ];
-  if (state === 'SKIPPED') return [
-    { code: 'VIEW_HOME', destination: '/home' },
-    { code: 'START_ONBOARDING', destination: '/onboarding' },
-  ];
+  if (state === 'SKIPPED') return skippedActions(run, attention);
   return [
     { code: 'VIEW_HOME', destination: '/home' },
     { code: 'VIEW_GAMES', destination: '/games' },
@@ -370,7 +432,7 @@ export function createOnboardingReadinessService(dependencies: Dependencies = {}
         } : null,
         attention,
         readiness: featureReadiness(evidence, tacticalEvidence, importChecked, indexChecked, analysisChecked),
-        actions: allowedActions(state, attention?.code ?? null),
+        actions: allowedActions(state, attention?.code ?? null, run),
         reveals: reveals.map((reveal) => ({
           kind: reveal.kind,
           importedGameId: reveal.importedGameId,
