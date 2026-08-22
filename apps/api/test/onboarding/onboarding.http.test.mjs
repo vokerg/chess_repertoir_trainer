@@ -222,6 +222,11 @@ try {
     assert.equal(body.preparation.latestBatches[0].percentage, 50);
     assert.equal(body.readiness.find((item) => item.feature === 'games').state, 'ready');
     assert.equal(body.readiness.find((item) => item.feature === 'openings').state, 'ready');
+    assert.deepEqual(body.actions.map((action) => action.code), [
+      'RESUME_ONBOARDING',
+      'PAUSE_PREPARATION',
+      'CANCEL_PREPARATION',
+    ]);
     assert.equal(body.reveals.length >= 1, true);
     assert.equal(
       body.reveals.some(
@@ -243,6 +248,13 @@ try {
     const skippedBody = onboardingReadinessResponseSchema.parse(skippedResponse.json());
     assert.equal(skippedBody.presentationState, 'SKIPPED');
     assert.equal(skippedBody.preparation.status, 'RUNNING');
+    assert.deepEqual(skippedBody.actions.map((action) => action.code), [
+      'VIEW_HOME',
+      'RESUME_ONBOARDING',
+      'PAUSE_PREPARATION',
+      'CANCEL_PREPARATION',
+    ]);
+    assert.equal(skippedBody.actions.some((action) => action.code === 'START_ONBOARDING'), false);
 
     await prisma.dataPreparationRun.update({
       where: { id: preparation.id },
