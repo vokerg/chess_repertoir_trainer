@@ -76,7 +76,12 @@ assert.equal(running.preparation.latestBatches[0].queued, 2);
 assert.equal(running.preparation.latestBatches[0].remaining, 2);
 assert.equal(running.preparation.latestBatches[0].percentage, 50);
 assert.equal(running.readiness.find((item) => item.feature === 'analysis').state, 'partial');
-assert.deepEqual(running.actions.map((action) => action.code), ['RESUME_ONBOARDING', 'PAUSE_PREPARATION', 'CANCEL_PREPARATION']);
+assert.deepEqual(running.actions.map((action) => action.code), [
+  'RESUME_ONBOARDING',
+  'PAUSE_PREPARATION',
+  'CANCEL_PREPARATION',
+  'SKIP_ONBOARDING',
+]);
 assert.equal('eta' in running.preparation, false);
 assert.equal('overallPercentage' in running.preparation, false);
 
@@ -112,7 +117,7 @@ const pauseRequested = await createService({
 }).get(1);
 assert.equal(pauseRequested.presentationState, 'PAUSE_REQUESTED');
 assert.equal(pauseRequested.attention.code, 'PREPARATION_PAUSE_REQUESTED');
-assert.deepEqual(pauseRequested.actions.map((action) => action.code), ['VIEW_HOME']);
+assert.deepEqual(pauseRequested.actions.map((action) => action.code), ['VIEW_HOME', 'SKIP_ONBOARDING']);
 
 const paused = await createService({
   repository: {
@@ -124,7 +129,7 @@ const paused = await createService({
 }).get(1);
 assert.equal(paused.presentationState, 'PAUSED');
 assert.equal(paused.attention.code, 'PREPARATION_PAUSED');
-assert.deepEqual(paused.actions.map((action) => action.code), ['RESUME_ONBOARDING', 'CANCEL_PREPARATION']);
+assert.deepEqual(paused.actions.map((action) => action.code), ['RESUME_ONBOARDING', 'CANCEL_PREPARATION', 'SKIP_ONBOARDING']);
 
 const cancelRequested = await createService({
   repository: {
@@ -136,7 +141,7 @@ const cancelRequested = await createService({
 }).get(1);
 assert.equal(cancelRequested.presentationState, 'CANCEL_REQUESTED');
 assert.equal(cancelRequested.attention.code, 'PREPARATION_CANCEL_REQUESTED');
-assert.deepEqual(cancelRequested.actions.map((action) => action.code), ['VIEW_HOME']);
+assert.deepEqual(cancelRequested.actions.map((action) => action.code), ['VIEW_HOME', 'SKIP_ONBOARDING']);
 
 const cancelled = await createService({
   repository: {
@@ -148,7 +153,7 @@ const cancelled = await createService({
 }).get(1);
 assert.equal(cancelled.presentationState, 'CANCELLED');
 assert.equal(cancelled.attention.code, 'PREPARATION_CANCELLED');
-assert.deepEqual(cancelled.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME']);
+assert.deepEqual(cancelled.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME', 'SKIP_ONBOARDING']);
 
 const failed = await createService({
   repository: {
@@ -160,7 +165,7 @@ const failed = await createService({
 }).get(1);
 assert.equal(failed.presentationState, 'FAILED');
 assert.equal(failed.attention.code, 'PREPARATION_FAILED');
-assert.deepEqual(failed.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME']);
+assert.deepEqual(failed.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME', 'SKIP_ONBOARDING']);
 
 const rateLimited = await createService({
   repository: {
@@ -176,7 +181,12 @@ const rateLimited = await createService({
 }).get(1);
 assert.equal(rateLimited.presentationState, 'PREPARING');
 assert.equal(rateLimited.attention.code, 'IMPORT_RATE_LIMITED');
-assert.deepEqual(rateLimited.actions.map((action) => action.code), ['RESUME_ONBOARDING', 'PAUSE_PREPARATION', 'CANCEL_PREPARATION']);
+assert.deepEqual(rateLimited.actions.map((action) => action.code), [
+  'RESUME_ONBOARDING',
+  'PAUSE_PREPARATION',
+  'CANCEL_PREPARATION',
+  'SKIP_ONBOARDING',
+]);
 
 const noDataRepository = {
   ...runningRepository,
@@ -200,6 +210,34 @@ assert.equal(noData.preparation.fixedCoverage.index, null);
 assert.equal(noData.readiness.find((item) => item.feature === 'games').state, 'checked-empty');
 assert.deepEqual(noData.actions.map((action) => action.code), ['EXPAND_RANGE', 'ADD_ACCOUNT', 'FINISH_ONBOARDING', 'SKIP_ONBOARDING']);
 
+const completedExpansionNoData = await createService({
+  repository: {
+    ...noDataRepository,
+    async getDisposition() {
+      return {
+        disposition: 'COMPLETED',
+        reason: 'CORE_READY',
+        changedAt: new Date('2026-08-20T07:10:00.000Z'),
+      };
+    },
+    async getLatestRun() {
+      return {
+        ...(await noDataRepository.getLatestRun()),
+        purpose: 'EXPANSION',
+      };
+    },
+  },
+}).get(1);
+assert.equal(completedExpansionNoData.presentationState, 'NEEDS_ATTENTION');
+assert.deepEqual(completedExpansionNoData.actions.map((action) => action.code), [
+  'EXPAND_RANGE',
+  'ADD_ACCOUNT',
+  'CANCEL_PREPARATION',
+  'VIEW_HOME',
+]);
+assert.equal(completedExpansionNoData.actions.some((action) => action.code === 'SKIP_ONBOARDING'), false);
+assert.equal(completedExpansionNoData.actions.some((action) => action.code === 'FINISH_ONBOARDING'), false);
+
 const allIndexFailedRepository = {
   ...noDataRepository,
   async getLatestRun() {
@@ -219,7 +257,12 @@ const allIndexFailed = await createService({ repository: allIndexFailedRepositor
 assert.equal(allIndexFailed.attention.code, 'ALL_INDEXING_FAILED');
 assert.equal(allIndexFailed.preparation.fixedCoverage.index.percentage, 100);
 assert.equal(allIndexFailed.readiness.find((item) => item.feature === 'openings').state, 'locked');
-assert.deepEqual(allIndexFailed.actions.map((action) => action.code), ['RETRY_PREPARATION', 'FINISH_ONBOARDING', 'CANCEL_PREPARATION']);
+assert.deepEqual(allIndexFailed.actions.map((action) => action.code), [
+  'RETRY_PREPARATION',
+  'FINISH_ONBOARDING',
+  'CANCEL_PREPARATION',
+  'SKIP_ONBOARDING',
+]);
 
 const stalled = await createService({
   repository: {
@@ -235,7 +278,12 @@ const stalled = await createService({
 }).get(1);
 assert.equal(stalled.presentationState, 'PREPARING');
 assert.equal(stalled.attention.code, 'INDEX_NO_SETTLEMENT_WARNING');
-assert.deepEqual(stalled.actions.map((action) => action.code), ['RESUME_ONBOARDING', 'PAUSE_PREPARATION', 'CANCEL_PREPARATION']);
+assert.deepEqual(stalled.actions.map((action) => action.code), [
+  'RESUME_ONBOARDING',
+  'PAUSE_PREPARATION',
+  'CANCEL_PREPARATION',
+  'SKIP_ONBOARDING',
+]);
 
 const terminalRepository = {
   ...runningRepository,
