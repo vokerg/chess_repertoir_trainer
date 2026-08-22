@@ -94,7 +94,9 @@ try {
     windowsTotal: null,
   });
   const firstComputedAt = firstStats?.computedAt ?? new Date();
-  const backfillCompletedAt = new Date(firstComputedAt.getTime() + 1_000);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  const backfillCompletedAt = new Date();
+  assert.equal(backfillCompletedAt > firstComputedAt, true);
   await prisma.importRun.update({
     where: { id: backfill.id },
     data: { status: 'COMPLETED', completedAt: backfillCompletedAt },
