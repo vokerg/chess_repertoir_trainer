@@ -34,6 +34,21 @@ assert.deepEqual(notStarted.actions.map((action) => action.code), ['START_ONBOAR
 assert.equal(notStarted.preparation, null);
 assert.equal(notStarted.readiness.every((item) => item.state === 'locked'), true);
 
+const skippedWithoutRun = await createService({
+  repository: {
+    ...baseRepository,
+    async getDisposition() {
+      return {
+        disposition: 'SKIPPED',
+        reason: 'USER_SKIPPED',
+        changedAt: new Date('2026-08-20T07:05:00.000Z'),
+      };
+    },
+  },
+}).get(1);
+assert.equal(skippedWithoutRun.presentationState, 'SKIPPED');
+assert.deepEqual(skippedWithoutRun.actions.map((action) => action.code), ['VIEW_HOME', 'START_ONBOARDING']);
+
 const runningRepository = {
   ...baseRepository,
   async getLatestRun() {
@@ -61,6 +76,7 @@ assert.equal(running.preparation.latestBatches[0].queued, 2);
 assert.equal(running.preparation.latestBatches[0].remaining, 2);
 assert.equal(running.preparation.latestBatches[0].percentage, 50);
 assert.equal(running.readiness.find((item) => item.feature === 'analysis').state, 'partial');
+assert.deepEqual(running.actions.map((action) => action.code), ['RESUME_ONBOARDING', 'PAUSE_PREPARATION', 'CANCEL_PREPARATION']);
 assert.equal('eta' in running.preparation, false);
 assert.equal('overallPercentage' in running.preparation, false);
 
@@ -78,7 +94,13 @@ const skipped = await createService({
 }).get(1);
 assert.equal(skipped.presentationState, 'SKIPPED');
 assert.equal(skipped.preparation.status, 'RUNNING');
-assert.deepEqual(skipped.actions.map((action) => action.code), ['VIEW_HOME', 'START_ONBOARDING']);
+assert.deepEqual(skipped.actions.map((action) => action.code), [
+  'VIEW_HOME',
+  'RESUME_ONBOARDING',
+  'PAUSE_PREPARATION',
+  'CANCEL_PREPARATION',
+]);
+assert.equal(skipped.actions.some((action) => action.code === 'START_ONBOARDING'), false);
 
 const pauseRequested = await createService({
   repository: {
@@ -102,7 +124,7 @@ const paused = await createService({
 }).get(1);
 assert.equal(paused.presentationState, 'PAUSED');
 assert.equal(paused.attention.code, 'PREPARATION_PAUSED');
-assert.deepEqual(paused.actions.map((action) => action.code), ['RESUME_ONBOARDING']);
+assert.deepEqual(paused.actions.map((action) => action.code), ['RESUME_ONBOARDING', 'CANCEL_PREPARATION']);
 
 const cancelRequested = await createService({
   repository: {
@@ -154,7 +176,7 @@ const rateLimited = await createService({
 }).get(1);
 assert.equal(rateLimited.presentationState, 'PREPARING');
 assert.equal(rateLimited.attention.code, 'IMPORT_RATE_LIMITED');
-assert.deepEqual(rateLimited.actions.map((action) => action.code), ['RESUME_ONBOARDING']);
+assert.deepEqual(rateLimited.actions.map((action) => action.code), ['RESUME_ONBOARDING', 'PAUSE_PREPARATION', 'CANCEL_PREPARATION']);
 
 const noDataRepository = {
   ...runningRepository,
@@ -197,7 +219,7 @@ const allIndexFailed = await createService({ repository: allIndexFailedRepositor
 assert.equal(allIndexFailed.attention.code, 'ALL_INDEXING_FAILED');
 assert.equal(allIndexFailed.preparation.fixedCoverage.index.percentage, 100);
 assert.equal(allIndexFailed.readiness.find((item) => item.feature === 'openings').state, 'locked');
-assert.deepEqual(allIndexFailed.actions.map((action) => action.code), ['RETRY_PREPARATION', 'FINISH_ONBOARDING']);
+assert.deepEqual(allIndexFailed.actions.map((action) => action.code), ['RETRY_PREPARATION', 'FINISH_ONBOARDING', 'CANCEL_PREPARATION']);
 
 const stalled = await createService({
   repository: {
@@ -213,7 +235,7 @@ const stalled = await createService({
 }).get(1);
 assert.equal(stalled.presentationState, 'PREPARING');
 assert.equal(stalled.attention.code, 'INDEX_NO_SETTLEMENT_WARNING');
-assert.deepEqual(stalled.actions.map((action) => action.code), ['RESUME_ONBOARDING']);
+assert.deepEqual(stalled.actions.map((action) => action.code), ['RESUME_ONBOARDING', 'PAUSE_PREPARATION', 'CANCEL_PREPARATION']);
 
 const terminalRepository = {
   ...runningRepository,
