@@ -278,14 +278,18 @@ function attentionFor(
   observedAt: Date,
 ): { code: OnboardingAttentionCode; detail: string | null } | null {
   if (!run) return null;
-  if (scope?.rateLimitUntil && scope.rateLimitUntil > observedAt) {
-    return { code: 'IMPORT_RATE_LIMITED', detail: `Provider import is rate limited until ${scope.rateLimitUntil.toISOString()}.` };
-  }
   if (run.status === 'PAUSE_REQUESTED') return { code: 'PREPARATION_PAUSE_REQUESTED', detail: null };
   if (run.status === 'PAUSED') return { code: 'PREPARATION_PAUSED', detail: null };
   if (run.status === 'CANCEL_REQUESTED') return { code: 'PREPARATION_CANCEL_REQUESTED', detail: null };
   if (run.status === 'CANCELLED') return { code: 'PREPARATION_CANCELLED', detail: null };
   if (run.status === 'FAILED') return { code: 'PREPARATION_FAILED', detail: run.attentionDetail };
+  if (
+    (run.status === 'QUEUED' || run.status === 'RUNNING')
+    && scope?.rateLimitUntil
+    && scope.rateLimitUntil > observedAt
+  ) {
+    return { code: 'IMPORT_RATE_LIMITED', detail: `Provider import is rate limited until ${scope.rateLimitUntil.toISOString()}.` };
+  }
   if (!run.attentionCode) return null;
   const code = KNOWN_ATTENTION_CODES.has(run.attentionCode as OnboardingAttentionCode)
     ? run.attentionCode as OnboardingAttentionCode

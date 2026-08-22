@@ -9,76 +9,199 @@ const suffix = randomUUID();
 const primaryScopeHash = createHash('sha256').update(`primary:${suffix}`).digest('hex');
 const secondaryScopeHash = createHash('sha256').update(`secondary:${suffix}`).digest('hex');
 let user = null;
+let createdDevUser = false;
+let originalDisposition = null;
 let otherUser = null;
+let preparation = null;
+const accountIds = [];
 
 try {
-  user = await prisma.appUser.create({ data: { displayName: 'Onboarding test', authProvider: 'test', authSubject: `onboarding-${suffix}` } });
-  otherUser = await prisma.appUser.create({ data: { displayName: 'Other onboarding test', authProvider: 'test', authSubject: `onboarding-other-${suffix}` } });
+  const existingDevUser = await prisma.appUser.findUnique({
+    where: {
+      authProvider_authSubject: {
+        authProvider: 'dev',
+        authSubject: 'dev-single-user',
+      },
+    },
+  });
+  if (existingDevUser) {
+    user = existingDevUser;
+    originalDisposition = {
+      onboardingDisposition: existingDevUser.onboardingDisposition,
+      onboardingDispositionReason: existingDevUser.onboardingDispositionReason,
+      onboardingDispositionAt: existingDevUser.onboardingDispositionAt,
+    };
+    user = await prisma.appUser.update({
+      where: { id: user.id },
+      data: {
+        onboardingDisposition: 'PENDING',
+        onboardingDispositionReason: null,
+        onboardingDispositionAt: null,
+      },
+    });
+  } else {
+    user = await prisma.appUser.create({
+      data: {
+        displayName: 'Local user',
+        authProvider: 'dev',
+        authSubject: 'dev-single-user',
+      },
+    });
+    createdDevUser = true;
+  }
+  otherUser = await prisma.appUser.create({
+    data: {
+      displayName: 'Other onboarding test',
+      authProvider: 'test',
+      authSubject: `onboarding-other-${suffix}`,
+    },
+  });
   assert.equal(user.onboardingDisposition, 'PENDING');
 
-  const account = await prisma.externalAccount.create({ data: { userId: user.id, provider: 'lichess', username: `onboarding-${suffix}` } });
-  const secondAccount = await prisma.externalAccount.create({ data: { userId: user.id, provider: 'chess.com', username: `onboarding-second-${suffix}` } });
-  const otherAccount = await prisma.externalAccount.create({ data: { userId: otherUser.id, provider: 'lichess', username: `other-${suffix}` } });
+  const account = await prisma.externalAccount.create({
+    data: { userId: user.id, provider: 'lichess', username: `onboarding-${suffix}` },
+  });
+  accountIds.push(account.id);
+  const secondAccount = await prisma.externalAccount.create({
+    data: { userId: user.id, provider: 'chess.com', username: `onboarding-second-${suffix}` },
+  });
+  accountIds.push(secondAccount.id);
+  const otherAccount = await prisma.externalAccount.create({
+    data: { userId: otherUser.id, provider: 'lichess', username: `other-${suffix}` },
+  });
   const now = new Date('2026-08-20T07:30:00.000Z');
   const requestedFrom = new Date('2026-05-20T00:00:00.000Z');
   const requestedTo = new Date('2026-08-21T00:00:00.000Z');
   const importRun = await prisma.importRun.create({
     data: {
-      userId: user.id, accountId: account.id, provider: 'lichess', mode: 'BOUNDED_INITIAL', source: 'ONBOARDING', status: 'RUNNING',
-      scopeVersion: 1, scopeHash: primaryScopeHash, scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
-      requestedFrom, requestedTo, windowsTotal: 4, windowsCompleted: 2,
+      userId: user.id,
+      accountId: account.id,
+      provider: 'lichess',
+      mode: 'BOUNDED_INITIAL',
+      source: 'ONBOARDING',
+      status: 'RUNNING',
+      scopeVersion: 1,
+      scopeHash: primaryScopeHash,
+      scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
+      requestedFrom,
+      requestedTo,
+      windowsTotal: 4,
+      windowsCompleted: 2,
     },
   });
   const secondImportRun = await prisma.importRun.create({
     data: {
-      userId: user.id, accountId: secondAccount.id, provider: 'chess.com', mode: 'BOUNDED_INITIAL', source: 'ONBOARDING', status: 'RUNNING',
-      scopeVersion: 1, scopeHash: secondaryScopeHash, scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
-      requestedFrom, requestedTo, windowsTotal: 2, windowsCompleted: 1,
+      userId: user.id,
+      accountId: secondAccount.id,
+      provider: 'chess.com',
+      mode: 'BOUNDED_INITIAL',
+      source: 'ONBOARDING',
+      status: 'RUNNING',
+      scopeVersion: 1,
+      scopeHash: secondaryScopeHash,
+      scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
+      requestedFrom,
+      requestedTo,
+      windowsTotal: 2,
+      windowsCompleted: 1,
     },
   });
-  const preparation = await prisma.dataPreparationRun.create({
+  preparation = await prisma.dataPreparationRun.create({
     data: {
-      userId: user.id, purpose: 'ONBOARDING', status: 'RUNNING', recipeVersion: 1, recipeJson: {},
+      userId: user.id,
+      purpose: 'ONBOARDING',
+      status: 'RUNNING',
+      recipeVersion: 1,
+      recipeJson: {},
       firstImportedAt: now,
-      targets: { create: [{
-        accountId: account.id, accountProvider: 'lichess', accountUsername: account.username, ordinal: 0,
-        scopeVersion: 1, scopeHash: primaryScopeHash, scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
-        requestedFrom, requestedTo, currentImportRunId: importRun.id, firstImportedAt: now,
-      }, {
-        accountId: secondAccount.id, accountProvider: 'chess.com', accountUsername: secondAccount.username, ordinal: 1,
-        scopeVersion: 1, scopeHash: secondaryScopeHash, scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
-        requestedFrom, requestedTo, currentImportRunId: secondImportRun.id, firstImportedAt: now,
-      }] },
+      targets: {
+        create: [{
+          accountId: account.id,
+          accountProvider: 'lichess',
+          accountUsername: account.username,
+          ordinal: 0,
+          scopeVersion: 1,
+          scopeHash: primaryScopeHash,
+          scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
+          requestedFrom,
+          requestedTo,
+          currentImportRunId: importRun.id,
+          firstImportedAt: now,
+        }, {
+          accountId: secondAccount.id,
+          accountProvider: 'chess.com',
+          accountUsername: secondAccount.username,
+          ordinal: 1,
+          scopeVersion: 1,
+          scopeHash: secondaryScopeHash,
+          scopeJson: { rated: 'ANY', speedCategories: [], variants: [] },
+          requestedFrom,
+          requestedTo,
+          currentImportRunId: secondImportRun.id,
+          firstImportedAt: now,
+        }],
+      },
     },
     include: { targets: { orderBy: { ordinal: 'asc' } } },
   });
   await prisma.importedGame.create({
     data: {
-      userId: user.id, accountId: account.id, provider: 'lichess', providerGameId: `game-${suffix}`,
-      pgn: '1. e4 e5', rated: true, variant: 'standard', speedCategory: 'rapid', endedAt: now,
-      openingName: 'King Pawn Game', openingEco: 'C20', plyIndexedAt: now,
+      userId: user.id,
+      accountId: account.id,
+      provider: 'lichess',
+      providerGameId: `game-${suffix}`,
+      pgn: '1. e4 e5',
+      rated: true,
+      variant: 'standard',
+      speedCategory: 'rapid',
+      endedAt: now,
+      openingName: 'King Pawn Game',
+      openingEco: 'C20',
+      plyIndexedAt: now,
     },
   });
   await prisma.importedGame.create({
     data: {
-      userId: user.id, accountId: secondAccount.id, provider: 'chess.com', providerGameId: `second-game-${suffix}`,
-      pgn: '1. d4 d5', rated: true, variant: 'standard', speedCategory: 'blitz', endedAt: now,
+      userId: user.id,
+      accountId: secondAccount.id,
+      provider: 'chess.com',
+      providerGameId: `second-game-${suffix}`,
+      pgn: '1. d4 d5',
+      rated: true,
+      variant: 'standard',
+      speedCategory: 'blitz',
+      endedAt: now,
     },
   });
   await prisma.importedGame.create({
     data: {
-      userId: otherUser.id, accountId: otherAccount.id, provider: 'lichess', providerGameId: `other-game-${suffix}`,
-      pgn: '1. c4 e5', endedAt: now, plyIndexedAt: now,
+      userId: otherUser.id,
+      accountId: otherAccount.id,
+      provider: 'lichess',
+      providerGameId: `other-game-${suffix}`,
+      pgn: '1. c4 e5',
+      endedAt: now,
+      plyIndexedAt: now,
     },
   });
   await prisma.dataPreparationBatch.create({
     data: {
-      preparationRunId: preparation.id, targetId: preparation.targets[0].id, stage: 'INDEX', lane: 'FIRST_INDEX', ordinal: 0,
-      status: 'RUNNING', plannedLimit: 50, totalTasks: 2, completedTasks: 1,
+      preparationRunId: preparation.id,
+      targetId: preparation.targets[0].id,
+      stage: 'INDEX',
+      lane: 'FIRST_INDEX',
+      ordinal: 0,
+      status: 'RUNNING',
+      plannedLimit: 50,
+      totalTasks: 2,
+      completedTasks: 1,
     },
   });
 
-  const app = await buildApp({ logger: false, authConfig: { mode: 'dev-single-user', userId: user.id } });
+  const app = await buildApp({
+    logger: false,
+    authConfig: { mode: 'dev-single-user', userId: user.id },
+  });
   try {
     await app.ready();
     const response = await app.inject({ method: 'GET', url: '/api/me/onboarding' });
@@ -100,7 +223,12 @@ try {
     assert.equal(body.readiness.find((item) => item.feature === 'games').state, 'ready');
     assert.equal(body.readiness.find((item) => item.feature === 'openings').state, 'ready');
     assert.equal(body.reveals.length >= 1, true);
-    assert.equal(body.reveals.some((reveal) => reveal.importedGameId && reveal.destination.includes(String(reveal.importedGameId))), true);
+    assert.equal(
+      body.reveals.some(
+        (reveal) => reveal.importedGameId && reveal.destination.includes(String(reveal.importedGameId)),
+      ),
+      true,
+    );
 
     await prisma.appUser.update({
       where: { id: user.id },
@@ -135,7 +263,22 @@ try {
 
   console.log('Onboarding readiness HTTP tests passed.');
 } finally {
-  if (user) await prisma.appUser.delete({ where: { id: user.id } });
+  if (preparation) {
+    await prisma.dataPreparationRun.deleteMany({ where: { id: preparation.id } });
+  }
+  if (accountIds.length > 0) {
+    await prisma.externalAccount.deleteMany({ where: { id: { in: accountIds } } });
+  }
   if (otherUser) await prisma.appUser.delete({ where: { id: otherUser.id } });
+  if (user) {
+    if (createdDevUser) {
+      await prisma.appUser.delete({ where: { id: user.id } });
+    } else if (originalDisposition) {
+      await prisma.appUser.update({
+        where: { id: user.id },
+        data: originalDisposition,
+      });
+    }
+  }
   await prisma.$disconnect();
 }
