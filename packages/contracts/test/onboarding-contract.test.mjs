@@ -5,6 +5,7 @@ import {
   onboardingAttentionCodeSchema,
   onboardingDispositionSchema,
   onboardingFeatureStateSchema,
+  onboardingPreparationPurposeSchema,
   onboardingReadinessResponseSchema,
 } from '../dist/onboarding/index.js';
 
@@ -13,6 +14,10 @@ assert.equal(onboardingDispositionSchema.safeParse('IN_PROGRESS').success, false
 assert.equal(onboardingFeatureStateSchema.safeParse('checked-empty').success, true);
 assert.equal(onboardingActionCodeSchema.safeParse('RESTART_PREPARATION').success, true);
 assert.equal(onboardingAttentionCodeSchema.safeParse('PREPARATION_CANCEL_REQUESTED').success, true);
+assert.equal(onboardingPreparationPurposeSchema.safeParse('ONBOARDING').success, true);
+assert.equal(onboardingPreparationPurposeSchema.safeParse('RECOVERY').success, true);
+assert.equal(onboardingPreparationPurposeSchema.safeParse('EXPANSION').success, true);
+assert.equal(onboardingPreparationPurposeSchema.safeParse('OTHER').success, false);
 
 const response = onboardingReadinessResponseSchema.parse({
   contractVersion: ONBOARDING_CONTRACT_VERSION,
@@ -21,7 +26,7 @@ const response = onboardingReadinessResponseSchema.parse({
   preparation: {
     runId: 10,
     status: 'RUNNING',
-    purpose: 'ONBOARDING',
+    purpose: 'RECOVERY',
     targetsTotal: 1,
     targetsTruncated: false,
     providerWindows: { completed: 2, total: 4, percentage: 50 },
@@ -88,6 +93,7 @@ const response = onboardingReadinessResponseSchema.parse({
   reveals: [],
   observedAt: '2026-08-20T07:02:00.000Z',
 });
+assert.equal(response.preparation.purpose, 'RECOVERY');
 assert.equal(response.preparation.providerWindows.percentage, 50);
 assert.equal(response.preparation.latestBatches[0].selected, 3);
 
