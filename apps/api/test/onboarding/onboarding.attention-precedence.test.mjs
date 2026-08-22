@@ -96,23 +96,29 @@ async function project(status, attentionCode = null, attentionDetail = null) {
 
 const running = await project('RUNNING');
 assert.equal(running.attention.code, 'IMPORT_RATE_LIMITED');
+assert.deepEqual(running.actions.map((action) => action.code), [
+  'VIEW_ONBOARDING',
+  'PAUSE_PREPARATION',
+  'CANCEL_PREPARATION',
+  'SKIP_ONBOARDING',
+]);
 
 const pauseRequested = await project('PAUSE_REQUESTED');
 assert.equal(pauseRequested.attention.code, 'PREPARATION_PAUSE_REQUESTED');
-assert.deepEqual(pauseRequested.actions.map((action) => action.code), ['VIEW_HOME']);
+assert.deepEqual(pauseRequested.actions.map((action) => action.code), ['VIEW_HOME', 'SKIP_ONBOARDING']);
 
 const cancelRequested = await project('CANCEL_REQUESTED');
 assert.equal(cancelRequested.attention.code, 'PREPARATION_CANCEL_REQUESTED');
-assert.deepEqual(cancelRequested.actions.map((action) => action.code), ['VIEW_HOME']);
+assert.deepEqual(cancelRequested.actions.map((action) => action.code), ['VIEW_HOME', 'SKIP_ONBOARDING']);
 
 const cancelled = await project('CANCELLED');
 assert.equal(cancelled.attention.code, 'PREPARATION_CANCELLED');
-assert.deepEqual(cancelled.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME']);
+assert.deepEqual(cancelled.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME', 'SKIP_ONBOARDING']);
 
 const failed = await project('FAILED', null, 'Terminal failure.');
 assert.equal(failed.attention.code, 'PREPARATION_FAILED');
 assert.equal(failed.attention.detail, 'Terminal failure.');
-assert.deepEqual(failed.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME']);
+assert.deepEqual(failed.actions.map((action) => action.code), ['RESTART_PREPARATION', 'VIEW_HOME', 'SKIP_ONBOARDING']);
 
 const completedPartial = await project('COMPLETED', 'ANALYSIS_PARTIAL', 'One game failed analysis.');
 assert.equal(completedPartial.attention.code, 'ANALYSIS_PARTIAL');
