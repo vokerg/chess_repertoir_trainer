@@ -157,12 +157,13 @@ function presentationState(
   disposition: OnboardingDispositionValue,
   run: OnboardingRunRecord | null,
 ): OnboardingReadinessResponse['presentationState'] {
+  // SKIPPED is the durable first-run guidance decision. A later EXPANSION (or
+  // recovery descended only from expansion) may have its own readiness
+  // milestones without completing onboarding, so those milestones must not
+  // overwrite the skipped presentation.
+  if (disposition === 'SKIPPED') return 'SKIPPED';
   if (run?.analysisCompletedAt) return 'COMPLETE';
   if (run?.coreReadyAt) return 'CORE_READY';
-  // Skip dismisses first-run guidance without cancelling accepted background work.
-  // Keep the preparation projection populated, but do not re-open onboarding UI
-  // merely because that work is still running or needs attention.
-  if (disposition === 'SKIPPED') return 'SKIPPED';
   if (run?.status === 'NEEDS_ATTENTION') return 'NEEDS_ATTENTION';
   if (run?.status === 'PAUSE_REQUESTED') return 'PAUSE_REQUESTED';
   if (run?.status === 'PAUSED') return 'PAUSED';
@@ -270,6 +271,34 @@ function skippedActions(
   ];
 }
 
+function postCorePreparationActions(
+  run: OnboardingRunRecord | null,
+  attention: OnboardingAttentionCode | null,
+  disposition: OnboardingDispositionValue,
+): OnboardingAction[] | null {
+  if (!run || disposition !== 'COMPLETED') return null;
+  if (run.status === 'QUEUED' || run.status === 'RUNNING') return [
+    { code: 'VIEW_HOME', destination: '/home' },
+    { code: 'VIEW_ONBOARDING', destination: '/onboarding' },
+    { code: 'PAUSE_PREPARATION', destination: '/onboarding' },
+    { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+  ];
+  if (run.status === 'PAUSED') return [
+    { code: 'VIEW_HOME', destination: '/home' },
+    { code: 'RESUME_PREPARATION', destination: '/onboarding' },
+    { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+  ];
+  if (run.status === 'PAUSE_REQUESTED' || run.status === 'CANCEL_REQUESTED') {
+    return [{ code: 'VIEW_HOME', destination: '/home' }];
+  }
+  if (run.status === 'NEEDS_ATTENTION') return attentionActions(attention, disposition);
+  if (run.status === 'FAILED' || run.status === 'CANCELLED') return [
+    { code: 'RESTART_PREPARATION', destination: '/onboarding' },
+    { code: 'VIEW_HOME', destination: '/home' },
+  ];
+  return null;
+}
+
 function allowedActions(
   state: OnboardingReadinessResponse['presentationState'],
   attention: OnboardingAttentionCode | null,
@@ -302,6 +331,8 @@ function allowedActions(
     { code: 'VIEW_HOME', destination: '/home' },
   ], disposition);
   if (state === 'SKIPPED') return skippedActions(run, attention);
+  const postCoreActions = postCorePreparationActions(run, attention, disposition);
+  if (postCoreActions) return postCoreActions;
   return [
     { code: 'VIEW_HOME', destination: '/home' },
     { code: 'VIEW_GAMES', destination: '/games' },
