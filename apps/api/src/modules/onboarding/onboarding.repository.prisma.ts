@@ -301,7 +301,7 @@ export function createOnboardingReadRepository(database: PrismaClient = prisma):
           COALESCE((SELECT SUM("windowsTotal")::int FROM owned_targets WHERE "windowsTotal" IS NOT NULL), 0) AS "windowsTotal",
           (SELECT COUNT(*)::int FROM owned_targets WHERE "windowsTotal" IS NULL) AS "unknownWindowTargets",
           (SELECT COUNT(*)::int FROM owned_targets WHERE "importStatus" IS NULL OR "importStatus" NOT IN ('COMPLETED', 'FAILED', 'CANCELLED')) AS "nonTerminalImportTargets",
-          (SELECT MAX("rateLimitUntil") FROM owned_targets) AS "rateLimitUntil",
+          (SELECT MAX("rateLimitUntil") FROM owned_targets WHERE "importStatus" IN ('QUEUED', 'RUNNING')) AS "rateLimitUntil",
           COALESCE(batch_activity."activeIndexBatches", 0)::int AS "activeIndexBatches",
           COALESCE(batch_activity."activeAnalysisBatches", 0)::int AS "activeAnalysisBatches",
           COALESCE(evidence."committedCount", 0)::int AS "committedCount",
