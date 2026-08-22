@@ -16,6 +16,7 @@ const tacticalEvidenceRepository = {
 };
 let onboardingUser = null;
 let expansionUser = null;
+let crossUser = null;
 
 try {
   onboardingUser = await prisma.appUser.create({
@@ -134,9 +135,40 @@ try {
   assert.equal(stillSkipped.onboardingDisposition, 'SKIPPED');
   assert.equal(stillSkipped.onboardingDispositionReason, 'USER_SKIPPED');
 
+  crossUser = await prisma.appUser.create({
+    data: {
+      displayName: 'Cross-user recovery lineage test',
+      authProvider: 'test',
+      authSubject: `cross-user-recovery-${suffix}`,
+      onboardingDisposition: 'SKIPPED',
+      onboardingDispositionReason: 'USER_SKIPPED',
+      onboardingDispositionAt: now,
+    },
+  });
+  const crossUserRecovery = await prisma.dataPreparationRun.create({
+    data: {
+      userId: crossUser.id,
+      purpose: 'RECOVERY',
+      status: 'RUNNING',
+      recipeVersion: 1,
+      recipeJson: {},
+      retryOfRunId: initialRun.id,
+    },
+  });
+  await prisma.dataPreparationRun.update({
+    where: { id: crossUserRecovery.id },
+    data: { coreReadyAt: now },
+  });
+  const crossUserStillSkipped = await prisma.appUser.findUniqueOrThrow({
+    where: { id: crossUser.id },
+  });
+  assert.equal(crossUserStillSkipped.onboardingDisposition, 'SKIPPED');
+  assert.equal(crossUserStillSkipped.onboardingDispositionReason, 'USER_SKIPPED');
+
   console.log('Onboarding current preparation and recovery lineage tests passed.');
 } finally {
   if (onboardingUser) await prisma.appUser.delete({ where: { id: onboardingUser.id } });
   if (expansionUser) await prisma.appUser.delete({ where: { id: expansionUser.id } });
+  if (crossUser) await prisma.appUser.delete({ where: { id: crossUser.id } });
   await prisma.$disconnect();
 }
