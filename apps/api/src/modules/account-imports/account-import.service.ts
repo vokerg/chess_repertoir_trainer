@@ -11,12 +11,16 @@ import {
 import {
   AccountImportRepository,
   AccountImportInvalidRetryError,
+  type AccountImportRepository as AccountImportRepositoryBoundary,
 } from './account-import.repository.prisma';
 import {
   AccountImportLifecycleRepository,
   AccountImportInvalidStateError,
 } from './account-import.lifecycle.repository.prisma';
-import { AccountImportRefreshPolicyRepository } from './account-import.refresh-policy.repository.prisma';
+import {
+  AccountImportRefreshRetryRequiredError,
+  AccountRefreshImportRepository,
+} from './account-import.refresh-policy.repository.prisma';
 import type { StoredAccountImportRun } from './account-import.types';
 
 export const USER_ACTION_ACCOUNT_IMPORT_PRIORITY = 100;
@@ -75,7 +79,6 @@ export const AccountImportService = {
     accountId: number,
     requestedTo = new Date(),
   ): Promise<CreateAccountImportRunResponse> {
-    await assertNoRecoverableAccountRefresh(userId, accountId);
     const coverage = await AccountImportRepository.getCoverage(
       userId,
       accountId,
@@ -88,7 +91,7 @@ export const AccountImportService = {
       throw new AccountImportRangeUnavailableError('Account import coverage is already current.');
     }
 
-    return createRun({
+    return createAccountRefreshRun({
       userId,
       accountId,
       mode: coverage?.coveredThrough ? 'INCREMENTAL_FORWARD' : 'BOUNDED_INITIAL',
@@ -103,7 +106,6 @@ export const AccountImportService = {
     userId: number,
     accountId: number,
   ): Promise<CreateAccountImportRunResponse> {
-    await assertNoRecoverableAccountRefresh(userId, accountId);
     const coverage = await AccountImportRepository.getCoverage(
       userId,
       accountId,
@@ -117,7 +119,7 @@ export const AccountImportService = {
 
     const requestedTo = coverage.coveredFrom;
     const requestedFrom = shiftUtcMonths(requestedTo, -NORMAL_ACCOUNT_REFRESH_MONTHS);
-    return createRun({
+    return createAccountRefreshRun({
       userId,
       accountId,
       mode: 'HISTORICAL_BACKFILL',
@@ -199,27 +201,38 @@ export const AccountImportService = {
   },
 };
 
-async function assertNoRecoverableAccountRefresh(userId: number, accountId: number): Promise<void> {
-  const recoverable = await AccountImportRefreshPolicyRepository.findLatestRecoverableRefresh(
-    userId,
-    accountId,
-  );
-  if (!recoverable) return;
-  throw new AccountImportRangeUnavailableError(
-    `Retry the ${recoverable.status.toLowerCase()} account import before starting new account-refresh work.`,
-  );
-}
-
-async function createRun(input: {
+async function createAccountRefreshRun(input: {
   userId: number;
   accountId: number;
   mode: 'BOUNDED_INITIAL' | 'INCREMENTAL_FORWARD' | 'HISTORICAL_BACKFILL';
-  source: DurableAccountImportSource;
+  source: 'ACCOUNT_REFRESH';
   scope: AccountImportScope;
   requestedFrom: Date;
   requestedTo: Date;
 }): Promise<CreateAccountImportRunResponse> {
-  const run = await AccountImportRepository.createRun({
+  try {
+    return await createRun(input, AccountRefreshImportRepository);
+  } catch (error) {
+    if (error instanceof AccountImportRefreshRetryRequiredError) {
+      throw new AccountImportRangeUnavailableError(error.message);
+    }
+    throw error;
+  }
+}
+
+async function createRun(
+  input: {
+    userId: number;
+    accountId: number;
+    mode: 'BOUNDED_INITIAL' | 'INCREMENTAL_FORWARD' | 'HISTORICAL_BACKFILL';
+    source: DurableAccountImportSource;
+    scope: AccountImportScope;
+    requestedFrom: Date;
+    requestedTo: Date;
+  },
+  repository: Pick<AccountImportRepositoryBoundary, 'createRun'> = AccountImportRepository,
+): Promise<CreateAccountImportRunResponse> {
+  const run = await repository.createRun({
     ...input,
     priority: USER_ACTION_ACCOUNT_IMPORT_PRIORITY,
     windowsTotal: null,
