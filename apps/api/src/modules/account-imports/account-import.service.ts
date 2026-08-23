@@ -16,6 +16,7 @@ import {
   AccountImportLifecycleRepository,
   AccountImportInvalidStateError,
 } from './account-import.lifecycle.repository.prisma';
+import { AccountImportRefreshPolicyRepository } from './account-import.refresh-policy.repository.prisma';
 import type { StoredAccountImportRun } from './account-import.types';
 
 export const USER_ACTION_ACCOUNT_IMPORT_PRIORITY = 100;
@@ -74,6 +75,7 @@ export const AccountImportService = {
     accountId: number,
     requestedTo = new Date(),
   ): Promise<CreateAccountImportRunResponse> {
+    await assertNoRecoverableAccountRefresh(userId, accountId);
     const coverage = await AccountImportRepository.getCoverage(
       userId,
       accountId,
@@ -101,6 +103,7 @@ export const AccountImportService = {
     userId: number,
     accountId: number,
   ): Promise<CreateAccountImportRunResponse> {
+    await assertNoRecoverableAccountRefresh(userId, accountId);
     const coverage = await AccountImportRepository.getCoverage(
       userId,
       accountId,
@@ -195,6 +198,17 @@ export const AccountImportService = {
     return AccountImportRepository.hasActiveClaimForAccount(userId, accountId);
   },
 };
+
+async function assertNoRecoverableAccountRefresh(userId: number, accountId: number): Promise<void> {
+  const recoverable = await AccountImportRefreshPolicyRepository.findLatestRecoverableRefresh(
+    userId,
+    accountId,
+  );
+  if (!recoverable) return;
+  throw new AccountImportRangeUnavailableError(
+    `Retry the ${recoverable.status.toLowerCase()} account import before starting new account-refresh work.`,
+  );
+}
 
 async function createRun(input: {
   userId: number;
