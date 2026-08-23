@@ -351,9 +351,10 @@ export class AccountsStore {
     try {
       const next = await this.fetchImportRuns();
       this.importRuns.set(next);
-      const settled = Object.values(next).some((run) => {
-        const prior = previous[run.accountId];
-        return prior && ACTIVE_IMPORT_STATUSES.has(prior.status) && !ACTIVE_IMPORT_STATUSES.has(run.status);
+      const settled = Object.values(previous).some((prior) => {
+        if (!ACTIVE_IMPORT_STATUSES.has(prior.status)) return false;
+        const current = next[prior.accountId];
+        return current === undefined || !ACTIVE_IMPORT_STATUSES.has(current.status);
       });
       if (settled) await this.loadAccounts(false).catch(() => undefined);
     } catch (error) {
