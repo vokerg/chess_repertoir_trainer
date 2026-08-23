@@ -41,7 +41,7 @@ export const accountImportRefreshAdmissionGuard: AccountImportAdmissionGuard = {
     // and the account-import insert.
     await allowAccountImportAdmission.assertAllowed(transaction, input);
 
-    const rows = await transaction.$queryRaw<BlockingRefreshRow[]>(Prisma.sql`
+    const linkedRows = await transaction.$queryRaw<BlockingRefreshRow[]>(Prisma.sql`
       SELECT run."id", run."status"
       FROM "ImportRun" AS run
       JOIN "DataPreparationTarget" AS target
@@ -60,13 +60,50 @@ export const accountImportRefreshAdmissionGuard: AccountImportAdmissionGuard = {
       ORDER BY run."createdAt" DESC, run."id" DESC
       LIMIT 1
     `);
-    const blocker = rows[0];
-    if (!blocker) return;
-
-    if (blocker.status === 'FAILED' || blocker.status === 'CANCELLED') {
-      throw new AccountImportRefreshRetryRequiredError(blocker.id, blocker.status);
+    const linkedBlocker = linkedRows[0];
+    if (linkedBlocker) {
+      if (linkedBlocker.status === 'FAILED' || linkedBlocker.status === 'CANCELLED') {
+        throw new AccountImportRefreshRetryRequiredError(linkedBlocker.id, linkedBlocker.status);
+      }
+      throw new AccountImportActiveRunError(linkedBlocker.id);
     }
-    throw new AccountImportActiveRunError(blocker.id);
+
+    // Initial refresh establishes exact coverage newest-first. If that attempt
+    // terminates after only part of its accepted range is proved, starting a
+    // new forward refresh from coveredThrough would abandon the missing older
+    // interval. Keep the immutable failed/cancelled attempt as the recovery
+    // authority until its range is fully covered. A future account purge
+    // deletes AccountImportCoverage, so retained terminal history alone cannot
+    // create this block; the coverage epoch check also rejects fresh post-purge
+    // coverage from reviving an older failed attempt.
+    const incompleteRows = await transaction.$queryRaw<BlockingRefreshRow[]>(Prisma.sql`
+      SELECT run."id", run."status"
+      FROM "ImportRun" AS run
+      JOIN "AccountImportCoverage" AS coverage
+        ON coverage."accountId" = run."accountId"
+       AND coverage."scopeHash" = run."scopeHash"
+      WHERE run."userId" = ${input.userId}
+        AND run."accountId" = ${input.accountId}
+        AND run."source" = 'ACCOUNT_REFRESH'
+        AND run."mode" = 'BOUNDED_INITIAL'
+        AND run."status" IN ('FAILED', 'CANCELLED')
+        AND run."completedAt" IS NOT NULL
+        AND run."requestedFrom" IS NOT NULL
+        AND run."requestedTo" IS NOT NULL
+        AND coverage."coveredFrom" IS NOT NULL
+        AND coverage."coveredThrough" IS NOT NULL
+        AND run."completedAt" >= coverage."createdAt"
+        AND NOT (
+          coverage."coveredFrom" <= run."requestedFrom"
+          AND coverage."coveredThrough" >= run."requestedTo"
+        )
+      ORDER BY run."completedAt" DESC, run."id" DESC
+      LIMIT 1
+    `);
+    const incomplete = incompleteRows[0];
+    if (incomplete && (incomplete.status === 'FAILED' || incomplete.status === 'CANCELLED')) {
+      throw new AccountImportRefreshRetryRequiredError(incomplete.id, incomplete.status);
+    }
   },
 };
 
