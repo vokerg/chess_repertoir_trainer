@@ -57,11 +57,6 @@ try {
     priority: 100,
     windowsTotal: null,
   });
-  const forwardCompletedAt = new Date('2026-08-20T10:00:00.000Z');
-  await prisma.importRun.update({
-    where: { id: forward.id },
-    data: { status: 'COMPLETED', completedAt: forwardCompletedAt },
-  });
   const coverage = await prisma.accountImportCoverage.create({
     data: {
       accountId: account.id,
@@ -70,8 +65,17 @@ try {
       scopeJson: canonicalScope.scope,
       coveredFrom: forward.requestedFrom,
       coveredThrough: forward.requestedTo,
-      lastCompletedImportRunId: forward.id,
+      lastCompletedImportRunId: null,
     },
+  });
+  const forwardCompletedAt = coverage.createdAt;
+  await prisma.importRun.update({
+    where: { id: forward.id },
+    data: { status: 'COMPLETED', completedAt: forwardCompletedAt },
+  });
+  await prisma.accountImportCoverage.update({
+    where: { id: coverage.id },
+    data: { lastCompletedImportRunId: forward.id },
   });
 
   assert.equal(await service.reconcileNext(), true);
