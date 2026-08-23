@@ -60,7 +60,6 @@ interface ActivityRepositoryBoundary {
 
 export interface PlayedGameActivityWriteScope {
   userId: number;
-  accountId?: number;
   snapshotStartedAt: Date;
   reason: 'PLAYED_GAME_ACTIVITY_RECONCILIATION';
 }
@@ -166,9 +165,10 @@ export function createPlayedGameActivityReconciliationService(dependencies: Depe
       work: (transaction: ActivityFeedTransaction) => Promise<T>,
     ): Promise<T> {
       return activityRepository.transaction(async (transaction) => {
+        // GAMES_PLAYED is a user-wide aggregate across every account, so any
+        // user/account/game lifecycle fence for this user invalidates the snapshot.
         await assertDataLifecycleWriteAllowed(transaction, {
           userId: scope.userId,
-          ...(scope.accountId === undefined ? {} : { accountId: scope.accountId }),
           snapshotStartedAt: scope.snapshotStartedAt,
         });
         return work(transaction);
@@ -178,7 +178,6 @@ export function createPlayedGameActivityReconciliationService(dependencies: Depe
 
   async function reconcileDateRange(input: {
     userId: number;
-    accountId?: number;
     timeZone: string;
     fromDate: string;
     toDate: string;
@@ -225,7 +224,6 @@ export function createPlayedGameActivityReconciliationService(dependencies: Depe
 
       const chunkResult = await writeGuard.run({
         userId: input.userId,
-        ...(input.accountId === undefined ? {} : { accountId: input.accountId }),
         snapshotStartedAt,
         reason: 'PLAYED_GAME_ACTIVITY_RECONCILIATION',
       }, async (transaction) => {
@@ -282,7 +280,6 @@ export function createPlayedGameActivityReconciliationService(dependencies: Depe
       const timeZone = await activityRepository.getTimeZone(input.userId);
       return reconcileDateRange({
         userId: input.userId,
-        accountId: input.accountId,
         timeZone,
         fromDate: dateOnlyInTimeZone(input.from, timeZone),
         toDate: dateOnlyInTimeZone(input.to, timeZone),
