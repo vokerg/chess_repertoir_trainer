@@ -8,6 +8,7 @@ import {
   buildRepertoireBuilderEvidenceReference,
   buildRepertoireBuilderSourceItems,
   corpusEvidenceMetric,
+  engineDeltaLabel,
   courseRelationshipLabel,
   personalEvidenceDetail,
   personalEvidenceLabel,
@@ -20,7 +21,7 @@ describe('repertoire builder evidence view model', () => {
     const items = buildRepertoireBuilderSourceItems(candidate);
 
     expect(items.find((item) => item.id === 'population')?.detail).toBe(
-      '29.8M games · 50% frequency · 50% score',
+      '29.8M games · 50% frequency · your side scored 50% · 0pp vs position baseline',
     );
     expect(items.find((item) => item.id === 'personal')?.detail).toBe(
       '12 indexed games · 40% of choices · last played 2024-01-05 · 12 result games · 55% score · -6pp vs position baseline · Black · rated · blitz · all indexed history · all accounts',
@@ -33,10 +34,19 @@ describe('repertoire builder evidence view model', () => {
     expect(items.map((item) => item.id)).toEqual(['population', 'masters', 'personal', 'profile']);
   });
 
-  it('formats population and Masters metrics around frequency and position-relative results', () => {
+  it('formats population and master-game metrics around frequency and position-relative results', () => {
     expect(corpusEvidenceMetric(candidate.evidence.population)).toEqual({
       primary: '50%',
-      secondary: '0pp vs position · 29.8M games',
+      secondary: 'of 29.8M games · 0pp vs position',
+    });
+    expect(corpusEvidenceMetric({
+      ...candidate.evidence.population,
+      games: 673_600,
+      frequencyPercent: 57,
+      scoreDeltaVsPositionPercent: -8,
+    }, 'games from your group')).toEqual({
+      primary: '57%',
+      secondary: 'of 673.6K games from your group · -8pp vs position',
     });
     expect(corpusEvidenceMetric({
       ...candidate.evidence.masters,
@@ -48,6 +58,12 @@ describe('repertoire builder evidence view model', () => {
       primary: '—',
       secondary: 'Insufficient',
     });
+  });
+
+  it('calls an exact engine match Best and keeps gaps concise', () => {
+    expect(engineDeltaLabel(0)).toBe('Best');
+    expect(engineDeltaLabel(35)).toBe('35 cp below best');
+    expect(engineDeltaLabel(null)).toBe('Engine analysis');
   });
 
   it('keeps dominant Cockpit reasons on empirical evidence instead of target/profile chips', () => {
@@ -63,7 +79,7 @@ describe('repertoire builder evidence view model', () => {
     } as CandidateDecisionCandidate;
 
     expect(primaryEvidenceReasonLabels(evidenceCandidate)).toEqual([
-      'Outperforms the position baseline in the selected population',
+      'Outperforms the position baseline in your target group',
       'Close to the best engine line',
       'Already covered in a course',
     ]);
@@ -77,7 +93,7 @@ describe('repertoire builder evidence view model', () => {
         ...candidate.evidence,
         course: { ...candidate.evidence.course, status: 'AVAILABLE', covered: true },
       },
-    })).toBe('Already in course');
+    })).toBe('In course');
     expect(courseRelationshipLabel({
       ...candidate,
       evidence: {
@@ -95,6 +111,9 @@ describe('repertoire builder evidence view model', () => {
     expect(personalEvidenceLabel(candidate.evidence.personal)).toBe(
       'Common for you · results below position baseline',
     );
+    expect(personalEvidenceDetail(candidate.evidence.personal)).toBe(
+      '12 games · 40% of choices · last played 2024-01-05 · -6pp vs position',
+    );
 
     const newEvidence = {
       ...candidate.evidence.personal,
@@ -111,9 +130,7 @@ describe('repertoire builder evidence view model', () => {
       resultSampleQualified: false,
     };
     expect(personalEvidenceLabel(newEvidence)).toBe('New to you');
-    expect(personalEvidenceDetail(newEvidence)).toContain(
-      'No indexed games with this move from the exact position',
-    );
+    expect(personalEvidenceDetail(newEvidence)).toBeNull();
 
     const sparseEvidence = {
       ...candidate.evidence.personal,
@@ -128,11 +145,16 @@ describe('repertoire builder evidence view model', () => {
     expect(personalEvidenceDetail(sparseEvidence)).toContain(
       'result sample too small for a good/bad label',
     );
+    expect(personalEvidenceDetail(sparseEvidence)).not.toContain('vs position');
   });
 
   it('labels the V2 strong-population reason as position-relative evidence', () => {
+    expect(reasonLabel('ENGINE_BEST')).toBe('Best engine line');
     expect(reasonLabel('POPULATION_STRONG_SCORE')).toBe(
-      'Outperforms the position baseline in the selected population',
+      'Outperforms the position baseline in your target group',
+    );
+    expect(reasonLabel('COMMON_AT_TARGET_LEVEL')).toBe(
+      'Often chosen by players in your target group',
     );
   });
 

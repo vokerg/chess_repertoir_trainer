@@ -19,6 +19,7 @@ import type { UiShellAction } from '../../../shared/ui/ui-shell.model';
 import {
   corpusEvidenceMetric,
   courseRelationshipLabel as formatCourseRelationshipLabel,
+  engineDeltaLabel as formatEngineDeltaLabel,
   personalEvidenceDetail as formatPersonalEvidenceDetail,
   personalEvidenceLabel as formatPersonalEvidenceLabel,
   primaryEvidenceReasonLabels as formatPrimaryEvidenceReasonLabels,
@@ -206,17 +207,16 @@ export class RepertoireBuilderWorkbenchComponent {
     return formatPersonalEvidenceLabel(candidate.evidence.personal);
   }
 
-  protected personalEvidenceDetail(candidate: CandidateDecisionCandidate): string {
-    return formatPersonalEvidenceDetail(candidate.evidence.personal)
-      ?? 'Personal game history could not be loaded.';
+  protected personalEvidenceDetail(candidate: CandidateDecisionCandidate): string | null {
+    return formatPersonalEvidenceDetail(candidate.evidence.personal);
   }
 
   protected populationMetric(candidate: CandidateDecisionCandidate) {
-    return corpusEvidenceMetric(candidate.evidence.population);
+    return corpusEvidenceMetric(candidate.evidence.population, 'games from your group');
   }
 
   protected mastersMetric(candidate: CandidateDecisionCandidate) {
-    return corpusEvidenceMetric(candidate.evidence.masters);
+    return corpusEvidenceMetric(candidate.evidence.masters, 'master games');
   }
 
   protected courseRelationshipLabel(candidate: CandidateDecisionCandidate): string | null {
@@ -244,25 +244,20 @@ export class RepertoireBuilderWorkbenchComponent {
       if (engine.status === 'UNAVAILABLE' || engine.status === 'INSUFFICIENT') {
         return `${this.statusLabel(engine.status)} engine evidence`;
       }
-      return engine.objectiveDeltaCp === null
-        ? 'stored engine'
-        : `stored engine · ${engine.objectiveDeltaCp} cp from best`;
+      return formatEngineDeltaLabel(engine.objectiveDeltaCp);
     }
     if (impact.status === 'QUEUED') return 'browser engine queued';
     if (impact.status === 'ANALYZING') return 'browser engine running';
     if (impact.status === 'FAILED') return 'engine unavailable';
-    const source = this.engineImpactSourceLabel(impact);
-    return impact.objectiveDeltaCp === null
-      ? source
-      : `${source} · ${impact.objectiveDeltaCp} cp from best`;
+    return formatEngineDeltaLabel(impact.objectiveDeltaCp);
   }
 
-  protected candidateKindLabel(candidate: CandidateDecisionCandidate): string {
+  protected candidateKindLabel(candidate: CandidateDecisionCandidate): string | null {
     const opening = candidate.evidence.opening;
     const traits = [opening.soundness, ...opening.character.slice(0, 2)]
       .filter((value) => value !== null && value !== 'UNKNOWN')
       .map((value) => this.statusLabel(value));
-    return traits.length > 0 ? traits.join(' · ') : 'Character not classified';
+    return traits.length > 0 ? traits.join(' · ') : null;
   }
 
   protected engineImpactSummary(impact: RepertoireBuilderEngineImpact): string {
@@ -280,10 +275,11 @@ export class RepertoireBuilderWorkbenchComponent {
             ? 'Calculated in this browser, but persistence failed.'
             : 'Calculated in this browser and queued for persistence.'
         : 'Loaded from persisted position analysis.';
-    const delta =
-      impact.objectiveDeltaCp === null
-        ? ''
-        : ` ${impact.objectiveDeltaCp} centipawns from the safest evaluated candidate.`;
+    const delta = impact.objectiveDeltaCp === null
+      ? ''
+      : impact.objectiveDeltaCp === 0
+        ? ' This is the safest evaluated candidate.'
+        : ` ${impact.objectiveDeltaCp} centipawns below the safest evaluated candidate.`;
     return `${score} for the repertoire side. ${source}${delta}`;
   }
 
@@ -293,7 +289,7 @@ export class RepertoireBuilderWorkbenchComponent {
   }
 
   private engineImpactSourceLabel(impact: RepertoireBuilderEngineImpact): string {
-    if (impact.source !== 'BROWSER') return 'stored';
+    if (impact.source !== 'BROWSER') return 'Engine analysis';
     if (impact.persistence === 'SAVED') return 'browser · saved';
     if (impact.persistence === 'FAILED') return 'browser · save failed';
     return 'browser · saving';
