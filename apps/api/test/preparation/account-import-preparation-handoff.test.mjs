@@ -162,12 +162,44 @@ try {
         coveredFrom: completed.requestedFrom,
         coveredThrough: completed.requestedTo,
         lastCompletedImportRunId: completed.id,
+        createdAt: new Date('2026-08-01T00:30:00.000Z'),
       },
     });
     assert.equal(
       await handoff.reconcileNext(),
       true,
-      'surviving exact coverage makes a completed account refresh eligible for restart-safe handoff',
+      'coverage established before terminal completion makes the refresh restart-safe for handoff',
+    );
+  }
+
+  {
+    const user = await createUser('completed-new-coverage-epoch');
+    userIds.push(user.id);
+    const account = await createAccount(user.id, 'completed-new-coverage-epoch');
+    const completed = await createImport(user.id, account.id, '2026-05-01', '2026-08-01');
+    const completedAt = new Date('2026-08-01T01:00:00.000Z');
+    await prisma.importRun.update({
+      where: { id: completed.id },
+      data: { status: 'COMPLETED', completedAt },
+    });
+    const canonical = canonicalizeAccountImportScope(scope);
+    await prisma.accountImportCoverage.create({
+      data: {
+        accountId: account.id,
+        scopeVersion: canonical.scopeVersion,
+        scopeHash: canonical.scopeHash,
+        scopeJson: canonical.scope,
+        coveredFrom: completed.requestedFrom,
+        coveredThrough: completed.requestedTo,
+        lastCompletedImportRunId: completed.id,
+        createdAt: new Date('2026-08-02T00:00:00.000Z'),
+      },
+    });
+
+    assert.equal(
+      await handoff.reconcileNext(),
+      false,
+      'coverage recreated after a retained completion cannot resurrect pre-purge preparation handoff',
     );
   }
 
