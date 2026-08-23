@@ -103,7 +103,7 @@ ONB-017/018 own the physical `DataPreparationRun`, target, batch, and reconciler
 
 ## Completion
 
-Report: none
+Report: `north-star/onboarding/reports/ONB-008-2026-08-23-onboarding-readiness-projection.md`
 
 Pull request: [#398](https://github.com/vokerg/chess_repertoir_trainer/pull/398)
 
