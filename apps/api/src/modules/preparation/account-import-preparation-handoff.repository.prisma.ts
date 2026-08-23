@@ -327,6 +327,8 @@ function expansionImportPredicate(alias = 'run'): Prisma.Sql {
           AND coverage."coveredThrough" IS NOT NULL
           AND coverage."coveredFrom" <= ${prefix}"requestedFrom"
           AND coverage."coveredThrough" >= ${prefix}"requestedTo"
+          AND ${prefix}"completedAt" IS NOT NULL
+          AND ${prefix}"completedAt" >= coverage."createdAt"
       )
     )
     AND NOT EXISTS (
