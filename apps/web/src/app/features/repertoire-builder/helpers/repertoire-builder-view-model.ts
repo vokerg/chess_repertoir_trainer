@@ -15,12 +15,12 @@ import type {
 } from '../state/repertoire-builder.models';
 
 const REASON_LABELS: Record<string, string> = {
-  ENGINE_BEST: 'Best stored engine line',
+  ENGINE_BEST: 'Best engine line',
   ENGINE_CLOSE: 'Close to the best engine line',
   OBJECTIVE_COST: 'Carries an objective cost',
-  POPULATION_COMMON: 'Common in the selected population',
-  POPULATION_STRONG_SCORE: 'Outperforms the position baseline in the selected population',
-  MASTER_SUPPORTED: 'Supported by master practice',
+  POPULATION_COMMON: 'Often chosen by players in your target group',
+  POPULATION_STRONG_SCORE: 'Outperforms the position baseline in your target group',
+  MASTER_SUPPORTED: 'Seen in master games',
   PERSONALLY_FAMILIAR: 'Already familiar from your games',
   PERSONAL_RESULTS_POSITIVE: 'Positive personal results',
   TARGET_CHARACTER_MATCH: 'Matches the selected repertoire character',
@@ -33,7 +33,7 @@ const REASON_LABELS: Record<string, string> = {
   COURSE_ALREADY_COVERS: 'Already covered in a course',
   COURSE_CONFLICT: 'Conflicts with existing course material',
   TRANSPOSES_TO_COVERAGE: 'Transposes to covered material',
-  COMMON_AT_TARGET_LEVEL: 'Common at the target level',
+  COMMON_AT_TARGET_LEVEL: 'Often chosen by players in your target group',
   PERSONALLY_ENCOUNTERED: 'Seen in your own games',
   DANGEROUS_RESPONSE: 'Important practical response',
   LOW_EVIDENCE: 'Evidence is limited',
@@ -95,14 +95,14 @@ export function primaryEvidenceReasonLabels(
 
 export function corpusEvidenceMetric(
   evidence: CandidateDecisionCandidate['evidence']['population'],
+  gameLabel = 'games',
 ): RepertoireBuilderCorpusMetric {
   const primary = percent(evidence.frequencyPercent);
   const details: string[] = [];
-  if (evidence.scoreDeltaVsPositionPercent !== null
-    && evidence.scoreDeltaVsPositionPercent !== undefined) {
+  if (evidence.games > 0) details.push(`of ${compactGameCount(evidence.games)} ${gameLabel}`);
+  if (evidence.scoreDeltaVsPositionPercent !== null) {
     details.push(`${signedPercent(evidence.scoreDeltaVsPositionPercent)} vs position`);
   }
-  if (evidence.games > 0) details.push(`${compactGameCount(evidence.games)} games`);
   return {
     primary,
     secondary: details.join(' · ') || readableCode(evidence.status),
@@ -113,7 +113,7 @@ export function courseRelationshipLabel(candidate: CandidateDecisionCandidate): 
   const course = candidate.evidence.course;
   if (course.status === 'UNAVAILABLE') return null;
   if (course.conflict) return 'Course conflict';
-  if (course.covered) return 'Already in course';
+  if (course.covered) return 'In course';
   if (course.transposesToCoveredPosition) return 'Transposes to course';
   return null;
 }
@@ -137,25 +137,18 @@ export function personalEvidenceLabel(evidence: CandidatePersonalEvidence): stri
 }
 
 export function personalEvidenceDetail(evidence: CandidatePersonalEvidence): string | null {
-  if (evidence.status === 'UNAVAILABLE') return null;
+  if (evidence.status === 'UNAVAILABLE' || evidence.familiarity === 'NEW') return null;
   const details: string[] = [];
-  if (evidence.familiarity === 'NEW') {
-    details.push('No indexed games with this move from the exact position');
-  } else {
-    details.push(`${evidence.gameCount} indexed ${evidence.gameCount === 1 ? 'game' : 'games'}`);
-    if (evidence.moveSharePercent !== null) {
-      details.push(`${percent(evidence.moveSharePercent)} of choices`);
-    }
-    if (evidence.lastPlayedAt) details.push(`last played ${evidence.lastPlayedAt.slice(0, 10)}`);
-    if (evidence.games > 0) {
-      details.push(`${evidence.games} result ${evidence.games === 1 ? 'game' : 'games'} · ${percent(evidence.scorePercent)} score`);
-      if (!evidence.resultSampleQualified) details.push('result sample too small for a good/bad label');
-    }
-    if (evidence.resultSampleQualified && evidence.scoreDeltaVsPositionPercent !== null) {
-      details.push(`${signedPercent(evidence.scoreDeltaVsPositionPercent)} vs position baseline`);
-    }
+  details.push(`${evidence.gameCount} ${evidence.gameCount === 1 ? 'game' : 'games'}`);
+  if (evidence.moveSharePercent !== null) {
+    details.push(`${percent(evidence.moveSharePercent)} of choices`);
   }
-  details.push(personalFilterDetail(evidence));
+  if (evidence.lastPlayedAt) details.push(`last played ${evidence.lastPlayedAt.slice(0, 10)}`);
+  if (evidence.resultSampleQualified && evidence.scoreDeltaVsPositionPercent !== null) {
+    details.push(`${signedPercent(evidence.scoreDeltaVsPositionPercent)} vs position`);
+  } else if (evidence.games > 0) {
+    details.push('result sample too small for a good/bad label');
+  }
   return details.join(' · ');
 }
 
@@ -167,29 +160,31 @@ export function buildRepertoireBuilderSourceItems(
   return [
     {
       id: 'population',
-      label: 'Target population',
+      label: 'Your target group',
       status: candidate.evidence.population.status,
       detail: corpusDetail(
         candidate.evidence.population.games,
         candidate.evidence.population.frequencyPercent,
         candidate.evidence.population.scorePercentForTarget,
+        candidate.evidence.population.scoreDeltaVsPositionPercent,
       ),
     },
     {
       id: 'masters',
-      label: 'Masters',
+      label: 'Master games',
       status: candidate.evidence.masters.status,
       detail: corpusDetail(
         candidate.evidence.masters.games,
         candidate.evidence.masters.frequencyPercent,
         candidate.evidence.masters.scorePercentForTarget,
+        candidate.evidence.masters.scoreDeltaVsPositionPercent,
       ),
     },
     {
       id: 'personal',
       label: 'Your games',
       status: candidate.evidence.personal.status,
-      detail: personalEvidenceDetail(candidate.evidence.personal),
+      detail: personalEvidenceSourceDetail(candidate.evidence.personal),
     },
     {
       id: 'profile',
@@ -282,9 +277,41 @@ function corpusDetail(
   games: number,
   frequency: number | null,
   score: number | null,
+  scoreDeltaVsPosition: number | null,
 ): string | null {
   if (games <= 0) return null;
-  return `${compactGameCount(games)} games · ${percent(frequency)} frequency · ${percent(score)} score`;
+  const details = [
+    `${compactGameCount(games)} games`,
+    `${percent(frequency)} frequency`,
+  ];
+  if (score !== null) details.push(`your side scored ${percent(score)}`);
+  if (scoreDeltaVsPosition !== null) {
+    details.push(`${signedPercent(scoreDeltaVsPosition)} vs position baseline`);
+  }
+  return details.join(' · ');
+}
+
+function personalEvidenceSourceDetail(evidence: CandidatePersonalEvidence): string | null {
+  if (evidence.status === 'UNAVAILABLE') return null;
+  const details: string[] = [];
+  if (evidence.familiarity === 'NEW') {
+    details.push('No indexed games with this move from the exact position');
+  } else {
+    details.push(`${evidence.gameCount} indexed ${evidence.gameCount === 1 ? 'game' : 'games'}`);
+    if (evidence.moveSharePercent !== null) {
+      details.push(`${percent(evidence.moveSharePercent)} of choices`);
+    }
+    if (evidence.lastPlayedAt) details.push(`last played ${evidence.lastPlayedAt.slice(0, 10)}`);
+    if (evidence.games > 0) {
+      details.push(`${evidence.games} result ${evidence.games === 1 ? 'game' : 'games'} · ${percent(evidence.scorePercent)} score`);
+      if (!evidence.resultSampleQualified) details.push('result sample too small for a good/bad label');
+    }
+    if (evidence.resultSampleQualified && evidence.scoreDeltaVsPositionPercent !== null) {
+      details.push(`${signedPercent(evidence.scoreDeltaVsPositionPercent)} vs position baseline`);
+    }
+  }
+  details.push(personalFilterDetail(evidence));
+  return details.join(' · ');
 }
 
 function personalFilterDetail(evidence: CandidatePersonalEvidence): string {
@@ -301,6 +328,11 @@ function percent(value: number | null): string {
 
 function signedPercent(value: number): string {
   return `${value > 0 ? '+' : ''}${Math.round(value)}pp`;
+}
+
+export function engineDeltaLabel(objectiveDeltaCp: number | null): string {
+  if (objectiveDeltaCp === null) return 'Engine analysis';
+  return objectiveDeltaCp === 0 ? 'Best' : `${objectiveDeltaCp} cp below best`;
 }
 
 function readableCode(value: string): string {

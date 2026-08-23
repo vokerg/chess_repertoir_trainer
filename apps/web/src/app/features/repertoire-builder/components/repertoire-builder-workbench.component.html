@@ -102,32 +102,31 @@
                     [attr.aria-selected]="isPreviewed(candidate.moveUci)"
                     (click)="previewMove(candidate.moveUci)"
                   >
-                    <span class="candidate-rank">
-                      <span>#{{ candidate.rank }}</span>
-                      @if (isPreviewed(candidate.moveUci)) {
-                        <small>Preview</small>
+                    <span class="candidate-identity">
+                      <span class="candidate-rank">#{{ candidate.rank }}</span>
+                      <span class="candidate-move">
+                        <strong>{{ candidate.moveSan }}</strong>
+                        <small>{{ candidate.moveUci }}</small>
+                      </span>
+                    </span>
+                    <span class="candidate-stats">
+                      <span class="candidate-metric">
+                        <small>Engine</small>
+                        <strong>{{ candidateEngineLabel(candidate) }}</strong>
+                      </span>
+                      @if (populationMetric(candidate); as population) {
+                        <span class="candidate-metric population-metric">
+                          <small>Target</small>
+                          <strong>{{ population.primary }}</strong>
+                        </span>
+                      }
+                      @if (mastersMetric(candidate); as masters) {
+                        <span class="candidate-metric masters-metric">
+                          <small>Master</small>
+                          <strong>{{ masters.primary }}</strong>
+                        </span>
                       }
                     </span>
-                    <span class="candidate-move">
-                      <strong>{{ candidate.moveSan }}</strong>
-                      <small>{{ candidate.moveUci }}</small>
-                    </span>
-                    <span class="candidate-metric">
-                      <strong>{{ candidateEngineLabel(candidate) }}</strong>
-                      <small>{{ candidateEngineDetail(candidate) }}</small>
-                    </span>
-                    @if (populationMetric(candidate); as population) {
-                      <span class="candidate-metric population-metric">
-                        <strong>{{ population.primary }}</strong>
-                        <small>Target population · {{ population.secondary }}</small>
-                      </span>
-                    }
-                    @if (mastersMetric(candidate); as masters) {
-                      <span class="candidate-metric masters-metric">
-                        <strong>{{ masters.primary }}</strong>
-                        <small>Masters · {{ masters.secondary }}</small>
-                      </span>
-                    }
                     <span class="fit-stack">
                       @if (activeBranch()?.role === 'OPPONENT_RESPONSE') {
                         <span class="fit-chip">
@@ -178,7 +177,9 @@
             <span class="eyebrow">Focused move</span>
             <div>
               <strong>{{ candidate.moveSan }}</strong>
-              <span>{{ candidateKindLabel(candidate) }}</span>
+              @if (candidateKindLabel(candidate); as kind) {
+                <span>{{ kind }}</span>
+              }
             </div>
           </div>
 
@@ -194,15 +195,6 @@
               </div>
             </div>
             <div class="fit-comparison">
-              @if (activeBranch()?.role === 'OPPONENT_RESPONSE') {
-                <div>
-                  <span>Preparation priority</span>
-                  <strong>
-                    {{ isOpponentResponseRecommended(candidate) ? 'Recommended' : 'Optional' }}
-                  </strong>
-                  <small>Independent of repertoire persona or profile fit.</small>
-                </div>
-              }
               <div>
                 <span>Engine</span>
                 <strong>{{ candidateEngineLabel(candidate) }}</strong>
@@ -210,7 +202,7 @@
               </div>
               @if (populationMetric(candidate); as population) {
                 <div>
-                  <span>Target population</span>
+                  <span>Players in your group play it in</span>
                   <strong>{{ population.primary }}</strong>
                   <small>{{ population.secondary }}</small>
                 </div>
@@ -218,7 +210,7 @@
               @if (activeBranch()?.role !== 'OPPONENT_RESPONSE') {
                 @if (mastersMetric(candidate); as masters) {
                   <div>
-                    <span>Masters</span>
+                    <span>Master players play it in</span>
                     <strong>{{ masters.primary }}</strong>
                     <small>{{ masters.secondary }}</small>
                   </div>
@@ -227,20 +219,20 @@
               <div>
                 <span>Your games</span>
                 <strong>{{ personalEvidenceLabel(candidate) }}</strong>
-                <small>{{ personalEvidenceDetail(candidate) }}</small>
+                @if (personalEvidenceDetail(candidate); as personalDetail) {
+                  <small>{{ personalDetail }}</small>
+                }
               </div>
               @if (courseRelationshipLabel(candidate); as courseRelationship) {
                 <div>
-                  <span>Existing course</span>
                   <strong>{{ courseRelationship }}</strong>
-                  <small>Course state is context; it does not create a second recommendation model.</small>
                 </div>
               }
             </div>
             @if (primaryEvidenceReasonLabels(candidate); as primaryReasons) {
               @if (primaryReasons.length > 0) {
                 <div class="reason-list dominant-reasons">
-                  <h3>Dominant deterministic reasons</h3>
+                  <h3>Key reasons</h3>
                   <ul>
                     @for (reason of primaryReasons; track reason) {
                       <li>{{ reason }}</li>
@@ -365,7 +357,7 @@
 
               @if (reasonLabels().length > 0) {
                 <section class="reason-list">
-                  <h3>All deterministic reasons</h3>
+                  <h3>All reasons</h3>
                   <ul>
                     @for (reason of reasonLabels(); track reason) {
                       <li>{{ reason }}</li>
