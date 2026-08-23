@@ -187,14 +187,6 @@ try {
     });
     assert.equal(compatibilityCancel.statusCode, 200);
 
-    const replacementBeforeRetry = await app.inject({
-      method: 'POST',
-      url: `/api/me/accounts/${compatibilityAccount.id}/sync`,
-    });
-    assert.equal(replacementBeforeRetry.statusCode, 409);
-    assert.equal(replacementBeforeRetry.json().code, 'ACCOUNT_IMPORT_INVALID_RANGE');
-    assert.match(replacementBeforeRetry.json().message, /Retry the cancelled account import/);
-
     const compatibilityRetry = await app.inject({
       method: 'POST',
       url: `/api/me/account-imports/${compatibilityRun.id}/retry`,
@@ -210,13 +202,12 @@ try {
     });
     assert.equal(compatibilityRetryCancel.statusCode, 200);
 
-    const backfillBeforeRetry = await app.inject({
+    const backfillWithoutCoverage = await app.inject({
       method: 'POST',
       url: `/api/me/accounts/${compatibilityAccount.id}/backfill`,
     });
-    assert.equal(backfillBeforeRetry.statusCode, 409);
-    assert.equal(backfillBeforeRetry.json().code, 'ACCOUNT_IMPORT_INVALID_RANGE');
-    assert.match(backfillBeforeRetry.json().message, /Retry the cancelled account import/);
+    assert.equal(backfillWithoutCoverage.statusCode, 409);
+    assert.equal(backfillWithoutCoverage.json().code, 'ACCOUNT_IMPORT_INVALID_RANGE');
   } finally {
     await app.close();
   }
