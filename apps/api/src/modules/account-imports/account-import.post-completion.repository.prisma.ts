@@ -42,6 +42,7 @@ interface ForwardRunRow {
 
 interface CoverageIdentityRow {
   scopeHash: string;
+  createdAt: Date;
 }
 
 export interface AccountImportPostCompletionRepository {
@@ -84,6 +85,7 @@ export function createAccountImportPostCompletionRepository(
             AND run."mode" IN ('BOUNDED_INITIAL', 'INCREMENTAL_FORWARD')
             AND run."status" = 'COMPLETED'
             AND run."completedAt" IS NOT NULL
+            AND run."completedAt" >= coverage."createdAt"
           ORDER BY run."accountId", run."completedAt" DESC, run."id" DESC
         )
         SELECT
@@ -171,7 +173,7 @@ export function createAccountImportPostCompletionRepository(
         if (!accountRows[0]) return false;
 
         const coverageRows = await transaction.$queryRaw<CoverageIdentityRow[]>(Prisma.sql`
-          SELECT coverage."scopeHash"
+          SELECT coverage."scopeHash", coverage."createdAt"
           FROM "AccountImportCoverage" AS coverage
           WHERE coverage."accountId" = ${accountId}
             AND ${normalRefreshCoveragePredicate()}
@@ -191,6 +193,7 @@ export function createAccountImportPostCompletionRepository(
             AND "mode" IN ('BOUNDED_INITIAL', 'INCREMENTAL_FORWARD')
             AND "status" = 'COMPLETED'
             AND "completedAt" IS NOT NULL
+            AND "completedAt" >= ${coverage.createdAt}
           ORDER BY "completedAt" DESC, "id" DESC
           LIMIT 1
         `);
