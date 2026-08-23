@@ -150,9 +150,4 @@ export class AccountsPageComponent implements OnInit {
   protected canRetry(run: AccountImportRun): boolean {
     return run.status === 'FAILED' || run.status === 'CANCELLED';
   }
-
-  protected requiresImportRetry(accountId: number): boolean {
-    const run = this.store.importRunForAccount(accountId);
-    return run !== null && this.canRetry(run);
-  }
 }
