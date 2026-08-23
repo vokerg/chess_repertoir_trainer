@@ -156,7 +156,7 @@ assert.ok(summaryCalls[0].fromUtc < new Date('2026-08-01T00:00:00.000Z'));
 assert.ok(summaryCalls[0].toUtcExclusive > new Date('2026-08-04T00:00:00.000Z'));
 assert.equal(writeScopes.length, 1);
 assert.equal(writeScopes[0].snapshotStartedAt, databaseTimes[0]);
-assert.equal(writeScopes[0].accountId, 22);
+assert.equal(Object.hasOwn(writeScopes[0], 'accountId'), false);
 
 resetCalls();
 const overlapReplay = await service.reconcileCommittedRange({
@@ -276,7 +276,8 @@ const fencedService = createPlayedGameActivityReconciliationService({
   writeGuard: {
     async run(scope) {
       assert.ok(scope.snapshotStartedAt instanceof Date);
-      throw new DataLifecycleWriteBlockedError(77, 'ACCOUNT', 22);
+      assert.equal(Object.hasOwn(scope, 'accountId'), false);
+      throw new DataLifecycleWriteBlockedError(77, 'ACCOUNT', 99);
     },
   },
 });
@@ -290,6 +291,7 @@ await assert.rejects(
   (error) => {
     assert.ok(error instanceof DataLifecycleWriteBlockedError);
     assert.equal(error.operationId, 77);
+    assert.equal(error.resourceId, 99);
     return true;
   },
 );
