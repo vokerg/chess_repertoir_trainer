@@ -213,6 +213,53 @@ try {
   assert.equal(afterPurge?.lastSyncAt, null);
   assert.equal(afterPurge?.lastSyncRunId, null);
 
+  const genericAfterPurge = await accountImports.createRun({
+    userId: user.id,
+    accountId: account.id,
+    mode: 'BOUNDED_INITIAL',
+    source: 'USER_ACTION',
+    scope,
+    requestedFrom: new Date('2026-08-21T10:00:00.000Z'),
+    requestedTo: new Date('2026-08-22T10:00:00.000Z'),
+    priority: 100,
+    windowsTotal: null,
+  });
+  const genericAfterPurgeCompletedAt = new Date();
+  await prisma.importRun.update({
+    where: { id: genericAfterPurge.id },
+    data: { status: 'COMPLETED', completedAt: genericAfterPurgeCompletedAt },
+  });
+  await prisma.accountImportCoverage.create({
+    data: {
+      accountId: account.id,
+      scopeVersion: canonicalScope.scopeVersion,
+      scopeHash: canonicalScope.scopeHash,
+      scopeJson: canonicalScope.scope,
+      coveredFrom: genericAfterPurge.requestedFrom,
+      coveredThrough: genericAfterPurge.requestedTo,
+      lastCompletedImportRunId: genericAfterPurge.id,
+    },
+  });
+
+  assert.equal(
+    await service.reconcileNext(),
+    true,
+    'fresh generic coverage after purge may rebuild provider-neutral derived state',
+  );
+  const afterGenericReimport = await prisma.externalAccount.findUnique({ where: { id: account.id } });
+  assert.equal(
+    afterGenericReimport?.lastSyncRunId,
+    null,
+    'fresh generic coverage must not resurrect a retained pre-purge account-refresh run',
+  );
+  assert.equal(afterGenericReimport?.lastSyncAt, null);
+  assert.equal(
+    (await prisma.accountRatingStats.findUnique({ where: { accountId: account.id } }))?.gamesCount,
+    2,
+    'generic post-purge coverage still rebuilds provider-neutral rating projection',
+  );
+  assert.equal(await service.reconcileNext(), false);
+
   console.log('Account-import post-completion integration tests passed.');
 } finally {
   if (userId !== undefined) {
