@@ -161,8 +161,8 @@ export function createAccountImportPostCompletionRepository(
 
     async synchronizeForwardSyncMetadata(userId, accountId) {
       return database.$transaction(async (transaction) => {
-        await assertDataLifecycleWriteAllowed(transaction, { userId, accountId });
-
+        // Match durable account-import admission's ExternalAccount -> lifecycle
+        // user-lock order so a concurrent refresh cannot deadlock this projection.
         const accountRows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
           SELECT "id"
           FROM "ExternalAccount"
@@ -171,6 +171,8 @@ export function createAccountImportPostCompletionRepository(
           FOR UPDATE
         `);
         if (!accountRows[0]) return false;
+
+        await assertDataLifecycleWriteAllowed(transaction, { userId, accountId });
 
         const coverageRows = await transaction.$queryRaw<CoverageIdentityRow[]>(Prisma.sql`
           SELECT coverage."scopeHash", coverage."createdAt"
