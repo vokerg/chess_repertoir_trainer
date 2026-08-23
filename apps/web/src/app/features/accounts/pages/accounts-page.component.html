@@ -166,9 +166,9 @@
                   type="button"
                   class="primary"
                   (click)="store.syncAccount(account)"
-                  [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.isImportActive(account.id) || requiresImportRetry(account.id) || !account.isActive"
+                  [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.isImportActive(account.id) || !account.isActive"
                 >
-                  {{ store.isImportActive(account.id) ? 'Refresh in background' : requiresImportRetry(account.id) ? 'Retry required' : store.syncingAccountId() === account.id ? 'Queueing...' : 'Refresh games' }}
+                  {{ store.isImportActive(account.id) ? 'Refresh in background' : store.syncingAccountId() === account.id ? 'Queueing...' : 'Refresh games' }}
                 </button>
               </div>
 
@@ -183,7 +183,7 @@
                     type="button"
                     class="secondary"
                     (click)="store.backfillAccount(account)"
-                    [disabled]="store.backfillingAccountId() === account.id || store.isImportActive(account.id) || requiresImportRetry(account.id) || !account.isActive"
+                    [disabled]="store.backfillingAccountId() === account.id || store.isImportActive(account.id) || !account.isActive"
                   >
                     {{ store.backfillingAccountId() === account.id ? 'Queueing...' : 'Load 3 older months' }}
                   </button>
