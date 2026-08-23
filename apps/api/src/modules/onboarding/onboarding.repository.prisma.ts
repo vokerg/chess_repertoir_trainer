@@ -241,7 +241,10 @@ export function createOnboardingReadRepository(database: PrismaClient = prisma):
                  import_run."windowsTotal", import_run."windowsCompleted", import_run."rateLimitUntil"
           FROM "DataPreparationTarget" AS target
           JOIN "DataPreparationRun" AS run ON run."id" = target."preparationRunId"
-          LEFT JOIN "ImportRun" AS import_run ON import_run."id" = target."currentImportRunId"
+          LEFT JOIN "ImportRun" AS import_run
+            ON import_run."id" = target."currentImportRunId"
+           AND import_run."userId" = run."userId"
+           AND import_run."accountId" = target."accountId"
           WHERE target."preparationRunId" = ${runId}
             AND run."userId" = ${userId}
         ), evidence AS (
@@ -355,7 +358,10 @@ export function createOnboardingReadRepository(database: PrismaClient = prisma):
           target."coreReadyAt"
         FROM "DataPreparationTarget" AS target
         JOIN "DataPreparationRun" AS run ON run."id" = target."preparationRunId"
-        LEFT JOIN "ImportRun" AS import_run ON import_run."id" = target."currentImportRunId"
+        LEFT JOIN "ImportRun" AS import_run
+          ON import_run."id" = target."currentImportRunId"
+         AND import_run."userId" = run."userId"
+         AND import_run."accountId" = target."accountId"
         LEFT JOIN LATERAL (
           SELECT
             COUNT(*) FILTER (WHERE game."pgn" IS NOT NULL)::int AS "importedCount",
