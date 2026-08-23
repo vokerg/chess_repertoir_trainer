@@ -93,9 +93,10 @@ try {
     AccountImportService.createHistoricalBackfillForUser(user.id, account.id),
     (error) => {
       assert.ok(error instanceof AccountImportRangeUnavailableError);
-      assert.match(error.message, /Retry the cancelled account import/);
+      assert.match(error.message, /Import the recent account range before requesting older history/);
       return true;
     },
+    'backfill still requires proved recent coverage before refresh-retry admission is relevant',
   );
 
   await prisma.dataPreparationRun.update({
