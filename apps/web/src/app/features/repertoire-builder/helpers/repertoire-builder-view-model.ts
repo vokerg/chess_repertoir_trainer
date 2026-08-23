@@ -19,7 +19,7 @@ const REASON_LABELS: Record<string, string> = {
   ENGINE_CLOSE: 'Close to the best engine line',
   OBJECTIVE_COST: 'Carries an objective cost',
   POPULATION_COMMON: 'Often chosen by players in your target group',
-  POPULATION_STRONG_SCORE: 'Strong results in your target group',
+  POPULATION_STRONG_SCORE: 'Outperforms the position baseline in your target group',
   MASTER_SUPPORTED: 'Seen in master games',
   PERSONALLY_FAMILIAR: 'Already familiar from your games',
   PERSONAL_RESULTS_POSITIVE: 'Positive personal results',
@@ -100,8 +100,8 @@ export function corpusEvidenceMetric(
   const primary = percent(evidence.frequencyPercent);
   const details: string[] = [];
   if (evidence.games > 0) details.push(`of ${compactGameCount(evidence.games)} ${gameLabel}`);
-  if (evidence.games > 0 && evidence.scorePercentForTarget !== null) {
-    details.push(`your side scored ${percent(evidence.scorePercentForTarget)}`);
+  if (evidence.scoreDeltaVsPositionPercent !== null) {
+    details.push(`${signedPercent(evidence.scoreDeltaVsPositionPercent)} vs position`);
   }
   return {
     primary,
@@ -125,21 +125,29 @@ export function personalEvidenceLabel(evidence: CandidatePersonalEvidence): stri
     : evidence.familiarity === 'RARE'
       ? 'Rare for you'
       : 'New to you';
-  return familiarity;
+  if (!evidence.resultSampleQualified) return familiarity;
+  const result = evidence.resultContext === 'ABOVE_BASELINE'
+    ? 'results above position baseline'
+    : evidence.resultContext === 'BELOW_BASELINE'
+      ? 'results below position baseline'
+      : evidence.resultContext === 'NEUTRAL'
+        ? 'results near position baseline'
+        : null;
+  return result ? `${familiarity} · ${result}` : familiarity;
 }
 
 export function personalEvidenceDetail(evidence: CandidatePersonalEvidence): string | null {
-  if (evidence.status === 'UNAVAILABLE') return null;
-  if (evidence.familiarity === 'NEW') return null;
+  if (evidence.status === 'UNAVAILABLE' || evidence.familiarity === 'NEW') return null;
   const details: string[] = [];
   details.push(`${evidence.gameCount} ${evidence.gameCount === 1 ? 'game' : 'games'}`);
   if (evidence.moveSharePercent !== null) {
     details.push(`${percent(evidence.moveSharePercent)} of choices`);
   }
   if (evidence.lastPlayedAt) details.push(`last played ${evidence.lastPlayedAt.slice(0, 10)}`);
-  if (evidence.games > 0) {
-    details.push(`results ${percent(evidence.scorePercent)}`);
-    if (!evidence.resultSampleQualified) details.push('result sample too small for a good/bad label');
+  if (evidence.resultSampleQualified && evidence.scoreDeltaVsPositionPercent !== null) {
+    details.push(`${signedPercent(evidence.scoreDeltaVsPositionPercent)} vs position`);
+  } else if (evidence.games > 0) {
+    details.push('result sample too small for a good/bad label');
   }
   return details.join(' · ');
 }
@@ -158,6 +166,7 @@ export function buildRepertoireBuilderSourceItems(
         candidate.evidence.population.games,
         candidate.evidence.population.frequencyPercent,
         candidate.evidence.population.scorePercentForTarget,
+        candidate.evidence.population.scoreDeltaVsPositionPercent,
       ),
     },
     {
@@ -168,13 +177,14 @@ export function buildRepertoireBuilderSourceItems(
         candidate.evidence.masters.games,
         candidate.evidence.masters.frequencyPercent,
         candidate.evidence.masters.scorePercentForTarget,
+        candidate.evidence.masters.scoreDeltaVsPositionPercent,
       ),
     },
     {
       id: 'personal',
       label: 'Your games',
       status: candidate.evidence.personal.status,
-      detail: personalEvidenceDetail(candidate.evidence.personal),
+      detail: personalEvidenceSourceDetail(candidate.evidence.personal),
     },
     {
       id: 'profile',
@@ -267,13 +277,57 @@ function corpusDetail(
   games: number,
   frequency: number | null,
   score: number | null,
+  scoreDeltaVsPosition: number | null,
 ): string | null {
   if (games <= 0) return null;
-  return `${compactGameCount(games)} games · ${percent(frequency)} frequency · your side scored ${percent(score)}`;
+  const details = [
+    `${compactGameCount(games)} games`,
+    `${percent(frequency)} frequency`,
+  ];
+  if (score !== null) details.push(`your side scored ${percent(score)}`);
+  if (scoreDeltaVsPosition !== null) {
+    details.push(`${signedPercent(scoreDeltaVsPosition)} vs position baseline`);
+  }
+  return details.join(' · ');
+}
+
+function personalEvidenceSourceDetail(evidence: CandidatePersonalEvidence): string | null {
+  if (evidence.status === 'UNAVAILABLE') return null;
+  const details: string[] = [];
+  if (evidence.familiarity === 'NEW') {
+    details.push('No indexed games with this move from the exact position');
+  } else {
+    details.push(`${evidence.gameCount} indexed ${evidence.gameCount === 1 ? 'game' : 'games'}`);
+    if (evidence.moveSharePercent !== null) {
+      details.push(`${percent(evidence.moveSharePercent)} of choices`);
+    }
+    if (evidence.lastPlayedAt) details.push(`last played ${evidence.lastPlayedAt.slice(0, 10)}`);
+    if (evidence.games > 0) {
+      details.push(`${evidence.games} result ${evidence.games === 1 ? 'game' : 'games'} · ${percent(evidence.scorePercent)} score`);
+      if (!evidence.resultSampleQualified) details.push('result sample too small for a good/bad label');
+    }
+    if (evidence.resultSampleQualified && evidence.scoreDeltaVsPositionPercent !== null) {
+      details.push(`${signedPercent(evidence.scoreDeltaVsPositionPercent)} vs position baseline`);
+    }
+  }
+  details.push(personalFilterDetail(evidence));
+  return details.join(' · ');
+}
+
+function personalFilterDetail(evidence: CandidatePersonalEvidence): string {
+  const filter = evidence.filterContext;
+  const accounts = filter.accountScope === 'ALL_USER_ACCOUNTS'
+    ? 'all accounts'
+    : `${filter.accountIds.length} selected ${filter.accountIds.length === 1 ? 'account' : 'accounts'}`;
+  return `${filter.side === 'WHITE' ? 'White' : 'Black'} · ${filter.rated ? 'rated' : 'rated + casual'} · ${filter.speedCategories.join('/')} · all indexed history · ${accounts}`;
 }
 
 function percent(value: number | null): string {
   return value === null ? '—' : `${Math.round(value)}%`;
+}
+
+function signedPercent(value: number): string {
+  return `${value > 0 ? '+' : ''}${Math.round(value)}pp`;
 }
 
 export function engineDeltaLabel(objectiveDeltaCp: number | null): string {
