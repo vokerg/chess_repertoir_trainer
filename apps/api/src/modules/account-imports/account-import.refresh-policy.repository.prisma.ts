@@ -1,5 +1,13 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
+import {
+  allowAccountImportAdmission,
+  type AccountImportAdmissionGuard,
+} from './account-import-admission.guard';
+import {
+  AccountImportActiveRunError,
+  createAccountImportRepository,
+} from './account-import.repository.prisma';
 
 const NON_TERMINAL_PREPARATION_STATUSES = [
   'QUEUED',
@@ -10,54 +18,59 @@ const NON_TERMINAL_PREPARATION_STATUSES = [
   'NEEDS_ATTENTION',
 ] as const;
 
-interface RecoverableRefreshRow {
+interface BlockingRefreshRow {
   id: number;
-  status: 'FAILED' | 'CANCELLED';
+  status: string;
 }
 
-export interface RecoverableAccountRefreshRun {
-  id: number;
-  status: 'FAILED' | 'CANCELLED';
+export class AccountImportRefreshRetryRequiredError extends Error {
+  constructor(readonly importRunId: number, readonly importStatus: 'FAILED' | 'CANCELLED') {
+    super(`Retry the ${importStatus.toLowerCase()} account import before starting new account-refresh work.`);
+    this.name = 'AccountImportRefreshRetryRequiredError';
+  }
 }
 
-export interface AccountImportRefreshPolicyRepository {
-  findLatestRecoverableRefresh(
-    userId: number,
-    accountId: number,
-  ): Promise<RecoverableAccountRefreshRun | null>;
-}
+export const accountImportRefreshAdmissionGuard: AccountImportAdmissionGuard = {
+  claimCandidatePredicate(columns) {
+    return allowAccountImportAdmission.claimCandidatePredicate(columns);
+  },
 
-export function createAccountImportRefreshPolicyRepository(
-  database: PrismaClient = prisma,
-): AccountImportRefreshPolicyRepository {
-  return {
-    async findLatestRecoverableRefresh(userId, accountId) {
-      const rows = await database.$queryRaw<RecoverableRefreshRow[]>(Prisma.sql`
-        SELECT run."id", run."status"
-        FROM "ImportRun" AS run
-        JOIN "ExternalAccount" AS account
-          ON account."id" = run."accountId"
-         AND account."userId" = run."userId"
-        JOIN "DataPreparationTarget" AS target
-          ON target."currentImportRunId" = run."id"
-        JOIN "DataPreparationRun" AS preparation
-          ON preparation."id" = target."preparationRunId"
-         AND preparation."userId" = run."userId"
-        WHERE run."userId" = ${userId}
-          AND run."accountId" = ${accountId}
-          AND run."source" = 'ACCOUNT_REFRESH'
-          AND run."mode" <> 'LEGACY_SYNC'
-          AND run."status" IN ('FAILED', 'CANCELLED')
-          AND preparation."status" IN (${Prisma.join(
-            NON_TERMINAL_PREPARATION_STATUSES.map((status) => Prisma.sql`${status}`),
-          )})
-        ORDER BY run."createdAt" DESC, run."id" DESC
-        LIMIT 1
-      `);
-      return rows[0] ?? null;
-    },
-  };
-}
+  async assertAllowed(transaction, input) {
+    // This acquires the same user-scoped transaction lock used by preparation
+    // admission. Handoff cannot attach a recoverable parent between this check
+    // and the account-import insert.
+    await allowAccountImportAdmission.assertAllowed(transaction, input);
 
-export const AccountImportRefreshPolicyRepository =
-  createAccountImportRefreshPolicyRepository();
+    const rows = await transaction.$queryRaw<BlockingRefreshRow[]>(Prisma.sql`
+      SELECT run."id", run."status"
+      FROM "ImportRun" AS run
+      JOIN "DataPreparationTarget" AS target
+        ON target."currentImportRunId" = run."id"
+      JOIN "DataPreparationRun" AS preparation
+        ON preparation."id" = target."preparationRunId"
+       AND preparation."userId" = run."userId"
+      WHERE run."userId" = ${input.userId}
+        AND run."accountId" = ${input.accountId}
+        AND run."source" = 'ACCOUNT_REFRESH'
+        AND run."mode" <> 'LEGACY_SYNC'
+        AND run."status" <> 'COMPLETED'
+        AND preparation."status" IN (${Prisma.join(
+          NON_TERMINAL_PREPARATION_STATUSES.map((status) => Prisma.sql`${status}`),
+        )})
+      ORDER BY run."createdAt" DESC, run."id" DESC
+      LIMIT 1
+    `);
+    const blocker = rows[0];
+    if (!blocker) return;
+
+    if (blocker.status === 'FAILED' || blocker.status === 'CANCELLED') {
+      throw new AccountImportRefreshRetryRequiredError(blocker.id, blocker.status);
+    }
+    throw new AccountImportActiveRunError(blocker.id);
+  },
+};
+
+export const AccountRefreshImportRepository = createAccountImportRepository(
+  prisma,
+  accountImportRefreshAdmissionGuard,
+);
