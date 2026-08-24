@@ -45,8 +45,8 @@ export class AccountsApiService {
     );
   }
 
-  getRatingStats(accountId: number): Observable<AccountRatingStatsResponse> {
-    return this.api.get<AccountRatingStatsResponse>(`/me/accounts/${accountId}/rating-stats`);
+  getRatingStats(accountId: number): Observable<AccountRatingStatsResponse | null> {
+    return this.api.get<AccountRatingStatsResponse | null>(`/me/accounts/${accountId}/rating-stats`);
   }
 
   getPerformanceStats(

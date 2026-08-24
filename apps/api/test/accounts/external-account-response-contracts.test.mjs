@@ -29,29 +29,11 @@ const account = {
 };
 
 const ratingHistory = {
-  account: {
-    id: account.id,
-    provider: account.provider,
-    username: account.username,
-    displayName: account.displayName,
-  },
+  account: { id: account.id, provider: account.provider, username: account.username, displayName: account.displayName },
   bucket: 'day',
   aggregation: 'max',
   ratingSource: 'gameRecordedRating',
-  series: [
-    {
-      key: 'blitz',
-      label: 'Blitz',
-      points: [
-        {
-          date: '2026-08-14',
-          rating: 1812,
-          gameCount: 3,
-          ratingAt: '2026-08-14T20:15:00.000Z',
-        },
-      ],
-    },
-  ],
+  series: [{ key: 'blitz', label: 'Blitz', points: [{ date: '2026-08-14', rating: 1812, gameCount: 3, ratingAt: '2026-08-14T20:15:00.000Z' }] }],
   yDomain: { min: 1787, max: 1837 },
 };
 
@@ -62,112 +44,42 @@ const ratingStats = {
   data: {
     version: 3,
     ratingSource: 'gameRecordedRating',
-    speeds: [
-      {
-        key: 'blitz',
-        label: 'Blitz',
-        gamesCount: 12,
-        current: {
-          rating: 1812,
-          ratingAt: '2026-08-14T20:15:00.000Z',
-          gameId: 500,
-        },
-        highest: {
-          rating: 1840,
-          ratingAt: '2026-08-10T19:00:00.000Z',
-          gameId: 450,
-        },
-        yearlyHighs: [
-          {
-            year: 2026,
-            rating: 1840,
-            ratingAt: '2026-08-10T19:00:00.000Z',
-            gameId: 450,
-          },
-        ],
-        milestones: [
-          {
-            rating: 1800,
-            reachedAt: '2026-08-02T16:00:00.000Z',
-            actualRating: 1804,
-            gameId: 401,
-          },
-        ],
-      },
-    ],
+    speeds: [{
+      key: 'blitz', label: 'Blitz', gamesCount: 12,
+      current: { rating: 1812, ratingAt: '2026-08-14T20:15:00.000Z', gameId: 500 },
+      highest: { rating: 1840, ratingAt: '2026-08-10T19:00:00.000Z', gameId: 450 },
+      yearlyHighs: [{ year: 2026, rating: 1840, ratingAt: '2026-08-10T19:00:00.000Z', gameId: 450 }],
+      milestones: [{ rating: 1800, reachedAt: '2026-08-02T16:00:00.000Z', actualRating: 1804, gameId: 401 }],
+    }],
   },
 };
 
 assert.deepEqual(externalAccountResponseSchema.parse(account), account);
 assert.deepEqual(externalAccountListResponseSchema.parse([account]), [account]);
-assert.deepEqual(
-  defaultProgressAccountResponseSchema.parse({
-    defaultProgressAccountId: account.id,
-    account,
-    accounts: [account],
-  }),
-  { defaultProgressAccountId: account.id, account, accounts: [account] },
-);
-assert.deepEqual(
-  defaultProgressAccountResponseSchema.parse({
-    defaultProgressAccountId: null,
-    account: null,
-    accounts: [account],
-  }),
-  { defaultProgressAccountId: null, account: null, accounts: [account] },
-);
+assert.deepEqual(defaultProgressAccountResponseSchema.parse({ defaultProgressAccountId: account.id, account, accounts: [account] }), { defaultProgressAccountId: account.id, account, accounts: [account] });
+assert.deepEqual(defaultProgressAccountResponseSchema.parse({ defaultProgressAccountId: null, account: null, accounts: [account] }), { defaultProgressAccountId: null, account: null, accounts: [account] });
 assert.deepEqual(accountRatingHistoryResponseSchema.parse(ratingHistory), ratingHistory);
 assert.deepEqual(accountRatingStatsResponseSchema.parse(ratingStats), ratingStats);
 
-assert.equal(
-  externalAccountResponseSchema.safeParse({ ...account, lastSyncAt: new Date() }).success,
-  false,
-  'Prisma Date values must be serialized before crossing the HTTP boundary',
-);
+assert.equal(externalAccountResponseSchema.safeParse({ ...account, lastSyncAt: new Date() }).success, false, 'Prisma Date values must be serialized before crossing the HTTP boundary');
 const { userId: _userId, ...accountWithoutUserId } = account;
-assert.equal(
-  externalAccountResponseSchema.safeParse(accountWithoutUserId).success,
-  false,
-  'persisted account scalar fields are required on the current wire response',
-);
-assert.equal(
-  externalAccountResponseSchema.safeParse({ ...account, provider: 'OTHER' }).success,
-  false,
-  'provider must stay within the supported account literals',
-);
-assert.equal(
-  accountRatingHistoryResponseSchema.safeParse({ ...ratingHistory, bucket: 'week' }).success,
-  false,
-  'rating-history aggregation literals are part of the stable wire contract',
-);
-assert.equal(
-  accountRatingStatsResponseSchema.safeParse({
-    ...ratingStats,
-    data: { ...ratingStats.data, version: 4 },
-  }).success,
-  false,
-  'rating-stats public projection version remains explicit',
-);
+assert.equal(externalAccountResponseSchema.safeParse(accountWithoutUserId).success, false, 'persisted account scalar fields are required on the current wire response');
+assert.equal(externalAccountResponseSchema.safeParse({ ...account, provider: 'OTHER' }).success, false, 'provider must stay within the supported account literals');
+assert.equal(accountRatingHistoryResponseSchema.safeParse({ ...ratingHistory, bucket: 'week' }).success, false, 'rating-history aggregation literals are part of the stable wire contract');
+assert.equal(accountRatingStatsResponseSchema.safeParse({ ...ratingStats, data: { ...ratingStats.data, version: 4 } }).success, false, 'rating-stats public projection version remains explicit');
 
 await verifyOpenApi();
 await verifyHttpBoundary();
-
 console.log('External-account response contract tests passed.');
 
 async function verifyOpenApi() {
-  const app = await buildApp({
-    logger: false,
-    authConfig: { mode: 'dev-single-user', userId: 1 },
-    prisma: { $disconnect: async () => {} },
-  });
-
+  const app = await buildApp({ logger: false, authConfig: { mode: 'dev-single-user', userId: 1 }, prisma: { $disconnect: async () => {} } });
   try {
     await app.ready();
     const document = app.swagger();
     const served = await app.inject({ method: 'GET', url: '/api/docs/openapi.json' });
     assert.equal(served.statusCode, 200);
     const servedDocument = served.json();
-
     const operations = [
       ['GET', '/api/me/accounts', '200', 'listExternalAccounts'],
       ['POST', '/api/me/accounts', '201', 'createExternalAccount'],
@@ -182,70 +94,35 @@ async function verifyOpenApi() {
       ['GET', '/api/me/accounts/{id}/imported-game-workflow-candidates', '200', 'getImportedGameWorkflowCandidates'],
       ['POST', '/api/me/accounts/{id}/reset-cursor', '200', 'resetExternalAccountSyncCursor'],
     ];
-
     for (const [method, path, status, operationId] of operations) {
       const key = method.toLowerCase();
       assert.equal(document.paths[path][key].operationId, operationId);
       assert.equal(servedDocument.paths[path][key].operationId, operationId);
       assert.ok(document.paths[path][key].responses[status].content['application/json'].schema);
     }
-
-    const accountListSchema = resolveSchema(
-      document,
-      document.paths['/api/me/accounts'].get.responses['200'].content['application/json'].schema,
-    );
+    const accountListSchema = resolveSchema(document, document.paths['/api/me/accounts'].get.responses['200'].content['application/json'].schema);
     assert.equal(accountListSchema.type, 'array');
     const accountItemSchema = resolveSchema(document, accountListSchema.items);
     assert.ok(accountItemSchema.properties?.provider);
     assert.ok(accountItemSchema.properties?.lastSyncAt);
-
-    const ratingHistorySchema = resolveSchema(
-      document,
-      document.paths['/api/me/accounts/{id}/rating-history'].get.responses['200'].content['application/json'].schema,
-    );
+    const ratingHistorySchema = resolveSchema(document, document.paths['/api/me/accounts/{id}/rating-history'].get.responses['200'].content['application/json'].schema);
     assert.ok(ratingHistorySchema.properties?.series);
     assert.ok(ratingHistorySchema.properties?.ratingSource);
-
-    const deleteSchema = resolveSchema(
-      document,
-      document.paths['/api/me/accounts/{id}'].delete.responses['200'].content['application/json'].schema,
-    );
+    const deleteSchema = resolveSchema(document, document.paths['/api/me/accounts/{id}'].delete.responses['200'].content['application/json'].schema);
     assert.ok(deleteSchema.properties?.deleted);
     assert.equal(document.paths['/api/me/accounts/{id}'].delete.deprecated, undefined);
     assert.equal(document.paths['/api/me/accounts/{id}/reset-cursor'].post.deprecated, true);
-  } finally {
-    await app.close();
-  }
+  } finally { await app.close(); }
 }
 
 async function verifyHttpBoundary() {
   const suffix = randomUUID();
-  const user = await prisma.appUser.create({
-    data: {
-      displayName: 'External-account contract HTTP user',
-      authProvider: 'test',
-      authSubject: `external-account-contract-${suffix}`,
-    },
-  });
-
-  const app = await buildApp({
-    logger: false,
-    authConfig: { mode: 'dev-single-user', userId: user.id },
-  });
-
+  const user = await prisma.appUser.create({ data: { displayName: 'External-account contract HTTP user', authProvider: 'test', authSubject: `external-account-contract-${suffix}` } });
+  const app = await buildApp({ logger: false, authConfig: { mode: 'dev-single-user', userId: user.id } });
   try {
     await app.ready();
-
     const username = `contract-${suffix}`;
-    const createdResponse = await app.inject({
-      method: 'POST',
-      url: '/api/me/accounts',
-      payload: {
-        provider: 'CHESS_COM',
-        username,
-        displayName: 'HTTP contract player',
-      },
-    });
+    const createdResponse = await app.inject({ method: 'POST', url: '/api/me/accounts', payload: { provider: 'CHESS_COM', username, displayName: 'HTTP contract player' } });
     assert.equal(createdResponse.statusCode, 201, createdResponse.body);
     const created = externalAccountResponseSchema.parse(createdResponse.json());
     assert.equal(created.userId, user.id);
@@ -260,14 +137,7 @@ async function verifyHttpBoundary() {
 
     const lastSyncAt = new Date('2026-08-14T18:00:00.000Z');
     const syncCursorTime = new Date('2026-08-14T17:55:00.000Z');
-    await prisma.externalAccount.update({
-      where: { id: created.id },
-      data: {
-        providerUserId: `chess-com-${suffix}`,
-        lastSyncAt,
-        syncCursorTime,
-      },
-    });
+    await prisma.externalAccount.update({ where: { id: created.id }, data: { providerUserId: `chess-com-${suffix}`, lastSyncAt, syncCursorTime } });
 
     const listResponse = await app.inject({ method: 'GET', url: '/api/me/accounts' });
     assert.equal(listResponse.statusCode, 200, listResponse.body);
@@ -279,83 +149,43 @@ async function verifyHttpBoundary() {
     assert.equal(listed.syncCursorTime, syncCursorTime.toISOString());
     assert.equal(listed.isDefaultProgressAccount, false);
 
-    const detailResponse = await app.inject({
-      method: 'GET',
-      url: `/api/me/accounts/${created.id}`,
-    });
+    const detailResponse = await app.inject({ method: 'GET', url: `/api/me/accounts/${created.id}` });
     assert.equal(detailResponse.statusCode, 200, detailResponse.body);
     const detail = externalAccountResponseSchema.parse(detailResponse.json());
     assert.equal(detail.id, created.id);
     assert.equal(detail.lastSyncAt, lastSyncAt.toISOString());
 
-    const historyResponse = await app.inject({
-      method: 'GET',
-      url: `/api/me/accounts/${created.id}/rating-history`,
-    });
+    const historyResponse = await app.inject({ method: 'GET', url: `/api/me/accounts/${created.id}/rating-history` });
     assert.equal(historyResponse.statusCode, 200, historyResponse.body);
     const history = accountRatingHistoryResponseSchema.parse(historyResponse.json());
-    assert.deepEqual(history.account, {
-      id: created.id,
-      provider: 'CHESS_COM',
-      username,
-      displayName: 'HTTP contract player',
-    });
+    assert.deepEqual(history.account, { id: created.id, provider: 'CHESS_COM', username, displayName: 'HTTP contract player' });
     assert.equal(history.series.length, 3);
     assert.equal(history.yDomain, null);
 
-    const statsResponse = await app.inject({
-      method: 'GET',
-      url: `/api/me/accounts/${created.id}/rating-stats`,
-    });
+    const statsResponse = await app.inject({ method: 'GET', url: `/api/me/accounts/${created.id}/rating-stats` });
     assert.equal(statsResponse.statusCode, 200, statsResponse.body);
-    const stats = accountRatingStatsResponseSchema.parse(statsResponse.json());
-    assert.deepEqual(stats.account, {
-      id: created.id,
-      provider: 'CHESS_COM',
-      username,
-      displayName: 'HTTP contract player',
-    });
-    assert.equal(stats.gamesCount, 0);
-    assert.equal(stats.data.version, 3);
-    assert.equal(stats.data.speeds.length, 3);
+    assert.equal(statsResponse.json(), null, 'empty accounts expose the route nullable response');
+    assert.equal(await prisma.accountRatingStats.count({ where: { accountId: created.id } }), 0, 'reading empty rating stats must not manufacture a derived projection row');
 
-    const updatedResponse = await app.inject({
-      method: 'PATCH',
-      url: `/api/me/accounts/${created.id}`,
-      payload: { displayName: null },
-    });
+    const updatedResponse = await app.inject({ method: 'PATCH', url: `/api/me/accounts/${created.id}`, payload: { displayName: null } });
     assert.equal(updatedResponse.statusCode, 200, updatedResponse.body);
     const updated = externalAccountResponseSchema.parse(updatedResponse.json());
     assert.equal(updated.displayName, null);
     assert.equal(updated.lastSyncAt, lastSyncAt.toISOString());
 
-    const defaultResponse = await app.inject({
-      method: 'PATCH',
-      url: '/api/me/default-progress-account',
-      payload: { accountId: created.id },
-    });
+    const defaultResponse = await app.inject({ method: 'PATCH', url: '/api/me/default-progress-account', payload: { accountId: created.id } });
     assert.equal(defaultResponse.statusCode, 200, defaultResponse.body);
     const defaultProgress = defaultProgressAccountResponseSchema.parse(defaultResponse.json());
     assert.equal(defaultProgress.defaultProgressAccountId, created.id);
     assert.equal(defaultProgress.account?.id, created.id);
     assert.equal(defaultProgress.account?.isDefaultProgressAccount, true);
-    assert.equal(
-      defaultProgress.accounts.find((item) => item.id === created.id)?.isDefaultProgressAccount,
-      true,
-    );
+    assert.equal(defaultProgress.accounts.find((item) => item.id === created.id)?.isDefaultProgressAccount, true);
 
-    const deleteResponse = await app.inject({
-      method: 'DELETE',
-      url: `/api/me/accounts/${created.id}`,
-    });
+    const deleteResponse = await app.inject({ method: 'DELETE', url: `/api/me/accounts/${created.id}` });
     assert.equal(deleteResponse.statusCode, 200, deleteResponse.body);
     assert.equal(deleteResponse.json().deleted, true);
     assert.equal(deleteResponse.json().account.id, created.id);
-
-    const persistedUser = await prisma.appUser.findUnique({
-      where: { id: user.id },
-      select: { defaultProgressAccountId: true },
-    });
+    const persistedUser = await prisma.appUser.findUnique({ where: { id: user.id }, select: { defaultProgressAccountId: true } });
     assert.equal(persistedUser?.defaultProgressAccountId, null);
     assert.equal(await prisma.externalAccount.count({ where: { id: created.id } }), 0);
   } finally {
@@ -367,8 +197,5 @@ async function verifyHttpBoundary() {
 
 function resolveSchema(document, schema) {
   if (!schema?.$ref) return schema;
-  return schema.$ref
-    .replace(/^#\//, '')
-    .split('/')
-    .reduce((value, segment) => value?.[segment], document);
+  return schema.$ref.replace(/^#\//, '').split('/').reduce((value, segment) => value?.[segment], document);
 }
