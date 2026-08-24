@@ -426,20 +426,37 @@ export const AccountRatingStatsService = {
     if (stats && getStoredProjection(stats.data)) return toResponse(account, stats);
 
     if (!stats) {
-      const ratingRelevantGame = await prisma.importedGame.findFirst({
-        where: {
-          userId,
-          accountId,
-          endedAt: { not: null },
-          speedCategory: { in: [...SPEEDS] },
-          OR: [
-            { variant: null },
-            { variant: { in: [...STANDARD_IMPORTED_GAME_VARIANTS] } },
-          ],
-          userColor: { in: ['WHITE', 'BLACK'] },
-        },
-        select: { id: true },
-      });
+      const [coverage, retainedCompletedDurableImport, ratingRelevantGame] = await Promise.all([
+        prisma.accountImportCoverage.findFirst({
+          where: { accountId },
+          select: { id: true },
+        }),
+        prisma.importRun.findFirst({
+          where: {
+            userId,
+            accountId,
+            status: 'COMPLETED',
+            mode: { not: 'LEGACY_SYNC' },
+          },
+          select: { id: true },
+        }),
+        prisma.importedGame.findFirst({
+          where: {
+            userId,
+            accountId,
+            endedAt: { not: null },
+            speedCategory: { in: [...SPEEDS] },
+            OR: [
+              { variant: null },
+              { variant: { in: [...STANDARD_IMPORTED_GAME_VARIANTS] } },
+            ],
+            userColor: { in: ['WHITE', 'BLACK'] },
+          },
+          select: { id: true },
+        }),
+      ]);
+
+      if (retainedCompletedDurableImport && !coverage) return null;
       if (!ratingRelevantGame) return null;
     }
 
