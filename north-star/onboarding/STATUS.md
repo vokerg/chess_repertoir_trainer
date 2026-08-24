@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-08-17
+Last updated: 2026-08-24
 
 ## Program state
 
@@ -8,7 +8,7 @@ Last updated: 2026-08-17
 
 Program tracker: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
-The durable import and preparation execution foundations are now delivered. Product projection, lifecycle commands, account-sync cutover, destructive lifecycle work, and functional onboarding remain in the implementation backlog.
+The durable import and preparation execution foundations are delivered. ONB-015 has implemented the account-sync cutover on PR #400 and is in `REVIEW`; product projection, lifecycle commands, destructive lifecycle work, and functional onboarding remain active program work.
 
 ## Delivered foundations
 
@@ -23,29 +23,33 @@ The durable import and preparation execution foundations are now delivered. Prod
 - ONB-022 / #272 — administrator authorization/read-only diagnostics delivered through PR #284; completion records through PR #298.
 - ONB-023 / #273 — administrator Angular diagnostics delivered through PR #307; completion records through PR #312.
 
-Detailed historical validation is preserved in task files and append-only reports; this status file intentionally summarizes only current program state.
+Detailed historical validation is preserved in task files and append-only reports; this status file intentionally summarizes current program state.
 
 ## ONB-018 delivered boundary
 
-ONB-018 now provides:
+ONB-018 provides the bounded PostgreSQL preparation reconciler, progressive committed-import handoff, persisted wake/lease fencing, bounded index/analysis admission, exact readiness milestones, restart-safe controls/retry, retention-safe child evidence, and aggregate stall telemetry without public ETA.
 
-- a bounded PostgreSQL reconciler in the existing worker deployment with one-second active/five-second idle cadence;
-- atomic due-parent claim and persisted wake/lease fencing;
-- progressive committed-import-to-index admission plus separate bounded analysis waves;
-- deterministic three-indexed first-analysis admission and one-game quiescent fallback;
-- stage-specific multi-account fairness below direct-user job priority;
-- exact first-imported, first-indexed, first-analysed, and core-ready milestones from current evidence;
-- restart-safe pause, resume, cancel, and explicit failed-evidence retry semantics;
-- retention-safe child snapshots and wake behavior;
-- recoverable import-attention reconciliation and aggregate stall telemetry without public ETA;
-- durable failed evidence for pre-engine analysis setup failures.
+## ONB-015 review boundary
 
-The final review made setup-failure persistence atomic: the owned game is locked, current evidence is rechecked, the terminal failed `GameAnalysisRun` is created, and the latest-analysis snapshot is updated in one PostgreSQL transaction. This prevents a split `RUNNING`/`FAILED` failure state.
+PR #400 now provides:
 
-## Ready implementation
+- normal account refresh as durable `202 Accepted` account-import admission with no provider traversal inside account HTTP requests;
+- explicit bounded historical `/backfill`, while deprecated `/reset-cursor` remains legacy-field-only and is absent from normal UX;
+- persisted Angular account-import status/control/reload restoration and concurrent refresh-all command submission;
+- server-side bounded preparation handoff with no browser game-ID arrays and standard Blitz/Rapid preparation scope;
+- explicit `ACCOUNT_REFRESH` source intent for cutover-created durable imports;
+- provider-neutral rating and played-game activity reconciliation through short lifecycle-guarded commits using the database clock;
+- bounded restart-safe post-completion reconciliation and compatibility sync-frontier ownership from surviving exact coverage;
+- recovery rules that require Retry while failed/cancelled initial-refresh coverage remains incomplete, without allowing retained terminal history to poison an account after future purge removes that coverage;
+- rating projection read-through that cannot recreate purged durable state after coverage removal and does not manufacture empty projection rows for accounts with no rating-relevant games;
+- normal product deletion disabled while the legacy backend DELETE remains a temporary compatibility route pending ONB-020.
 
-- **ONB-008 / #193 — disposition/readiness projection — READY.** ONB-017/018 execution state and durable import/provider delivery are complete. This is the deterministic next task by canonical order.
-- **ONB-015 / #203 — account sync cutover/preparation handoff — READY.** Provider adapters and preparation execution/control are complete. Destructive fences/execution remain owned by ONB-019/020.
+ONB-015 does not claim destructive execution. ONB-020 retains final account/game destructive coordination and final DELETE/reset compatibility cutover.
+
+## Ready/review implementation
+
+- **ONB-008 / #193 — disposition/readiness projection — READY** in the canonical documents pending its separate reconciliation track.
+- **ONB-015 / #203 — account sync cutover/preparation handoff — REVIEW.** Runtime is on PR #400; destructive execution remains ONB-020-owned and ONB-025 stays blocked until ONB-015 acceptance/merge.
 - **ONB-019 / #259 — destructive lifecycle persistence/fences/audit/provenance — READY.** A fresh Prisma/migration collision check remains mandatory before claim.
 
 ## Allocated but not ready
@@ -55,23 +59,22 @@ The final review made setup-failure persistence atomic: the owned game is locked
 - ONB-020 / #260 — account/game destructive coordinator — `PROPOSED`; depends on ONB-019 and other task-file gates.
 - ONB-021 / #261 — whole-user deletion/mobile purge — `PROPOSED`; depends on ONB-019/020 and mobile contracts.
 - ONB-024 / #274 — administrator lifecycle controls — `PROPOSED`; depends on canonical lifecycle services and proven reverification.
-- ONB-025 / #276 — stale-account refresh trigger — `PROPOSED`; depends on ONB-015 cutover.
+- ONB-025 / #276 — stale-account refresh trigger — `PROPOSED`; depends on ONB-015 acceptance/merge.
 - ONB-026 / #280 — orphan shared-position cleanup implementation — `PROPOSED`; depends on ONB-019 coordination and its other gates.
 
-Only `READY` tasks may be claimed unless the user explicitly authorizes otherwise.
+Only `READY` tasks may be newly claimed unless the user explicitly authorizes otherwise. Already claimed work may remain in `REVIEW` while its PR is validated and accepted.
 
 ## Current critical findings
 
-- legacy account sync still performs synchronous provider traversal; ONB-015 owns removal/cutover;
-- legacy cursor state is not exact coverage;
-- current account workflow still carries candidate ID arrays through Angular; ONB-015 owns the bounded database handoff;
-- terminal job status alone is not drain proof because a cancelled running task may retain `workKey` until executor acknowledgement;
-- destructive lifecycle persistence/fences are not delivered until ONB-019;
-- public ETA remains disabled because production-like telemetry eligibility is not established;
-- shared-position cleanup remains separate from account/user purge;
+- ONB-015 removes synchronous provider traversal from normal account refresh on PR #400; acceptance/merge is still pending.
+- legacy cursor state remains a compatibility field, not exact durable coverage; bounded `/backfill` owns historical expansion.
+- final destructive account/game execution and final legacy DELETE/reset cutover remain ONB-020-owned; normal account deletion is disabled in the ONB-015 Angular flow.
+- terminal job status alone is not drain proof because a cancelled running task may retain `workKey` until executor acknowledgement.
+- public ETA remains disabled because production-like telemetry eligibility is not established.
+- shared-position cleanup remains separate from account/user purge.
 - Visual Transformation coordination remains required for final product-wide UI polish.
 
-## Canonical ownership after ONB-018
+## Canonical ownership
 
 - ONB-008 owns user disposition, readiness/presentation projection, warnings/actions, and bounded reveals.
 - ONB-009 owns authenticated preparation lifecycle command routes.
@@ -79,14 +82,10 @@ Only `READY` tasks may be claimed unless the user explicitly authorizes otherwis
 - ONB-019/020/021 own destructive lifecycle persistence and execution.
 - ONB-010 owns functional Angular onboarding/Home re-entry; Visual Transformation owns final visual/accessibility polish.
 
-## Latest validation
+## Latest ONB-015 validation
 
-ONB-018 final runtime head `4e3a3a4ea6f3f0f798d52e08830d051ad13c7b95` passed CI #2998 (`32041962372`) end-to-end: dependency audit, lint, full build, opening audits, architecture/hygiene guardrails, migrations, imported-game audits, and the complete repository test suite including the final PostgreSQL setup-failure atomicity regression.
-
-Runtime PR #385 was rechecked against current `main`, had no unresolved review threads, and squash-merged as `9b0293271a2c1a9f24a77939e828c3ee1aca8ffd`.
-
-Latest report: `reports/ONB-018-2026-08-17-completion-reconciliation.md`
+The current runtime validation target is PR #400. Exact runtime head and CI evidence are recorded in the ONB-015 task and the latest self-review addendum once the full run is green; the final documentation-only reconciliation head is then validated separately before the PR is marked ready for review.
 
 ## Next deterministic action
 
-ONB-008 / #193 is the next unclaimed `READY` task by canonical order. ONB-015 / #203 and ONB-019 / #259 are also unclaimed `READY` on their integration/support paths. Before any claim, recheck live branches/PRs and relevant schema/file ownership.
+ONB-008 / #193 remains the lowest-order task recorded as unclaimed `READY` in the canonical queue. ONB-015 / #203 is already claimed and in `REVIEW` on PR #400. ONB-019 / #259 remains `READY` on its parallel support path. Before any new claim, recheck live branches/PRs and relevant schema/file ownership.

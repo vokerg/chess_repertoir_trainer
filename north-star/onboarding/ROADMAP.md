@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Roadmap
 
-Last updated: 2026-08-17
+Last updated: 2026-08-24
 
 Program: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
@@ -40,7 +40,7 @@ Visual/accessibility integration with #133
 Production onboarding release
 ```
 
-ONB-015 / #203 is also `READY` for the account-sync/preparation cutover now that provider adapters and ONB-017/018 execution are complete. It is an integration lane alongside the ONB-008 product-projection path rather than a reason to reopen ONB-018.
+ONB-015 / #203 is in `REVIEW` on PR #400 for the account-sync/preparation cutover. It remains an integration lane alongside the product-projection path and preserves ONB-020 ownership of destructive execution.
 
 ONB-025 / #276 remains a post-ONB-015 stale-account-refresh follow-up and does not gate initial onboarding release.
 
@@ -152,7 +152,7 @@ Exit:
 
 Current state:
 
-- **ONB-015 / #203 — `READY`** — replace normal synchronous provider traversal with durable import acceptance/status and connect account UI to persisted background execution/preparation handoff.
+- **ONB-015 / #203 — `REVIEW`** — PR #400 replaces normal synchronous provider traversal with durable import acceptance/status and connects account UI to persisted background execution/preparation handoff; final acceptance/merge is still pending.
 - ONB-010 / #195 — `PROPOSED` — functional `/onboarding` and Home re-entry after ONB-008/009.
 - ONB-025 / #276 — `PROPOSED` — authenticated stale-account refresh after ONB-015.
 
@@ -203,4 +203,4 @@ Exit:
 
 ## Next deterministic action
 
-ONB-008 / #193 is the lowest-order unclaimed `READY` task. ONB-015 / #203 and ONB-019 / #259 are also `READY` on their integration/support paths. Every claim must recheck live branches/PRs and relevant file/schema ownership first.
+ONB-008 / #193 remains the lowest-order task recorded as unclaimed `READY` in the canonical queue. ONB-015 / #203 is already claimed and in `REVIEW` on PR #400; ONB-019 / #259 remains `READY` on its parallel support path. Every new claim must recheck live branches/PRs and relevant file/schema ownership first.
