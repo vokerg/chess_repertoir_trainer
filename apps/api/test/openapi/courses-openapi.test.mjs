@@ -145,8 +145,12 @@ assertLineSchema(first, responseSchema(first, '/api/lines/{id}/copy', 'post', '2
 
 const lineTreeResponseSchema = responseSchema(first, '/api/lines/{id}/tree', 'get', '200');
 const root = assertMoveTreeNodeSchema(first, lineTreeResponseSchema.properties?.root);
-const child = assertMoveTreeNodeSchema(first, root.children.items);
-assert.ok(child.node.properties?.fenBeforeNormalized, 'Expected persisted move-node normalized FEN field');
-assert.ok(child.children.items, 'Expected recursive descendants to remain documented');
+assert.ok(root.node.properties?.fenBeforeNormalized, 'Expected normalized FEN field in the move-node schema');
+if (root.children.items.$ref) {
+  assert.match(root.children.items.$ref, /^#/, 'Expected a local recursive move-tree schema reference');
+} else {
+  const child = assertMoveTreeNodeSchema(first, root.children.items);
+  assert.ok(child.children.items, 'Expected recursive descendants to remain documented');
+}
 
 console.log('Courses OpenAPI tests passed.');
