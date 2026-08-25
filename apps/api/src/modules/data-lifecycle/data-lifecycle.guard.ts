@@ -7,6 +7,7 @@ export interface DataLifecycleWriteScope {
   userId: number;
   accountId?: number | null;
   gameId?: number | null;
+  snapshotStartedAt?: Date | null;
 }
 
 export interface DataLifecycleFenceColumns {
@@ -65,7 +66,7 @@ export async function assertDataLifecycleWriteAllowed(
   validateScope(input);
   await lockDataLifecycleUserScope(transaction, input.userId);
 
-  const scopeWhere = input.gameId != null
+  const scopeWhere: Prisma.DataLifecycleResourceFenceWhereInput = input.gameId != null
     ? {
         OR: [
           { resourceType: 'USER' },
@@ -82,12 +83,19 @@ export async function assertDataLifecycleWriteAllowed(
           ],
         }
       : {};
+  const fenceWindowWhere: Prisma.DataLifecycleResourceFenceWhereInput = input.snapshotStartedAt
+    ? {
+        OR: [
+          { releasedAt: null },
+          { releasedAt: { gte: input.snapshotStartedAt } },
+        ],
+      }
+    : { releasedAt: null };
 
   const fence = await transaction.dataLifecycleResourceFence.findFirst({
     where: {
       ownerUserId: input.userId,
-      releasedAt: null,
-      ...scopeWhere,
+      AND: [scopeWhere, fenceWindowWhere],
     },
     orderBy: { id: 'asc' },
     select: {
@@ -149,6 +157,9 @@ function validateScope(input: DataLifecycleWriteScope): void {
     if (input.accountId == null) {
       throw new Error('accountId is required when gameId is provided.');
     }
+  }
+  if (input.snapshotStartedAt != null && Number.isNaN(input.snapshotStartedAt.getTime())) {
+    throw new Error('snapshotStartedAt must be a valid timestamp.');
   }
 }
 

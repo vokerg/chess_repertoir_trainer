@@ -25,6 +25,10 @@ try {
     data: { userId, provider: 'LICHESS', username: `onb-012-http-${suffix}` },
   });
   createdAccountIds.push(ownAccount.id);
+  const compatibilityAccount = await prisma.externalAccount.create({
+    data: { userId, provider: 'CHESS_COM', username: `onb-015-http-${suffix}` },
+  });
+  createdAccountIds.push(compatibilityAccount.id);
 
   const otherUser = await prisma.appUser.create({
     data: {
@@ -130,6 +134,7 @@ try {
     const retryRun = retry.json().importRun;
     assert.equal(retryRun.retryOfImportRunId, created.id);
     assert.equal(retryRun.status, 'QUEUED');
+    assert.equal(retryRun.source, 'USER_ACTION');
     assert.deepEqual(retryRun.scope, created.scope);
     assert.equal(retryRun.requestedFrom, created.requestedFrom);
     assert.equal(retryRun.requestedTo, created.requestedTo);
@@ -147,6 +152,62 @@ try {
     });
     assert.equal(invalidRetry.statusCode, 409);
     assert.equal(invalidRetry.json().code, 'ACCOUNT_IMPORT_INVALID_STATE');
+
+    const compatibilitySync = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${compatibilityAccount.id}/sync`,
+    });
+    assert.equal(compatibilitySync.statusCode, 202);
+    const compatibilityRun = compatibilitySync.json().importRun;
+    assert.equal(compatibilityRun.accountId, compatibilityAccount.id);
+    assert.equal(compatibilityRun.mode, 'BOUNDED_INITIAL');
+    assert.equal(compatibilityRun.source, 'ACCOUNT_REFRESH');
+    assert.equal(compatibilityRun.status, 'QUEUED');
+    assert.deepEqual(compatibilityRun.scope, {
+      variant: 'STANDARD',
+      speeds: ['BULLET', 'BLITZ', 'RAPID'],
+      rated: 'BOTH',
+    });
+    assert.equal(
+      Date.parse(compatibilityRun.requestedTo) - Date.parse(compatibilityRun.requestedFrom) > 80 * 24 * 60 * 60 * 1000,
+      true,
+      'initial compatibility refresh is bounded to roughly three calendar months',
+    );
+
+    const duplicateCompatibilitySync = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${compatibilityAccount.id}/sync`,
+    });
+    assert.equal(duplicateCompatibilitySync.statusCode, 409);
+    assert.equal(duplicateCompatibilitySync.json().code, 'ACCOUNT_IMPORT_ACTIVE');
+
+    const compatibilityCancel = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${compatibilityRun.id}/cancel`,
+    });
+    assert.equal(compatibilityCancel.statusCode, 200);
+
+    const compatibilityRetry = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${compatibilityRun.id}/retry`,
+    });
+    assert.equal(compatibilityRetry.statusCode, 202);
+    const compatibilityRetryRun = compatibilityRetry.json().importRun;
+    assert.equal(compatibilityRetryRun.retryOfImportRunId, compatibilityRun.id);
+    assert.equal(compatibilityRetryRun.source, 'ACCOUNT_REFRESH');
+
+    const compatibilityRetryCancel = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${compatibilityRetryRun.id}/cancel`,
+    });
+    assert.equal(compatibilityRetryCancel.statusCode, 200);
+
+    const backfillWithoutCoverage = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${compatibilityAccount.id}/backfill`,
+    });
+    assert.equal(backfillWithoutCoverage.statusCode, 409);
+    assert.equal(backfillWithoutCoverage.json().code, 'ACCOUNT_IMPORT_INVALID_RANGE');
   } finally {
     await app.close();
   }

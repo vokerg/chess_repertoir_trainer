@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Task Queue
 
-Last updated: 2026-08-17
+Last updated: 2026-08-24
 
 This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, and claim metadata.
 
@@ -24,7 +24,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | DONE | Build durable account-import worker and API lifecycle | Implementation | Runtime squash-merged through PR #352 as `640018e4`; completion reconciliation PR #354 |
 | 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | DONE | Implement bounded Lichess import adapter | Implementation | Runtime squash-merged through PR #357 as `e276e382`; completion reconciliation PR #376 |
 | 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | DONE | Implement bounded Chess.com import adapter | Implementation | Runtime PR #356 squash-merged as `b9c2038b`; real canary passed CI #2812; completion reconciliation PR #383 |
-| 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | READY | Cut over account sync and preparation handoff | Implementation | ONB-013/014 and ONB-003/004/007/017/018 complete; coordinates ONB-009/010/019/020 |
+| 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | REVIEW | Cut over account sync and preparation handoff | Implementation | Runtime PR #400 is in review; ONB-020 retains destructive execution; ONB-025 remains gated on acceptance/merge |
 | 155 | ONB-025 | [#276](https://github.com/vokerg/chess_repertoir_trainer/issues/276) | P1 | PROPOSED | Trigger daily stale account refresh on authenticated app bootstrap | Implementation | ONB-015; transitively ONB-011/012/013/014; coordinates ONB-010/019/020 |
 | 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | READY | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | ONB-004/005 complete; ONB-011/017 schema ownership and migration order resolved; fresh collision check required before claim |
 | 170 | ONB-020 | [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260) | P0 | PROPOSED | Implement account and imported-game destructive lifecycle coordinator | Implementation | ONB-004/007/019; ONB-011/012/015/017/018; admin exposure remains ONB-024-owned |
@@ -193,7 +193,7 @@ ONB-023 / #273 delivered the lazy direct-link Angular administrator diagnostics 
 
 ONB-008 / #193 is the next unclaimed `READY` implementation task by canonical order. ONB-017/018 now provide the durable preparation execution and reconciliation state it consumes, and ONB-011/012/013/014 provide the durable import/provider evidence required by its planning gate.
 
-ONB-015 / #203 is also unclaimed `READY`: both provider adapters and the ONB-017/018 preparation boundary/control implementation are complete. It owns the remaining normal account-sync cutover and explicit preparation handoff, with destructive controls still coordinated with ONB-019/020 rather than reimplemented.
+ONB-015 / #203 is in `REVIEW` on PR #400. The durable account-sync cutover and preparation handoff are implemented and under exact-head validation; destructive execution remains ONB-020-owned, and ONB-025 remains blocked until ONB-015 is accepted and merged.
 
 ONB-019 / #259 remains unclaimed `READY` on the parallel destructive-lifecycle support path. ONB-004/005 are complete; ONB-017 established migration order with ONB-019 following, ONB-011 recorded the destructive lifecycle schema ownership boundary on #259, and both overlapping schema owners are merged. A fresh branch/PR/schema collision check is still mandatory immediately before claim.
 

@@ -49,6 +49,7 @@ export type AccountImportMode = z.infer<typeof accountImportModeSchema>;
 
 export const durableAccountImportSourceSchema = z.enum([
   'USER_ACTION',
+  'ACCOUNT_REFRESH',
   'ONBOARDING',
   'SYSTEM',
 ]);
@@ -56,6 +57,7 @@ export type DurableAccountImportSource = z.infer<typeof durableAccountImportSour
 
 export const accountImportSourceSchema = z.enum([
   'USER_ACTION',
+  'ACCOUNT_REFRESH',
   'ONBOARDING',
   'SYSTEM',
   'LEGACY_SYNC',

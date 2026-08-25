@@ -6,15 +6,16 @@ import type {
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import type {
+  AccountImportRunListResponse,
+  AccountImportRunResponse,
   AccountPerformanceStatsResponse,
   AccountRatingHistoryQuery,
   AccountRatingHistoryResponse,
   AccountRatingStatsResponse,
-  DeleteAccountResponse,
+  CreateAccountImportRunResponse,
   DefaultProgressAccountResponse,
   ExternalAccount,
-  ImportedGameWorkflowCandidates,
-  ImportRunSummary,
+  ExternalAccountWorkflowSummaryResponse,
 } from './accounts.models';
 
 @Injectable()
@@ -44,8 +45,8 @@ export class AccountsApiService {
     );
   }
 
-  getRatingStats(accountId: number): Observable<AccountRatingStatsResponse> {
-    return this.api.get<AccountRatingStatsResponse>(`/me/accounts/${accountId}/rating-stats`);
+  getRatingStats(accountId: number): Observable<AccountRatingStatsResponse | null> {
+    return this.api.get<AccountRatingStatsResponse | null>(`/me/accounts/${accountId}/rating-stats`);
   }
 
   getPerformanceStats(
@@ -71,26 +72,48 @@ export class AccountsApiService {
     return this.api.post<ExternalAccount>('/me/accounts', body);
   }
 
-  syncAccount(accountId: number): Observable<ImportRunSummary> {
-    return this.api.post<ImportRunSummary>(`/me/accounts/${accountId}/sync`, {});
+  syncAccount(accountId: number): Observable<CreateAccountImportRunResponse> {
+    return this.api.post<CreateAccountImportRunResponse>(`/me/accounts/${accountId}/sync`, {});
   }
 
-  getWorkflowCandidates(accountId: number): Observable<ImportedGameWorkflowCandidates> {
-    return this.api.get<ImportedGameWorkflowCandidates>(
+  backfillAccount(accountId: number): Observable<CreateAccountImportRunResponse> {
+    return this.api.post<CreateAccountImportRunResponse>(`/me/accounts/${accountId}/backfill`, {});
+  }
+
+  getAccountImports(limit = 100): Observable<AccountImportRunListResponse> {
+    return this.api.get<AccountImportRunListResponse>(`/me/account-imports?limit=${limit}`);
+  }
+
+  getActiveAccountImports(limit = 100): Observable<AccountImportRunListResponse> {
+    return this.api.get<AccountImportRunListResponse>(
+      `/me/account-imports?active=true&limit=${limit}`,
+    );
+  }
+
+  pauseImport(importRunId: number): Observable<AccountImportRunResponse> {
+    return this.api.post<AccountImportRunResponse>(`/me/account-imports/${importRunId}/pause`, {});
+  }
+
+  resumeImport(importRunId: number): Observable<AccountImportRunResponse> {
+    return this.api.post<AccountImportRunResponse>(`/me/account-imports/${importRunId}/resume`, {});
+  }
+
+  cancelImport(importRunId: number): Observable<AccountImportRunResponse> {
+    return this.api.post<AccountImportRunResponse>(`/me/account-imports/${importRunId}/cancel`, {});
+  }
+
+  retryImport(importRunId: number): Observable<CreateAccountImportRunResponse> {
+    return this.api.post<CreateAccountImportRunResponse>(`/me/account-imports/${importRunId}/retry`, {});
+  }
+
+  getWorkflowSummary(accountId: number): Observable<ExternalAccountWorkflowSummaryResponse> {
+    return this.api.get<ExternalAccountWorkflowSummaryResponse>(
       `/me/accounts/${accountId}/imported-game-workflow-candidates`,
     );
   }
 
-  resetCursor(accountId: number): Observable<ExternalAccount> {
-    return this.api.post<ExternalAccount>(`/me/accounts/${accountId}/reset-cursor`, {});
-  }
-
   setActive(accountId: number, isActive: boolean): Observable<ExternalAccount> {
     return this.api.patch<ExternalAccount>(`/me/accounts/${accountId}`, { isActive });
-  }
-
-  deleteAccount(accountId: number): Observable<DeleteAccountResponse> {
-    return this.api.delete<DeleteAccountResponse>(`/me/accounts/${accountId}`);
   }
 
   setDefaultProgressAccount(accountId: number | null): Observable<DefaultProgressAccountResponse> {

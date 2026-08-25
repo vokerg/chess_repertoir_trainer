@@ -1,6 +1,6 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-08-17
+Last updated: 2026-08-24
 
 GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the product, architecture, acceptance, queue, and historical source of truth.
 
@@ -87,8 +87,8 @@ When repository metadata and issue state disagree, reconcile them before substan
 ### Durable account-import path
 
 - ONB-011 / #199, ONB-012 / #200, ONB-013 / #201, and ONB-014 / #202 — `DONE`.
-- ONB-015 / #203 — unclaimed `READY`; provider adapters plus ONB-017/018 preparation execution/control are complete. It owns the remaining normal account-sync cutover and preparation handoff.
-- ONB-025 / #276 — `PROPOSED`; depends on ONB-015 and must not invoke legacy synchronous provider traversal.
+- ONB-015 / #203 — `REVIEW` on PR #400 from branch `account-import/onb-015-account-cutover`; durable account refresh, persisted Angular lifecycle state, provider-neutral derived-state reconciliation, and bounded preparation handoff are implemented. Destructive execution remains ONB-020-owned.
+- ONB-025 / #276 — `PROPOSED`; depends on ONB-015 acceptance/merge and must consume the durable refresh command rather than any legacy synchronous provider path.
 - Coordination umbrella [#257](https://github.com/vokerg/chess_repertoir_trainer/issues/257) groups this delivery track without changing task ownership or claim rules.
 
 ### Destructive lifecycle path
@@ -116,6 +116,10 @@ When repository metadata and issue state disagree, reconcile them before substan
 Runtime PR #385 was accepted after three self-review rounds. The final merge-readiness review found and fixed a failure-atomicity gap in pre-engine analysis setup-failure persistence: the failed run and latest-analysis snapshot are now committed in one owned-game-locked PostgreSQL transaction, preserving a current successful analysis for non-forced work.
 
 Final reviewed runtime head `4e3a3a4ea6f3f0f798d52e08830d051ad13c7b95` passed CI #2998 (`32041962372`) end-to-end and PR #385 squash-merged as `9b0293271a2c1a9f24a77939e828c3ee1aca8ffd`. PR #397 reconciles repository completion metadata and downstream readiness before issue #254 is closed completed.
+
+## ONB-015 review record
+
+PR #400 is the active runtime/reconciliation pull request for ONB-015. The review keeps backend destructive DELETE compatibility and deprecated raw cursor-reset compatibility explicitly temporary while the normal product UI disables deletion and uses durable bounded `/backfill`; final destructive route execution remains ONB-020-owned. Exact final-head validation is recorded on PR #400 before it is marked ready for review. ONB-025 remains blocked until ONB-015 is accepted and merged.
 
 ## Completion checklist
 
