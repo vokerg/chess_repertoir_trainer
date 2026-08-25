@@ -105,7 +105,7 @@ export const lineMoveTreeNodeSchema: z.ZodType<LineMoveTreeNode> = z.lazy(() => 
   children: z.array(lineMoveTreeNodeSchema),
 }));
 
-const lineMoveTreeRootNodeSchema = lineMoveNodeSchema.extend({
+const lineMoveTreeRootNodeSchema: z.ZodType<LineMoveNode> = lineMoveNodeSchema.extend({
   id: z.number().int().refine((id) => id === 0),
   parentId: z.null(),
   plyNumber: z.number().int().refine((plyNumber) => plyNumber === 0),
