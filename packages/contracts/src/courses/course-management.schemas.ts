@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { trainingStatusValueSchema } from '../training/training-stats.schemas';
+import { activeTrainingStatsSchema } from '../training/training-stats.schemas';
 
 export const courseSideSchema = z.enum(['WHITE', 'BLACK']);
 
@@ -51,16 +51,13 @@ export const lineSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
-export const lineListTrainingStatsSchema = z.object({
-  totalAttempts: z.number().int().nonnegative(),
-  passedCount: z.number().int().nonnegative(),
-  failedCount: z.number().int().nonnegative(),
-  passRate: z.number().min(0).max(1),
-  activeSublineCount: z.number().int().nonnegative(),
-  trainedSublineCount: z.number().int().nonnegative(),
-  untrainedSublineCount: z.number().int().nonnegative(),
-  weakSublineCount: z.number().int().nonnegative(),
-  status: trainingStatusValueSchema,
+export const lineListTrainingStatsSchema = activeTrainingStatsSchema.omit({
+  scopeType: true,
+  scopeId: true,
+  statsWindowSize: true,
+  failureRate: true,
+  attemptPassRate: true,
+  weakestSublines: true,
 });
 
 export const lineListItemSchema = lineSchema.extend({
