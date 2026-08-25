@@ -81,6 +81,7 @@ function assertLineSchema(document, schema) {
 
 function assertMoveTreeNodeSchema(document, schema) {
   const treeNode = resolveSchema(document, schema);
+  assert.ok(treeNode, `Expected resolvable move-tree schema reference ${schema?.$ref ?? '<inline>'}`);
   assert.ok(treeNode.properties?.node, 'Expected move-tree node payload');
   assert.ok(treeNode.properties?.children, 'Expected recursive move-tree children');
 
@@ -145,12 +146,9 @@ assertLineSchema(first, responseSchema(first, '/api/lines/{id}/copy', 'post', '2
 
 const lineTreeResponseSchema = responseSchema(first, '/api/lines/{id}/tree', 'get', '200');
 const root = assertMoveTreeNodeSchema(first, lineTreeResponseSchema.properties?.root);
-assert.ok(root.node.properties?.fenBeforeNormalized, 'Expected normalized FEN field in the move-node schema');
-if (root.children.items.$ref) {
-  assert.match(root.children.items.$ref, /^#/, 'Expected a local recursive move-tree schema reference');
-} else {
-  const child = assertMoveTreeNodeSchema(first, root.children.items);
-  assert.ok(child.children.items, 'Expected recursive descendants to remain documented');
-}
+const child = assertMoveTreeNodeSchema(first, root.children.items);
+assert.ok(child.node.properties?.fenBeforeNormalized, 'Expected persisted move-node normalized FEN field');
+assert.ok(child.children.items?.$ref, 'Expected recursive descendants to use a schema reference');
+assert.ok(resolveSchema(first, child.children.items), 'Expected recursive descendant reference to resolve');
 
 console.log('Courses OpenAPI tests passed.');
