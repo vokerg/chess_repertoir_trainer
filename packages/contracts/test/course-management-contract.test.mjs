@@ -159,6 +159,21 @@ assert.equal(lineMoveTreeSchema.safeParse({
     children: [{ node: { ...childNode, parentId: 0 }, children: [] }],
   },
 }).success, false);
+assert.equal(lineMoveTreeSchema.safeParse({
+  root: { ...lineTree.root, node: { ...rootNode, id: 1 } },
+}).success, false);
+assert.equal(lineMoveTreeSchema.safeParse({
+  root: {
+    ...lineTree.root,
+    children: [{ node: { ...childNode, id: 0 }, children: [] }],
+  },
+}).success, false);
+assert.equal(lineMoveTreeSchema.safeParse({
+  root: {
+    ...lineTree.root,
+    children: [{ node: { ...childNode, moveUci: '' }, children: [] }],
+  },
+}).success, false);
 
 const positionSuggestions = {
   normalizedFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -',
