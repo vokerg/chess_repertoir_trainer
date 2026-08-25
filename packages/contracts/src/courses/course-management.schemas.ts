@@ -51,7 +51,7 @@ export const lineSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
-export const lineTrainingStatsSchema = z.object({
+export const lineListTrainingStatsSchema = z.object({
   totalAttempts: z.number().int().nonnegative(),
   passedCount: z.number().int().nonnegative(),
   failedCount: z.number().int().nonnegative(),
@@ -64,7 +64,7 @@ export const lineTrainingStatsSchema = z.object({
 });
 
 export const lineListItemSchema = lineSchema.extend({
-  trainingStats: lineTrainingStatsSchema,
+  trainingStats: lineListTrainingStatsSchema,
 });
 
 export const lineListSchema = z.array(lineListItemSchema);
@@ -126,7 +126,7 @@ export const updateCourseSchema = z.object({
 export type Course = z.infer<typeof courseSchema>;
 export type Chapter = z.infer<typeof chapterSchema>;
 export type Line = z.infer<typeof lineSchema>;
-export type LineTrainingStats = z.infer<typeof lineTrainingStatsSchema>;
+export type LineListTrainingStats = z.infer<typeof lineListTrainingStatsSchema>;
 export type LineListItem = z.infer<typeof lineListItemSchema>;
 export type LineMoveTree = z.infer<typeof lineMoveTreeSchema>;
 export type CourseSide = z.infer<typeof courseSideSchema>;
