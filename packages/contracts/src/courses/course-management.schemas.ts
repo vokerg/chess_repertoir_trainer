@@ -70,15 +70,15 @@ export const lineListItemSchema = lineSchema.extend({
 export const lineListSchema = z.array(lineListItemSchema);
 
 export const lineMoveNodeSchema = z.object({
-  id: z.number().int().nonnegative(),
+  id: z.number().int().positive(),
   lineId: z.number().int().positive(),
   parentId: z.number().int().positive().nullable(),
   plyNumber: z.number().int().nonnegative(),
   fenBefore: z.string().min(1),
   fenBeforeNormalized: z.string().nullable().optional(),
   fenAfter: z.string().min(1),
-  moveUci: z.string(),
-  moveSan: z.string(),
+  moveUci: z.string().min(1),
+  moveSan: z.string().min(1),
   moveNumber: z.number().int().nonnegative(),
   colorToMoveBefore: courseSideSchema,
   side: courseSideSchema,
@@ -105,8 +105,23 @@ export const lineMoveTreeNodeSchema: z.ZodType<LineMoveTreeNode> = z.lazy(() => 
   children: z.array(lineMoveTreeNodeSchema),
 }));
 
+const lineMoveTreeRootNodeSchema = lineMoveNodeSchema.extend({
+  id: z.number().int().refine((id) => id === 0),
+  parentId: z.null(),
+  plyNumber: z.number().int().refine((plyNumber) => plyNumber === 0),
+  moveUci: z.string().refine((moveUci) => moveUci === ''),
+  moveSan: z.string().refine((moveSan) => moveSan === ''),
+  moveNumber: z.number().int().refine((moveNumber) => moveNumber === 0),
+  isUserMove: z.boolean().refine((isUserMove) => isUserMove === false),
+  isCorrectUserMove: z.boolean().refine((isCorrectUserMove) => isCorrectUserMove === false),
+  sortOrder: z.number().int().refine((sortOrder) => sortOrder === 0),
+});
+
 export const lineMoveTreeSchema = z.object({
-  root: lineMoveTreeNodeSchema,
+  root: z.object({
+    node: lineMoveTreeRootNodeSchema,
+    children: z.array(lineMoveTreeNodeSchema),
+  }),
 });
 
 export const createCourseSchema = z.object({
