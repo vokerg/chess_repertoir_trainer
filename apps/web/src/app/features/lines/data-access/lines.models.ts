@@ -4,6 +4,7 @@ import type {
   Line as CourseLine,
   LineListItem,
   LineMoveNode,
+  LineMoveTree as CourseLineMoveTree,
 } from '@chess-trainer/contracts/courses';
 import type {
   ActiveTrainingStatsDto,
@@ -34,15 +35,19 @@ export type LineTransferTargetChapter = Pick<Chapter, 'id' | 'name' | 'descripti
 
 export type ActiveTrainingStats = ActiveTrainingStatsDto;
 
-export type LineRowTrainingStats = LineListItem['trainingStats'];
+export type LineResource = CourseLine;
+export type LineListResource = LineListItem;
+export type LineTreeResource = CourseLineMoveTree;
+
+export type LineRowTrainingStats = LineListResource['trainingStats'];
 
 export type LineSummary = Pick<
-  LineListItem,
+  LineListResource,
   'id' | 'chapterId' | 'name' | 'sideToTrain' | 'startingFen' | 'trainingStats'
 >;
 
 export type LineDetail = Pick<
-  CourseLine,
+  LineResource,
   'id' | 'chapterId' | 'name' | 'sideToTrain' | 'startingFen'
 >;
 
