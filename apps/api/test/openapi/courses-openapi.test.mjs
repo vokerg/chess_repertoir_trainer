@@ -79,6 +79,35 @@ function assertLineSchema(document, schema) {
   assert.equal(resolved.properties.updatedAt.format, 'date-time');
 }
 
+function assertMoveTreeNodeSchema(document, schema) {
+  const treeNode = resolveSchema(document, schema);
+  assert.ok(treeNode.properties?.node, 'Expected move-tree node payload');
+  assert.ok(treeNode.properties?.children, 'Expected recursive move-tree children');
+
+  const node = resolveSchema(document, treeNode.properties.node);
+  for (const property of [
+    'id',
+    'lineId',
+    'parentId',
+    'plyNumber',
+    'fenBefore',
+    'fenAfter',
+    'moveUci',
+    'moveSan',
+    'createdAt',
+    'updatedAt',
+  ]) {
+    assert.ok(node.properties?.[property], `Expected move-tree node property ${property}`);
+  }
+  assert.equal(node.properties.createdAt.format, 'date-time');
+  assert.equal(node.properties.updatedAt.format, 'date-time');
+
+  const children = resolveSchema(document, treeNode.properties.children);
+  assert.equal(children.type, 'array');
+  assert.ok(children.items, 'Expected recursive move-tree child item schema');
+  return { treeNode, node, children };
+}
+
 const first = await generatedDocument();
 const second = await generatedDocument();
 assert.deepEqual(second, first);
@@ -115,7 +144,9 @@ assertLineSchema(first, responseSchema(first, '/api/lines/{id}', 'patch', '200')
 assertLineSchema(first, responseSchema(first, '/api/lines/{id}/copy', 'post', '201'));
 
 const lineTreeResponseSchema = responseSchema(first, '/api/lines/{id}/tree', 'get', '200');
-assert.ok(lineTreeResponseSchema.properties?.root, 'Expected concrete move-tree root schema');
-assert.notDeepEqual(lineTreeResponseSchema.properties.root, {}, 'Move-tree root must not be opaque');
+const root = assertMoveTreeNodeSchema(first, lineTreeResponseSchema.properties?.root);
+const child = assertMoveTreeNodeSchema(first, root.children.items);
+assert.ok(child.node.properties?.fenBeforeNormalized, 'Expected persisted move-node normalized FEN field');
+assert.ok(child.children.items, 'Expected recursive descendants to remain documented');
 
 console.log('Courses OpenAPI tests passed.');
