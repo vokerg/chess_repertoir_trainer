@@ -53,12 +53,12 @@ export class LinesApiService {
     return this.api.get<LineTransferTargetChapter[]>(`/courses/${courseId}/chapters`);
   }
 
-  createLine(chapterId: number, body: CreateLinePayload): Observable<LineSummary> {
-    return this.api.post<LineSummary>(`/chapters/${chapterId}/lines`, body);
+  createLine(chapterId: number, body: CreateLinePayload): Observable<LineDetail> {
+    return this.api.post<LineDetail>(`/chapters/${chapterId}/lines`, body);
   }
 
-  importLinePgn(chapterId: number, body: ImportLinePgnPayload): Observable<LineSummary> {
-    return this.api.post<LineSummary>(`/chapters/${chapterId}/lines/import-pgn`, body);
+  importLinePgn(chapterId: number, body: ImportLinePgnPayload): Observable<LineDetail> {
+    return this.api.post<LineDetail>(`/chapters/${chapterId}/lines/import-pgn`, body);
   }
 
   getLine(lineId: number): Observable<LineDetail> {
@@ -68,12 +68,12 @@ export class LinesApiService {
   updateLine(
     lineId: number,
     body: Partial<{ name: string; chapterId: number }>,
-  ): Observable<LineSummary> {
-    return this.api.patch<LineSummary>(`/lines/${lineId}`, body);
+  ): Observable<LineDetail> {
+    return this.api.patch<LineDetail>(`/lines/${lineId}`, body);
   }
 
-  copyLine(lineId: number, body: CopyLinePayload): Observable<LineSummary> {
-    return this.api.post<LineSummary>(`/lines/${lineId}/copy`, body);
+  copyLine(lineId: number, body: CopyLinePayload): Observable<LineDetail> {
+    return this.api.post<LineDetail>(`/lines/${lineId}/copy`, body);
   }
 
   deleteLine(lineId: number): Observable<void> {
