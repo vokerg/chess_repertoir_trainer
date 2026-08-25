@@ -39,9 +39,19 @@ import {
   courseSchema,
   createCourseSchema,
   libraryCatalogSchema,
+  lineListSchema,
+  lineMoveTreeSchema,
+  lineSchema,
   updateCourseSchema,
 } from '@chess-trainer/contracts/courses';
-import type { Chapter, CourseCoverKey } from '@chess-trainer/contracts/courses';
+import type {
+  Chapter,
+  CourseCoverKey,
+  CourseSide,
+  Line as CourseLine,
+  LineMoveTree,
+  LineMoveTreeNode,
+} from '@chess-trainer/contracts/courses';
 import { CourseDerivedDataService } from './course-derived-data.service';
 
 const importPgnSchema = z.object({
@@ -109,6 +119,68 @@ function chapterResponse(chapter: {
     createdAt: chapter.createdAt.toISOString(),
     updatedAt: chapter.updatedAt.toISOString(),
   };
+}
+
+function lineResponse(line: {
+  id: number;
+  chapterId: number;
+  name: string;
+  sideToTrain: string;
+  startingFen: string;
+  tags: string | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}): CourseLine {
+  return {
+    ...line,
+    sideToTrain: line.sideToTrain as CourseSide,
+    createdAt: line.createdAt.toISOString(),
+    updatedAt: line.updatedAt.toISOString(),
+  };
+}
+
+type MoveTreeNodeSource = {
+  node: {
+    id: number;
+    lineId: number;
+    parentId?: number | null;
+    plyNumber: number;
+    fenBefore: string;
+    fenBeforeNormalized?: string | null;
+    fenAfter: string;
+    moveUci: string;
+    moveSan: string;
+    moveNumber: number;
+    colorToMoveBefore: string;
+    side: string;
+    isUserMove: boolean;
+    isCorrectUserMove: boolean;
+    comment?: string | null;
+    annotation?: string | null;
+    branchLabel?: string | null;
+    branchWeight?: number | null;
+    sortOrder: number;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  children: MoveTreeNodeSource[];
+};
+
+function lineMoveTreeResponse(tree: { root: MoveTreeNodeSource }): LineMoveTree {
+  const nodeResponse = (entry: MoveTreeNodeSource): LineMoveTreeNode => ({
+    node: {
+      ...entry.node,
+      parentId: entry.node.parentId ?? null,
+      colorToMoveBefore: entry.node.colorToMoveBefore as CourseSide,
+      side: entry.node.side as CourseSide,
+      createdAt: entry.node.createdAt.toISOString(),
+      updatedAt: entry.node.updatedAt.toISOString(),
+    },
+    children: entry.children.map(nodeResponse),
+  });
+
+  return { root: nodeResponse(tree.root) };
 }
 
 const courseRouteSchema = <T extends Record<string, unknown>>(
@@ -327,7 +399,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/chapters/:chapterId/lines', {
     schema: courseRouteSchema('listChapterLines', ['Lines'], 'List lines in a chapter', {
       params: chapterIdParamsSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+      response: { 200: lineListSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -335,7 +407,10 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     const chapterId = request.params.chapterId;
     const lines = await LineService.list(auth.userId, chapterId);
     if (!lines) return reply.status(404).send({ message: 'Chapter not found' });
-    return lines;
+    return lines.map(({ trainingStats, ...line }) => ({
+      ...lineResponse(line),
+      trainingStats,
+    }));
   });
 
   app.route({
@@ -404,7 +479,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     schema: courseRouteSchema('createChapterLine', ['Lines'], 'Create a repertoire line in a chapter', {
       params: chapterIdParamsSchema,
       body: createLineSchema,
-      response: { 201: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+      response: { 201: lineSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -417,14 +492,14 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     });
     if (!line) return reply.status(404).send({ message: 'Chapter not found' });
     reply.code(201);
-    return line;
+    return lineResponse(line);
   });
 
   app.post('/api/chapters/:chapterId/lines/import-pgn', {
     schema: courseRouteSchema('importChapterLinePgn', ['Lines'], 'Import a PGN as a repertoire line', {
       params: chapterIdParamsSchema,
       body: importPgnSchema,
-      response: { 201: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema },
+      response: { 201: lineSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -432,7 +507,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     const chapterId = request.params.chapterId;
     try {
       const line = await PgnService.importLine(auth.userId, chapterId, request.body);
-      return reply.status(201).send(line);
+      return reply.status(201).send(lineResponse(line));
     } catch (err: any) {
       return reply.status(400).send({ error: err.message });
     }
@@ -441,7 +516,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/lines/:id', {
     schema: courseRouteSchema('getLine', ['Lines'], 'Get one repertoire line', {
       params: idParamsSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+      response: { 200: lineSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -452,13 +527,13 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
       reply.code(404);
       return { message: 'Line not found' };
     }
-    return line;
+    return lineResponse(line);
   });
 
   app.get('/api/lines/:id/tree', {
     schema: courseRouteSchema('getLineTree', ['Lines'], 'Get the move tree for a repertoire line', {
       params: idParamsSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+      response: { 200: lineMoveTreeSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -469,7 +544,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
       reply.code(404);
       return { message: 'Line not found' };
     }
-    return tree;
+    return lineMoveTreeResponse(tree);
   });
 
   app.get('/api/lines/:id/export-pgn', {
@@ -492,7 +567,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     schema: courseRouteSchema('updateLine', ['Lines'], 'Update one repertoire line', {
       params: idParamsSchema,
       body: updateLineSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+      response: { 200: lineSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -505,7 +580,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
         tags: tags ? JSON.stringify(tags) : undefined,
       });
       if (!line) return reply.status(404).send({ message: 'Line not found' });
-      return line;
+      return lineResponse(line);
     } catch {
       reply.code(404);
       return { message: 'Line not found' };
@@ -516,7 +591,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     schema: courseRouteSchema('copyLine', ['Lines'], 'Copy a repertoire line to a chapter', {
       params: idParamsSchema,
       body: copyLineSchema,
-      response: { 201: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+      response: { 201: lineSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -526,7 +601,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     if (!copied) {
       return reply.status(404).send({ message: 'Source line or target chapter not found' });
     }
-    return reply.status(201).send(copied);
+    return reply.status(201).send(lineResponse(copied));
   });
 
   app.delete('/api/lines/:id', {
