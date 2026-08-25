@@ -100,18 +100,18 @@ export interface LineMoveTreeNode {
 export const lineMoveTreeNodeSchema: z.ZodType<LineMoveTreeNode> = z.lazy(() => z.object({
   node: lineMoveNodeSchema,
   children: z.array(lineMoveTreeNodeSchema),
-}));
+})).meta({ id: 'CourseLineMoveTreeNode' });
 
 const lineMoveTreeRootNodeSchema: z.ZodType<LineMoveNode> = lineMoveNodeSchema.extend({
-  id: z.number().int().refine((id) => id === 0),
+  id: z.literal(0),
   parentId: z.null(),
-  plyNumber: z.number().int().refine((plyNumber) => plyNumber === 0),
-  moveUci: z.string().refine((moveUci) => moveUci === ''),
-  moveSan: z.string().refine((moveSan) => moveSan === ''),
-  moveNumber: z.number().int().refine((moveNumber) => moveNumber === 0),
-  isUserMove: z.boolean().refine((isUserMove) => isUserMove === false),
-  isCorrectUserMove: z.boolean().refine((isCorrectUserMove) => isCorrectUserMove === false),
-  sortOrder: z.number().int().refine((sortOrder) => sortOrder === 0),
+  plyNumber: z.literal(0),
+  moveUci: z.literal(''),
+  moveSan: z.literal(''),
+  moveNumber: z.literal(0),
+  isUserMove: z.literal(false),
+  isCorrectUserMove: z.literal(false),
+  sortOrder: z.literal(0),
 });
 
 export const lineMoveTreeSchema = z.object({
