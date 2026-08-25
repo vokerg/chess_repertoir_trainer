@@ -5,6 +5,9 @@ import {
   coursePositionSuggestionsResponseSchema,
   courseSchema,
   createCourseSchema,
+  lineListSchema,
+  lineMoveTreeSchema,
+  lineSchema,
   updateCourseSchema,
 } from '../dist/courses/index.js';
 
@@ -61,6 +64,116 @@ assert.deepEqual(chapterListSchema.parse([chapter]), [chapter]);
 assert.equal(chapterSchema.safeParse({ ...chapter, createdAt: new Date(chapter.createdAt) }).success, false);
 assert.equal(chapterSchema.safeParse({ ...chapter, sortOrder: 2.5 }).success, false);
 assert.equal(chapterSchema.safeParse({ ...chapter, description: undefined }).success, false);
+
+const line = {
+  id: 14,
+  chapterId: chapter.id,
+  name: 'Main line',
+  sideToTrain: 'WHITE',
+  startingFen: 'startpos',
+  tags: '["gambit","main"]',
+  notes: null,
+  createdAt: '2026-08-12T12:15:00.000Z',
+  updatedAt: '2026-08-12T12:20:00.000Z',
+};
+assert.deepEqual(lineSchema.parse(line), line);
+assert.equal(lineSchema.safeParse({ ...line, sideToTrain: 'RED' }).success, false);
+assert.equal(lineSchema.safeParse({ ...line, tags: ['gambit'] }).success, false);
+assert.equal(lineSchema.safeParse({ ...line, createdAt: new Date(line.createdAt) }).success, false);
+
+const lineListItem = {
+  ...line,
+  trainingStats: {
+    totalAttempts: 3,
+    passedCount: 2,
+    failedCount: 1,
+    passRate: 2 / 3,
+    activeSublineCount: 2,
+    trainedSublineCount: 1,
+    untrainedSublineCount: 1,
+    weakSublineCount: 0,
+    status: 'REVIEW',
+  },
+};
+assert.deepEqual(lineListSchema.parse([lineListItem]), [lineListItem]);
+assert.equal(lineListSchema.safeParse([{ ...lineListItem, trainingStats: { ...lineListItem.trainingStats, passRate: 1.1 } }]).success, false);
+assert.equal(lineListSchema.safeParse([{ ...lineListItem, trainingStats: { ...lineListItem.trainingStats, status: 'UNKNOWN' } }]).success, false);
+
+const rootNode = {
+  id: 0,
+  lineId: line.id,
+  parentId: null,
+  plyNumber: 0,
+  fenBefore: 'startpos',
+  fenAfter: 'startpos',
+  moveUci: '',
+  moveSan: '',
+  moveNumber: 0,
+  colorToMoveBefore: 'WHITE',
+  side: 'WHITE',
+  isUserMove: false,
+  isCorrectUserMove: false,
+  sortOrder: 0,
+  createdAt: '2026-08-12T12:25:00.000Z',
+  updatedAt: '2026-08-12T12:25:00.000Z',
+};
+const childNode = {
+  id: 31,
+  lineId: line.id,
+  parentId: null,
+  plyNumber: 1,
+  fenBefore: 'startpos',
+  fenBeforeNormalized: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -',
+  fenAfter: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+  moveUci: 'e2e4',
+  moveSan: 'e4',
+  moveNumber: 1,
+  colorToMoveBefore: 'WHITE',
+  side: 'WHITE',
+  isUserMove: true,
+  isCorrectUserMove: true,
+  comment: null,
+  annotation: null,
+  branchLabel: null,
+  branchWeight: null,
+  sortOrder: 0,
+  createdAt: '2026-08-12T12:26:00.000Z',
+  updatedAt: '2026-08-12T12:26:00.000Z',
+};
+const lineTree = {
+  root: {
+    node: rootNode,
+    children: [{ node: childNode, children: [] }],
+  },
+};
+assert.deepEqual(lineMoveTreeSchema.parse(lineTree), lineTree);
+assert.equal(lineMoveTreeSchema.safeParse({
+  root: {
+    ...lineTree.root,
+    children: [{ node: { ...childNode, createdAt: new Date(childNode.createdAt) }, children: [] }],
+  },
+}).success, false);
+assert.equal(lineMoveTreeSchema.safeParse({
+  root: {
+    ...lineTree.root,
+    children: [{ node: { ...childNode, parentId: 0 }, children: [] }],
+  },
+}).success, false);
+assert.equal(lineMoveTreeSchema.safeParse({
+  root: { ...lineTree.root, node: { ...rootNode, id: 1 } },
+}).success, false);
+assert.equal(lineMoveTreeSchema.safeParse({
+  root: {
+    ...lineTree.root,
+    children: [{ node: { ...childNode, id: 0 }, children: [] }],
+  },
+}).success, false);
+assert.equal(lineMoveTreeSchema.safeParse({
+  root: {
+    ...lineTree.root,
+    children: [{ node: { ...childNode, moveUci: '' }, children: [] }],
+  },
+}).success, false);
 
 const positionSuggestions = {
   normalizedFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -',

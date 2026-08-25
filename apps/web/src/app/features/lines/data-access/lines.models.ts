@@ -1,4 +1,11 @@
-import type { Chapter } from '@chess-trainer/contracts/courses';
+import type {
+  Chapter,
+  CourseSide,
+  Line as CourseLine,
+  LineListItem,
+  LineMoveNode,
+  LineMoveTree as CourseLineMoveTree,
+} from '@chess-trainer/contracts/courses';
 import type {
   ActiveTrainingStatsDto,
   LineTrainingSessionDto,
@@ -14,7 +21,7 @@ import type {
   TrainingStatusValue,
 } from '@chess-trainer/contracts/training';
 
-export type RepertoireColor = 'WHITE' | 'BLACK';
+export type RepertoireColor = CourseSide;
 
 export type ChapterDetail = Pick<Chapter, 'id' | 'courseId' | 'name' | 'description'>;
 
@@ -28,57 +35,43 @@ export type LineTransferTargetChapter = Pick<Chapter, 'id' | 'name' | 'descripti
 
 export type ActiveTrainingStats = ActiveTrainingStatsDto;
 
-export interface LineRowTrainingStats {
-  totalAttempts: number;
-  passedCount: number;
-  failedCount: number;
-  passRate: number;
-  activeSublineCount: number;
-  trainedSublineCount: number;
-  untrainedSublineCount: number;
-  weakSublineCount: number;
-  status: LineTrainingStatusValue;
-}
+export type LineResource = CourseLine;
+export type LineListResource = LineListItem;
+export type LineTreeResource = CourseLineMoveTree;
 
-export interface LineSummary {
-  id: number;
-  chapterId: number;
-  name: string;
-  sideToTrain: RepertoireColor;
-  startingFen: string;
-  trainingStats: LineRowTrainingStats;
-}
+export type LineRowTrainingStats = LineListResource['trainingStats'];
 
-export interface LineDetail {
-  id: number;
-  chapterId: number;
-  name: string;
-  sideToTrain: RepertoireColor;
-  startingFen: string;
-}
+export type LineSummary = Pick<
+  LineListResource,
+  'id' | 'chapterId' | 'name' | 'sideToTrain' | 'startingFen' | 'trainingStats'
+>;
 
-export interface LineTreeNodeData {
-  id: number;
-  lineId: number;
-  parentId: number | null;
-  plyNumber: number;
-  fenBefore: string;
-  fenAfter: string;
-  moveUci: string;
-  moveSan: string;
-  moveNumber: number;
-  colorToMoveBefore: RepertoireColor;
-  side: RepertoireColor;
-  isUserMove: boolean;
-  isCorrectUserMove: boolean;
-  sortOrder: number;
-  branchLabel?: string | null;
-  branchWeight?: number | null;
-  comment?: string | null;
-  annotation?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-}
+export type LineDetail = Pick<
+  LineResource,
+  'id' | 'chapterId' | 'name' | 'sideToTrain' | 'startingFen'
+>;
+
+export type LineTreeNodeData = Pick<
+  LineMoveNode,
+  | 'id'
+  | 'lineId'
+  | 'parentId'
+  | 'plyNumber'
+  | 'fenBefore'
+  | 'fenAfter'
+  | 'moveUci'
+  | 'moveSan'
+  | 'moveNumber'
+  | 'colorToMoveBefore'
+  | 'side'
+  | 'isUserMove'
+  | 'isCorrectUserMove'
+  | 'sortOrder'
+  | 'branchLabel'
+  | 'branchWeight'
+  | 'comment'
+  | 'annotation'
+> & Partial<Pick<LineMoveNode, 'createdAt' | 'updatedAt'>>;
 
 export interface LineTreeNode {
   node: LineTreeNodeData;

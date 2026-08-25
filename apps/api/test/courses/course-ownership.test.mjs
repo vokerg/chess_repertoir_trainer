@@ -5,6 +5,9 @@ import {
   chapterListSchema,
   chapterSchema,
   coursePositionSuggestionsResponseSchema,
+  lineListSchema,
+  lineMoveTreeSchema,
+  lineSchema,
 } from '@chess-trainer/contracts/courses';
 import prismaModule from '../../dist/prisma.js';
 import coursesModule from '../../dist/modules/courses/courses.routes.js';
@@ -165,6 +168,102 @@ try {
   assert.equal(updatedChapter.sortOrder, 6);
   assert.equal(updatedChapter.createdAt, createdChapter.createdAt);
 
+  const lineListResponse = await app.inject({
+    method: 'GET',
+    url: `/api/chapters/${chapterA.id}/lines`,
+  });
+  assert.equal(lineListResponse.statusCode, 200);
+  const listedLines = lineListSchema.parse(lineListResponse.json());
+  assert.equal(listedLines.length, 1);
+  assert.equal(listedLines[0].id, lineA.id);
+  assert.equal(listedLines[0].trainingStats.status, 'NEW');
+  assert.equal(typeof listedLines[0].createdAt, 'string');
+  assert.equal(typeof listedLines[0].updatedAt, 'string');
+
+  const createLineResponse = await app.inject({
+    method: 'POST',
+    url: `/api/chapters/${chapterA.id}/lines`,
+    payload: {
+      name: 'HTTP-created line',
+      sideToTrain: 'BLACK',
+      startingFen: 'startpos',
+      tags: ['http', 'line'],
+      notes: null,
+    },
+  });
+  assert.equal(createLineResponse.statusCode, 201);
+  const createdLine = lineSchema.parse(createLineResponse.json());
+  assert.equal(createdLine.chapterId, chapterA.id);
+  assert.equal(createdLine.sideToTrain, 'BLACK');
+  assert.equal(createdLine.tags, '["http","line"]');
+  assert.equal(createdLine.notes, null);
+  assert.equal(typeof createdLine.createdAt, 'string');
+  assert.equal(typeof createdLine.updatedAt, 'string');
+
+  const getLineResponse = await app.inject({
+    method: 'GET',
+    url: `/api/lines/${createdLine.id}`,
+  });
+  assert.equal(getLineResponse.statusCode, 200);
+  assert.deepEqual(lineSchema.parse(getLineResponse.json()), createdLine);
+
+  const updateLineResponse = await app.inject({
+    method: 'PATCH',
+    url: `/api/lines/${createdLine.id}`,
+    payload: { name: 'HTTP-updated line', tags: ['updated'] },
+  });
+  assert.equal(updateLineResponse.statusCode, 200);
+  const updatedLine = lineSchema.parse(updateLineResponse.json());
+  assert.equal(updatedLine.id, createdLine.id);
+  assert.equal(updatedLine.name, 'HTTP-updated line');
+  assert.equal(updatedLine.tags, '["updated"]');
+  assert.equal(updatedLine.createdAt, createdLine.createdAt);
+
+  const copyLineResponse = await app.inject({
+    method: 'POST',
+    url: `/api/lines/${createdLine.id}/copy`,
+    payload: { targetChapterId: secondChapterA.id, name: 'HTTP-copied line' },
+  });
+  assert.equal(copyLineResponse.statusCode, 201);
+  const httpCopiedLine = lineSchema.parse(copyLineResponse.json());
+  assert.equal(httpCopiedLine.chapterId, secondChapterA.id);
+  assert.equal(httpCopiedLine.name, 'HTTP-copied line');
+  assert.equal(httpCopiedLine.tags, '["updated"]');
+
+  const importLineResponse = await app.inject({
+    method: 'POST',
+    url: `/api/chapters/${chapterA.id}/lines/import-pgn`,
+    payload: {
+      name: 'HTTP-imported line',
+      sideToTrain: 'WHITE',
+      startingFen: 'startpos',
+      pgn: '1. e4 e5 *',
+    },
+  });
+  assert.equal(importLineResponse.statusCode, 201);
+  const importedLine = lineSchema.parse(importLineResponse.json());
+  assert.equal(importedLine.chapterId, chapterA.id);
+  assert.equal(importedLine.name, 'HTTP-imported line');
+  assert.equal(importedLine.tags, null);
+
+  const lineTreeResponse = await app.inject({
+    method: 'GET',
+    url: `/api/lines/${lineA.id}/tree`,
+  });
+  assert.equal(lineTreeResponse.statusCode, 200);
+  const lineTree = lineMoveTreeSchema.parse(lineTreeResponse.json());
+  assert.equal(lineTree.root.node.id, 0);
+  assert.equal(lineTree.root.node.lineId, lineA.id);
+  assert.equal(lineTree.root.node.parentId, null);
+  assert.equal(lineTree.root.children.length, 1);
+  assert.equal(lineTree.root.children[0].node.id, nodeA.id);
+  assert.equal(
+    lineTree.root.children[0].node.fenBeforeNormalized,
+    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -',
+  );
+  assert.equal(typeof lineTree.root.node.createdAt, 'string');
+  assert.equal(typeof lineTree.root.children[0].node.updatedAt, 'string');
+
   assert.equal(await ChapterService.get(userA.id, chapterB.id), null);
   assert.equal(await ChapterService.list(userA.id, courseB.id), null);
   assert.equal(await LineService.get(userA.id, lineB.id), null);
@@ -174,7 +273,7 @@ try {
   assert.equal(await MoveNodeService.deleteSubtree(userA.id, nodeB.id), null);
   assert.equal((await MoveNodeService.update(userB.id, nodeB.id, { comment: 'Owned' }))?.comment, 'Owned');
 
-  console.log('Course ownership, chapter response, and position-suggestion response tests passed.');
+  console.log('Course ownership, chapter/line response, and position-suggestion response tests passed.');
 } finally {
   if (app) await app.close();
   if (users.length > 0) {

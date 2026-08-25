@@ -262,14 +262,14 @@ export class LinesPageStore {
     this.error.set(null);
 
     try {
-      const line = await firstValueFrom(
+      await firstValueFrom(
         this.api.createLine(chapterId, {
           name: this.newLineName(),
           sideToTrain: this.newLineSide(),
           startingFen: this.newLineStartingFen(),
         }),
       );
-      this.lines.update((lines) => [...lines, line]);
+      await this.loadPage();
       this.newLineName.set('');
       this.newLineStartingFen.set('startpos');
     } catch (error) {
@@ -425,11 +425,11 @@ export class LinesPageStore {
     this.error.set(null);
     this.transferMessage.set(null);
     try {
-      const copied = await firstValueFrom(
+      await firstValueFrom(
         this.api.copyLine(line.id, { targetChapterId }),
       );
       if (targetChapterId === currentChapterId) {
-        this.lines.update((lines) => [...lines, copied]);
+        await this.loadPage();
       }
       this.transferMessage.set(`Copied "${line.name}" to the selected chapter.`);
       this.closeLineTransfer();
@@ -487,7 +487,7 @@ export class LinesPageStore {
     this.pgnError.set(null);
 
     try {
-      const line = await firstValueFrom(
+      await firstValueFrom(
         this.api.importLinePgn(chapterId, {
           name: this.importName(),
           sideToTrain: this.importSide(),
@@ -495,7 +495,7 @@ export class LinesPageStore {
           pgn: this.importPgnText(),
         }),
       );
-      this.lines.update((lines) => [...lines, line]);
+      await this.loadPage();
       this.importName.set('');
       this.importPgnText.set('');
       this.pgnMessage.set('PGN imported as a new line.');

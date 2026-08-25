@@ -7,6 +7,13 @@ const courseOperations = [
   ['/api/courses/{courseId}/chapters', 'post', 'createCourseChapter'],
   ['/api/chapters/{id}', 'get', 'getChapter'],
   ['/api/chapters/{id}', 'patch', 'updateChapter'],
+  ['/api/chapters/{chapterId}/lines', 'get', 'listChapterLines'],
+  ['/api/chapters/{chapterId}/lines', 'post', 'createChapterLine'],
+  ['/api/chapters/{chapterId}/lines/import-pgn', 'post', 'importChapterLinePgn'],
+  ['/api/lines/{id}', 'get', 'getLine'],
+  ['/api/lines/{id}', 'patch', 'updateLine'],
+  ['/api/lines/{id}/copy', 'post', 'copyLine'],
+  ['/api/lines/{id}/tree', 'get', 'getLineTree'],
 ];
 
 async function generatedDocument() {
@@ -53,6 +60,55 @@ function assertChapterSchema(document, schema) {
   assert.equal(resolved.properties.updatedAt.format, 'date-time');
 }
 
+function assertLineSchema(document, schema) {
+  const resolved = resolveSchema(document, schema);
+  for (const property of [
+    'id',
+    'chapterId',
+    'name',
+    'sideToTrain',
+    'startingFen',
+    'tags',
+    'notes',
+    'createdAt',
+    'updatedAt',
+  ]) {
+    assert.ok(resolved.properties?.[property], `Expected line property ${property}`);
+  }
+  assert.equal(resolved.properties.createdAt.format, 'date-time');
+  assert.equal(resolved.properties.updatedAt.format, 'date-time');
+}
+
+function assertMoveTreeNodeSchema(document, schema) {
+  const treeNode = resolveSchema(document, schema);
+  assert.ok(treeNode, `Expected resolvable move-tree schema reference ${schema?.$ref ?? '<inline>'}`);
+  assert.ok(treeNode.properties?.node, 'Expected move-tree node payload');
+  assert.ok(treeNode.properties?.children, 'Expected recursive move-tree children');
+
+  const node = resolveSchema(document, treeNode.properties.node);
+  for (const property of [
+    'id',
+    'lineId',
+    'parentId',
+    'plyNumber',
+    'fenBefore',
+    'fenAfter',
+    'moveUci',
+    'moveSan',
+    'createdAt',
+    'updatedAt',
+  ]) {
+    assert.ok(node.properties?.[property], `Expected move-tree node property ${property}`);
+  }
+  assert.equal(node.properties.createdAt.format, 'date-time');
+  assert.equal(node.properties.updatedAt.format, 'date-time');
+
+  const children = resolveSchema(document, treeNode.properties.children);
+  assert.equal(children.type, 'array');
+  assert.ok(children.items, 'Expected recursive move-tree child item schema');
+  return { treeNode, node, children };
+}
+
 const first = await generatedDocument();
 const second = await generatedDocument();
 assert.deepEqual(second, first);
@@ -72,5 +128,27 @@ assertChapterSchema(first, chapterListResponseSchema.items);
 assertChapterSchema(first, responseSchema(first, '/api/courses/{courseId}/chapters', 'post', '201'));
 assertChapterSchema(first, responseSchema(first, '/api/chapters/{id}', 'get', '200'));
 assertChapterSchema(first, responseSchema(first, '/api/chapters/{id}', 'patch', '200'));
+
+const lineListResponseSchema = responseSchema(first, '/api/chapters/{chapterId}/lines', 'get', '200');
+assert.equal(lineListResponseSchema.type, 'array');
+assertLineSchema(first, lineListResponseSchema.items);
+const lineListItemSchema = resolveSchema(first, lineListResponseSchema.items);
+const trainingStatsSchema = resolveSchema(first, lineListItemSchema.properties?.trainingStats);
+for (const property of ['totalAttempts', 'passRate', 'activeSublineCount', 'status']) {
+  assert.ok(trainingStatsSchema.properties?.[property], `Expected line training-stats property ${property}`);
+}
+
+assertLineSchema(first, responseSchema(first, '/api/chapters/{chapterId}/lines', 'post', '201'));
+assertLineSchema(first, responseSchema(first, '/api/chapters/{chapterId}/lines/import-pgn', 'post', '201'));
+assertLineSchema(first, responseSchema(first, '/api/lines/{id}', 'get', '200'));
+assertLineSchema(first, responseSchema(first, '/api/lines/{id}', 'patch', '200'));
+assertLineSchema(first, responseSchema(first, '/api/lines/{id}/copy', 'post', '201'));
+
+const lineTreeResponseSchema = responseSchema(first, '/api/lines/{id}/tree', 'get', '200');
+const root = assertMoveTreeNodeSchema(first, lineTreeResponseSchema.properties?.root);
+const child = assertMoveTreeNodeSchema(first, root.children.items);
+assert.ok(child.node.properties?.fenBeforeNormalized, 'Expected persisted move-node normalized FEN field');
+assert.ok(child.children.items?.$ref, 'Expected recursive descendants to use a schema reference');
+assert.ok(resolveSchema(first, child.children.items), 'Expected recursive descendant reference to resolve');
 
 console.log('Courses OpenAPI tests passed.');
