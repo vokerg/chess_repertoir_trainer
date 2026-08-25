@@ -7,13 +7,13 @@ import {
   CreateLineNodePayload,
   CreateLinePayload,
   ImportLinePgnPayload,
-  LineDetail,
-  LineSummary,
+  LineListResource,
+  LineResource,
   LineTransferTargetChapter,
   LineTransferTargetCourse,
   LineTrainingSession,
-  LineTree,
   LineTreeNodeData,
+  LineTreeResource,
   MarathonMode,
   MarathonNextRequest,
   TrainingMoveResult,
@@ -41,8 +41,8 @@ export class LinesApiService {
     return this.api.patch<ChapterDetail>(`/chapters/${chapterId}`, body);
   }
 
-  getChapterLines(chapterId: number): Observable<LineSummary[]> {
-    return this.api.get<LineSummary[]>(`/chapters/${chapterId}/lines`);
+  getChapterLines(chapterId: number): Observable<LineListResource[]> {
+    return this.api.get<LineListResource[]>(`/chapters/${chapterId}/lines`);
   }
 
   getTransferTargetCourses(): Observable<LineTransferTargetCourse[]> {
@@ -53,27 +53,27 @@ export class LinesApiService {
     return this.api.get<LineTransferTargetChapter[]>(`/courses/${courseId}/chapters`);
   }
 
-  createLine(chapterId: number, body: CreateLinePayload): Observable<LineDetail> {
-    return this.api.post<LineDetail>(`/chapters/${chapterId}/lines`, body);
+  createLine(chapterId: number, body: CreateLinePayload): Observable<LineResource> {
+    return this.api.post<LineResource>(`/chapters/${chapterId}/lines`, body);
   }
 
-  importLinePgn(chapterId: number, body: ImportLinePgnPayload): Observable<LineDetail> {
-    return this.api.post<LineDetail>(`/chapters/${chapterId}/lines/import-pgn`, body);
+  importLinePgn(chapterId: number, body: ImportLinePgnPayload): Observable<LineResource> {
+    return this.api.post<LineResource>(`/chapters/${chapterId}/lines/import-pgn`, body);
   }
 
-  getLine(lineId: number): Observable<LineDetail> {
-    return this.api.get<LineDetail>(`/lines/${lineId}`);
+  getLine(lineId: number): Observable<LineResource> {
+    return this.api.get<LineResource>(`/lines/${lineId}`);
   }
 
   updateLine(
     lineId: number,
     body: Partial<{ name: string; chapterId: number }>,
-  ): Observable<LineDetail> {
-    return this.api.patch<LineDetail>(`/lines/${lineId}`, body);
+  ): Observable<LineResource> {
+    return this.api.patch<LineResource>(`/lines/${lineId}`, body);
   }
 
-  copyLine(lineId: number, body: CopyLinePayload): Observable<LineDetail> {
-    return this.api.post<LineDetail>(`/lines/${lineId}/copy`, body);
+  copyLine(lineId: number, body: CopyLinePayload): Observable<LineResource> {
+    return this.api.post<LineResource>(`/lines/${lineId}/copy`, body);
   }
 
   deleteLine(lineId: number): Observable<void> {
@@ -84,8 +84,8 @@ export class LinesApiService {
     return this.api.get<{ pgn: string }>(`/lines/${lineId}/export-pgn`);
   }
 
-  getLineTree(lineId: number): Observable<LineTree> {
-    return this.api.get<LineTree>(`/lines/${lineId}/tree`);
+  getLineTree(lineId: number): Observable<LineTreeResource> {
+    return this.api.get<LineTreeResource>(`/lines/${lineId}/tree`);
   }
 
   createLineNode(lineId: number, body: CreateLineNodePayload): Observable<LineTreeNodeData> {
