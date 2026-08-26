@@ -21,7 +21,7 @@ try {
   const expectedCommands = [
     ['/api/me/onboarding/start', 'startMyOnboarding', '202'],
     ['/api/me/onboarding/skip', 'skipMyOnboarding', '200'],
-    ['/api/me/onboarding/runs/{runId}/finish', 'finishMyOnboardingWithoutPreparedGames', '200'],
+    ['/api/me/onboarding/runs/{runId}/finish', 'finishMyOnboardingWithAttention', '200'],
     ['/api/me/onboarding/runs/{runId}/pause', 'pauseMyOnboardingPreparation', '200'],
     ['/api/me/onboarding/runs/{runId}/resume', 'resumeMyOnboardingPreparation', '200'],
     ['/api/me/onboarding/runs/{runId}/cancel', 'cancelMyOnboardingPreparation', '200'],
@@ -43,6 +43,13 @@ try {
 
   assert.ok(paths['/api/me/onboarding/start'].post.requestBody);
   assert.ok(paths['/api/me/onboarding/runs/{runId}/expand'].post.requestBody);
+  assert.equal(paths['/api/me/onboarding/skip'].post.requestBody, undefined);
+  assert.equal(paths['/api/me/onboarding/runs/{runId}/finish'].post.requestBody, undefined);
+  assert.equal(paths['/api/me/onboarding/runs/{runId}/pause'].post.requestBody, undefined);
+  assert.equal(paths['/api/me/onboarding/runs/{runId}/resume'].post.requestBody, undefined);
+  assert.equal(paths['/api/me/onboarding/runs/{runId}/cancel'].post.requestBody, undefined);
+  assert.equal(paths['/api/me/onboarding/runs/{runId}/retry'].post.requestBody, undefined);
+  assert.equal(paths['/api/me/onboarding/runs/{runId}/restart'].post.requestBody, undefined);
   assert.ok(paths['/api/me/onboarding/runs/{runId}/pause'].post.parameters);
 
   console.log('Onboarding OpenAPI tests passed.');
