@@ -1,6 +1,6 @@
 # ONB-009 — Implement onboarding lifecycle commands
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P0
 
@@ -12,13 +12,13 @@ Planning maturity: Decisioned by ONB-001/003; durable import, ONB-017/018 execut
 
 GitHub issue: [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT / onboarding implementation session
 
-Claim branch: none
+Claim branch: `onb-009/issue-194-lifecycle-commands`
 
-Claimed at: none
+Claimed at: 2026-08-26
 
-Claim scope: none
+Claim scope: authenticated onboarding start/skip/pause/resume/cancel/retry/restart/expansion commands over delivered account-import, preparation reconciliation, and onboarding projection boundaries; shared contracts, thin Fastify routes, focused ownership/concurrency/recovery tests; no Angular UI or destructive lifecycle execution
 
 Promoted at: 2026-08-26 through merged-task completion reconciliation
 
