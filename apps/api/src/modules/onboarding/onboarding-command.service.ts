@@ -12,23 +12,24 @@ import { AccountImportAdmissionBlockedError } from '../account-imports/account-i
 import {
   AccountImportAccountNotFoundError,
   AccountImportActiveRunError,
+  AccountImportInvalidRetryError,
   AccountImportRepository,
+  AccountImportRunNotFoundError,
   type AccountImportRepository as AccountImportRepositoryBoundary,
 } from '../account-imports/account-import.repository.prisma';
-import { canonicalizeAccountImportScope } from '../account-imports/account-import.scope';
-import type { StoredAccountImportRun } from '../account-imports/account-import.types';
-import {
-  PreparationRepository,
-  type PreparationRepository as PreparationRepositoryBoundary,
-} from '../preparation/preparation.repository.prisma';
 import {
   createPreparationReconciler,
   type PreparationReconciler,
 } from '../preparation/preparation-reconciler.service';
-import type {
-  CreatePreparationRunInput,
-  PreparationScopeSnapshot,
-} from '../preparation/preparation.types';
+import type { PreparationScopeSnapshot } from '../preparation/preparation.types';
+import {
+  OnboardingCommandAdmissionRepository,
+  OnboardingCommandSourceStateChangedError,
+  type OnboardingCommandAdmissionRepository as OnboardingCommandAdmissionRepositoryBoundary,
+  type OnboardingImportAdmissionRequest,
+  type OnboardingPreparationAdmissionInput,
+  type OnboardingPreparationAdmissionTarget,
+} from './onboarding-command-admission.repository.prisma';
 import {
   OnboardingCommandRepository,
   type OnboardingCommandRepository as OnboardingCommandRepositoryBoundary,
@@ -37,7 +38,6 @@ import {
 } from './onboarding-command.repository.prisma';
 
 const RECIPE_VERSION = 1;
-const IMPORT_PRIORITY = 100;
 const PREPARATION_SCOPE_VERSION = 1;
 const DEFAULT_IMPORT_SCOPE: AccountImportScope = {
   variant: 'STANDARD',
@@ -52,19 +52,14 @@ const DEFAULT_PREPARATION_SCOPE: PreparationScopeSnapshot = {
 
 interface Dependencies {
   repository?: OnboardingCommandRepositoryBoundary;
-  preparationRepository?: PreparationRepositoryBoundary;
-  accountImportRepository?: AccountImportRepositoryBoundary;
+  admissionRepository?: OnboardingCommandAdmissionRepositoryBoundary;
+  accountImportRepository?: Pick<AccountImportRepositoryBoundary, 'getRun'>;
   reconciler?: PreparationReconciler;
   now?: () => Date;
 }
 
-interface ImportRequest {
-  accountId: number;
+interface ImportRequest extends OnboardingImportAdmissionRequest {
   mode: DurableAccountImportMode;
-  scope: AccountImportScope;
-  requestedFrom: Date;
-  requestedTo: Date;
-  retryOfImportRunId?: number | null;
 }
 
 export class OnboardingCommandNotFoundError extends Error {
@@ -114,7 +109,7 @@ export class OnboardingCommandImportActiveError extends Error {
 
 export function createOnboardingCommandService(dependencies: Dependencies = {}) {
   const repository = dependencies.repository ?? OnboardingCommandRepository;
-  const preparationRepository = dependencies.preparationRepository ?? PreparationRepository;
+  const admissionRepository = dependencies.admissionRepository ?? OnboardingCommandAdmissionRepository;
   const accountImportRepository = dependencies.accountImportRepository ?? AccountImportRepository;
   const reconciler = dependencies.reconciler ?? createPreparationReconciler();
   const now = dependencies.now ?? (() => new Date());
@@ -125,36 +120,18 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
     return run;
   }
 
-  async function ensureImport(userId: number, request: ImportRequest): Promise<StoredAccountImportRun> {
-    const canonical = canonicalizeAccountImportScope(request.scope);
-    const matches = (run: StoredAccountImportRun) => (
-      run.accountId === request.accountId
-      && run.mode === request.mode
-      && run.source === 'ONBOARDING'
-      && run.scopeHash === canonical.scopeHash
-      && sameDate(run.requestedFrom, request.requestedFrom)
-      && sameDate(run.requestedTo, request.requestedTo)
-      && run.retryOfImportRunId === (request.retryOfImportRunId ?? null)
-    );
-
-    const active = await accountImportRepository.getActiveRunForAccount(userId, request.accountId);
-    if (active) {
-      if (matches(active)) return active;
-      throw new OnboardingCommandImportActiveError(active.id);
-    }
-
+  async function admitPreparation(
+    input: OnboardingPreparationAdmissionInput,
+    equivalent: (run: OnboardingCommandRunRecord) => boolean,
+  ): Promise<{ run: OnboardingCommandRunRecord; idempotent: boolean }> {
     try {
-      return await accountImportRepository.createRun({
-        userId,
-        accountId: request.accountId,
-        mode: request.mode,
-        source: 'ONBOARDING',
-        scope: canonical.scope,
-        requestedFrom: request.requestedFrom,
-        requestedTo: request.requestedTo,
-        priority: IMPORT_PRIORITY,
-        retryOfImportRunId: request.retryOfImportRunId ?? null,
-      });
+      const admitted = await admissionRepository.admit(input);
+      const run = await getRun(input.userId, admitted.runId);
+      if (admitted.outcome === 'ACTIVE') {
+        if (equivalent(run)) return { run, idempotent: true };
+        throw new OnboardingCommandActiveRunError(run.id);
+      }
+      return { run, idempotent: false };
     } catch (error) {
       if (error instanceof AccountImportAccountNotFoundError) {
         throw new OnboardingCommandAccountNotFoundError();
@@ -162,67 +139,67 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
       if (error instanceof AccountImportAdmissionBlockedError) {
         throw new OnboardingCommandInvalidStateError(error.message);
       }
-      if (!(error instanceof AccountImportActiveRunError)) throw error;
-      const raced = await accountImportRepository.getActiveRunForAccount(userId, request.accountId);
-      if (raced && matches(raced)) return raced;
-      throw new OnboardingCommandImportActiveError(error.activeImportRunId);
-    }
-  }
-
-  async function createPreparation(
-    input: CreatePreparationRunInput,
-    equivalent: (run: OnboardingCommandRunRecord) => boolean,
-  ): Promise<{ run: OnboardingCommandRunRecord; idempotent: boolean }> {
-    const active = await repository.getActiveRun(input.userId);
-    if (active) {
-      if (equivalent(active)) return { run: active, idempotent: true };
-      throw new OnboardingCommandActiveRunError(active.id);
-    }
-
-    try {
-      const created = await preparationRepository.createRun(input);
-      const run = await repository.getRun(input.userId, created.run.id);
-      if (!run) throw new Error('Created preparation run could not be reloaded.');
-      return { run, idempotent: false };
-    } catch (error) {
-      if (!isUniqueConstraintViolation(error)) throw error;
-      const raced = await repository.getActiveRun(input.userId);
-      if (raced && equivalent(raced)) return { run: raced, idempotent: true };
-      if (raced) throw new OnboardingCommandActiveRunError(raced.id);
+      if (error instanceof AccountImportActiveRunError) {
+        throw new OnboardingCommandImportActiveError(error.activeImportRunId);
+      }
+      if (
+        error instanceof AccountImportInvalidRetryError
+        || error instanceof AccountImportRunNotFoundError
+        || error instanceof OnboardingCommandSourceStateChangedError
+      ) {
+        throw new OnboardingCommandInvalidStateError(error.message);
+      }
       throw error;
     }
   }
 
   async function start(userId: number, accountId: number): Promise<OnboardingRunCommandResponse> {
-    const range = defaultRange(now());
     const active = await repository.getActiveRun(userId);
     if (active) {
-      if (isSameSingleAccountRun(active, 'ONBOARDING', accountId)) {
-        return runResponse(active, true);
-      }
+      if (isSameSingleAccountRun(active, 'ONBOARDING', accountId)) return runResponse(active, true);
       throw new OnboardingCommandActiveRunError(active.id);
     }
 
-    const importRun = await ensureImport(userId, {
-      accountId,
-      mode: 'BOUNDED_INITIAL',
-      scope: DEFAULT_IMPORT_SCOPE,
-      requestedFrom: range.from,
-      requestedTo: range.to,
-    });
+    const disposition = await repository.getDisposition(userId);
+    if (disposition.disposition === 'COMPLETED') {
+      throw new OnboardingCommandInvalidStateError(
+        'Completed onboarding uses expansion or recovery commands rather than starting a new first-run preparation.',
+      );
+    }
+    const latest = await repository.getLatestRun(userId);
+    if (latest && (latest.status === 'FAILED' || latest.status === 'CANCELLED')) {
+      throw new OnboardingCommandInvalidStateError(
+        `Preparation run ${latest.id} must be restarted as recovery rather than replaced by a new onboarding run.`,
+      );
+    }
+
+    const range = defaultRange(now());
     const preparationScope = canonicalizePreparationScope(DEFAULT_PREPARATION_SCOPE);
-    const result = await createPreparation({
+    const result = await admitPreparation({
       userId,
-      purpose: 'ONBOARDING',
-      recipeVersion: RECIPE_VERSION,
-      recipe: defaultRecipe(accountId, range.from, range.to),
+      preparation: {
+        purpose: 'ONBOARDING',
+        recipeVersion: RECIPE_VERSION,
+        recipe: defaultRecipe(accountId, range.from, range.to),
+      },
       targets: [{
-        accountId,
-        ordinal: 0,
-        ...preparationScope,
-        requestedFrom: range.from,
-        requestedTo: range.to,
-        currentImportRunId: importRun.id,
+        target: {
+          accountId,
+          ordinal: 0,
+          ...preparationScope,
+          requestedFrom: range.from,
+          requestedTo: range.to,
+        },
+        importBinding: {
+          kind: 'ENSURE',
+          request: {
+            accountId,
+            mode: 'BOUNDED_INITIAL',
+            scope: DEFAULT_IMPORT_SCOPE,
+            requestedFrom: range.from,
+            requestedTo: range.to,
+          },
+        },
       }],
     }, (run) => isSameSingleAccountRun(run, 'ONBOARDING', accountId));
     return runResponse(result.run, result.idempotent);
@@ -240,11 +217,11 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
   async function finish(userId: number, runId: number): Promise<OnboardingDispositionCommandResponse> {
     const current = await repository.getDisposition(userId);
     if (current.disposition === 'COMPLETED') return dispositionResponse(current, true);
-    const completed = await repository.finishNoRecentGames(userId, runId, now());
+    const completed = await repository.finishWithAttention(userId, runId, now());
     if (!completed) {
       await getRun(userId, runId);
       throw new OnboardingCommandInvalidStateError(
-        'Onboarding can be explicitly finished without prepared games only from NO_RECENT_GAMES attention.',
+        'Onboarding can be explicitly finished only from a server-advertised finishable attention outcome.',
       );
     }
     return dispositionResponse(completed, false);
@@ -252,9 +229,7 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
 
   async function pause(userId: number, runId: number): Promise<OnboardingRunCommandResponse> {
     const before = await getRun(userId, runId);
-    if (before.status === 'PAUSE_REQUESTED' || before.status === 'PAUSED') {
-      return runResponse(before, true);
-    }
+    if (before.status === 'PAUSE_REQUESTED' || before.status === 'PAUSED') return runResponse(before, true);
     if (!['QUEUED', 'RUNNING', 'NEEDS_ATTENTION'].includes(before.status)) {
       throw invalidControlState('pause', before.status);
     }
@@ -272,9 +247,7 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
 
   async function cancel(userId: number, runId: number): Promise<OnboardingRunCommandResponse> {
     const before = await getRun(userId, runId);
-    if (before.status === 'CANCEL_REQUESTED' || before.status === 'CANCELLED') {
-      return runResponse(before, true);
-    }
+    if (before.status === 'CANCEL_REQUESTED' || before.status === 'CANCELLED') return runResponse(before, true);
     if (!['QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'PAUSED', 'NEEDS_ATTENTION'].includes(before.status)) {
       throw invalidControlState('cancel', before.status);
     }
@@ -302,18 +275,21 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
       throw new OnboardingCommandInvalidStateError('Only failed or cancelled preparation can be restarted.');
     }
 
+    const previousRecovery = await repository.findRecoveryForSource(userId, source.id);
+    if (previousRecovery) return runResponse(previousRecovery, true);
+
     const active = await repository.getActiveRun(userId);
     if (active) {
       if (active.purpose === 'RECOVERY' && active.retryOfRunId === source.id) return runResponse(active, true);
       throw new OnboardingCommandActiveRunError(active.id);
     }
 
-    const targets = [] as CreatePreparationRunInput['targets'];
+    const targets: OnboardingPreparationAdmissionTarget[] = [];
     for (const target of source.targets) {
       const currentImport = target.currentImportRunId === null
         ? null
         : await accountImportRepository.getRun(userId, target.currentImportRunId);
-      let importRunId: number | null = target.currentImportRunId;
+      let importBinding: OnboardingPreparationAdmissionTarget['importBinding'];
       if (currentImport?.status === 'FAILED' || currentImport?.status === 'CANCELLED') {
         if (
           currentImport.mode === 'LEGACY_SYNC'
@@ -323,51 +299,61 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
         ) {
           throw new OnboardingCommandInvalidStateError('Legacy import attempts cannot be restarted as onboarding preparation.');
         }
-        const retryImport = await ensureImport(userId, {
-          accountId: target.accountId,
-          mode: currentImport.mode,
-          scope: currentImport.scope,
-          requestedFrom: currentImport.requestedFrom,
-          requestedTo: currentImport.requestedTo,
-          retryOfImportRunId: currentImport.id,
-        });
-        importRunId = retryImport.id;
+        importBinding = {
+          kind: 'ENSURE',
+          request: {
+            accountId: target.accountId,
+            mode: currentImport.mode,
+            scope: currentImport.scope,
+            requestedFrom: currentImport.requestedFrom,
+            requestedTo: currentImport.requestedTo,
+            retryOfImportRunId: currentImport.id,
+          },
+        };
       } else if (currentImport && currentImport.status !== 'COMPLETED') {
         throw new OnboardingCommandImportActiveError(currentImport.id);
-      } else if (!currentImport) {
-        const importRun = await ensureImport(userId, {
-          accountId: target.accountId,
-          mode: 'BOUNDED_INITIAL',
-          scope: toAccountImportScope(target.scope),
-          requestedFrom: target.requestedFrom,
-          requestedTo: target.requestedTo,
-        });
-        importRunId = importRun.id;
+      } else if (currentImport) {
+        importBinding = { kind: 'REUSE', importRunId: currentImport.id };
+      } else {
+        importBinding = {
+          kind: 'ENSURE',
+          request: {
+            accountId: target.accountId,
+            mode: 'BOUNDED_INITIAL',
+            scope: toAccountImportScope(target.scope),
+            requestedFrom: target.requestedFrom,
+            requestedTo: target.requestedTo,
+          },
+        };
       }
 
       targets.push({
-        accountId: target.accountId,
-        ordinal: target.ordinal,
-        scopeVersion: target.scopeVersion,
-        scopeHash: target.scopeHash,
-        scope: target.scope,
-        requestedFrom: target.requestedFrom,
-        requestedTo: target.requestedTo,
-        currentImportRunId: importRunId,
+        target: {
+          accountId: target.accountId,
+          ordinal: target.ordinal,
+          scopeVersion: target.scopeVersion,
+          scopeHash: target.scopeHash,
+          scope: target.scope,
+          requestedFrom: target.requestedFrom,
+          requestedTo: target.requestedTo,
+        },
+        importBinding,
       });
     }
 
-    const result = await createPreparation({
+    const result = await admitPreparation({
       userId,
-      purpose: 'RECOVERY',
-      recipeVersion: source.recipeVersion,
-      recipe: {
-        kind: 'ONBOARDING_RECOVERY',
+      preparation: {
+        purpose: 'RECOVERY',
+        recipeVersion: source.recipeVersion,
+        recipe: {
+          kind: 'ONBOARDING_RECOVERY',
+          retryOfRunId: source.id,
+          originalRecipe: source.recipe,
+        },
         retryOfRunId: source.id,
-        originalRecipe: source.recipe,
+        retryGeneration: source.retryGeneration,
       },
-      retryOfRunId: source.id,
-      retryGeneration: source.retryGeneration,
       targets,
     }, (run) => run.purpose === 'RECOVERY' && run.retryOfRunId === source.id);
     return runResponse(result.run, result.idempotent);
@@ -378,19 +364,22 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
     sourceRunId: number,
     body: OnboardingExpandBody,
   ): Promise<OnboardingRunCommandResponse> {
-    let source = await getRun(userId, sourceRunId);
+    const previousExpansion = await repository.findExpansion(userId, sourceRunId, body);
+    if (previousExpansion) return runResponse(previousExpansion, true);
+
+    const source = await getRun(userId, sourceRunId);
     const active = await repository.getActiveRun(userId);
-    if (active?.id === source.id && source.status === 'NEEDS_ATTENTION' && source.attentionCode === 'NO_RECENT_GAMES') {
-      const retired = await repository.completeNoRecentRunForExpansion(userId, source.id, now());
-      if (!retired) {
-        source = await getRun(userId, sourceRunId);
-        if (source.status !== 'COMPLETED') throw new OnboardingCommandActiveRunError(source.id);
-      } else {
-        source = await getRun(userId, sourceRunId);
-      }
-    } else if (active) {
+    const replacesNoRecent = active?.id === source.id
+      && source.status === 'NEEDS_ATTENTION'
+      && source.attentionCode === 'NO_RECENT_GAMES';
+    if (active && !replacesNoRecent) {
       if (isEquivalentExpansion(active, source.id, body)) return runResponse(active, true);
       throw new OnboardingCommandActiveRunError(active.id);
+    }
+    if (!replacesNoRecent && source.status !== 'COMPLETED') {
+      throw new OnboardingCommandInvalidStateError(
+        'Expansion requires completed preparation or the active NO_RECENT_GAMES attention outcome.',
+      );
     }
 
     const sourceTarget = source.targets.find((target) => target.accountId === body.accountId);
@@ -399,29 +388,33 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
     }
 
     const expansion = expansionRequest(sourceTarget ?? null, body, now());
-    const importRun = await ensureImport(userId, expansion.importRequest);
     const scope = canonicalizePreparationScope(expansion.preparationScope);
-    const result = await createPreparation({
+    const result = await admitPreparation({
       userId,
-      purpose: 'EXPANSION',
-      recipeVersion: RECIPE_VERSION,
-      recipe: {
-        kind: 'ONBOARDING_EXPANSION',
-        expansionKind: body.kind,
-        sourceRunId: source.id,
-        accountId: body.accountId,
-        requestedFrom: expansion.importRequest.requestedFrom.toISOString(),
-        requestedTo: expansion.importRequest.requestedTo.toISOString(),
-        importScope: expansion.importRequest.scope,
+      preparation: {
+        purpose: 'EXPANSION',
+        recipeVersion: RECIPE_VERSION,
+        recipe: {
+          kind: 'ONBOARDING_EXPANSION',
+          expansionKind: body.kind,
+          sourceRunId: source.id,
+          accountId: body.accountId,
+          requestedFrom: expansion.importRequest.requestedFrom.toISOString(),
+          requestedTo: expansion.importRequest.requestedTo.toISOString(),
+          importScope: expansion.importRequest.scope,
+        },
       },
       targets: [{
-        accountId: body.accountId,
-        ordinal: 0,
-        ...scope,
-        requestedFrom: expansion.importRequest.requestedFrom,
-        requestedTo: expansion.importRequest.requestedTo,
-        currentImportRunId: importRun.id,
+        target: {
+          accountId: body.accountId,
+          ordinal: 0,
+          ...scope,
+          requestedFrom: expansion.importRequest.requestedFrom,
+          requestedTo: expansion.importRequest.requestedTo,
+        },
+        importBinding: { kind: 'ENSURE', request: expansion.importRequest },
       }],
+      replaceNoRecentRunId: replacesNoRecent ? source.id : null,
     }, (run) => isEquivalentExpansion(run, source.id, body));
     return runResponse(result.run, result.idempotent);
   }
@@ -605,21 +598,10 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-function sameDate(left: Date | null, right: Date): boolean {
-  return left !== null && left.getTime() === right.getTime();
-}
-
 function invalidControlState(action: string, status: string): OnboardingCommandInvalidStateError {
   return new OnboardingCommandInvalidStateError(
     `Cannot ${action} onboarding preparation while it is ${status}.`,
   );
-}
-
-function isUniqueConstraintViolation(error: unknown): boolean {
-  const candidate = error as { code?: unknown; meta?: { code?: unknown }; message?: unknown };
-  return candidate?.code === 'P2002'
-    || candidate?.meta?.code === '23505'
-    || (candidate?.code === 'P2010' && String(candidate?.message ?? '').includes('23505'));
 }
 
 export const OnboardingCommandService = createOnboardingCommandService();
