@@ -53,6 +53,28 @@ describe('GameEvaluationGraphComponent', () => {
     expect(document.activeElement).toBe(points[2]);
   });
 
+  it('keeps graph arrow navigation from also triggering page keyboard shortcuts', () => {
+    const pageKeydown = jasmine.createSpy('pageKeydown');
+    window.addEventListener('keydown', pageKeydown);
+
+    try {
+      const selectedPoint = fixture.nativeElement.querySelector(
+        'circle.point-hit-target[tabindex="0"]',
+      ) as SVGCircleElement;
+      const event = new KeyboardEvent('keydown', {
+        key: 'ArrowRight',
+        bubbles: true,
+        cancelable: true,
+      });
+
+      selectedPoint.dispatchEvent(event);
+
+      expect(pageKeydown).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('keydown', pageKeydown);
+    }
+  });
+
   it('selects the focused point with Space and prevents page scrolling', () => {
     let selectedNodeId: number | undefined;
     fixture.componentInstance.nodeSelected.subscribe((nodeId) => (selectedNodeId = nodeId));
