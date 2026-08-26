@@ -71,6 +71,13 @@ const bodylessActions = new Map([
   ['POST /api/me/account-imports/{importRunId}/resume', 'the import run id selects the persisted paused run to return to the durable queue'],
   ['POST /api/me/account-imports/{importRunId}/cancel', 'the import run id selects the persisted run to cancel'],
   ['POST /api/me/account-imports/{importRunId}/retry', 'the persisted terminal import run supplies the immutable account, scope, range, and retry lineage'],
+  ['POST /api/me/onboarding/skip', 'authenticated user persisted onboarding disposition'],
+  ['POST /api/me/onboarding/runs/{runId}/finish', 'run id selects the persisted finishable attention outcome'],
+  ['POST /api/me/onboarding/runs/{runId}/pause', 'run id selects the persisted preparation whose quiescent pause is requested'],
+  ['POST /api/me/onboarding/runs/{runId}/resume', 'run id selects the persisted paused preparation to return to active reconciliation'],
+  ['POST /api/me/onboarding/runs/{runId}/cancel', 'run id selects the persisted preparation whose acknowledged cancellation is requested'],
+  ['POST /api/me/onboarding/runs/{runId}/retry', 'run id selects persisted failed preparation evidence eligible for a retry generation'],
+  ['POST /api/me/onboarding/runs/{runId}/restart', 'run id supplies the persisted immutable preparation scope and recovery lineage'],
 ]);
 
 for (const { method, path, operation } of operations.filter(({ method }) => ['post', 'patch', 'put'].includes(method))) {
