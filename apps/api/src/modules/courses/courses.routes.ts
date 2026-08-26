@@ -40,6 +40,7 @@ import {
   createCourseSchema,
   libraryCatalogSchema,
   lineListSchema,
+  lineMoveNodeSchema,
   lineMoveTreeSchema,
   lineSchema,
   updateCourseSchema,
@@ -49,6 +50,7 @@ import type {
   CourseCoverKey,
   CourseSide,
   Line as CourseLine,
+  LineMoveNode,
   LineMoveTree,
   LineMoveTreeNode,
 } from '@chess-trainer/contracts/courses';
@@ -140,43 +142,49 @@ function lineResponse(line: {
   };
 }
 
-type MoveTreeNodeSource = {
-  node: {
-    id: number;
-    lineId: number;
-    parentId?: number | null;
-    plyNumber: number;
-    fenBefore: string;
-    fenBeforeNormalized?: string | null;
-    fenAfter: string;
-    moveUci: string;
-    moveSan: string;
-    moveNumber: number;
-    colorToMoveBefore: string;
-    side: string;
-    isUserMove: boolean;
-    isCorrectUserMove: boolean;
-    comment?: string | null;
-    annotation?: string | null;
-    branchLabel?: string | null;
-    branchWeight?: number | null;
-    sortOrder: number;
-    createdAt: Date;
-    updatedAt: Date;
+type MoveNodeSource = {
+  id: number;
+  lineId: number;
+  parentId?: number | null;
+  plyNumber: number;
+  fenBefore: string;
+  fenBeforeNormalized?: string | null;
+  fenAfter: string;
+  moveUci: string;
+  moveSan: string;
+  moveNumber: number;
+  colorToMoveBefore: string;
+  side: string;
+  isUserMove: boolean;
+  isCorrectUserMove: boolean;
+  comment?: string | null;
+  annotation?: string | null;
+  branchLabel?: string | null;
+  branchWeight?: number | null;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+function moveNodeResponse(node: MoveNodeSource): LineMoveNode {
+  return {
+    ...node,
+    parentId: node.parentId ?? null,
+    colorToMoveBefore: node.colorToMoveBefore as CourseSide,
+    side: node.side as CourseSide,
+    createdAt: node.createdAt.toISOString(),
+    updatedAt: node.updatedAt.toISOString(),
   };
+}
+
+type MoveTreeNodeSource = {
+  node: MoveNodeSource;
   children: MoveTreeNodeSource[];
 };
 
 function lineMoveTreeResponse(tree: { root: MoveTreeNodeSource }): LineMoveTree {
   const nodeResponse = (entry: MoveTreeNodeSource): LineMoveTreeNode => ({
-    node: {
-      ...entry.node,
-      parentId: entry.node.parentId ?? null,
-      colorToMoveBefore: entry.node.colorToMoveBefore as CourseSide,
-      side: entry.node.side as CourseSide,
-      createdAt: entry.node.createdAt.toISOString(),
-      updatedAt: entry.node.updatedAt.toISOString(),
-    },
+    node: moveNodeResponse(entry.node),
     children: entry.children.map(nodeResponse),
   });
 
@@ -628,7 +636,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     schema: courseRouteSchema('createLineNode', ['Lines'], 'Add a move node to a repertoire line', {
       params: lineIdParamsSchema,
       body: createNodeSchema,
-      response: { 201: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+      response: { 201: lineMoveNodeSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -636,7 +644,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     const lineId = request.params.lineId;
     try {
       const node = await MoveNodeService.create(auth.userId, lineId, request.body);
-      return reply.status(201).send(node);
+      return reply.status(201).send(moveNodeResponse(node));
     } catch (err: any) {
       if (err.message === 'Line not found' || err.message === 'Parent node not found') {
         return reply.status(404).send({ error: err.message });
@@ -649,7 +657,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     schema: courseRouteSchema('updateMoveNode', ['Lines'], 'Update one move node', {
       params: idParamsSchema,
       body: updateNodeSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+      response: { 200: lineMoveNodeSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: messageResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -658,7 +666,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     try {
       const node = await MoveNodeService.update(auth.userId, id, request.body);
       if (!node) return reply.status(404).send({ message: 'Node not found' });
-      return node;
+      return moveNodeResponse(node);
     } catch (err: any) {
       return reply.status(400).send({ error: err.message });
     }

@@ -8,11 +8,11 @@ import {
   CreateLinePayload,
   ImportLinePgnPayload,
   LineListResource,
+  LineNodeResource,
   LineResource,
   LineTransferTargetChapter,
   LineTransferTargetCourse,
   LineTrainingSession,
-  LineTreeNodeData,
   LineTreeResource,
   MarathonMode,
   MarathonNextRequest,
@@ -88,12 +88,12 @@ export class LinesApiService {
     return this.api.get<LineTreeResource>(`/lines/${lineId}/tree`);
   }
 
-  createLineNode(lineId: number, body: CreateLineNodePayload): Observable<LineTreeNodeData> {
-    return this.api.post<LineTreeNodeData>(`/lines/${lineId}/nodes`, body);
+  createLineNode(lineId: number, body: CreateLineNodePayload): Observable<LineNodeResource> {
+    return this.api.post<LineNodeResource>(`/lines/${lineId}/nodes`, body);
   }
 
-  updateLineNode(nodeId: number, body: UpdateLineNodePayload): Observable<LineTreeNodeData> {
-    return this.api.patch<LineTreeNodeData>(`/nodes/${nodeId}`, body);
+  updateLineNode(nodeId: number, body: UpdateLineNodePayload): Observable<LineNodeResource> {
+    return this.api.patch<LineNodeResource>(`/nodes/${nodeId}`, body);
   }
 
   deleteLineNodeSubtree(nodeId: number): Observable<void> {

@@ -37,6 +37,7 @@ export type ActiveTrainingStats = ActiveTrainingStatsDto;
 
 export type LineResource = CourseLine;
 export type LineListResource = LineListItem;
+export type LineNodeResource = LineMoveNode;
 export type LineTreeResource = CourseLineMoveTree;
 
 export type LineRowTrainingStats = LineListResource['trainingStats'];
