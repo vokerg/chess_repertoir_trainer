@@ -8,6 +8,7 @@ import type {
   OnboardingExpandBody,
   OnboardingRunCommandResponse,
 } from '@chess-trainer/contracts/onboarding';
+import { AccountImportAdmissionBlockedError } from '../account-imports/account-import-admission.guard';
 import {
   AccountImportAccountNotFoundError,
   AccountImportActiveRunError,
@@ -158,6 +159,9 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
       if (error instanceof AccountImportAccountNotFoundError) {
         throw new OnboardingCommandAccountNotFoundError();
       }
+      if (error instanceof AccountImportAdmissionBlockedError) {
+        throw new OnboardingCommandInvalidStateError(error.message);
+      }
       if (!(error instanceof AccountImportActiveRunError)) throw error;
       const raced = await accountImportRepository.getActiveRunForAccount(userId, request.accountId);
       if (raced && matches(raced)) return raced;
@@ -207,12 +211,11 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
       requestedTo: range.to,
     });
     const preparationScope = canonicalizePreparationScope(DEFAULT_PREPARATION_SCOPE);
-    const recipe = defaultRecipe(accountId, range.from, range.to);
     const result = await createPreparation({
       userId,
       purpose: 'ONBOARDING',
       recipeVersion: RECIPE_VERSION,
-      recipe,
+      recipe: defaultRecipe(accountId, range.from, range.to),
       targets: [{
         accountId,
         ordinal: 0,
@@ -329,14 +332,13 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
           retryOfImportRunId: currentImport.id,
         });
         importRunId = retryImport.id;
-      } else if (currentImport && !['COMPLETED'].includes(currentImport.status)) {
+      } else if (currentImport && currentImport.status !== 'COMPLETED') {
         throw new OnboardingCommandImportActiveError(currentImport.id);
       } else if (!currentImport) {
-        const scope = toAccountImportScope(target.scope);
         const importRun = await ensureImport(userId, {
           accountId: target.accountId,
           mode: 'BOUNDED_INITIAL',
-          scope,
+          scope: toAccountImportScope(target.scope),
           requestedFrom: target.requestedFrom,
           requestedTo: target.requestedTo,
         });
@@ -396,7 +398,7 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
       throw new OnboardingCommandInvalidStateError('Expansion account is not part of the source preparation run.');
     }
 
-    const expansion = expansionRequest(source, sourceTarget ?? null, body, now());
+    const expansion = expansionRequest(sourceTarget ?? null, body, now());
     const importRun = await ensureImport(userId, expansion.importRequest);
     const scope = canonicalizePreparationScope(expansion.preparationScope);
     const result = await createPreparation({
@@ -455,9 +457,10 @@ function defaultRange(observedAt: Date): { from: Date; to: Date } {
     observedAt.getUTCMonth(),
     observedAt.getUTCDate(),
   ));
-  const from = shiftUtcCalendarMonths(start, -3);
-  const to = new Date(start.getTime() + 24 * 60 * 60_000);
-  return { from, to };
+  return {
+    from: shiftUtcCalendarMonths(start, -3),
+    to: new Date(start.getTime() + 24 * 60 * 60_000),
+  };
 }
 
 function shiftUtcCalendarMonths(value: Date, months: number): Date {
@@ -488,7 +491,6 @@ function defaultRecipe(accountId: number, requestedFrom: Date, requestedTo: Date
 }
 
 function expansionRequest(
-  source: OnboardingCommandRunRecord,
   sourceTarget: OnboardingCommandTargetRecord | null,
   body: OnboardingExpandBody,
   observedAt: Date,
@@ -527,12 +529,11 @@ function expansionRequest(
 
   const requestedTo = sourceTarget.requestedFrom;
   const requestedFrom = shiftUtcCalendarMonths(requestedTo, -3);
-  const accountScope = toAccountImportScope(sourceTarget.scope);
   return {
     importRequest: {
       accountId: body.accountId,
       mode: 'HISTORICAL_BACKFILL',
-      scope: accountScope,
+      scope: toAccountImportScope(sourceTarget.scope),
       requestedFrom,
       requestedTo,
     },
@@ -592,10 +593,10 @@ function isEquivalentExpansion(
 ): boolean {
   const recipe = asRecord(run.recipe);
   return run.purpose === 'EXPANSION'
-    && recipe?.kind === 'ONBOARDING_EXPANSION'
-    && recipe?.sourceRunId === sourceRunId
-    && recipe?.expansionKind === body.kind
-    && recipe?.accountId === body.accountId;
+    && recipe?.['kind'] === 'ONBOARDING_EXPANSION'
+    && recipe?.['sourceRunId'] === sourceRunId
+    && recipe?.['expansionKind'] === body.kind
+    && recipe?.['accountId'] === body.accountId;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
