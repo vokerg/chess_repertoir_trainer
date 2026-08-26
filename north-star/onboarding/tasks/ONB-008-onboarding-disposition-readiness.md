@@ -1,6 +1,6 @@
 # ONB-008 — Persist onboarding disposition and readiness projection
 
-Status: REVIEW
+Status: DONE
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 80
 
 Delivery class: Implementation
 
-Planning maturity: Decisioned by ONB-001/003/007/016; ONB-017/018 execution state and durable import/provider delivery are complete; implementation is now under review in PR #398
+Planning maturity: Delivered through PR #398 after adversarial self-review; final runtime head `d303c692883f9d7354167c7618853a76f80022c9` passed CI #3149 (`32653248564`) before squash merge
 
 GitHub issue: [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193)
 
@@ -28,7 +28,7 @@ Persist the minimal user onboarding disposition and expose the bounded readiness
 
 ## Why this task exists
 
-Authentication, accounts, imports, imported-game jobs, Home, and feature pages currently infer partial setup facts independently. A durable disposition and bounded read model are required before lifecycle commands or Angular onboarding can be correct across sessions and devices.
+Authentication, accounts, imports, imported-game jobs, Home, and feature pages previously inferred partial setup facts independently. A durable disposition and bounded read model are required so lifecycle commands and Angular onboarding can be correct across sessions and devices.
 
 ONB-017/018 own the physical `DataPreparationRun`, target, batch, and reconciler implementation. This task consumes that execution state rather than duplicating it.
 
@@ -103,14 +103,18 @@ ONB-017/018 own the physical `DataPreparationRun`, target, batch, and reconciler
 
 ## Completion
 
-Report: `north-star/onboarding/reports/ONB-008-2026-08-23-onboarding-readiness-projection.md`
+Implementation report: `north-star/onboarding/reports/ONB-008-2026-08-23-onboarding-readiness-projection.md`
 
-Pull request: [#398](https://github.com/vokerg/chess_repertoir_trainer/pull/398)
+Runtime pull request: [#398](https://github.com/vokerg/chess_repertoir_trainer/pull/398)
 
-Initial implementation head: `df009f1a1e242a3a11b4b61eb08f41a1dc91cb85`
+Final runtime head: `d303c692883f9d7354167c7618853a76f80022c9`
 
-Latest self-review scope: final review includes current-main refresh plus import-link ownership hardening; exact reviewed head is recorded in PR #398 validation metadata.
+Runtime validation: CI #3149 / run `32653248564` passed the exact final head, including dependency audit, lint, full build, architecture/repository guardrails, migration chain, imported-game audits, and complete repository tests.
 
-Validation: GitHub Actions is the merge-readiness gate for this connector-only implementation; the current branch head must pass dependency audit, lint, build, opening audits, architecture/repository guardrails, the full migration chain, imported-game audits, and the complete test suite.
+Runtime squash commit: `512c248689f41a1164be3da63dc22cc97041614b`
 
-Completed at: none — task remains `REVIEW` until accepted merge/completion reconciliation.
+Completion reconciliation: `north-star/onboarding/reports/ONB-008-2026-08-26-completion-reconciliation.md`
+
+Issue #193 closed completed automatically with the accepted runtime merge on 2026-08-23.
+
+Completed at: 2026-08-26
