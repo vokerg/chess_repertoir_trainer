@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from '@prisma/client';
+import type { OnboardingExpandBody } from '@chess-trainer/contracts/onboarding';
 import prisma from '../../prisma';
 import type {
   PreparationPurpose,
@@ -91,15 +92,21 @@ export interface OnboardingCommandDispositionRecord {
 
 export interface OnboardingCommandRepository {
   getRun(userId: number, runId: number): Promise<OnboardingCommandRunRecord | null>;
+  getLatestRun(userId: number): Promise<OnboardingCommandRunRecord | null>;
   getActiveRun(userId: number): Promise<OnboardingCommandRunRecord | null>;
+  findRecoveryForSource(userId: number, sourceRunId: number): Promise<OnboardingCommandRunRecord | null>;
+  findExpansion(
+    userId: number,
+    sourceRunId: number,
+    body: OnboardingExpandBody,
+  ): Promise<OnboardingCommandRunRecord | null>;
   getDisposition(userId: number): Promise<OnboardingCommandDispositionRecord>;
   skip(userId: number, changedAt: Date): Promise<OnboardingCommandDispositionRecord>;
-  finishNoRecentGames(
+  finishWithAttention(
     userId: number,
     runId: number,
     changedAt: Date,
   ): Promise<OnboardingCommandDispositionRecord | null>;
-  completeNoRecentRunForExpansion(userId: number, runId: number, completedAt: Date): Promise<boolean>;
 }
 
 export function createOnboardingCommandRepository(
@@ -109,49 +116,54 @@ export function createOnboardingCommandRepository(
     async getRun(userId, runId) {
       assertPositiveId(userId, 'userId');
       assertPositiveId(runId, 'runId');
-      const rows = await database.$queryRaw<RunRow[]>(Prisma.sql`
-        SELECT
-          "id",
-          "userId",
-          "purpose",
-          "status",
-          "recipeVersion",
-          "recipeJson",
-          "retryOfRunId",
-          "retryGeneration",
-          "attentionCode",
-          "coreReadyAt",
-          "createdAt"
-        FROM "DataPreparationRun"
-        WHERE "id" = ${runId}
-          AND "userId" = ${userId}
-        LIMIT 1
+      const row = await findRunRow(database, Prisma.sql`
+        "id" = ${runId}
+        AND "userId" = ${userId}
       `);
-      return rows[0] ? hydrateRun(database, rows[0]) : null;
+      return row ? hydrateRun(database, row) : null;
+    },
+
+    async getLatestRun(userId) {
+      assertPositiveId(userId, 'userId');
+      const row = await findRunRow(database, Prisma.sql`"userId" = ${userId}`);
+      return row ? hydrateRun(database, row) : null;
     },
 
     async getActiveRun(userId) {
       assertPositiveId(userId, 'userId');
-      const rows = await database.$queryRaw<RunRow[]>(Prisma.sql`
-        SELECT
-          "id",
-          "userId",
-          "purpose",
-          "status",
-          "recipeVersion",
-          "recipeJson",
-          "retryOfRunId",
-          "retryGeneration",
-          "attentionCode",
-          "coreReadyAt",
-          "createdAt"
-        FROM "DataPreparationRun"
-        WHERE "userId" = ${userId}
-          AND "status" IN (${Prisma.join(NON_TERMINAL_PREPARATION_STATUSES.map((status) => Prisma.sql`${status}`))})
-        ORDER BY "createdAt" DESC, "id" DESC
-        LIMIT 1
+      const row = await findRunRow(database, Prisma.sql`
+        "userId" = ${userId}
+        AND "status" IN (${Prisma.join(NON_TERMINAL_PREPARATION_STATUSES.map((status) => Prisma.sql`${status}`))})
       `);
-      return rows[0] ? hydrateRun(database, rows[0]) : null;
+      return row ? hydrateRun(database, row) : null;
+    },
+
+    async findRecoveryForSource(userId, sourceRunId) {
+      assertPositiveId(userId, 'userId');
+      assertPositiveId(sourceRunId, 'sourceRunId');
+      const row = await findRunRow(database, Prisma.sql`
+        "userId" = ${userId}
+        AND "purpose" = 'RECOVERY'
+        AND "retryOfRunId" = ${sourceRunId}
+      `);
+      return row ? hydrateRun(database, row) : null;
+    },
+
+    async findExpansion(userId, sourceRunId, body) {
+      assertPositiveId(userId, 'userId');
+      assertPositiveId(sourceRunId, 'sourceRunId');
+      const recipeKey = JSON.stringify({
+        kind: 'ONBOARDING_EXPANSION',
+        expansionKind: body.kind,
+        sourceRunId,
+        accountId: body.accountId,
+      });
+      const row = await findRunRow(database, Prisma.sql`
+        "userId" = ${userId}
+        AND "purpose" = 'EXPANSION'
+        AND "recipeJson" @> ${recipeKey}::jsonb
+      `);
+      return row ? hydrateRun(database, row) : null;
     },
 
     async getDisposition(userId) {
@@ -188,7 +200,7 @@ export function createOnboardingCommandRepository(
       return rows[0] ? mapDisposition(rows[0]) : this.getDisposition(userId);
     },
 
-    async finishNoRecentGames(userId, runId, changedAt) {
+    async finishWithAttention(userId, runId, changedAt) {
       assertPositiveId(userId, 'userId');
       assertPositiveId(runId, 'runId');
       const rows = await database.$queryRaw<DispositionRow[]>(Prisma.sql`
@@ -218,27 +230,29 @@ export function createOnboardingCommandRepository(
       const current = await this.getDisposition(userId);
       return current.disposition === 'COMPLETED' ? current : null;
     },
-
-    async completeNoRecentRunForExpansion(userId, runId, completedAt) {
-      assertPositiveId(userId, 'userId');
-      assertPositiveId(runId, 'runId');
-      const changed = await database.$executeRaw(Prisma.sql`
-        UPDATE "DataPreparationRun"
-        SET "status" = 'COMPLETED',
-            "attentionCode" = NULL,
-            "attentionDetail" = NULL,
-            "analysisCompletedAt" = COALESCE("analysisCompletedAt", ${completedAt}),
-            "completedAt" = COALESCE("completedAt", ${completedAt}),
-            "reconcileAfter" = NULL,
-            "updatedAt" = ${completedAt}
-        WHERE "id" = ${runId}
-          AND "userId" = ${userId}
-          AND "status" = 'NEEDS_ATTENTION'
-          AND "attentionCode" = 'NO_RECENT_GAMES'
-      `);
-      return changed === 1;
-    },
   };
+}
+
+async function findRunRow(database: PrismaClient, predicate: Prisma.Sql): Promise<RunRow | null> {
+  const rows = await database.$queryRaw<RunRow[]>(Prisma.sql`
+    SELECT
+      "id",
+      "userId",
+      "purpose",
+      "status",
+      "recipeVersion",
+      "recipeJson",
+      "retryOfRunId",
+      "retryGeneration",
+      "attentionCode",
+      "coreReadyAt",
+      "createdAt"
+    FROM "DataPreparationRun"
+    WHERE ${predicate}
+    ORDER BY "createdAt" DESC, "id" DESC
+    LIMIT 1
+  `);
+  return rows[0] ?? null;
 }
 
 async function hydrateRun(
