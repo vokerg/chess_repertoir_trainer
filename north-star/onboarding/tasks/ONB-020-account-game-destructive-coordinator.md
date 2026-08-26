@@ -1,6 +1,6 @@
 # ONB-020 — Implement account and imported-game destructive lifecycle coordinator
 
-Status: PROPOSED
+Status: READY
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 170
 
 Delivery class: Implementation
 
-Planning maturity: Allocated by ONB-004; blocked on lifecycle, durable import, and preparation foundations
+Planning maturity: Allocated by ONB-004; ONB-019 lifecycle foundation, durable import/account-sync cutover, and preparation foundations are delivered; ready for claim after a fresh collision check
 
 GitHub issue: [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260)
 
@@ -20,17 +20,19 @@ Claimed at: none
 
 Claim scope: none
 
+Promoted at: 2026-08-26 through merged-task completion reconciliation
+
 ## Outcome
 
-Implement restart-safe un-analysis, un-indexing, account-data purge, and external-account deletion over the ONB-004 contract and ONB-019 operation/fence/audit foundation.
+Implement restart-safe un-analysis, un-indexing, account-data purge, and external-account deletion over the ONB-004 contract and delivered ONB-019 operation/fence/audit foundation.
 
 ## Dependencies
 
-- ONB-004 / #151 accepted, including both self-review addenda.
-- ONB-019 / #259 operation, fence, synchronous commit guard, failure-state, audit, and provenance foundation.
-- ONB-011/012 durable import lifecycle and ONB-015 sync cutover.
-- ONB-017/018 preparation persistence/control for parent and child cancellation acknowledgement.
-- ONB-005 before administrator mutation exposure.
+- ONB-004 / #151 accepted, including both self-review addenda — complete.
+- ONB-019 / #259 operation, fence, synchronous commit guard, failure-state, audit, and provenance foundation — complete through PR #386.
+- ONB-011/012 durable import lifecycle and ONB-015 sync cutover — complete.
+- ONB-017/018 preparation persistence/control for parent and child cancellation acknowledgement — complete.
+- ONB-005 before administrator mutation exposure — complete as policy input; administrator adapters remain ONB-024-owned.
 - Consumed by ONB-021 / #261.
 
 ## In scope
@@ -91,6 +93,10 @@ Implement restart-safe un-analysis, un-indexing, account-data purge, and externa
 - Account purge retained-terminal-run/current-coverage separation test.
 - Account delete terminal-run cascade plus audit-snapshot test.
 - Large-account batch and database-pressure tests.
+
+## Claim rule
+
+Before claim, re-inspect current Prisma migrations, lifecycle repository/service contracts, ONB-015 account routes, preparation drain projections, and any active lifecycle branches. Preserve the ONB-019 lock order and transactional destructive-entrypoint conventions.
 
 ## Completion
 
