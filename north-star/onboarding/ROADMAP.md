@@ -1,12 +1,12 @@
 # Onboarding and Data Lifecycle Roadmap
 
-Last updated: 2026-08-24
+Last updated: 2026-08-26
 
 Program: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
-This roadmap summarizes current delivery order. Detailed historical decisions and validation live in task files, `DECISIONS.md`, and append-only reports.
+This roadmap summarizes current delivery order. Detailed historical decisions and validation live in task files, `DECISIONS.md`, `OPEN_QUESTIONS.md`, and append-only reports.
 
-## Critical path
+## Product/onboarding critical path
 
 ```text
 ONB-001 lifecycle/default recipe — DONE
@@ -17,190 +17,146 @@ ONB-003 progressive preparation orchestration — DONE
         +
 ONB-007 throughput/progress evidence — DONE
         ↓
-ONB-011 import persistence/coverage — DONE
+ONB-011/012 durable import persistence + worker/API — DONE
         +
-ONB-017 preparation execution persistence/batches — DONE
-        ↓
-ONB-012 import worker/API lifecycle — DONE
-        ↓
-ONB-013 Lichess adapter + ONB-014 Chess.com adapter — DONE
+ONB-013/014 provider adapters — DONE
         +
-ONB-018 preparation reconciliation/control — DONE
+ONB-017/018 preparation execution + reconciliation — DONE
         ↓
-ONB-008 disposition/readiness projection — READY
+ONB-008 disposition/readiness projection — DONE
         ↓
-ONB-009 lifecycle commands — PROPOSED
+ONB-009 lifecycle commands — READY
         ↓
-ONB-010 functional onboarding and Home re-entry — PROPOSED
+ONB-010 functional onboarding/Home re-entry — PROPOSED
         +
 ONB-016 lightweight experience blueprint — DONE
         ↓
-Visual/accessibility integration with #133
+Visual/accessibility integration
         ↓
 Production onboarding release
 ```
 
-ONB-015 / #203 is in `REVIEW` on PR #400 for the account-sync/preparation cutover. It remains an integration lane alongside the product-projection path and preserves ONB-020 ownership of destructive execution.
+ONB-008 runtime PR #398 is merged as `512c248689f41a1164be3da63dc22cc97041614b`. The next deterministic product-path implementation is ONB-009.
 
-ONB-025 / #276 remains a post-ONB-015 stale-account-refresh follow-up and does not gate initial onboarding release.
+## Account-sync lane
 
-## Supporting administration and data-lifecycle path
+```text
+ONB-011/012 durable import foundation — DONE
+        +
+ONB-013/014 provider adapters — DONE
+        +
+ONB-017/018 preparation handoff foundation — DONE
+        ↓
+ONB-015 account-sync cutover/preparation handoff — DONE
+        ↓
+ONB-025 authenticated stale-account refresh trigger — READY
+```
+
+ONB-015 runtime PR #400 is merged as `c89442fbe8945854f0d6d7545e947beb7bebccfe`. Normal account refresh now durably accepts background imports rather than traversing providers inside the request. ONB-025 is an opportunistic return-to-app trigger, not a cron guarantee.
+
+## Destructive lifecycle and cleanup lane
 
 ```text
 ONB-004 destructive invariants — DONE
         +
-ONB-005 administrator architecture — DONE
-        ├──────────────→ ONB-022 server authorization/read-only diagnostics — DONE
-        │                              ↓
-        │                    ONB-023 Angular diagnostics — DONE
-        │
-        └→ ONB-019 operation/fence/audit/provenance foundation — READY
-                               ↓
-                    ONB-020 account/game coordinator — PROPOSED
-                               ↓
-                    ONB-021 whole-user/mobile purge — PROPOSED
-                               +
-                    ONB-006 cleanup research — DONE
-                               ↓
-                    ONB-026 bounded orphan cleanup implementation — PROPOSED
-                               ↓
-                    ONB-024 administrator lifecycle adapters — PROPOSED
+ONB-019 operation/fence/audit/provenance foundation — DONE
+        ↓
+ONB-020 account/game destructive coordinator — READY
+        ↓
+ONB-021 whole-user/mobile purge — PROPOSED
+
+ONB-006 cleanup design — DONE
+        +
+ONB-007 transaction/lock budgets — DONE
+        +
+ONB-019 lifecycle conventions — DONE
+        ↓
+ONB-026 bounded orphan shared-position cleanup — READY
 ```
 
-ONB-019 remains independently claimable after a fresh schema/migration collision check. ONB-024 must consume canonical lifecycle/cleanup services and proven signed reverification rather than create parallel mutation semantics.
+ONB-019 runtime PR #386 is merged as `d9175c5d60448399b7297393afc55db747717ce2`. It supplies durable operations/fences/audit and guarded commit primitives; ONB-020 still owns destructive row execution and final account DELETE/reset compatibility cutover.
 
-## Phase 0 — Program foundation
+ONB-026 remains a separate shared-position maintenance service. Its `READY` state does not waive the required claim-time schema/migration collision check or deployed PostgreSQL transition-relation compatibility verification.
 
-Status: `DONE`.
+## Administrator lane
 
-Delivered canonical planning workspace, master plan, decisions/open questions, execution rules, and issue mapping.
+```text
+ONB-005 administrator architecture — DONE
+        ↓
+ONB-022 server authorization/read-only diagnostics — DONE
+        ↓
+ONB-023 Angular diagnostics — DONE
+        ↓
+ONB-024 administrator lifecycle adapters — PROPOSED
+```
 
-## Phase 1 — Research and contracts
+ONB-024 must remain a thin adapter over the canonical lifecycle/cleanup services and proven signed reverification. It must not create an administrator-only mutation state machine.
 
-Status: `DONE`.
+## Phase status
 
-Completed research/product tasks:
+### Phase 0 — Program foundation
 
-- ONB-001 / #148 — lifecycle/default recipe.
-- ONB-002 / #149 — bounded import/backfill.
-- ONB-003 / #150 — preparation orchestration.
-- ONB-004 / #151 — destructive lifecycle.
-- ONB-005 / #152 — administrator architecture.
-- ONB-006 / #153 — orphan cleanup.
-- ONB-007 / #154 — throughput/progress.
-- ONB-016 / #224 — lightweight product/experience blueprint.
+`DONE` — canonical planning workspace, master plan, decisions/open questions, execution rules, and issue mapping.
 
-The accepted contracts establish repeatable preparation runs, exact coverage, bounded child jobs, acknowledged controls, truthful progress/no public ETA, durable destructive-fence semantics, administrator authorization boundaries, and a separate database-only orphan-cleanup path.
+### Phase 1 — Research and contracts
 
-## Phase 2 — Durable account-import foundation
+`DONE` — lifecycle/default recipe, bounded import/backfill, preparation orchestration, destructive lifecycle, administration, cleanup, throughput/progress, and lightweight experience blueprint.
 
-Status: `DONE`.
+### Phase 2 — Durable account-import foundation
 
-Delivered:
+`DONE` — ONB-011/012.
 
-- ONB-011 / #199 — durable import persistence/contracts/coverage.
-- ONB-012 / #200 — authenticated API and restart-safe provider worker lifecycle.
+### Phase 3 — Provider adapters
 
-Key properties: immutable mode/source/scope/range, exact account/scope coverage, one non-terminal import per account, claim/heartbeat/fencing/stale recovery, pause/cancel/retry, bounded persistence, and drainable work.
+`DONE` — ONB-013/014, including the bounded real Chess.com canary evidence recorded by ONB-014.
 
-## Phase 3 — Provider adapters
+### Phase 4 — Preparation execution core
 
-Status: `DONE`.
+`DONE` — ONB-017/018.
 
-Delivered:
-
-- ONB-013 / #201 — bounded Lichess adapter.
-- ONB-014 / #202 — bounded Chess.com adapter with successful real low-volume canary.
-
-Provider work is serial and bounded, coverage advances conservatively, and failed/incomplete windows are replayable.
-
-## Phase 4 — Preparation execution core
-
-Status: `DONE`.
-
-Delivered:
-
-- ONB-017 / #253 — preparation parent/target/batch persistence, server-side candidate selection, globally serialized bounded admission, retained child evidence.
-- ONB-018 / #254 — bounded reconciliation loop, committed-import pipelining, first-analysis lane/fallback, stage fairness, exact milestones/core readiness, restart-safe controls/retry, persisted wake hints, retention reconciliation, and stall telemetry.
-
-ONB-018 runtime PR #385 squash-merged as `9b0293271a2c1a9f24a77939e828c3ee1aca8ffd`. Final reviewed head `4e3a3a4ea6f3f0f798d52e08830d051ad13c7b95` passed CI #2998 (`32041962372`).
-
-Phase exit achieved:
-
-- browser presence is not required for preparation to advance;
-- current game/import evidence is authoritative;
-- direct-user jobs remain ahead of preparation work;
-- queue/admission is bounded;
-- core readiness does not wait for full analysis;
-- failed work is not automatically retried forever;
-- no public ETA is introduced.
-
-## Phase 5 — Product projection and lifecycle commands
+### Phase 5 — Product projection and lifecycle commands
 
 Current state:
 
-- **ONB-008 / #193 — `READY`** — persist user disposition and expose one server-owned readiness/presentation projection with exact counts, milestones, deterministic actions, and feature-specific readiness.
-- ONB-009 / #194 — `PROPOSED` — authenticated start/pause/resume/cancel/retry/restart/expansion commands after ONB-008 contracts are settled; destructive commands remain ONB-019/020/021-owned.
+- ONB-008 / #193 — `DONE`.
+- **ONB-009 / #194 — `READY`.**
 
-Exit:
+Exit requires authenticated/idempotent lifecycle commands over the delivered projection/execution state without a second browser state machine.
 
-- clients consume one deterministic onboarding projection;
-- lifecycle commands are authenticated/idempotent and restore correctly after reload/restart;
-- product actions do not infer a second lifecycle state machine.
-
-## Phase 6 — Account-sync cutover and functional onboarding
+### Phase 6 — Account-sync cutover and functional onboarding
 
 Current state:
 
-- **ONB-015 / #203 — `REVIEW`** — PR #400 replaces normal synchronous provider traversal with durable import acceptance/status and connects account UI to persisted background execution/preparation handoff; final acceptance/merge is still pending.
-- ONB-010 / #195 — `PROPOSED` — functional `/onboarding` and Home re-entry after ONB-008/009.
-- ONB-025 / #276 — `PROPOSED` — authenticated stale-account refresh after ONB-015.
+- ONB-015 / #203 — `DONE`.
+- ONB-010 / #195 — `PROPOSED` behind ONB-009.
+- **ONB-025 / #276 — `READY`** as a bounded post-cutover follow-up.
 
-Exit:
-
-- no normal account HTTP route performs synchronous provider traversal;
-- no all-game/candidate ID arrays cross the API/browser boundary for preparation;
-- active import/preparation state survives navigation/reload/device changes;
-- onboarding is functional and accessible before final Visual Transformation polish.
-
-## Phase 7 — Destructive lifecycle and cleanup
+### Phase 7 — Destructive lifecycle and cleanup
 
 Current state:
 
-- **ONB-019 / #259 — `READY`** — durable operation/fence/audit/provenance foundation.
-- ONB-020 / #260 — `PROPOSED` — account/game un-analysis, un-index, purge, delete coordinator.
-- ONB-021 / #261 — `PROPOSED` — whole-user deletion/mobile purge handshake.
-- ONB-026 / #280 — `PROPOSED` — bounded orphan shared-position cleanup.
+- ONB-019 / #259 — `DONE`.
+- **ONB-020 / #260 — `READY`.**
+- ONB-021 / #261 — `PROPOSED` behind ONB-020.
+- **ONB-026 / #280 — `READY`** with mandatory claim-time environment/migration checks.
 
-Exit:
-
-- destructive work is previewed, fenced, idempotent, audited, restart-safe, and bounded;
-- stale provider/job/synchronous writers cannot commit after the relevant fence;
-- shared Position cleanup remains database-proved and separate from account/user purge.
-
-## Phase 8 — Administrator lifecycle controls
+### Phase 8 — Administrator lifecycle controls
 
 Current state:
 
 - ONB-022 / #272 — `DONE`.
 - ONB-023 / #273 — `DONE`.
-- ONB-024 / #274 — `PROPOSED` behind canonical lifecycle services and proven signed reverification.
-
-Exit:
-
-- administrator mutation UI/API are thin adapters over canonical lifecycle services;
-- no second destructive execution path exists;
-- recent-auth/reverification evidence is server-verified and one-use where required.
+- ONB-024 / #274 — `PROPOSED` behind applicable canonical lifecycle services and proven signed reverification.
 
 ## Operational constraints carried forward
 
-- no weighted overall preparation percentage while import can discover work;
-- no public ETA until ONB-007 production-telemetry eligibility gates are satisfied;
-- preparation remains below direct-user priority;
-- provider I/O and Stockfish execution stay outside long database transactions;
-- lifecycle/cleanup work uses bounded transaction sizes and must prove lock/query behavior before increases;
-- shared `Position`, `PositionAnalysis`, and caches are not opportunistically deleted by account/user lifecycle operations.
+- No weighted overall preparation percentage while import can discover work.
+- No public ETA until ONB-007 production-telemetry eligibility gates are satisfied.
+- Provider I/O and Stockfish/LLM execution stay outside long database transactions and lifecycle guards.
+- Destructive/cleanup work uses bounded transaction sizes, deterministic checkpoints, and measured lock/query behavior.
+- Shared `Position`, `PositionAnalysis`, and caches are not opportunistically deleted by account/user lifecycle operations.
+- Browser state is not authoritative for durable import, preparation, onboarding, or destructive lifecycle state.
 
 ## Next deterministic action
 
-ONB-008 / #193 remains the lowest-order task recorded as unclaimed `READY` in the canonical queue. ONB-015 / #203 is already claimed and in `REVIEW` on PR #400; ONB-019 / #259 remains `READY` on its parallel support path. Every new claim must recheck live branches/PRs and relevant file/schema ownership first.
+**ONB-009 / #194** is the lowest-order unclaimed `READY` task. ONB-025, ONB-020, and ONB-026 are also ready on independent lanes subject to their task-file claim-time collision and environment checks.
