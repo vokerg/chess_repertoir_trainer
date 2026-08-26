@@ -15,6 +15,12 @@ const NON_TERMINAL_PREPARATION_STATUSES = [
   'NEEDS_ATTENTION',
 ] as const;
 
+const FINISHABLE_ATTENTION_CODES = [
+  'NO_RECENT_GAMES',
+  'ALL_INDEXING_FAILED',
+  'IMPORT_RETRY_AVAILABLE',
+] as const;
+
 interface RunRow {
   id: number;
   userId: number;
@@ -188,19 +194,21 @@ export function createOnboardingCommandRepository(
       const rows = await database.$queryRaw<DispositionRow[]>(Prisma.sql`
         UPDATE "AppUser" AS app_user
         SET "onboardingDisposition" = 'COMPLETED',
-            "onboardingDispositionReason" = 'USER_FINISHED_NO_RECENT_GAMES',
+            "onboardingDispositionReason" = CASE run."attentionCode"
+              WHEN 'NO_RECENT_GAMES' THEN 'USER_FINISHED_NO_RECENT_GAMES'
+              WHEN 'ALL_INDEXING_FAILED' THEN 'USER_FINISHED_ALL_INDEXING_FAILED'
+              WHEN 'IMPORT_RETRY_AVAILABLE' THEN 'USER_FINISHED_IMPORT_RETRY_AVAILABLE'
+              ELSE 'USER_FINISHED_WITH_ATTENTION'
+            END,
             "onboardingDispositionAt" = ${changedAt},
             "updatedAt" = ${changedAt}
+        FROM "DataPreparationRun" AS run
         WHERE app_user."id" = ${userId}
           AND app_user."onboardingDisposition" <> 'COMPLETED'
-          AND EXISTS (
-            SELECT 1
-            FROM "DataPreparationRun" AS run
-            WHERE run."id" = ${runId}
-              AND run."userId" = app_user."id"
-              AND run."status" = 'NEEDS_ATTENTION'
-              AND run."attentionCode" = 'NO_RECENT_GAMES'
-          )
+          AND run."id" = ${runId}
+          AND run."userId" = app_user."id"
+          AND run."status" = 'NEEDS_ATTENTION'
+          AND run."attentionCode" IN (${Prisma.join(FINISHABLE_ATTENTION_CODES.map((code) => Prisma.sql`${code}`))})
         RETURNING
           app_user."onboardingDisposition",
           app_user."onboardingDispositionReason",
