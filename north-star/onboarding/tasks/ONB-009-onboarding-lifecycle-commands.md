@@ -1,6 +1,6 @@
 # ONB-009 — Implement onboarding lifecycle commands
 
-Status: PROPOSED
+Status: READY
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 90
 
 Delivery class: Implementation
 
-Planning maturity: Decisioned by ONB-001/003; blocked on durable import, ONB-017/018 execution, and ONB-008 projection
+Planning maturity: Decisioned by ONB-001/003; durable import, ONB-017/018 execution, and ONB-008 projection are delivered; ready for claim after a fresh collision check
 
 GitHub issue: [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194)
 
@@ -19,6 +19,8 @@ Claim branch: none
 Claimed at: none
 
 Claim scope: none
+
+Promoted at: 2026-08-26 through merged-task completion reconciliation
 
 ## Outcome
 
@@ -32,15 +34,15 @@ ONB-017/018 own the physical run/batch persistence and internal reconciliation s
 
 ## Dependencies
 
-- ONB-001 / #148 lifecycle and default recipe.
-- ONB-002 / #149 and its durable import implementation tasks.
-- ONB-003 / #150 preparation orchestration contract.
-- ONB-017 / #253 preparation execution persistence.
-- ONB-018 / #254 progressive reconciliation and acknowledged control state.
-- ONB-007 / #154 progress/operational policy.
-- ONB-008 / #193 disposition/readiness projection.
-- ONB-016 / #224 expansion/action experience requirements.
-- Coordinate reset and destructive behavior with ONB-004 / #151.
+- ONB-001 / #148 lifecycle and default recipe — complete.
+- ONB-002 / #149 and its durable import implementation tasks — complete.
+- ONB-003 / #150 preparation orchestration contract — complete.
+- ONB-017 / #253 preparation execution persistence — complete.
+- ONB-018 / #254 progressive reconciliation and acknowledged control state — complete.
+- ONB-007 / #154 progress/operational policy — complete.
+- ONB-008 / #193 disposition/readiness projection — complete through PR #398.
+- ONB-016 / #224 expansion/action experience requirements — complete.
+- Coordinate reset and destructive behavior with ONB-004 / #151 and delivered ONB-019 foundation; destructive execution remains ONB-020/021-owned.
 
 ## In scope
 
@@ -62,7 +64,7 @@ ONB-017/018 own the physical run/batch persistence and internal reconciliation s
 - Provider-specific import internals owned by ONB-011 through ONB-014.
 - Preparation persistence, candidate selection, child-job creation, or reconcile-loop internals owned by ONB-017/018.
 - Angular UI.
-- Destructive purge/reset before ONB-004 approval.
+- Destructive purge/un-index/un-analyse/account/user delete commands owned by ONB-019/020/021.
 - Automated repertoire or course generation.
 
 ## Acceptance criteria
@@ -88,6 +90,10 @@ ONB-017/018 own the physical run/batch persistence and internal reconciliation s
 - Multi-account/history/bullet expansion tests.
 - Process-restart/reconciliation scenarios.
 - Ownership-isolation tests.
+
+## Claim rule
+
+Before claim, re-inspect live branches/PRs and the current ONB-008/017/018/019 APIs for collisions. Do not duplicate destructive command semantics owned by ONB-020/021.
 
 ## Completion
 

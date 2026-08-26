@@ -1,6 +1,6 @@
 # ONB-015 — Cut over account sync and preparation handoff
 
-Status: REVIEW
+Status: DONE
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 150
 
 Delivery class: Implementation
 
-Planning maturity: Implemented on PR #400 after repeated adversarial self-review; final runtime head `5a2b6348ee516c477c9353020fd90f365f2cc25a` passed CI #3155 (`32692461730`) end to end against the live PR merge ref
+Planning maturity: Delivered through PR #400 after repeated adversarial self-review; runtime head `5a2b6348ee516c477c9353020fd90f365f2cc25a` passed CI #3155 and final PR head `fc2aa0d08afebbc952cf5a55693ee99f77b7d29c` passed CI #3156 before squash merge
 
 GitHub issue: [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203)
 
@@ -88,11 +88,12 @@ Normal background refresh may cut over before ONB-020 only while destructive con
 
 ## Review evidence
 
-- Final runtime head: `5a2b6348ee516c477c9353020fd90f365f2cc25a`.
+- Runtime-bearing head: `5a2b6348ee516c477c9353020fd90f365f2cc25a`.
 - CI #3155 / run `32692461730` passed dependency audit, lint, full domain/contracts/API/web/mobile build, opening audits, architecture and repository-hygiene guardrails, empty-database migrations, imported-game audits, and the complete repository test suite.
-- The run checked out GitHub's live PR merge ref against then-current `main`, so validation included current-main integration rather than only the historical branch merge base.
-- No unresolved PR review threads were present during the final runtime review.
-- Detailed final hardening evidence is in [ONB-015 thorough self-review addendum](../reports/ONB-015-2026-08-24-thorough-self-review-addendum.md).
+- Final PR head: `fc2aa0d08afebbc952cf5a55693ee99f77b7d29c`.
+- CI #3156 / run `32692956344` passed end to end on that exact final head after documentation/status reconciliation.
+- GitHub's synthetic merge ref used current `main`; no unresolved PR review threads remained before merge.
+- Detailed hardening evidence is in [ONB-015 thorough self-review addendum](../reports/ONB-015-2026-08-24-thorough-self-review-addendum.md).
 
 ## Completion
 
@@ -100,10 +101,14 @@ Primary report: [ONB-015 account sync cutover and preparation handoff](../report
 
 Final self-review addendum: [ONB-015 thorough self-review addendum](../reports/ONB-015-2026-08-24-thorough-self-review-addendum.md)
 
+Completion reconciliation: [ONB-015 completion reconciliation](../reports/ONB-015-2026-08-26-completion-reconciliation.md)
+
 Runtime pull request: [#400](https://github.com/vokerg/chess_repertoir_trainer/pull/400)
 
-Validated runtime head: `5a2b6348ee516c477c9353020fd90f365f2cc25a`
+Runtime squash commit: `c89442fbe8945854f0d6d7545e947beb7bebccfe`
 
-Validated runtime CI: #3155 / run `32692461730`
+Issue #203 closed completed automatically with the accepted runtime merge on 2026-08-25.
 
-Completed at: none — `DONE` remains gated on review acceptance/merge and completion reconciliation.
+Residual ownership: ONB-020 still owns destructive account/game execution and final legacy DELETE/reset compatibility cutover; ONB-025 owns authenticated stale-account refresh triggering.
+
+Completed at: 2026-08-26

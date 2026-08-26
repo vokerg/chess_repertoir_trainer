@@ -1,6 +1,6 @@
 # ONB-019 — Persist destructive lifecycle operations, fences, audit, and provenance
 
-Status: REVIEW
+Status: DONE
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 160
 
 Delivery class: Implementation
 
-Planning maturity: Allocated by ONB-004; ONB-004/005 are accepted, ONB-017 established migration order with ONB-019 following, and ONB-011 recorded the import/lifecycle schema ownership split; implementation is now under review in PR #386
+Planning maturity: Delivered through PR #386 after two adversarial self-review rounds; final runtime head `c6db4e2b4a40629a5abe11c08b1bb657a3b99518` passed CI #3013 (`32115505177`) before squash merge
 
 GitHub issue: [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259)
 
@@ -29,7 +29,7 @@ Add the durable database foundation required to preview, serialize, fence, resum
 ## Dependencies
 
 - ONB-004 / #151 accepted lifecycle contract, including both self-review addenda — complete.
-- ONB-011 / #199 and ONB-017 / #253 schema ownership/migration coordination is resolved: ONB-017 established ONB-019 as a later additive migration owner, and ONB-011 recorded the destructive lifecycle operation/resource-fence/audit/opening-provenance/deleted-identity ownership boundary on #259. Both implementation owners are complete. Claim-time collision review found ONB-018 / PR #385 adding a later preparation reconciliation migration without a `schema.prisma` edit; ONB-019 uses a later additive migration timestamp.
+- ONB-011 / #199 and ONB-017 / #253 schema ownership/migration coordination — complete.
 - ONB-005 / #152 actor/audit authorization decisions — complete; administrator mutation exposure remains separately gated by ONB-024.
 - Consumed by ONB-020 / #260 and ONB-021 / #261.
 
@@ -63,7 +63,7 @@ Add the durable database foundation required to preview, serialize, fence, resum
 ## Acceptance criteria
 
 - Preview records are bounded, expiring, ownership-scoped, and bound to execution.
-- Duplicate execute requests return the same operation through a unique idempotency contract.
+- Duplicate execute requests return the same operation through a unique idempotency contract without permitting idempotency-key rebinding.
 - Conflicting user/account/game fences cannot coexist, including cross-resource overlap.
 - New import, job, preparation, auth-resolution update, tag, AI, tactical, scenario, or sync work cannot enter a fenced scope.
 - A synchronous writer started before fence creation cannot commit after the fence unless it already held the conflicting short database guard before fence creation committed.
@@ -75,7 +75,7 @@ Add the durable database foundation required to preview, serialize, fence, resum
 - Opening resets can clear only locally assigned values while retaining provider and legacy/unknown values.
 - A deleted auth identity cannot be silently recreated by `CurrentAppUserService`.
 - A fenced/deleted identity can retrieve typed lifecycle status or receipt without ordinary AppUser provisioning.
-- Migration and race tests cover cross-resource conflicts, commit-side guard behavior, partial failure, fence retention, preview staleness, and tombstone/receipt lookup.
+- Action/resource scope and executable JSON scope cannot diverge from the durable operation columns.
 
 ## Required validation
 
@@ -96,10 +96,22 @@ Add the durable database foundation required to preview, serialize, fence, resum
 
 Implementation report: `north-star/onboarding/reports/ONB-019-2026-08-16-destructive-lifecycle-foundation.md`
 
-Pull request: [#386](https://github.com/vokerg/chess_repertoir_trainer/pull/386)
+Self-review addenda:
+- `north-star/onboarding/reports/ONB-019-2026-08-16-self-review-addendum.md`
+- `north-star/onboarding/reports/ONB-019-2026-08-16-second-self-review-addendum.md`
 
-Initial implementation head: `8d0466a7741c92abb965fac17e870faa4959470d`
+Completion reconciliation: `north-star/onboarding/reports/ONB-019-2026-08-26-completion-reconciliation.md`
 
-Validation: local checkout unavailable because `github.com` DNS resolution failed in the execution environment; exact-head GitHub Actions validation and PR self-review are required before merge readiness.
+Runtime pull request: [#386](https://github.com/vokerg/chess_repertoir_trainer/pull/386)
 
-Completed at: none — task remains `REVIEW` until accepted merge/completion reconciliation.
+Final runtime head: `c6db4e2b4a40629a5abe11c08b1bb657a3b99518`
+
+Runtime validation: CI #3013 / run `32115505177` passed on the exact final runtime head.
+
+Runtime squash commit: `d9175c5d60448399b7297393afc55db747717ce2`
+
+Issue #259 closed completed automatically with the accepted runtime merge on 2026-08-18.
+
+Residual ownership: ONB-020/021 own destructive row execution; ONB-024 owns administrator exposure; ONB-026 owns shared-position cleanup implementation.
+
+Completed at: 2026-08-26
