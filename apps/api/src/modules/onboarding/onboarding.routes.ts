@@ -21,6 +21,12 @@ import {
 } from './onboarding-command.service';
 import { OnboardingReadinessService } from './onboarding.service';
 
+const controlDescriptions = {
+  pause: 'The run id selects the persisted preparation whose quiescent pause is requested.',
+  resume: 'The run id selects the persisted paused preparation to return to active reconciliation.',
+  cancel: 'The run id selects the persisted preparation whose acknowledged cancellation is requested.',
+} as const;
+
 const onboardingModule: FastifyPluginAsyncZod = async (app) => {
   app.route({
     method: 'GET',
@@ -72,6 +78,7 @@ const onboardingModule: FastifyPluginAsyncZod = async (app) => {
       operationId: 'skipMyOnboarding',
       tags: ['Onboarding'],
       summary: 'Skip first-run guidance without cancelling accepted preparation',
+      description: 'Uses the authenticated user persisted onboarding disposition and does not require a request body.',
       response: dispositionResponses(),
     },
     handler: async (request, reply) => {
@@ -89,9 +96,10 @@ const onboardingModule: FastifyPluginAsyncZod = async (app) => {
     method: 'POST',
     url: '/api/me/onboarding/runs/:runId/finish',
     schema: {
-      operationId: 'finishMyOnboardingWithoutPreparedGames',
+      operationId: 'finishMyOnboardingWithAttention',
       tags: ['Onboarding'],
-      summary: 'Explicitly finish onboarding from the no-recent-games outcome',
+      summary: 'Explicitly finish onboarding from a finishable attention outcome',
+      description: 'The run id selects the persisted finishable attention outcome; no request body is required.',
       params: onboardingRunParamsSchema,
       response: dispositionResponses(),
     },
@@ -114,6 +122,7 @@ const onboardingModule: FastifyPluginAsyncZod = async (app) => {
         operationId: `${action}MyOnboardingPreparation`,
         tags: ['Onboarding'],
         summary: `${capitalize(action)} owned onboarding preparation`,
+        description: controlDescriptions[action],
         params: onboardingRunParamsSchema,
         response: commandResponses(200),
       },
@@ -143,6 +152,7 @@ const onboardingModule: FastifyPluginAsyncZod = async (app) => {
       operationId: 'retryMyOnboardingPreparation',
       tags: ['Onboarding'],
       summary: 'Retry failed preparation evidence in a new retry generation',
+      description: 'The run id selects persisted failed preparation evidence eligible for a retry generation; no request body is required.',
       params: onboardingRunParamsSchema,
       response: commandResponses(202),
     },
@@ -166,6 +176,7 @@ const onboardingModule: FastifyPluginAsyncZod = async (app) => {
       operationId: 'restartMyOnboardingPreparation',
       tags: ['Onboarding'],
       summary: 'Restart terminal failed or cancelled preparation as a linked recovery run',
+      description: 'The run id supplies the persisted immutable preparation scope and recovery lineage; no request body is required.',
       params: onboardingRunParamsSchema,
       response: commandResponses(202),
     },
