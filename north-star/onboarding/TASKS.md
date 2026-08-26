@@ -18,7 +18,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 77 | ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) | P0 | DONE | Persist preparation execution boundary and bounded child-job batches | Implementation | Runtime PR #282; completion PR #293 |
 | 78 | ONB-018 | [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254) | P0 | DONE | Implement progressive preparation reconciliation and control | Implementation | Runtime PR #385; completion PR #397 |
 | 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | DONE | Persist onboarding disposition and readiness projection | Implementation | Runtime PR #398, squash `512c248`; completion reconciled 2026-08-26 |
-| 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | READY | Implement onboarding lifecycle commands | Implementation | All hard dependencies delivered; fresh collision check required before claim |
+| 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | REVIEW | Implement onboarding lifecycle commands | Implementation | Claimed on `onb-009/issue-194-lifecycle-commands`; runtime PR #406 |
 | 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | Depends on ONB-009 plus delivered ONB-008/016/import/preparation foundations |
 | 110 | ONB-011 | [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) | P0 | DONE | Persist durable account-import runs and scope coverage | Implementation | Runtime PR #339 |
 | 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | DONE | Build durable account-import worker and API lifecycle | Implementation | Runtime PR #352; completion PR #354 |
@@ -38,10 +38,9 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 
 Only `READY` tasks may be newly claimed unless the user explicitly authorizes otherwise.
 
-1. **ONB-009 / #194** — lowest-order unclaimed ready task; onboarding lifecycle commands.
-2. **ONB-025 / #276** — independent stale-account-refresh follow-up over the delivered durable account-import path.
-3. **ONB-020 / #260** — destructive account/game coordinator over the delivered ONB-019 foundation.
-4. **ONB-026 / #280** — shared-position cleanup implementation; claim-time PostgreSQL and migration checks are mandatory.
+1. **ONB-025 / #276** — independent stale-account-refresh follow-up over the delivered durable account-import path.
+2. **ONB-020 / #260** — destructive account/game coordinator over the delivered ONB-019 foundation.
+3. **ONB-026 / #280** — shared-position cleanup implementation; claim-time PostgreSQL and migration checks are mandatory.
 
 `READY` does not waive each task file's claim-time collision, environment, migration, or provider/deployment checks.
 
