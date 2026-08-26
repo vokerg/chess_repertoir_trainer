@@ -235,3 +235,58 @@ export const onboardingReadinessResponseSchema = z.object({
   observedAt: isoDateTime,
 }).strict();
 export type OnboardingReadinessResponse = z.infer<typeof onboardingReadinessResponseSchema>;
+
+export const onboardingStartBodySchema = z.object({
+  accountId: z.number().int().positive(),
+}).strict();
+export type OnboardingStartBody = z.infer<typeof onboardingStartBodySchema>;
+
+export const onboardingRunParamsSchema = z.object({
+  runId: z.coerce.number().int().positive(),
+}).strict();
+export type OnboardingRunParams = z.infer<typeof onboardingRunParamsSchema>;
+
+export const onboardingExpansionKindSchema = z.enum([
+  'OLDER_HISTORY',
+  'INCLUDE_BULLET',
+  'ADD_ACCOUNT',
+]);
+export type OnboardingExpansionKind = z.infer<typeof onboardingExpansionKindSchema>;
+
+export const onboardingExpandBodySchema = z.object({
+  kind: onboardingExpansionKindSchema,
+  accountId: z.number().int().positive(),
+}).strict();
+export type OnboardingExpandBody = z.infer<typeof onboardingExpandBodySchema>;
+
+export const onboardingRunCommandResponseSchema = z.object({
+  runId: z.number().int().positive(),
+  purpose: onboardingPreparationPurposeSchema,
+  status: z.string().min(1),
+  retryGeneration: countSchema,
+  idempotent: z.boolean(),
+}).strict();
+export type OnboardingRunCommandResponse = z.infer<typeof onboardingRunCommandResponseSchema>;
+
+export const onboardingDispositionCommandResponseSchema = z.object({
+  disposition: onboardingDispositionSchema,
+  reason: z.string().nullable(),
+  changedAt: nullableIsoDateTime,
+  idempotent: z.boolean(),
+}).strict();
+export type OnboardingDispositionCommandResponse = z.infer<typeof onboardingDispositionCommandResponseSchema>;
+
+export const onboardingErrorCodeSchema = z.enum([
+  'ONBOARDING_NOT_FOUND',
+  'ONBOARDING_INVALID_STATE',
+  'ONBOARDING_ACTIVE_RUN',
+  'ONBOARDING_ACCOUNT_NOT_FOUND',
+  'ONBOARDING_IMPORT_ACTIVE',
+]);
+export type OnboardingErrorCode = z.infer<typeof onboardingErrorCodeSchema>;
+
+export const onboardingErrorResponseSchema = z.object({
+  error: z.string().min(1),
+  code: onboardingErrorCodeSchema,
+}).strict();
+export type OnboardingErrorResponse = z.infer<typeof onboardingErrorResponseSchema>;
