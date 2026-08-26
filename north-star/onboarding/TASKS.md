@@ -1,218 +1,64 @@
 # Onboarding and Data Lifecycle Task Queue
 
-Last updated: 2026-08-24
+Last updated: 2026-08-26
 
-This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, and claim metadata.
+This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, claim metadata, and completion evidence.
 
-| Order | ID | GitHub issue | Priority | Status | Task | Delivery class | Primary dependencies |
+| Order | ID | GitHub issue | Priority | Status | Task | Delivery class | Delivery/dependency state |
 | ---: | --- | --- | --- | --- | --- | --- | --- |
-| 0 | ONB-000 | [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147) | P0 | DONE | Establish program foundation and master plan | Research/planning | Squash-merged through PR #156 |
-| 10 | ONB-001 | [#148](https://github.com/vokerg/chess_repertoir_trainer/issues/148) | P0 | DONE | Define onboarding lifecycle and default preparation recipe | Research | Squash-merged through PR #197 |
-| 20 | ONB-002 | [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149) | P0 | DONE | Design bounded recent-first import and historical backfill | Research | Squash-merged through PR #204 |
-| 30 | ONB-003 | [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150) | P0 | DONE | Design progressive indexing and analysis orchestration | Research | Squash-merged through PR #256 as `d41f75c` |
-| 40 | ONB-004 | [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151) | P0 | DONE | Define safe purge, un-index, un-analyse, and user deletion invariants | Research | Squash-merged through PR #263 as `32db655` |
-| 50 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) | P0 | DONE | Benchmark preparation throughput and define truthful progress semantics | Research | Squash-merged through PR #266 as `d631382` after corrected benchmark evidence and three self-review rounds |
-| 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | DONE | Design administrator authentication, diagnostics, and action model | Research | Squash-merged through PR #275 after three self-review rounds |
-| 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | DONE | Design database-only orphan shared-position cleanup | Research | Squash-merged through PR #281 after two adversarial self-review rounds; allocated ONB-026/#280 |
-| 75 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) | P1 | DONE | Define lightweight onboarding product and experience blueprint | Research/product design | Squash-merged through PR #225 as `b485b9b`; informs ONB-008/009/010 and VT-302 |
-| 77 | ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) | P0 | DONE | Persist preparation execution boundary and bounded child-job batches | Implementation | Runtime squash-merged through PR #282 as `885ef785`; completion records reconciled through PR #293 |
-| 78 | ONB-018 | [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254) | P0 | DONE | Implement progressive preparation reconciliation and control | Implementation | Runtime squash-merged through PR #385 as `9b029327`; completion records reconciled through PR #397 |
-| 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | READY | Persist onboarding disposition and readiness projection | Implementation | ONB-001/002/003/007/016/017/018 complete; durable import/provider delivery complete |
-| 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/007/008/017/018; destructive commands remain ONB-019/020/021-owned |
-| 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | ONB-007/008/009; durable import/preparation; ONB-016; Visual Transformation coordination |
-| 110 | ONB-011 | [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) | P0 | DONE | Persist durable account-import runs and scope coverage | Implementation | Runtime merged through PR #339 as `4c04d47`; ONB-019 retains ownership of persisted lifecycle fences |
-| 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | DONE | Build durable account-import worker and API lifecycle | Implementation | Runtime squash-merged through PR #352 as `640018e4`; completion reconciliation PR #354 |
-| 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | DONE | Implement bounded Lichess import adapter | Implementation | Runtime squash-merged through PR #357 as `e276e382`; completion reconciliation PR #376 |
-| 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | DONE | Implement bounded Chess.com import adapter | Implementation | Runtime PR #356 squash-merged as `b9c2038b`; real canary passed CI #2812; completion reconciliation PR #383 |
-| 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | REVIEW | Cut over account sync and preparation handoff | Implementation | Runtime PR #400 is in review; ONB-020 retains destructive execution; ONB-025 remains gated on acceptance/merge |
-| 155 | ONB-025 | [#276](https://github.com/vokerg/chess_repertoir_trainer/issues/276) | P1 | PROPOSED | Trigger daily stale account refresh on authenticated app bootstrap | Implementation | ONB-015; transitively ONB-011/012/013/014; coordinates ONB-010/019/020 |
-| 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | READY | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | ONB-004/005 complete; ONB-011/017 schema ownership and migration order resolved; fresh collision check required before claim |
-| 170 | ONB-020 | [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260) | P0 | PROPOSED | Implement account and imported-game destructive lifecycle coordinator | Implementation | ONB-004/007/019; ONB-011/012/015/017/018; admin exposure remains ONB-024-owned |
-| 180 | ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) | P0 | PROPOSED | Implement whole-user deletion and mobile purge handshake | Implementation | ONB-004/007/019/020; mobile offline sync contracts; admin execution deferred by ONB-005 |
-| 185 | ONB-026 | [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280) | P1 | PROPOSED | Implement bounded orphan shared-position cleanup | Implementation | ONB-006/007; trigger/schema coordination with ONB-011/017/019; canonical service may later be exposed by ONB-024 |
-| 190 | ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) | P1 | DONE | Build administrator authorization and read-only diagnostics foundation | Implementation | Runtime squash-merged through PR #284 as `f83d2615`; completion records reconciled through PR #298 |
-| 200 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) | P2 | DONE | Build administrator diagnostics Angular feature | Implementation | Runtime squash-merged through PR #307 as `07d19790`; completion records reconciled through PR #312 |
-| 210 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) | P1 | PROPOSED | Add administrator lifecycle previews and controls | Implementation | ONB-022/023; ONB-019 plus applicable ONB-020/021; ONB-026 for cleanup exposure |
+| 0 | ONB-000 | [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147) | P0 | DONE | Establish program foundation and master plan | Research/planning | PR #156 |
+| 10 | ONB-001 | [#148](https://github.com/vokerg/chess_repertoir_trainer/issues/148) | P0 | DONE | Define onboarding lifecycle and default preparation recipe | Research | PR #197 |
+| 20 | ONB-002 | [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149) | P0 | DONE | Design bounded recent-first import and historical backfill | Research | PR #204 |
+| 30 | ONB-003 | [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150) | P0 | DONE | Design progressive indexing and analysis orchestration | Research | PR #256 |
+| 40 | ONB-004 | [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151) | P0 | DONE | Define safe purge, un-index, un-analyse, and user deletion invariants | Research | PR #263 |
+| 50 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) | P0 | DONE | Benchmark preparation throughput and define truthful progress semantics | Research | PR #266 |
+| 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | DONE | Design administrator authentication, diagnostics, and action model | Research | PR #275 |
+| 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | DONE | Design database-only orphan shared-position cleanup | Research | PR #281; allocated ONB-026 |
+| 75 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) | P1 | DONE | Define lightweight onboarding product and experience blueprint | Research/product design | PR #225 |
+| 77 | ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) | P0 | DONE | Persist preparation execution boundary and bounded child-job batches | Implementation | Runtime PR #282; completion PR #293 |
+| 78 | ONB-018 | [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254) | P0 | DONE | Implement progressive preparation reconciliation and control | Implementation | Runtime PR #385; completion PR #397 |
+| 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | DONE | Persist onboarding disposition and readiness projection | Implementation | Runtime PR #398, squash `512c248`; completion reconciled 2026-08-26 |
+| 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | READY | Implement onboarding lifecycle commands | Implementation | All hard dependencies delivered; fresh collision check required before claim |
+| 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | Depends on ONB-009 plus delivered ONB-008/016/import/preparation foundations |
+| 110 | ONB-011 | [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) | P0 | DONE | Persist durable account-import runs and scope coverage | Implementation | Runtime PR #339 |
+| 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | DONE | Build durable account-import worker and API lifecycle | Implementation | Runtime PR #352; completion PR #354 |
+| 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | DONE | Implement bounded Lichess import adapter | Implementation | Runtime PR #357; completion PR #376 |
+| 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | DONE | Implement bounded Chess.com import adapter | Implementation | Runtime PR #356; completion PR #383; real canary #2812 |
+| 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | DONE | Cut over account sync and preparation handoff | Implementation | Runtime PR #400, squash `c89442f`; completion reconciled 2026-08-26 |
+| 155 | ONB-025 | [#276](https://github.com/vokerg/chess_repertoir_trainer/issues/276) | P1 | READY | Trigger daily stale account refresh on authenticated app bootstrap | Implementation | ONB-015/019 delivered; recheck ONB-010/020 integration surfaces before claim |
+| 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | DONE | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | Runtime PR #386, squash `d9175c5`; completion reconciled 2026-08-26 |
+| 170 | ONB-020 | [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260) | P0 | READY | Implement account and imported-game destructive lifecycle coordinator | Implementation | ONB-004/007/011/012/015/017/018/019 delivered; fresh collision check required |
+| 180 | ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) | P0 | PROPOSED | Implement whole-user deletion and mobile purge handshake | Implementation | Depends on ONB-020 plus delivered ONB-019 foundation and mobile contracts |
+| 185 | ONB-026 | [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280) | P1 | READY | Implement bounded orphan shared-position cleanup | Implementation | ONB-006/007/019 delivered; claim-time schema/migration and PostgreSQL capability checks mandatory |
+| 190 | ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) | P1 | DONE | Build administrator authorization and read-only diagnostics foundation | Implementation | Runtime PR #284; completion PR #298 |
+| 200 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) | P2 | DONE | Build administrator diagnostics Angular feature | Implementation | Runtime PR #307; completion PR #312 |
+| 210 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) | P1 | PROPOSED | Add administrator lifecycle previews and controls | Implementation | Depends on canonical lifecycle services, applicable ONB-020/021/026 delivery, and proven reverification |
 
-ONB-025 / #276 is canonically allocated at order 155 and remains `PROPOSED` behind ONB-015. ONB-026 / #280 remains allocated at order 185.
+## Current ready queue
 
-## Completed planning
+Only `READY` tasks may be newly claimed unless the user explicitly authorizes otherwise.
 
-ONB-000 established the program through squash-merged PR #156.
+1. **ONB-009 / #194** — lowest-order unclaimed ready task; onboarding lifecycle commands.
+2. **ONB-025 / #276** — independent stale-account-refresh follow-up over the delivered durable account-import path.
+3. **ONB-020 / #260** — destructive account/game coordinator over the delivered ONB-019 foundation.
+4. **ONB-026 / #280** — shared-position cleanup implementation; claim-time PostgreSQL and migration checks are mandatory.
 
-ONB-001 established the lifecycle/default recipe through squash-merged PR #197 and allocated ONB-008 through ONB-010.
+`READY` does not waive each task file's claim-time collision, environment, migration, or provider/deployment checks.
 
-ONB-002 established bounded import/backfill contracts through squash-merged PR #204 and allocated ONB-011 through ONB-015.
+## Recently reconciled runtime delivery
 
-ONB-025 is a bounded post-cutover account-import follow-up: authenticated application bootstrap may evaluate active accounts for a rolling stale refresh only after ONB-015 removes synchronous provider traversal from account HTTP routes.
+- ONB-008 runtime PR #398 merged as `512c248689f41a1164be3da63dc22cc97041614b`; issue #193 is closed completed.
+- ONB-019 runtime PR #386 merged as `d9175c5d60448399b7297393afc55db747717ce2`; issue #259 is closed completed.
+- ONB-015 runtime PR #400 merged as `c89442fbe8945854f0d6d7545e947beb7bebccfe`; issue #203 is closed completed.
 
-ONB-003 established progressive preparation orchestration through squash-merged PR #256 and allocated ONB-017/018.
+Append-only completion records dated 2026-08-26 reconcile those already-accepted runtime deliveries and remove the stale `READY`/`REVIEW` bookkeeping that remained in the repository.
 
-ONB-016 established the canonical lightweight experience blueprint through squash-merged PR #225 as `b485b9b2992e1152c1810c91d40cc5150d39284d`.
+## Ownership carried forward
 
-ONB-004 established destructive lifecycle invariants through squash-merged PR #263 as `32db655a100ef1a55264b4d3739e2b7c38e72ee4` and allocated ONB-019/020/021.
-
-ONB-007 established throughput evidence, conservative preparation/import defaults, truthful progress semantics, and implementation validation gates through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d77578bdf`.
-
-## ONB-005 completed delivery
-
-ONB-005 defines:
-
-- normal Clerk authentication as the sole production login boundary;
-- a disabled-by-default server-only administrator authorization policy;
-- exact Clerk-subject allowlist bootstrap behind a replaceable capability interface;
-- no shared secret, email allowlist, `AppUser.isAdmin`, client role, separate login, impersonation, or Clerk Organizations solely for global operators;
-- a minimal verified session context that retains signed session/factor/reverification evidence without exposing raw claims to features;
-- migration-free cursor-paginated aggregate diagnostics with strict sensitive-field exclusions;
-- exact row-count footprint rather than untrustworthy per-user byte estimates;
-- a lazy direct-link Angular route with no required normal-navigation item;
-- signed `fva` plus one-use request-bound `reverification_id` for destructive administrator execution, with execution disabled until the pinned Clerk flow is proven;
-- configurable 30-day read-access log and 365-day mutation-audit operational defaults plus domain-separated HMAC key-version retention;
-- administrator whole-user deletion deferred pending a separate support/recovery policy decision;
-- topology-aware request-budget enforcement that does not overclaim an in-process limiter as distributed protection;
-- implementation tasks ONB-022/#272, ONB-023/#273, and ONB-024/#274 appended after the existing planned backlog so administration support work does not pre-empt the product critical path;
-- report `reports/ONB-005-2026-08-04-admin-auth-diagnostics-actions.md` and three self-review addenda.
-
-Completed through squash-merged PR #275 after final canonical reconciliation and three adversarial self-review rounds. ONB-022 is completed through runtime PR #284 and reconciliation PR #298. ONB-023 is completed through runtime PR #307 and completion reconciliation PR #312. ONB-024 remains `PROPOSED` behind its lifecycle and reverification dependencies.
-
-## ONB-006 completed delivery
-
-ONB-006 defines:
-
-- zero `ImportedGamePly` references as the exact database orphan predicate;
-- explicit exclusion of course `MoveNode` trees;
-- `PositionAnalysis` and `MastersExplorerCache` as dependent cascades;
-- a durable first-observed candidate ledger and 30-day initial grace;
-- PostgreSQL statement triggers that reset grace on every ply-reference insert/update;
-- input-page-bounded reconcile, observe, dry-run, and delete phases ordered by id;
-- short plies-first fixed-order database locking plus final predicate recheck and FK restriction;
-- observational bounded dry-run semantics rather than a point-in-time snapshot claim;
-- exact phase/upper-bound/checkpoint/inspected/matched/deleted progress with no ETA or bytes;
-- a manual server-side command over the canonical service, disabled by default, with no schedule;
-- reports `reports/ONB-006-2026-08-04-orphan-shared-position-cleanup.md`, `reports/ONB-006-2026-08-04-self-review-addendum.md`, and `reports/ONB-006-2026-08-04-second-self-review-addendum.md`;
-- implementation task ONB-026 / #280.
-
-Completed through squash-merged PR #281 after two adversarial self-review rounds.
-
-## ONB-002 completed delivery
-
-ONB-002 defines:
-
-- extended `ImportRun` plus exact `AccountImportCoverage`;
-- immutable half-open UTC ranges and canonical scope hashes;
-- distinct initial, forward, and historical-backfill modes;
-- one non-terminal import per account;
-- a separate account-import claim loop in the existing worker deployment;
-- replayable provider windows and no coverage advancement across failures;
-- exact empty-window coverage;
-- bounded duplicate-safe persistence;
-- database-based preparation handoff with no ID arrays;
-- conservative legacy-cursor migration and explicit backfill;
-- report `reports/ONB-002-2026-07-29-bounded-import-backfill.md`;
-- implementation tasks ONB-011 through ONB-015.
-
-## ONB-003 completed delivery
-
-ONB-003 defines:
-
-- `DataPreparationRun` plus ordered account targets and retained child-job batches;
-- separate bounded index and analysis child runs;
-- PostgreSQL server-side candidate selection and atomic batch/job creation;
-- per-run and globally serialized admission bounds;
-- committed-import pipelining with exact terminal core-readiness gates;
-- deterministic first-analysis and stage-specific multi-account fairness;
-- acknowledged pause/cancel and evidence-based readiness;
-- reports `reports/ONB-003-2026-08-01-progressive-preparation-orchestration.md` and `reports/ONB-003-2026-08-01-self-review-addendum.md`;
-- implementation tasks ONB-017/018.
-
-## ONB-004 completed delivery
-
-ONB-004 defines:
-
-- separate un-analyse, un-index, account purge, account delete, and whole-user delete actions;
-- un-index always includes un-analysis;
-- persisted destructive operations, preview/idempotency/audit, and user/account/game write fences;
-- acknowledged preparation/import/job drain, including zero active task work keys before destructive writes;
-- commit-side guards for synchronous writers and auth resolution;
-- pre-mutation-only terminal cancellation and durable fence retention after partial execution;
-- bounded forward-only phases rather than one large transaction;
-- shared Position/PositionAnalysis/cache retention and separate ONB-006 cleanup;
-- tag recomputation, AI-review removal, all-version tactical reset, feedback/scenario retention rules;
-- source-preserving deletion of copied scenario data before SetNull cascades;
-- provider/local/legacy opening provenance;
-- account purge/delete and OAuth-connection boundaries;
-- whole-user OAuth-state/token cleanup, tombstone ordering, post-delete receipt lookup, and mobile local-purge handshake;
-- reports `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`, `reports/ONB-004-2026-08-02-self-review-addendum.md`, and `reports/ONB-004-2026-08-02-second-self-review-addendum.md`;
-- implementation tasks ONB-019/#259, ONB-020/#260, and ONB-021/#261.
-
-## ONB-007 completed delivery
-
-ONB-007 defines and validates:
-
-- a safe disposable-database benchmark harness over current production services and the real child worker;
-- synthetic 10/50/200-game scale profiles and deterministic legal 16/40/80-ply length profiles;
-- depth-12 WASM first-position, per-game, combined-process, and actual worker-wave measurements;
-- index/first-analysis/tail defaults of 50/3/10 games;
-- global preparation limits of four non-terminal batches, 200 queued tasks, and 40 queued analysis tasks;
-- one-second active/five-second idle preparation reconciliation with persisted immediate wake hints;
-- serial provider access, initial 14-day Lichess windows, Chess.com calendar-month units, and 100-row database writes;
-- one active import executor with 1-second poll, 15-second heartbeat, 2-minute stale, and 30-second recovery defaults;
-- exact-count/fixed-denominator progress and no public ETA in the initial release;
-- future ETA telemetry eligibility gates, internal first-value budgets, stall thresholds, scaling triggers, and operation transaction budgets;
-- report `reports/ONB-007-2026-08-03-throughput-progress-benchmarks.md`;
-- original evidence `reports/artifacts/ONB-007-2026-08-03-ci-benchmark-summary.json`;
-- corrected provider-timing evidence `reports/artifacts/ONB-007-2026-08-04-ci-benchmark-summary.json`;
-- self-review addenda `reports/ONB-007-2026-08-03-self-review-addendum.md` and `reports/ONB-007-2026-08-04-third-self-review-addendum.md`;
-- reusable harness `apps/api/benchmarks/onboarding-throughput-safe.mjs`.
-
-Completed through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d77578bdf`.
-
-## ONB-016 completed delivery
-
-ONB-016 defines the route-based lightweight first-value experience, progressive evidence reveals, optional personal tactics/Builder continuations, and the synthetic prototype-to-Angular handoff. It remains accepted through PR #225.
-
-## Completed implementation
-
-ONB-017 / #253 delivered the preparation execution boundary through PR #282 and squash commit `885ef785bdac1b0c77cc500e3345745b0e723912`. PR #293 reconciled its task, queue, status, exact implementation head, validation evidence, and preserved acceptance contract. Issue #253 was closed as completed after the reconciliation squash merge.
-
-ONB-018 / #254 delivered bounded preparation reconciliation/control through runtime PR #385 and squash commit `9b0293271a2c1a9f24a77939e828c3ee1aca8ffd`. Final reviewed runtime head `4e3a3a4ea6f3f0f798d52e08830d051ad13c7b95` passed CI #2998 (`32041962372`) after the final self-review made pre-engine analysis setup-failure persistence atomic. PR #397 reconciles completion records and downstream readiness without runtime changes.
-
-ONB-011 / #199 delivered durable provider-neutral `ImportRun` persistence and exact account/scope coverage through merged PR #339 and merge commit `4c04d47dac40aa0ae254babbf65449b701b5c447`. Persisted destructive lifecycle fences remain explicitly owned by ONB-019.
-
-ONB-012 / #200 delivered the provider-neutral durable account-import API and worker lifecycle through PR #352. Final refreshed runtime head `dc4e9bc40e9da45c03e83904dfe0864a10cef289` passed CI #2645 (`31505680257`) and squash-merged as `640018e4cd3c5528a94b9d0217e971ab2a2215b7`. Completion PR #354 reconciles the task, queue, status, completion report, downstream provider-adapter promotion, and issue closure.
-
-ONB-013 / #201 delivered the bounded Lichess provider adapter through PR #357. The low-volume Lichess canary passed in workflow run #2665 (`31566377590`); reviewed runtime head `9d1bde8e563e60ab1c233d88123b675f419c5d74` passed CI #2684 (`31571213970`); final PR head `2f53e81fba2386c1c2b3638c24a1450184497f78` passed CI #2687 (`31580120124`); and PR #357 squash-merged as `e276e3820acbd8361feae99d8a0e15a9cf412e53`. Completion PR #376 records final execution state without changing runtime behavior.
-
-ONB-014 / #202 delivered the bounded Chess.com provider adapter through PR #356. Reviewed runtime head `5e530a2a2b001ae0ee2ce42872b45c9b8f86a085` passed CI #2666; final PR head `d4592fe6b0e3c61ee9d25bc1517a8fc83a7466c2` passed CI #2669; and PR #356 squash-merged as `b9c2038bfd20f7b0a493c2eda3dd6c2aed911ec5`. The outstanding real low-volume Chess.com canary passed the dedicated step in workflow run #2812 (`31881053242`) using public account `hikaru` and fixed historical month `2014-01`; completion PR #383 records final execution state and removes the temporary canary workflow hook.
-
-ONB-022 / #272 delivered the migration-free administrator authorization and bounded read-only diagnostics foundation through PR #284. Final runtime pull-request head `fad7a19216c3249827a111e75238aafccac0ec75` passed CI run #2089 (`31031618906`) and squash-merged as `f83d26157e5da2d69f643b0d12100244219d2771`. PR #298 reconciled the completion evidence and synchronized the task, queue, status, report, downstream task promotion, and issue closure.
-
-ONB-023 / #273 delivered the lazy direct-link Angular administrator diagnostics experience through PR #307. Final runtime pull-request head `d9b826054748d9d891584a593954c82b65520965` passed CI run #2237 (`31248860891`) and squash-merged as `07d19790a20beedf79bb094fead2c48c76404912`. PR #312 reconciles the task, queue, status, completion report, and live issue state; ONB-024 remains unpromoted.
-
-## Deterministic next task
-
-ONB-008 / #193 is the next unclaimed `READY` implementation task by canonical order. ONB-017/018 now provide the durable preparation execution and reconciliation state it consumes, and ONB-011/012/013/014 provide the durable import/provider evidence required by its planning gate.
-
-ONB-015 / #203 is in `REVIEW` on PR #400. The durable account-sync cutover and preparation handoff are implemented and under exact-head validation; destructive execution remains ONB-020-owned, and ONB-025 remains blocked until ONB-015 is accepted and merged.
-
-ONB-019 / #259 remains unclaimed `READY` on the parallel destructive-lifecycle support path. ONB-004/005 are complete; ONB-017 established migration order with ONB-019 following, ONB-011 recorded the destructive lifecycle schema ownership boundary on #259, and both overlapping schema owners are merged. A fresh branch/PR/schema collision check is still mandatory immediately before claim.
-
-ONB-009 and ONB-010 remain `PROPOSED` behind ONB-008 and their other explicit dependencies. ONB-020/021 and ONB-024/025/026 remain `PROPOSED` until their own task-file dependencies and promotion gates are satisfied.
-
-ONB-025 / #276 remains `PROPOSED` behind ONB-015. ONB-026 / #280 remains `PROPOSED` until ONB-019 and its other task-file promotion gates are met. ONB-024 remains `PROPOSED` behind canonical lifecycle services and proven signed reverification.
-
-## Implementation backlog rule
-
-Only `READY` implementation tasks may be claimed. All Prisma/schema/migration tasks must check current activity for ONB-017 and ONB-019 before branching; ONB-011 is complete. Do not fold destructive implementation into research branches or duplicate lifecycle logic in administration routes.
-
-Each remaining research completion must:
-
-1. produce a report;
-2. update decisions and open questions;
-3. refine or allocate bounded implementation tasks;
-4. coordinate immutable IDs and GitHub issues in one planning change;
-5. reassess ordering and parallelism.
-
-## Program tracker
-
-[#147 — Onboarding and Data Lifecycle Program](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
+- ONB-009 owns authenticated onboarding preparation lifecycle commands; it must not duplicate destructive commands.
+- ONB-010 owns functional Angular onboarding/Home re-entry.
+- ONB-020 owns account/game destructive execution and final immediate DELETE/raw-reset compatibility cutover.
+- ONB-021 owns whole-user deletion/mobile purge.
+- ONB-025 owns opportunistic authenticated stale-account refresh, not cron scheduling.
+- ONB-026 owns shared-position cleanup and stays separate from account/user purge.
+- ONB-024 is a thin administrator adapter over canonical lifecycle/cleanup services; it must not create a second mutation state machine.
