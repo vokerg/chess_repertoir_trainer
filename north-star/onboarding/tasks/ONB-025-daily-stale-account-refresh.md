@@ -1,6 +1,6 @@
 # ONB-025 — Trigger daily stale account refresh on authenticated app bootstrap
 
-Status: PROPOSED
+Status: READY
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 155
 
 Delivery class: Implementation
 
-Planning maturity: Researched
+Planning maturity: Researched; ONB-015 durable account-sync cutover and ONB-019 lifecycle-fence foundation are delivered; ready for claim with ONB-010/020 coordination rechecked
 
 GitHub issue: [#276](https://github.com/vokerg/chess_repertoir_trainer/issues/276)
 
@@ -20,6 +20,8 @@ Claimed at: none
 
 Claim scope: none
 
+Promoted at: 2026-08-26 through merged-task completion reconciliation
+
 ## Outcome
 
 Keep active external accounts opportunistically current by evaluating stale forward-import coverage when an authenticated application session starts, while reusing the durable account-import worker and avoiding duplicate work across reloads, tabs, devices, and API instances.
@@ -28,12 +30,12 @@ This is a return-to-app trigger, not a cron guarantee. No provider work is requi
 
 ## Dependencies
 
-- ONB-015 accepted and merged; this task must use the final durable account-refresh command and persisted import projections.
-- Transitively consumes ONB-011/012 durable persistence and worker lifecycle plus ONB-013/014 provider adapters.
-- Coordinate lifecycle-fence and inactive/deleted-account handling with ONB-019/020.
+- ONB-015 accepted and merged — complete; this task must use the final durable account-refresh command and persisted import projections.
+- Transitively consumes ONB-011/012 durable persistence and worker lifecycle plus ONB-013/014 provider adapters — complete.
+- Consume delivered ONB-019 lifecycle admission/fence semantics and coordinate inactive/deleted-account behavior with ONB-020.
 - Coordinate authenticated root/session bootstrap and non-disruptive status restoration with ONB-010 where their Angular integration surfaces overlap.
 
-Do not implement this task against the current synchronous account-sync route.
+Do not reintroduce synchronous provider traversal or a second account-import lifecycle.
 
 ## In scope
 
@@ -69,7 +71,7 @@ Do not implement this task against the current synchronous account-sync route.
 - Inactive, deleted, or lifecycle-fenced accounts do not receive new automatic work.
 - Manual refresh remains independently available.
 - The trigger does not run from `apps/api/src/auth/auth.plugin.ts` and does not execute on every protected request.
-- The implementation cannot be enabled before ONB-015 removes synchronous provider execution from account HTTP routes.
+- The implementation cannot bypass the delivered ONB-015 durable command path or ONB-019 admission guard.
 
 ## Required validation
 
@@ -79,6 +81,10 @@ Do not implement this task against the current synchronous account-sync route.
 - Browser validation for login, reload, multiple tabs, multiple accounts, existing active work, and partial provider failure.
 - Architecture checks proving no provider call or import creation is added to the authentication hook.
 - Full affected API/web/contracts build, test, lint, and architecture gates.
+
+## Claim rule
+
+Before claim, re-inspect current ONB-015 account-import command/store APIs, ONB-019 lifecycle admission, ONB-010 Angular bootstrap work, and ONB-020 account lifecycle plans for collisions. Keep the trigger idempotent and non-authoritative in the browser.
 
 ## Completion
 
