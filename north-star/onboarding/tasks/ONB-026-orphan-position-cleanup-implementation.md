@@ -1,6 +1,6 @@
 # ONB-026 — Implement bounded orphan shared-position cleanup
 
-Status: PROPOSED
+Status: READY
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 185
 
 Delivery class: Implementation
 
-Planning maturity: Implementation-ready after ONB-006 acceptance; dependency-gated
+Planning maturity: Implementation-ready after ONB-006/007 acceptance and ONB-019 lifecycle-foundation delivery; claim-time schema/migration and deployed-PostgreSQL compatibility checks remain mandatory
 
 GitHub issue: [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280)
 
@@ -21,6 +21,8 @@ Claim branch: none
 Claimed at: none
 
 Claim scope: none
+
+Promoted at: 2026-08-26 through merged-task completion reconciliation
 
 ## Outcome
 
@@ -64,13 +66,13 @@ The implementation must use:
 
 ## Dependencies
 
-- ONB-006 accepted and merged.
-- ONB-007 transaction/lock budget accepted.
-- Coordinate Prisma/schema/migration ownership with ONB-011, ONB-017, and ONB-019 before claim.
-- Consume ONB-019 actor/audit/claim conventions without adding cleanup to user/account/game fences.
-- Coordinate destructive cascade writers with ONB-020/021.
+- ONB-006 accepted and merged — complete.
+- ONB-007 transaction/lock budget accepted — complete.
+- ONB-019 actor/audit/claim conventions are delivered; cleanup remains separate from user/account/game lifecycle fences.
+- Coordinate Prisma/schema/migration ownership with delivered ONB-011/017/019 immediately before claim.
+- Coordinate destructive cascade writers with ONB-020/021 during implementation.
 - Expose one canonical service consumed later by ONB-024 administrator adapters.
-- Verify the production PostgreSQL version supports `AFTER ... REFERENCING NEW TABLE` transition relations before migration; return to design review if it does not.
+- Verify the deployed PostgreSQL major version supports `AFTER ... REFERENCING NEW TABLE` transition relations before writing the migration; return to design review if it does not.
 
 ## In scope
 
@@ -192,7 +194,7 @@ Provide a server-side command following the existing `apps/api/src/scripts/` pat
 
 ## Claim rule
 
-Do not claim until the canonical queue promotes ONB-026 to `READY`, ONB-006 canonical records are reconciled, and the claimant has recorded current schema/migration ownership for ONB-011, ONB-017, and ONB-019.
+The canonical queue has promoted ONB-026 to `READY`. Before claiming, the claimant must still re-inspect current schema/migration ownership for ONB-011/017/019, check active ONB-020/021 work for writer/lock collisions, and verify the deployed PostgreSQL transition-relation capability. If any of those checks fails, return the task to `BLOCKED` or design review rather than improvising.
 
 ## Completion
 
