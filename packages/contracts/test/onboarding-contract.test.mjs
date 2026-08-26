@@ -3,10 +3,16 @@ import {
   ONBOARDING_CONTRACT_VERSION,
   onboardingActionCodeSchema,
   onboardingAttentionCodeSchema,
+  onboardingDispositionCommandResponseSchema,
   onboardingDispositionSchema,
+  onboardingErrorResponseSchema,
+  onboardingExpandBodySchema,
   onboardingFeatureStateSchema,
   onboardingPreparationPurposeSchema,
   onboardingReadinessResponseSchema,
+  onboardingRunCommandResponseSchema,
+  onboardingRunParamsSchema,
+  onboardingStartBodySchema,
 } from '../dist/onboarding/index.js';
 
 assert.equal(onboardingDispositionSchema.safeParse('PENDING').success, true);
@@ -115,5 +121,66 @@ assert.equal(onboardingReadinessResponseSchema.safeParse({
   ...response,
   etaSeconds: 120,
 }).success, false);
+
+const startBody = { accountId: 17 };
+assert.deepEqual(onboardingStartBodySchema.parse(startBody), startBody);
+assert.equal(onboardingStartBodySchema.safeParse({ accountId: 0 }).success, false);
+assert.equal(onboardingStartBodySchema.safeParse({ accountId: 17, extra: true }).success, false);
+
+assert.deepEqual(onboardingRunParamsSchema.parse({ runId: '23' }), { runId: 23 });
+assert.equal(onboardingRunParamsSchema.safeParse({ runId: '0' }).success, false);
+
+const expansion = { kind: 'OLDER_HISTORY', accountId: 17 };
+assert.deepEqual(onboardingExpandBodySchema.parse(expansion), expansion);
+assert.equal(onboardingExpandBodySchema.safeParse({ kind: 'CUSTOM', accountId: 17 }).success, false);
+assert.equal(onboardingExpandBodySchema.safeParse({ kind: 'ADD_ACCOUNT', accountId: -1 }).success, false);
+
+const runResponse = {
+  runId: 41,
+  purpose: 'RECOVERY',
+  status: 'QUEUED',
+  retryGeneration: 2,
+  idempotent: false,
+};
+assert.deepEqual(onboardingRunCommandResponseSchema.parse(runResponse), runResponse);
+assert.equal(onboardingRunCommandResponseSchema.safeParse({ ...runResponse, runId: 0 }).success, false);
+assert.equal(onboardingRunCommandResponseSchema.safeParse({ ...runResponse, purpose: 'OTHER' }).success, false);
+assert.equal(onboardingRunCommandResponseSchema.safeParse({ ...runResponse, status: '' }).success, false);
+assert.equal(onboardingRunCommandResponseSchema.safeParse({ ...runResponse, retryGeneration: -1 }).success, false);
+
+const dispositionResponse = {
+  disposition: 'COMPLETED',
+  reason: 'CORE_READY',
+  changedAt: '2026-08-26T07:00:00.000Z',
+  idempotent: true,
+};
+assert.deepEqual(
+  onboardingDispositionCommandResponseSchema.parse(dispositionResponse),
+  dispositionResponse,
+);
+assert.equal(
+  onboardingDispositionCommandResponseSchema.safeParse({
+    ...dispositionResponse,
+    changedAt: 'not-a-date',
+  }).success,
+  false,
+);
+assert.equal(
+  onboardingDispositionCommandResponseSchema.safeParse({
+    ...dispositionResponse,
+    disposition: 'UNKNOWN',
+  }).success,
+  false,
+);
+
+const errorResponse = {
+  error: 'Owned onboarding preparation run not found.',
+  code: 'ONBOARDING_NOT_FOUND',
+};
+assert.deepEqual(onboardingErrorResponseSchema.parse(errorResponse), errorResponse);
+assert.equal(
+  onboardingErrorResponseSchema.safeParse({ ...errorResponse, code: 'INTERNAL_ERROR' }).success,
+  false,
+);
 
 console.log('Onboarding contract tests passed.');
