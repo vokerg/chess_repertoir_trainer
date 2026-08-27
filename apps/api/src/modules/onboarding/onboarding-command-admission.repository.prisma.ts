@@ -14,7 +14,6 @@ import {
 import { canonicalizeAccountImportScope } from '../account-imports/account-import.scope';
 import type { CreatePreparationRunInput } from '../preparation/preparation.types';
 
-const ONBOARDING_COMMAND_LOCK_NAMESPACE = 17_000_194;
 const IMPORT_PRIORITY = 100;
 const NON_TERMINAL_PREPARATION_STATUSES = [
   'QUEUED',
@@ -57,6 +56,7 @@ export interface OnboardingPreparationAdmissionInput {
   preparation: Omit<CreatePreparationRunInput, 'userId' | 'targets'>;
   targets: OnboardingPreparationAdmissionTarget[];
   replaceNoRecentRunId?: number | null;
+  requireFirstRunEligible?: boolean;
 }
 
 export type OnboardingPreparationAdmissionResult =
@@ -74,6 +74,14 @@ interface IdRow {
 interface ActivePreparationRow extends IdRow {
   status: string;
   attentionCode: string | null;
+}
+
+interface FirstRunUserRow {
+  onboardingDisposition: string;
+}
+
+interface LatestPreparationRow extends IdRow {
+  status: string;
 }
 
 interface AccountRow extends IdRow {
@@ -104,6 +112,13 @@ export class OnboardingCommandSourceStateChangedError extends Error {
   }
 }
 
+export class OnboardingCommandFirstRunStateChangedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'OnboardingCommandFirstRunStateChangedError';
+  }
+}
+
 export function createOnboardingCommandAdmissionRepository(
   database: PrismaClient = prisma,
 ): OnboardingCommandAdmissionRepository {
@@ -113,13 +128,6 @@ export function createOnboardingCommandAdmissionRepository(
 
       try {
         return await database.$transaction(async (transaction) => {
-          await transaction.$executeRaw(Prisma.sql`
-            SELECT pg_advisory_xact_lock(
-              ${ONBOARDING_COMMAND_LOCK_NAMESPACE}::integer,
-              ${input.userId}::integer
-            )
-          `);
-
           const active = await findActivePreparation(transaction, input.userId);
           if (active) {
             if (active.id !== (input.replaceNoRecentRunId ?? null)) {
@@ -130,6 +138,10 @@ export function createOnboardingCommandAdmissionRepository(
             }
           } else if (input.replaceNoRecentRunId != null) {
             throw new OnboardingCommandSourceStateChangedError();
+          }
+
+          if (input.requireFirstRunEligible) {
+            await assertFirstRunEligible(transaction, input.userId);
           }
 
           const targets = [] as Array<PreparationTargetInput & { currentImportRunId: number }>;
@@ -178,6 +190,39 @@ export function createOnboardingCommandAdmissionRepository(
       }
     },
   };
+}
+
+async function assertFirstRunEligible(
+  transaction: Prisma.TransactionClient,
+  userId: number,
+): Promise<void> {
+  const userRows = await transaction.$queryRaw<FirstRunUserRow[]>(Prisma.sql`
+    SELECT "onboardingDisposition"
+    FROM "AppUser"
+    WHERE "id" = ${userId}
+    FOR UPDATE
+  `);
+  const user = userRows[0];
+  if (!user) throw new OnboardingCommandFirstRunStateChangedError('App user no longer exists.');
+  if (user.onboardingDisposition === 'COMPLETED') {
+    throw new OnboardingCommandFirstRunStateChangedError(
+      'Completed onboarding uses expansion or recovery commands rather than starting a new first-run preparation.',
+    );
+  }
+
+  const latestRows = await transaction.$queryRaw<LatestPreparationRow[]>(Prisma.sql`
+    SELECT "id", "status"
+    FROM "DataPreparationRun"
+    WHERE "userId" = ${userId}
+    ORDER BY "createdAt" DESC, "id" DESC
+    LIMIT 1
+  `);
+  const latest = latestRows[0];
+  if (latest && (latest.status === 'FAILED' || latest.status === 'CANCELLED')) {
+    throw new OnboardingCommandFirstRunStateChangedError(
+      `Preparation run ${latest.id} must be restarted as recovery rather than replaced by a new onboarding run.`,
+    );
+  }
 }
 
 async function ensureImport(
