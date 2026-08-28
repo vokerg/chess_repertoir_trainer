@@ -19,6 +19,10 @@ const ACTIVE_IMPORT_STATUSES = [
   'PAUSED',
   'CANCEL_REQUESTED',
 ] as const;
+const REPLAYABLE_IMPORT_RETRY_STATUSES = new Set([
+  ...ACTIVE_IMPORT_STATUSES,
+  'COMPLETED',
+]);
 const BLOCKING_IMPORT_STATUSES = new Set([
   'FAILED',
   'CANCELLED',
@@ -120,8 +124,9 @@ export function createOnboardingImportAttentionRepository(
         if (retryable.length === 0) {
           const unresolved = linked.some((item) => BLOCKING_IMPORT_STATUSES.has(item.status));
           const existingRetries = linked
-            .filter((item) => item.retryOfImportRunId !== null && ACTIVE_IMPORT_STATUSES.includes(
-              item.status as typeof ACTIVE_IMPORT_STATUSES[number],
+            .filter((item) => (
+              item.retryOfImportRunId !== null
+              && REPLAYABLE_IMPORT_RETRY_STATUSES.has(item.status)
             ))
             .map((item) => item.importRunId);
           if (!unresolved && existingRetries.length > 0) {
