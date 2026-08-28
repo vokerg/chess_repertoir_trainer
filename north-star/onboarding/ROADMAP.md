@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Roadmap
 
-Last updated: 2026-08-26
+Last updated: 2026-08-28
 
 Program: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
@@ -25,7 +25,7 @@ ONB-017/018 preparation execution + reconciliation — DONE
         ↓
 ONB-008 disposition/readiness projection — DONE
         ↓
-ONB-009 lifecycle commands — READY
+ONB-009 lifecycle commands — REVIEW (PR #406)
         ↓
 ONB-010 functional onboarding/Home re-entry — PROPOSED
         +
@@ -36,7 +36,7 @@ Visual/accessibility integration
 Production onboarding release
 ```
 
-ONB-008 runtime PR #398 is merged as `512c248689f41a1164be3da63dc22cc97041614b`. The next deterministic product-path implementation is ONB-009.
+ONB-008 runtime PR #398 is merged as `512c248689f41a1164be3da63dc22cc97041614b`. ONB-009 is implemented on runtime PR #406 and remains in review; ONB-010 stays blocked until that command surface is accepted and merged.
 
 ## Account-sync lane
 
@@ -119,16 +119,16 @@ ONB-024 must remain a thin adapter over the canonical lifecycle/cleanup services
 Current state:
 
 - ONB-008 / #193 — `DONE`.
-- **ONB-009 / #194 — `READY`.**
+- **ONB-009 / #194 — `REVIEW` on runtime PR #406.**
 
-Exit requires authenticated/idempotent lifecycle commands over the delivered projection/execution state without a second browser state machine.
+Exit requires accepted/merged authenticated and idempotent lifecycle commands over the delivered projection/execution state without a second browser state machine.
 
 ### Phase 6 — Account-sync cutover and functional onboarding
 
 Current state:
 
 - ONB-015 / #203 — `DONE`.
-- ONB-010 / #195 — `PROPOSED` behind ONB-009.
+- ONB-010 / #195 — `PROPOSED` behind accepted/merged ONB-009.
 - **ONB-025 / #276 — `READY`** as a bounded post-cutover follow-up.
 
 ### Phase 7 — Destructive lifecycle and cleanup
@@ -159,4 +159,4 @@ Current state:
 
 ## Next deterministic action
 
-**ONB-009 / #194** is the lowest-order unclaimed `READY` task. ONB-025, ONB-020, and ONB-026 are also ready on independent lanes subject to their task-file claim-time collision and environment checks.
+Complete ONB-009 / #194 review and acceptance/merge before ONB-010 can start. For independent new work, **ONB-025 / #276** is the lowest-order unclaimed `READY` task; ONB-020 and ONB-026 remain ready on their own lanes subject to their claim-time checks.
