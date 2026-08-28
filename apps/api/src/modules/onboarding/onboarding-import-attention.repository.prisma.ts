@@ -10,6 +10,7 @@ import {
   AccountImportInvalidRetryError,
 } from '../account-imports/account-import.repository.prisma';
 import { admitAccountImportRunInTransaction } from '../account-imports/account-import.transaction.repository.prisma';
+import { lockDataLifecycleUserScope } from '../data-lifecycle/data-lifecycle.guard';
 import {
   recordPreparationImportRetryInTransaction,
   relinkPreparationTargetImportInTransaction,
@@ -77,6 +78,11 @@ export function createOnboardingImportAttentionRepository(
       validatePositiveInteger(preparationRunId, 'preparationRunId');
 
       return database.$transaction(async (transaction) => {
+        // Match the lifecycle coordinator before taking preparation, target, or
+        // account row locks. Account-import admission below re-enters the same
+        // transaction-scoped user fence while validating its narrower scope.
+        await lockDataLifecycleUserScope(transaction, userId);
+
         const runRows = await transaction.$queryRaw<AttentionRunRow[]>(Prisma.sql`
           SELECT "id", "status", "attentionCode"
           FROM "DataPreparationRun"
