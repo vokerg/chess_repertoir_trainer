@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Open Questions
 
-Last updated: 2026-08-26
+Last updated: 2026-08-28
 
 Every material question has one owning task. Completed-task design and review history remains in its task file and append-only reports; this file tracks only unresolved implementation/product questions that can still affect future work.
 
@@ -34,18 +34,20 @@ Operation-specific destructive row execution remains owned by ONB-020/021, not O
 
 No ONB-019-owned question remains open.
 
-## ONB-009 / #194 — onboarding lifecycle commands
+## Resolved by implementation under review
 
-Still owned by ONB-009:
+### ONB-009 / #194 — onboarding lifecycle commands
 
-- final route grouping/naming over the delivered onboarding/import/preparation modules;
-- duplicate/idempotent command response vocabulary;
-- exact expansion command payload for history, bullet, and additional-account scopes;
-- explicit no-data finish/skip reason vocabulary;
-- action priority/destination behavior after each accepted command;
-- exact accepted-versus-acknowledged pause/cancel response vocabulary while reusing ONB-018 quiescence semantics.
+Runtime PR #406 resolves the implementation-local API decisions that were previously open:
 
-These are implementation-local API decisions; they must not redefine ONB-008 readiness or ONB-019/020 destructive lifecycle state.
+- routes are grouped under authenticated `/api/me/onboarding` start/skip and owned run control/recovery/expansion endpoints;
+- duplicate accepted commands return the persisted run/disposition with an explicit idempotent result rather than inventing a second workflow;
+- expansion uses the shared `OLDER_HISTORY`, `INCLUDE_BULLET`, and `ADD_ACCOUNT` payload vocabulary with `accountId` only for the additional-account case;
+- skip and finish persist explicit disposition reasons, and finish is limited to ONB-008-advertised finishable attention outcomes;
+- pause/cancel preserve ONB-018 requested-versus-acknowledged semantics, while resume/retry also cover the linked-import attention actions advertised by ONB-008;
+- restart creates linked immutable `RECOVERY` work and expansion creates immutable `EXPANSION` work rather than reopening historical scope.
+
+No ONB-009-owned design question remains open. Review acceptance and merge are execution gates, not unresolved product/API decisions. ONB-009 does not redefine ONB-008 readiness or ONB-019/020 destructive lifecycle state.
 
 ## ONB-010 / #195 — functional Angular onboarding/Home
 
@@ -121,6 +123,6 @@ Still owned by ONB-026:
 
 If deployed PostgreSQL cannot support the required transition-relation contract, ONB-026 returns to design review rather than weakening the database-owned reset invariant.
 
-## No question reopened by the 2026-08-26 reconciliation
+## Decisions ledger reassessment
 
-`DECISIONS.md` was reassessed while reconciling ONB-008/015/019 completion. No new architecture or product decision was required. This reconciliation changes task/queue truth and downstream readiness only; it does not silently alter accepted behavior.
+`DECISIONS.md` was reassessed for ONB-009. The implementation resolves its local route/payload/idempotency/control vocabulary within already accepted ONB-001/003/008/016/017/018/019 boundaries, so no new cross-program architecture decision entry is required.
