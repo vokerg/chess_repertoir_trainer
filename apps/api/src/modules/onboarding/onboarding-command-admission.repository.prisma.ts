@@ -4,14 +4,15 @@ import type {
   DurableAccountImportMode,
 } from '@chess-trainer/contracts';
 import prisma from '../../prisma';
-import { allowAccountImportAdmission } from '../account-imports/account-import-admission.guard';
 import {
   AccountImportAccountNotFoundError,
-  AccountImportActiveRunError,
-  AccountImportInvalidRetryError,
   AccountImportRunNotFoundError,
 } from '../account-imports/account-import.repository.prisma';
-import { canonicalizeAccountImportScope } from '../account-imports/account-import.scope';
+import { admitAccountImportRunInTransaction } from '../account-imports/account-import.transaction.repository.prisma';
+import {
+  completePreparationAttentionInTransaction,
+  createPreparationRunInTransaction,
+} from '../preparation/preparation.transaction.repository.prisma';
 import type { CreatePreparationRunInput } from '../preparation/preparation.types';
 
 const IMPORT_PRIORITY = 100;
@@ -22,13 +23,6 @@ const NON_TERMINAL_PREPARATION_STATUSES = [
   'PAUSED',
   'CANCEL_REQUESTED',
   'NEEDS_ATTENTION',
-] as const;
-const NON_TERMINAL_IMPORT_STATUSES = [
-  'QUEUED',
-  'RUNNING',
-  'PAUSE_REQUESTED',
-  'PAUSED',
-  'CANCEL_REQUESTED',
 ] as const;
 
 type PreparationTargetInput = CreatePreparationRunInput['targets'][number];
@@ -84,27 +78,6 @@ interface LatestPreparationRow extends IdRow {
   status: string;
 }
 
-interface AccountRow extends IdRow {
-  provider: string;
-}
-
-interface ActiveImportRow extends IdRow {
-  mode: string;
-  source: string;
-  scopeHash: string | null;
-  requestedFrom: Date | null;
-  requestedTo: Date | null;
-  retryOfImportRunId: number | null;
-}
-
-interface RetryImportRow extends IdRow {
-  mode: string;
-  status: string;
-  scopeHash: string | null;
-  requestedFrom: Date | null;
-  requestedTo: Date | null;
-}
-
 export class OnboardingCommandSourceStateChangedError extends Error {
   constructor() {
     super('The no-recent-games preparation is no longer replaceable by an expansion.');
@@ -128,10 +101,9 @@ export function createOnboardingCommandAdmissionRepository(
 
       try {
         return await database.$transaction(async (transaction) => {
-          // First-run admission is serialized on the owning user row before any import
-          // or preparation work is created. A concurrent loser therefore observes the
-          // winner as active instead of waiting on the partial unique index after it has
-          // already created an unrelated import.
+          // First-run commands serialize on the durable user row before any
+          // import/preparation admission. Other command families still rely on
+          // the preparation one-active-per-user invariant as their final arbiter.
           if (input.requireFirstRunEligible) {
             await assertFirstRunEligible(transaction, input.userId);
           }
@@ -157,28 +129,31 @@ export function createOnboardingCommandAdmissionRepository(
                   item.target.accountId,
                   item.importBinding.importRunId,
                 )
-              : await ensureImport(transaction, input.userId, item.importBinding.request);
+              : (await admitAccountImportRunInTransaction(transaction, {
+                  userId: input.userId,
+                  accountId: item.importBinding.request.accountId,
+                  mode: item.importBinding.request.mode,
+                  source: 'ONBOARDING',
+                  scope: item.importBinding.request.scope,
+                  requestedFrom: item.importBinding.request.requestedFrom,
+                  requestedTo: item.importBinding.request.requestedTo,
+                  priority: IMPORT_PRIORITY,
+                  windowsTotal: null,
+                  retryOfImportRunId: item.importBinding.request.retryOfImportRunId ?? null,
+                }, { reuseEquivalentActive: true })).importRunId;
             targets.push({ ...item.target, currentImportRunId: importRunId });
           }
 
           if (input.replaceNoRecentRunId != null) {
-            const changed = await transaction.$executeRaw(Prisma.sql`
-              UPDATE "DataPreparationRun"
-              SET "status" = 'COMPLETED',
-                  "attentionCode" = NULL,
-                  "attentionDetail" = NULL,
-                  "completedAt" = COALESCE("completedAt", NOW()),
-                  "reconcileAfter" = NULL,
-                  "updatedAt" = NOW()
-              WHERE "id" = ${input.replaceNoRecentRunId}
-                AND "userId" = ${input.userId}
-                AND "status" = 'NEEDS_ATTENTION'
-                AND "attentionCode" = 'NO_RECENT_GAMES'
-            `);
-            if (changed !== 1) throw new OnboardingCommandSourceStateChangedError();
+            const changed = await completePreparationAttentionInTransaction(transaction, {
+              userId: input.userId,
+              runId: input.replaceNoRecentRunId,
+              attentionCode: 'NO_RECENT_GAMES',
+            });
+            if (!changed) throw new OnboardingCommandSourceStateChangedError();
           }
 
-          const runId = await createPreparationRun(transaction, {
+          const runId = await createPreparationRunInTransaction(transaction, {
             userId: input.userId,
             ...input.preparation,
             targets,
@@ -229,138 +204,6 @@ async function assertFirstRunEligible(
   }
 }
 
-async function ensureImport(
-  transaction: Prisma.TransactionClient,
-  userId: number,
-  request: OnboardingImportAdmissionRequest,
-): Promise<number> {
-  validateImportRequest(userId, request);
-  const canonical = canonicalizeAccountImportScope(request.scope);
-  const accountRows = await transaction.$queryRaw<AccountRow[]>(Prisma.sql`
-    SELECT "id", "provider"
-    FROM "ExternalAccount"
-    WHERE "id" = ${request.accountId}
-      AND "userId" = ${userId}
-    FOR UPDATE
-  `);
-  const account = accountRows[0];
-  if (!account) throw new AccountImportAccountNotFoundError();
-
-  await allowAccountImportAdmission.assertAllowed(transaction, {
-    userId,
-    accountId: request.accountId,
-  });
-
-  if (request.retryOfImportRunId != null) {
-    await assertValidRetry(transaction, userId, request, canonical.scopeHash);
-  }
-
-  const activeRows = await transaction.$queryRaw<ActiveImportRow[]>(Prisma.sql`
-    SELECT
-      "id",
-      "mode",
-      "source",
-      "scopeHash",
-      "requestedFrom",
-      "requestedTo",
-      "retryOfImportRunId"
-    FROM "ImportRun"
-    WHERE "userId" = ${userId}
-      AND "accountId" = ${request.accountId}
-      AND "status" IN (${Prisma.join(NON_TERMINAL_IMPORT_STATUSES.map((status) => Prisma.sql`${status}`))})
-    ORDER BY "createdAt" DESC, "id" DESC
-    LIMIT 1
-  `);
-  const active = activeRows[0];
-  if (active) {
-    if (
-      active.mode === request.mode
-      && active.source === 'ONBOARDING'
-      && active.scopeHash === canonical.scopeHash
-      && sameDate(active.requestedFrom, request.requestedFrom)
-      && sameDate(active.requestedTo, request.requestedTo)
-      && active.retryOfImportRunId === (request.retryOfImportRunId ?? null)
-    ) {
-      return active.id;
-    }
-    throw new AccountImportActiveRunError(active.id);
-  }
-
-  const rows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
-    INSERT INTO "ImportRun" (
-      "userId",
-      "accountId",
-      "provider",
-      "mode",
-      "source",
-      "status",
-      "scopeVersion",
-      "scopeHash",
-      "scopeJson",
-      "requestedFrom",
-      "requestedTo",
-      "retryOfImportRunId",
-      "priority",
-      "windowsTotal",
-      "windowsCompleted",
-      "gamesSeen",
-      "gamesMatchedScope",
-      "gamesImported",
-      "gamesDuplicate",
-      "gamesSkippedOutOfScope",
-      "gamesFailed",
-      "lastProgressAt",
-      "workKey",
-      "claimedAt",
-      "heartbeatAt",
-      "retryAt",
-      "rateLimitUntil",
-      "completedAt",
-      "errorCode",
-      "error",
-      "createdAt",
-      "updatedAt"
-    ) VALUES (
-      ${userId},
-      ${request.accountId},
-      ${account.provider},
-      ${request.mode},
-      'ONBOARDING',
-      'QUEUED',
-      ${canonical.scopeVersion},
-      ${canonical.scopeHash},
-      ${JSON.stringify(canonical.scope)}::jsonb,
-      ${request.requestedFrom},
-      ${request.requestedTo},
-      ${request.retryOfImportRunId ?? null},
-      ${IMPORT_PRIORITY},
-      NULL,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NOW(),
-      NOW()
-    )
-    RETURNING "id"
-  `);
-  const row = rows[0];
-  if (!row) throw new Error('Onboarding account import admission did not return a run.');
-  return row.id;
-}
-
 async function verifyReusableImport(
   transaction: Prisma.TransactionClient,
   userId: number,
@@ -394,131 +237,6 @@ async function verifyReusableImport(
   return rows[0].id;
 }
 
-async function assertValidRetry(
-  transaction: Prisma.TransactionClient,
-  userId: number,
-  request: OnboardingImportAdmissionRequest,
-  scopeHash: string,
-): Promise<void> {
-  const rows = await transaction.$queryRaw<RetryImportRow[]>(Prisma.sql`
-    SELECT "id", "mode", "status", "scopeHash", "requestedFrom", "requestedTo"
-    FROM "ImportRun"
-    WHERE "id" = ${request.retryOfImportRunId ?? -1}
-      AND "userId" = ${userId}
-      AND "accountId" = ${request.accountId}
-    FOR SHARE
-  `);
-  const retryOf = rows[0];
-  if (!retryOf) throw new AccountImportInvalidRetryError('Retry source import run not found.');
-  if (retryOf.mode === 'LEGACY_SYNC') {
-    throw new AccountImportInvalidRetryError('Legacy import history cannot be retried as durable work.');
-  }
-  if (retryOf.status !== 'FAILED' && retryOf.status !== 'CANCELLED') {
-    throw new AccountImportInvalidRetryError('Only failed or cancelled import runs can be retried.');
-  }
-  if (
-    retryOf.mode !== request.mode
-    || retryOf.scopeHash !== scopeHash
-    || retryOf.requestedFrom?.getTime() !== request.requestedFrom.getTime()
-    || retryOf.requestedTo?.getTime() !== request.requestedTo.getTime()
-  ) {
-    throw new AccountImportInvalidRetryError(
-      'Retry must preserve the source import mode, immutable scope, and requested range.',
-    );
-  }
-}
-
-async function createPreparationRun(
-  transaction: Prisma.TransactionClient,
-  input: CreatePreparationRunInput,
-): Promise<number> {
-  if (input.retryOfRunId != null) {
-    const retryRows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
-      SELECT "id"
-      FROM "DataPreparationRun"
-      WHERE "id" = ${input.retryOfRunId}
-        AND "userId" = ${input.userId}
-      LIMIT 1
-    `);
-    if (!retryRows[0]) throw new Error('Retry preparation run is not owned by the user.');
-  }
-
-  const runRows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
-    INSERT INTO "DataPreparationRun" (
-      "userId",
-      "purpose",
-      "status",
-      "recipeVersion",
-      "recipeJson",
-      "retryOfRunId",
-      "retryGeneration",
-      "createdAt",
-      "updatedAt"
-    ) VALUES (
-      ${input.userId},
-      ${input.purpose},
-      'QUEUED',
-      ${input.recipeVersion},
-      ${JSON.stringify(input.recipe)}::jsonb,
-      ${input.retryOfRunId ?? null},
-      ${input.retryGeneration ?? 0},
-      NOW(),
-      NOW()
-    )
-    RETURNING "id"
-  `);
-  const run = runRows[0];
-  if (!run) throw new Error('Onboarding preparation admission did not return a run.');
-
-  for (const target of [...input.targets].sort((left, right) => left.ordinal - right.ordinal)) {
-    const targetRows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
-      INSERT INTO "DataPreparationTarget" (
-        "preparationRunId",
-        "accountId",
-        "accountProvider",
-        "accountUsername",
-        "ordinal",
-        "scopeVersion",
-        "scopeHash",
-        "scopeJson",
-        "requestedFrom",
-        "requestedTo",
-        "currentImportRunId",
-        "createdAt",
-        "updatedAt"
-      )
-      SELECT
-        ${run.id},
-        account."id",
-        account."provider",
-        account."username",
-        ${target.ordinal},
-        ${target.scopeVersion},
-        ${target.scopeHash},
-        ${JSON.stringify(target.scope)}::jsonb,
-        ${target.requestedFrom},
-        ${target.requestedTo},
-        ${target.currentImportRunId ?? null},
-        NOW(),
-        NOW()
-      FROM "ExternalAccount" AS account
-      WHERE account."id" = ${target.accountId}
-        AND account."userId" = ${input.userId}
-        AND EXISTS (
-          SELECT 1
-          FROM "ImportRun" AS import_run
-          WHERE import_run."id" = ${target.currentImportRunId ?? -1}
-            AND import_run."userId" = ${input.userId}
-            AND import_run."accountId" = account."id"
-        )
-      RETURNING "id"
-    `);
-    if (!targetRows[0]) throw new AccountImportAccountNotFoundError();
-  }
-
-  return run.id;
-}
-
 async function findActivePreparation(
   database: Prisma.TransactionClient | PrismaClient,
   userId: number,
@@ -538,21 +256,6 @@ function validateAdmissionInput(input: OnboardingPreparationAdmissionInput): voi
   validatePositiveInteger(input.userId, 'userId');
   if (input.targets.length === 0) throw new Error('Onboarding preparation requires at least one target.');
   if (input.replaceNoRecentRunId != null) validatePositiveInteger(input.replaceNoRecentRunId, 'replaceNoRecentRunId');
-}
-
-function validateImportRequest(userId: number, request: OnboardingImportAdmissionRequest): void {
-  validatePositiveInteger(userId, 'userId');
-  validatePositiveInteger(request.accountId, 'accountId');
-  if (Number.isNaN(request.requestedFrom.getTime()) || Number.isNaN(request.requestedTo.getTime())) {
-    throw new Error('Account import requested range must contain valid timestamps.');
-  }
-  if (request.requestedFrom >= request.requestedTo) {
-    throw new Error('Account import requested range must be a non-empty half-open interval.');
-  }
-}
-
-function sameDate(left: Date | null, right: Date): boolean {
-  return left !== null && left.getTime() === right.getTime();
 }
 
 function isActivePreparationConstraintError(error: unknown): boolean {
