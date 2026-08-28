@@ -48,6 +48,7 @@ interface TargetRow {
   requestedTo: Date;
   currentImportRunId: number | null;
   importStatus: string | null;
+  importRetryOfImportRunId: number | null;
 }
 
 interface DispositionRow {
@@ -71,6 +72,7 @@ export interface OnboardingCommandTargetRecord {
   requestedTo: Date;
   currentImportRunId: number | null;
   importStatus: string | null;
+  importRetryOfImportRunId: number | null;
 }
 
 export interface OnboardingCommandRunRecord {
@@ -94,6 +96,11 @@ export interface OnboardingCommandDispositionRecord {
   changedAt: Date | null;
 }
 
+export interface OnboardingCommandDispositionMutationResult {
+  disposition: OnboardingCommandDispositionRecord;
+  changed: boolean;
+}
+
 export interface OnboardingCommandRepository {
   getRun(userId: number, runId: number): Promise<OnboardingCommandRunRecord | null>;
   getLatestRun(userId: number): Promise<OnboardingCommandRunRecord | null>;
@@ -106,12 +113,12 @@ export interface OnboardingCommandRepository {
   ): Promise<OnboardingCommandRunRecord | null>;
   hasActiveRetryBatch(userId: number, runId: number): Promise<boolean>;
   getDisposition(userId: number): Promise<OnboardingCommandDispositionRecord>;
-  skip(userId: number, changedAt: Date): Promise<OnboardingCommandDispositionRecord>;
+  skip(userId: number, changedAt: Date): Promise<OnboardingCommandDispositionMutationResult>;
   finishWithAttention(
     userId: number,
     runId: number,
     changedAt: Date,
-  ): Promise<OnboardingCommandDispositionRecord | null>;
+  ): Promise<OnboardingCommandDispositionMutationResult | null>;
 }
 
 export function createOnboardingCommandRepository(
@@ -220,7 +227,8 @@ export function createOnboardingCommandRepository(
           "onboardingDispositionReason",
           "onboardingDispositionAt"
       `);
-      return rows[0] ? mapDisposition(rows[0]) : this.getDisposition(userId);
+      if (rows[0]) return { disposition: mapDisposition(rows[0]), changed: true };
+      return { disposition: await this.getDisposition(userId), changed: false };
     },
 
     async finishWithAttention(userId, runId, changedAt) {
@@ -249,9 +257,11 @@ export function createOnboardingCommandRepository(
           app_user."onboardingDispositionReason",
           app_user."onboardingDispositionAt"
       `);
-      if (rows[0]) return mapDisposition(rows[0]);
+      if (rows[0]) return { disposition: mapDisposition(rows[0]), changed: true };
       const current = await this.getDisposition(userId);
-      return current.disposition === 'COMPLETED' ? current : null;
+      return current.disposition === 'COMPLETED'
+        ? { disposition: current, changed: false }
+        : null;
     },
   };
 }
@@ -294,7 +304,8 @@ async function hydrateRun(
       target."requestedFrom",
       target."requestedTo",
       target."currentImportRunId",
-      import_run."status" AS "importStatus"
+      import_run."status" AS "importStatus",
+      import_run."retryOfImportRunId" AS "importRetryOfImportRunId"
     FROM "DataPreparationTarget" AS target
     LEFT JOIN "ImportRun" AS import_run
       ON import_run."id" = target."currentImportRunId"
@@ -328,6 +339,7 @@ async function hydrateRun(
       requestedTo: target.requestedTo,
       currentImportRunId: target.currentImportRunId,
       importStatus: target.importStatus,
+      importRetryOfImportRunId: target.importRetryOfImportRunId,
     })),
   };
 }
