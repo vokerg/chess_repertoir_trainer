@@ -233,6 +233,13 @@ function validateCreateInput(input: CreateAccountImportRunInput): void {
   if (!Number.isSafeInteger(input.priority) || input.priority < 0) {
     throw new Error('Account import priority must be a non-negative integer.');
   }
+  if (
+    input.windowsTotal !== undefined
+    && input.windowsTotal !== null
+    && (!Number.isSafeInteger(input.windowsTotal) || input.windowsTotal < 0)
+  ) {
+    throw new Error('Account import windowsTotal must be a non-negative integer.');
+  }
 }
 
 function sameDate(left: Date | null, right: Date): boolean {
