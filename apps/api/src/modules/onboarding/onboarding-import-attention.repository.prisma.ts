@@ -86,6 +86,9 @@ export function createOnboardingImportAttentionRepository(
           return null;
         }
 
+        // Lock the target link, but let the owning account-import boundary lock
+        // the account before it locks/validates the retry source ImportRun. This
+        // preserves the canonical account -> import lock order under concurrency.
         const linked = await transaction.$queryRaw<LinkedImportRow[]>(Prisma.sql`
           SELECT
             target."id" AS "targetId",
@@ -107,7 +110,7 @@ export function createOnboardingImportAttentionRepository(
            AND import_run."userId" = ${userId}
           WHERE target."preparationRunId" = ${preparationRunId}
           ORDER BY target."ordinal" ASC, target."id" ASC
-          FOR UPDATE OF target, import_run
+          FOR UPDATE OF target
         `);
         if (linked.length === 0) return null;
 
