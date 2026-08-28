@@ -11,6 +11,7 @@ import type {
   PreparationScopeSnapshot,
 } from '../preparation/preparation.types';
 
+const ONBOARDING_DISPOSITION_TRANSACTION_TIMEOUT_MS = 15_000;
 const NON_TERMINAL_PREPARATION_STATUSES = [
   'QUEUED',
   'RUNNING',
@@ -237,6 +238,8 @@ export function createOnboardingCommandRepository(
             disposition: await getDispositionFromDatabase(transaction, userId),
             changed: false,
           };
+        }, {
+          timeout: ONBOARDING_DISPOSITION_TRANSACTION_TIMEOUT_MS,
         });
       } catch (error) {
         if (error instanceof DataLifecycleWriteBlockedError) {
@@ -280,6 +283,8 @@ export function createOnboardingCommandRepository(
           return current.disposition === 'COMPLETED'
             ? { disposition: current, changed: false }
             : null;
+        }, {
+          timeout: ONBOARDING_DISPOSITION_TRANSACTION_TIMEOUT_MS,
         });
       } catch (error) {
         if (error instanceof DataLifecycleWriteBlockedError) {
