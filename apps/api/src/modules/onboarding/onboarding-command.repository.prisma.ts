@@ -56,9 +56,13 @@ interface DispositionRow {
   onboardingDispositionAt: Date | null;
 }
 
+interface ExistsRow {
+  exists: boolean;
+}
+
 export interface OnboardingCommandTargetRecord {
   id: number;
-  accountId: number;
+  accountId: number | null;
   ordinal: number;
   scopeVersion: number;
   scopeHash: string;
@@ -100,6 +104,7 @@ export interface OnboardingCommandRepository {
     sourceRunId: number,
     body: OnboardingExpandBody,
   ): Promise<OnboardingCommandRunRecord | null>;
+  hasActiveRetryBatch(userId: number, runId: number): Promise<boolean>;
   getDisposition(userId: number): Promise<OnboardingCommandDispositionRecord>;
   skip(userId: number, changedAt: Date): Promise<OnboardingCommandDispositionRecord>;
   finishWithAttention(
@@ -166,6 +171,24 @@ export function createOnboardingCommandRepository(
       return row ? hydrateRun(database, row) : null;
     },
 
+    async hasActiveRetryBatch(userId, runId) {
+      assertPositiveId(userId, 'userId');
+      assertPositiveId(runId, 'runId');
+      const rows = await database.$queryRaw<ExistsRow[]>(Prisma.sql`
+        SELECT EXISTS (
+          SELECT 1
+          FROM "DataPreparationRun" AS run
+          JOIN "DataPreparationBatch" AS batch
+            ON batch."preparationRunId" = run."id"
+          WHERE run."id" = ${runId}
+            AND run."userId" = ${userId}
+            AND batch."lane" = 'RETRY'
+            AND batch."status" IN ('QUEUED', 'RUNNING')
+        ) AS "exists"
+      `);
+      return rows[0]?.exists ?? false;
+    },
+
     async getDisposition(userId) {
       assertPositiveId(userId, 'userId');
       const rows = await database.$queryRaw<DispositionRow[]>(Prisma.sql`
@@ -216,7 +239,7 @@ export function createOnboardingCommandRepository(
             "updatedAt" = ${changedAt}
         FROM "DataPreparationRun" AS run
         WHERE app_user."id" = ${userId}
-          AND app_user."onboardingDisposition" <> 'COMPLETED'
+          AND app_user."onboardingDisposition" = 'PENDING'
           AND run."id" = ${runId}
           AND run."userId" = app_user."id"
           AND run."status" = 'NEEDS_ATTENTION'
@@ -294,23 +317,18 @@ async function hydrateRun(
     attentionCode: row.attentionCode,
     coreReadyAt: row.coreReadyAt,
     createdAt: row.createdAt,
-    targets: targets.map((target) => {
-      if (target.accountId === null) {
-        throw new Error(`Preparation target ${target.id} no longer has an account.`);
-      }
-      return {
-        id: target.id,
-        accountId: target.accountId,
-        ordinal: target.ordinal,
-        scopeVersion: target.scopeVersion,
-        scopeHash: target.scopeHash,
-        scope: target.scopeJson as PreparationScopeSnapshot,
-        requestedFrom: target.requestedFrom,
-        requestedTo: target.requestedTo,
-        currentImportRunId: target.currentImportRunId,
-        importStatus: target.importStatus,
-      };
-    }),
+    targets: targets.map((target) => ({
+      id: target.id,
+      accountId: target.accountId,
+      ordinal: target.ordinal,
+      scopeVersion: target.scopeVersion,
+      scopeHash: target.scopeHash,
+      scope: target.scopeJson as PreparationScopeSnapshot,
+      requestedFrom: target.requestedFrom,
+      requestedTo: target.requestedTo,
+      currentImportRunId: target.currentImportRunId,
+      importStatus: target.importStatus,
+    })),
   };
 }
 
