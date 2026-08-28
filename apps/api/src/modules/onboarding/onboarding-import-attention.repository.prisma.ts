@@ -16,6 +16,7 @@ import {
   relinkPreparationTargetImportInTransaction,
 } from '../preparation/preparation.transaction.repository.prisma';
 
+const ONBOARDING_ATOMIC_TRANSACTION_TIMEOUT_MS = 15_000;
 const ACTIVE_IMPORT_STATUSES = [
   'QUEUED',
   'RUNNING',
@@ -215,6 +216,10 @@ export function createOnboardingImportAttentionRepository(
         }
 
         return { importRunIds: createdIds, idempotent: false };
+      }, {
+        // Import retry atomically spans lifecycle, import, and preparation state.
+        // Keep the larger DB-only budget local to this multi-aggregate command.
+        timeout: ONBOARDING_ATOMIC_TRANSACTION_TIMEOUT_MS,
       });
     },
   };
