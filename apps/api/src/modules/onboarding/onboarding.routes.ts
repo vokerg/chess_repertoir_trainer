@@ -11,6 +11,7 @@ import {
 import { requireAuth } from '../../auth/request-auth';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 import { unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
+import { OnboardingCommandDispositionBlockedError } from './onboarding-command.repository.prisma';
 import {
   OnboardingCommandAccountNotFoundError,
   OnboardingCommandActiveRunError,
@@ -247,6 +248,7 @@ function handleCommandError(error: unknown, reply: { code(statusCode: number): u
     error instanceof OnboardingCommandInvalidStateError
     || error instanceof OnboardingCommandActiveRunError
     || error instanceof OnboardingCommandImportActiveError
+    || error instanceof OnboardingCommandDispositionBlockedError
   ) {
     reply.code(409);
     return { error: error.message, code: error.code };
