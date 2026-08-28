@@ -160,7 +160,7 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
       if (error instanceof AccountImportAccountNotFoundError) {
         throw new OnboardingCommandAccountNotFoundError();
       }
-      if (error instanceof AccountImportAdmissionBlockedError) {
+      if (error instanceof AccountImportAdmissionBlockedError || error instanceof PreparationAdmissionBlockedError) {
         throw new OnboardingCommandInvalidStateError(error.message);
       }
       if (error instanceof AccountImportActiveRunError) {
