@@ -1,10 +1,13 @@
 import { Prisma, PrismaClient } from '@prisma/client';
-import prisma from '../../prisma';
-import { allowAccountImportAdmission } from '../account-imports/account-import-admission.guard';
 import {
-  AccountImportActiveRunError,
-  AccountImportInvalidRetryError,
-} from '../account-imports/account-import.repository.prisma';
+  accountImportScopeSchema,
+  durableAccountImportModeSchema,
+  durableAccountImportSourceSchema,
+} from '@chess-trainer/contracts';
+import prisma from '../../prisma';
+import { AccountImportInvalidRetryError } from '../account-imports/account-import.repository.prisma';
+import { admitAccountImportRunInTransaction } from '../account-imports/account-import.transaction.repository.prisma';
+import { relinkPreparationTargetImportInTransaction } from '../preparation/preparation.transaction.repository.prisma';
 
 const ACTIVE_IMPORT_STATUSES = [
   'QUEUED',
@@ -32,23 +35,15 @@ interface LinkedImportRow {
   accountId: number | null;
   ordinal: number;
   importRunId: number;
-  userId: number;
-  provider: string;
   mode: string;
   source: string;
   status: string;
-  scopeVersion: number | null;
-  scopeHash: string | null;
   scopeJson: unknown | null;
   requestedFrom: Date | null;
   requestedTo: Date | null;
   retryOfImportRunId: number | null;
   priority: number;
   windowsTotal: number | null;
-}
-
-interface IdRow {
-  id: number;
 }
 
 export interface OnboardingImportAttentionRetryResult {
@@ -94,13 +89,9 @@ export function createOnboardingImportAttentionRepository(
             target."accountId",
             target."ordinal",
             import_run."id" AS "importRunId",
-            import_run."userId",
-            import_run."provider",
             import_run."mode",
             import_run."source",
             import_run."status",
-            import_run."scopeVersion",
-            import_run."scopeHash",
             import_run."scopeJson",
             import_run."requestedFrom",
             import_run."requestedTo",
@@ -137,10 +128,6 @@ export function createOnboardingImportAttentionRepository(
         for (const source of retryable) {
           if (
             source.accountId === null
-            || source.mode === 'LEGACY_SYNC'
-            || source.source === 'LEGACY_SYNC'
-            || source.scopeVersion === null
-            || source.scopeHash === null
             || source.scopeJson === null
             || source.requestedFrom === null
             || source.requestedTo === null
@@ -150,126 +137,41 @@ export function createOnboardingImportAttentionRepository(
             );
           }
 
-          const accountRows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
-            SELECT "id"
-            FROM "ExternalAccount"
-            WHERE "id" = ${source.accountId}
-              AND "userId" = ${userId}
-            FOR UPDATE
-          `);
-          if (!accountRows[0]) {
+          const mode = durableAccountImportModeSchema.safeParse(source.mode);
+          const durableSource = durableAccountImportSourceSchema.safeParse(source.source);
+          const scope = accountImportScopeSchema.safeParse(source.scopeJson);
+          if (!mode.success || !durableSource.success || !scope.success) {
             throw new AccountImportInvalidRetryError(
-              'Linked import account is no longer owned by the user.',
+              'Linked legacy import history cannot be retried as onboarding work.',
             );
           }
 
-          await allowAccountImportAdmission.assertAllowed(transaction, {
+          const admitted = await admitAccountImportRunInTransaction(transaction, {
             userId,
             accountId: source.accountId,
+            mode: mode.data,
+            source: durableSource.data,
+            scope: scope.data,
+            requestedFrom: source.requestedFrom,
+            requestedTo: source.requestedTo,
+            priority: source.priority,
+            windowsTotal: source.windowsTotal,
+            retryOfImportRunId: source.importRunId,
           });
 
-          const activeRows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
-            SELECT "id"
-            FROM "ImportRun"
-            WHERE "accountId" = ${source.accountId}
-              AND "status" IN (${Prisma.join(ACTIVE_IMPORT_STATUSES.map((status) => Prisma.sql`${status}`))})
-            ORDER BY "createdAt" DESC, "id" DESC
-            LIMIT 1
-          `);
-          const active = activeRows[0];
-          if (active) throw new AccountImportActiveRunError(active.id);
-
-          const retryRows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
-            INSERT INTO "ImportRun" (
-              "userId",
-              "accountId",
-              "provider",
-              "mode",
-              "source",
-              "status",
-              "scopeVersion",
-              "scopeHash",
-              "scopeJson",
-              "requestedFrom",
-              "requestedTo",
-              "retryOfImportRunId",
-              "priority",
-              "windowsTotal",
-              "windowsCompleted",
-              "gamesSeen",
-              "gamesMatchedScope",
-              "gamesImported",
-              "gamesDuplicate",
-              "gamesSkippedOutOfScope",
-              "gamesFailed",
-              "lastProgressAt",
-              "workKey",
-              "claimedAt",
-              "heartbeatAt",
-              "pauseRequestedAt",
-              "cancelRequestedAt",
-              "retryAt",
-              "rateLimitUntil",
-              "completedAt",
-              "errorCode",
-              "error",
-              "createdAt",
-              "updatedAt"
-            ) VALUES (
-              ${userId},
-              ${source.accountId},
-              ${source.provider},
-              ${source.mode},
-              ${source.source},
-              'QUEUED',
-              ${source.scopeVersion},
-              ${source.scopeHash},
-              ${JSON.stringify(source.scopeJson)}::jsonb,
-              ${source.requestedFrom},
-              ${source.requestedTo},
-              ${source.importRunId},
-              ${source.priority},
-              ${source.windowsTotal},
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NOW(),
-              NOW()
-            )
-            RETURNING "id"
-          `);
-          const retry = retryRows[0];
-          if (!retry) throw new Error('Linked import retry insert did not return a run.');
-
-          const relinked = await transaction.$executeRaw(Prisma.sql`
-            UPDATE "DataPreparationTarget"
-            SET "currentImportRunId" = ${retry.id},
-                "updatedAt" = NOW()
-            WHERE "id" = ${source.targetId}
-              AND "preparationRunId" = ${preparationRunId}
-              AND "currentImportRunId" = ${source.importRunId}
-          `);
-          if (relinked !== 1) {
+          const relinked = await relinkPreparationTargetImportInTransaction(transaction, {
+            userId,
+            preparationRunId,
+            targetId: source.targetId,
+            previousImportRunId: source.importRunId,
+            nextImportRunId: admitted.importRunId,
+          });
+          if (!relinked) {
             throw new AccountImportInvalidRetryError(
               'Linked import changed while onboarding retry was being admitted.',
             );
           }
-          createdIds.push(retry.id);
+          createdIds.push(admitted.importRunId);
         }
 
         return { importRunIds: createdIds, idempotent: false };
