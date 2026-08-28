@@ -17,6 +17,7 @@ import {
 import type { CreatePreparationRunInput } from '../preparation/preparation.types';
 
 const IMPORT_PRIORITY = 100;
+const ONBOARDING_ATOMIC_TRANSACTION_TIMEOUT_MS = 15_000;
 const NON_TERMINAL_PREPARATION_STATUSES = [
   'QUEUED',
   'RUNNING',
@@ -166,6 +167,11 @@ export function createOnboardingCommandAdmissionRepository(
             targets,
           });
           return { outcome: 'CREATED' as const, runId };
+        }, {
+          // This command must atomically cross lifecycle, import, and preparation
+          // boundaries. Keep the override local and DB-only rather than widening
+          // the Prisma client's transaction budget globally.
+          timeout: ONBOARDING_ATOMIC_TRANSACTION_TIMEOUT_MS,
         });
       } catch (error) {
         if (isActivePreparationConstraintError(error)) {
