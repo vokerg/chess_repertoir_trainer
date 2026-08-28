@@ -5,7 +5,10 @@ import {
   durableAccountImportSourceSchema,
 } from '@chess-trainer/contracts';
 import prisma from '../../prisma';
-import { AccountImportInvalidRetryError } from '../account-imports/account-import.repository.prisma';
+import {
+  AccountImportAccountNotFoundError,
+  AccountImportInvalidRetryError,
+} from '../account-imports/account-import.repository.prisma';
 import { admitAccountImportRunInTransaction } from '../account-imports/account-import.transaction.repository.prisma';
 import {
   recordPreparationImportRetryInTransaction,
@@ -157,18 +160,28 @@ export function createOnboardingImportAttentionRepository(
             );
           }
 
-          const admitted = await admitAccountImportRunInTransaction(transaction, {
-            userId,
-            accountId: source.accountId,
-            mode: mode.data,
-            source: durableSource.data,
-            scope: scope.data,
-            requestedFrom: source.requestedFrom,
-            requestedTo: source.requestedTo,
-            priority: source.priority,
-            windowsTotal: source.windowsTotal,
-            retryOfImportRunId: source.importRunId,
-          });
+          let admitted;
+          try {
+            admitted = await admitAccountImportRunInTransaction(transaction, {
+              userId,
+              accountId: source.accountId,
+              mode: mode.data,
+              source: durableSource.data,
+              scope: scope.data,
+              requestedFrom: source.requestedFrom,
+              requestedTo: source.requestedTo,
+              priority: source.priority,
+              windowsTotal: source.windowsTotal,
+              retryOfImportRunId: source.importRunId,
+            });
+          } catch (error) {
+            if (error instanceof AccountImportAccountNotFoundError) {
+              throw new AccountImportInvalidRetryError(
+                'Linked import account is no longer owned by the user.',
+              );
+            }
+            throw error;
+          }
 
           const relinked = await relinkPreparationTargetImportInTransaction(transaction, {
             userId,
