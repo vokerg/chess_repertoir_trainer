@@ -4,6 +4,8 @@ import {
 } from '../../dist/modules/account-imports/providers/lichess/lichess-account-import.executor.js';
 
 await emptyWindowAdvancesCoverage();
+await authenticatedPublicFetchUsesPerUserToken();
+await anonymousPublicFetchOmitsAuthorization();
 await boundedWritesAndAtomicProgress();
 await outOfScopeRowsUseProgressOnlyCommit();
 await malformedWindowFlushesAndFailsWithoutCoverage();
@@ -27,6 +29,36 @@ async function emptyWindowAdvancesCoverage() {
   assert.equal(fixture.windowCommits[0].coveredThrough.toISOString(), fixture.run.requestedTo.toISOString());
   assert.equal(fixture.windowCommits[0].windowsCompleted, 1);
   assert.equal(fixture.windowCommits[0].checkpoint.currentWindow, null);
+}
+
+async function authenticatedPublicFetchUsesPerUserToken() {
+  let requestedUrl = null;
+  let requestedHeaders = null;
+  const fixture = harness({
+    loadAccount: async () => ({ username: 'OtherTrackedUser', accessToken: 'app-user-token' }),
+    fetch: async (url, init) => {
+      requestedUrl = url;
+      requestedHeaders = init.headers;
+      return new Response('', { status: 200 });
+    },
+  });
+
+  assert.deepEqual(await fixture.executor.execute(fixture.run, fixture.context), { kind: 'COMPLETED' });
+  assert.equal(new URL(requestedUrl).pathname.endsWith('/OtherTrackedUser'), true);
+  assert.equal(new Headers(requestedHeaders).get('authorization'), 'Bearer app-user-token');
+}
+
+async function anonymousPublicFetchOmitsAuthorization() {
+  let requestedHeaders = null;
+  const fixture = harness({
+    fetch: async (_url, init) => {
+      requestedHeaders = init.headers;
+      return new Response('', { status: 200 });
+    },
+  });
+
+  assert.deepEqual(await fixture.executor.execute(fixture.run, fixture.context), { kind: 'COMPLETED' });
+  assert.equal(new Headers(requestedHeaders).get('authorization'), null);
 }
 
 async function boundedWritesAndAtomicProgress() {
@@ -314,7 +346,7 @@ function harness(overrides = {}) {
     now: overrides.now ?? Date.now,
     fetch: overrides.fetch ?? (async () => response),
     baseUrl: 'https://example.invalid/api/games/user',
-    loadAccount: async () => ({ username: 'FixtureUser' }),
+    loadAccount: overrides.loadAccount ?? (async () => ({ username: 'FixtureUser' })),
     reconcileCommittedRange: async (input) => {
       events.push('RECONCILE');
       reconciliations.push(input);
