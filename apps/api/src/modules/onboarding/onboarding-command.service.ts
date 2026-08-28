@@ -238,10 +238,10 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
     }
     if (current.disposition === 'SKIPPED') return dispositionResponse(current, true);
     const skipped = await repository.skip(userId, now());
-    if (skipped.disposition === 'COMPLETED') {
+    if (skipped.disposition.disposition === 'COMPLETED') {
       throw new OnboardingCommandInvalidStateError('Completed onboarding cannot be skipped.');
     }
-    return dispositionResponse(skipped, false);
+    return dispositionResponse(skipped.disposition, !skipped.changed);
   }
 
   async function finish(userId: number, runId: number): Promise<OnboardingDispositionCommandResponse> {
@@ -258,7 +258,7 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
         'Onboarding can be explicitly finished only from a server-advertised finishable attention outcome.',
       );
     }
-    return dispositionResponse(completed, false);
+    return dispositionResponse(completed.disposition, !completed.changed);
   }
 
   async function pause(userId: number, runId: number): Promise<OnboardingRunCommandResponse> {
@@ -337,6 +337,14 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
         }
         throw error;
       }
+    }
+
+    // Once reconciliation has consumed an accepted retry and moved the parent
+    // back to RUNNING, retryGeneration is the durable replay marker. Recovery
+    // runs inherit the source generation, so only a generation above that
+    // baseline proves a retry was accepted on this run itself.
+    if (before.status === 'RUNNING' && await hasAcceptedRetryGeneration(userId, before)) {
+      return runResponse(before, true);
     }
 
     try {
@@ -530,6 +538,16 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
       resumed = true;
     }
     return resumed;
+  }
+
+  async function hasAcceptedRetryGeneration(
+    userId: number,
+    run: OnboardingCommandRunRecord,
+  ): Promise<boolean> {
+    if (run.purpose !== 'RECOVERY') return run.retryGeneration > 0;
+    if (run.retryOfRunId === null) return false;
+    const source = await repository.getRun(userId, run.retryOfRunId);
+    return source !== null && run.retryGeneration > source.retryGeneration;
   }
 
   return { start, skip, finish, pause, resume, cancel, retry, restart, expand };
