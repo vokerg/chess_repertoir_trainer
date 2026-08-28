@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { allowPreparationAdmission } from './preparation-admission.guard';
 import type { CreatePreparationRunInput } from './preparation.types';
 
 interface IdRow {
@@ -29,6 +30,14 @@ export async function createPreparationRunInTransaction(
       LIMIT 1
     `);
     if (!retryRows[0]) throw new Error('Retry preparation run is not owned by the user.');
+  }
+
+  const accountIds = [...new Set(input.targets.map((target) => target.accountId))];
+  for (const accountId of accountIds) {
+    await allowPreparationAdmission.assertAllowed(transaction, {
+      userId: input.userId,
+      accountId,
+    });
   }
 
   await assertPreparationTargetsOwned(transaction, input);
