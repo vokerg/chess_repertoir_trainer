@@ -10,6 +10,11 @@ import type {
 } from '@chess-trainer/contracts/onboarding';
 import { AccountImportAdmissionBlockedError } from '../account-imports/account-import-admission.guard';
 import {
+  AccountImportLifecycleRepository,
+  AccountImportInvalidStateError,
+  type AccountImportLifecycleRepository as AccountImportLifecycleRepositoryBoundary,
+} from '../account-imports/account-import.lifecycle.repository.prisma';
+import {
   AccountImportAccountNotFoundError,
   AccountImportActiveRunError,
   AccountImportInvalidRetryError,
@@ -17,6 +22,7 @@ import {
   AccountImportRunNotFoundError,
   type AccountImportRepository as AccountImportRepositoryBoundary,
 } from '../account-imports/account-import.repository.prisma';
+import { PreparationAdmissionBlockedError } from '../preparation/preparation-admission.guard';
 import {
   createPreparationReconciler,
   type PreparationReconciler,
@@ -24,6 +30,7 @@ import {
 import type { PreparationScopeSnapshot } from '../preparation/preparation.types';
 import {
   OnboardingCommandAdmissionRepository,
+  OnboardingCommandFirstRunStateChangedError,
   OnboardingCommandSourceStateChangedError,
   type OnboardingCommandAdmissionRepository as OnboardingCommandAdmissionRepositoryBoundary,
   type OnboardingImportAdmissionRequest,
@@ -36,6 +43,10 @@ import {
   type OnboardingCommandRunRecord,
   type OnboardingCommandTargetRecord,
 } from './onboarding-command.repository.prisma';
+import {
+  OnboardingImportAttentionRepository,
+  type OnboardingImportAttentionRepository as OnboardingImportAttentionRepositoryBoundary,
+} from './onboarding-import-attention.repository.prisma';
 
 const RECIPE_VERSION = 1;
 const PREPARATION_SCOPE_VERSION = 1;
@@ -49,11 +60,20 @@ const DEFAULT_PREPARATION_SCOPE: PreparationScopeSnapshot = {
   speedCategories: ['BLITZ', 'RAPID'],
   variants: ['STANDARD'],
 };
+const IMPORT_ATTENTION_BLOCKING_STATUSES = new Set([
+  'FAILED',
+  'CANCELLED',
+  'PAUSED',
+  'PAUSE_REQUESTED',
+  'CANCEL_REQUESTED',
+]);
 
 interface Dependencies {
   repository?: OnboardingCommandRepositoryBoundary;
   admissionRepository?: OnboardingCommandAdmissionRepositoryBoundary;
   accountImportRepository?: Pick<AccountImportRepositoryBoundary, 'getRun'>;
+  accountImportLifecycleRepository?: Pick<AccountImportLifecycleRepositoryBoundary, 'resume'>;
+  importAttentionRepository?: OnboardingImportAttentionRepositoryBoundary;
   reconciler?: PreparationReconciler;
   now?: () => Date;
 }
@@ -111,6 +131,10 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
   const repository = dependencies.repository ?? OnboardingCommandRepository;
   const admissionRepository = dependencies.admissionRepository ?? OnboardingCommandAdmissionRepository;
   const accountImportRepository = dependencies.accountImportRepository ?? AccountImportRepository;
+  const accountImportLifecycleRepository = dependencies.accountImportLifecycleRepository
+    ?? AccountImportLifecycleRepository;
+  const importAttentionRepository = dependencies.importAttentionRepository
+    ?? OnboardingImportAttentionRepository;
   const reconciler = dependencies.reconciler ?? createPreparationReconciler();
   const now = dependencies.now ?? (() => new Date());
 
@@ -146,6 +170,7 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
         error instanceof AccountImportInvalidRetryError
         || error instanceof AccountImportRunNotFoundError
         || error instanceof OnboardingCommandSourceStateChangedError
+        || error instanceof OnboardingCommandFirstRunStateChangedError
       ) {
         throw new OnboardingCommandInvalidStateError(error.message);
       }
@@ -177,6 +202,7 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
     const preparationScope = canonicalizePreparationScope(DEFAULT_PREPARATION_SCOPE);
     const result = await admitPreparation({
       userId,
+      requireFirstRunEligible: true,
       preparation: {
         purpose: 'ONBOARDING',
         recipeVersion: RECIPE_VERSION,
@@ -211,15 +237,23 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
       throw new OnboardingCommandInvalidStateError('Completed onboarding cannot be skipped.');
     }
     if (current.disposition === 'SKIPPED') return dispositionResponse(current, true);
-    return dispositionResponse(await repository.skip(userId, now()), false);
+    const skipped = await repository.skip(userId, now());
+    if (skipped.disposition === 'COMPLETED') {
+      throw new OnboardingCommandInvalidStateError('Completed onboarding cannot be skipped.');
+    }
+    return dispositionResponse(skipped, false);
   }
 
   async function finish(userId: number, runId: number): Promise<OnboardingDispositionCommandResponse> {
+    // Ownership is part of the command identity, including idempotent replays after completion.
+    await getRun(userId, runId);
     const current = await repository.getDisposition(userId);
     if (current.disposition === 'COMPLETED') return dispositionResponse(current, true);
+    if (current.disposition === 'SKIPPED') {
+      throw new OnboardingCommandInvalidStateError('Skipped onboarding cannot be finished.');
+    }
     const completed = await repository.finishWithAttention(userId, runId, now());
     if (!completed) {
-      await getRun(userId, runId);
       throw new OnboardingCommandInvalidStateError(
         'Onboarding can be explicitly finished only from a server-advertised finishable attention outcome.',
       );
@@ -240,9 +274,32 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
   async function resume(userId: number, runId: number): Promise<OnboardingRunCommandResponse> {
     const before = await getRun(userId, runId);
     if (before.status === 'QUEUED' || before.status === 'RUNNING') return runResponse(before, true);
-    if (before.status !== 'PAUSED') throw invalidControlState('resume', before.status);
-    if (!await reconciler.resume(userId, runId)) throw invalidControlState('resume', before.status);
-    return runResponse(await getRun(userId, runId), false);
+
+    try {
+      if (before.status === 'NEEDS_ATTENTION' && before.attentionCode === 'IMPORT_PAUSED') {
+        const resumed = await resumeLinkedPausedImports(userId, before);
+        if (!resumed && hasBlockingImportAttention(before)) {
+          throw new OnboardingCommandInvalidStateError(
+            'No paused linked import is currently eligible to resume.',
+          );
+        }
+        return runResponse(await getRun(userId, runId), !resumed);
+      }
+
+      if (before.status !== 'PAUSED') throw invalidControlState('resume', before.status);
+
+      // Resume linked imports before the parent so an admission fence cannot leave
+      // the parent RUNNING while its durable import remains paused.
+      await resumeLinkedPausedImports(userId, before);
+      if (!await reconciler.resume(userId, runId)) throw invalidControlState('resume', before.status);
+      return runResponse(await getRun(userId, runId), false);
+    } catch (error) {
+      if (error instanceof OnboardingCommandInvalidStateError) throw error;
+      if (error instanceof AccountImportAdmissionBlockedError || error instanceof AccountImportInvalidStateError) {
+        throw new OnboardingCommandInvalidStateError(error.message);
+      }
+      throw error;
+    }
   }
 
   async function cancel(userId: number, runId: number): Promise<OnboardingRunCommandResponse> {
@@ -260,13 +317,46 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
     if (!['RUNNING', 'NEEDS_ATTENTION'].includes(before.status)) {
       throw invalidControlState('retry', before.status);
     }
-    const generation = await reconciler.retry(userId, runId);
-    const after = await getRun(userId, runId);
-    if (generation === null) {
-      if (after.retryGeneration > before.retryGeneration) return runResponse(after, true);
-      throw new OnboardingCommandInvalidStateError('No failed preparation evidence is currently eligible for retry.');
+
+    if (before.status === 'NEEDS_ATTENTION' && before.attentionCode === 'IMPORT_RETRY_AVAILABLE') {
+      try {
+        const retried = await importAttentionRepository.retryFailedImports(userId, runId);
+        if (!retried) {
+          throw new OnboardingCommandInvalidStateError(
+            'No failed linked import is currently eligible for retry.',
+          );
+        }
+        return runResponse(await getRun(userId, runId), retried.idempotent);
+      } catch (error) {
+        if (error instanceof OnboardingCommandInvalidStateError) throw error;
+        if (error instanceof AccountImportActiveRunError) {
+          throw new OnboardingCommandImportActiveError(error.activeImportRunId);
+        }
+        if (error instanceof AccountImportAdmissionBlockedError || error instanceof AccountImportInvalidRetryError) {
+          throw new OnboardingCommandInvalidStateError(error.message);
+        }
+        throw error;
+      }
     }
-    return runResponse(after, false);
+
+    try {
+      const generation = await reconciler.retry(userId, runId);
+      const after = await getRun(userId, runId);
+      if (generation === null) {
+        if (after.retryGeneration > before.retryGeneration) return runResponse(after, true);
+        if (await repository.hasActiveRetryBatch(userId, runId)) return runResponse(after, true);
+        throw new OnboardingCommandInvalidStateError(
+          'No failed preparation evidence is currently eligible for retry.',
+        );
+      }
+      return runResponse(after, false);
+    } catch (error) {
+      if (error instanceof OnboardingCommandInvalidStateError) throw error;
+      if (error instanceof PreparationAdmissionBlockedError) {
+        throw new OnboardingCommandInvalidStateError(error.message);
+      }
+      throw error;
+    }
   }
 
   async function restart(userId: number, runId: number): Promise<OnboardingRunCommandResponse> {
@@ -286,6 +376,11 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
 
     const targets: OnboardingPreparationAdmissionTarget[] = [];
     for (const target of source.targets) {
+      if (target.accountId === null) {
+        throw new OnboardingCommandInvalidStateError(
+          'A source preparation account was deleted; restart cannot recreate work for the detached target.',
+        );
+      }
       const currentImport = target.currentImportRunId === null
         ? null
         : await accountImportRepository.getRun(userId, target.currentImportRunId);
@@ -419,6 +514,24 @@ export function createOnboardingCommandService(dependencies: Dependencies = {}) 
     return runResponse(result.run, result.idempotent);
   }
 
+  async function resumeLinkedPausedImports(
+    userId: number,
+    run: OnboardingCommandRunRecord,
+  ): Promise<boolean> {
+    let resumed = false;
+    for (const target of run.targets) {
+      if (target.currentImportRunId === null || target.importStatus !== 'PAUSED') continue;
+      const found = await accountImportLifecycleRepository.resume(userId, target.currentImportRunId);
+      if (!found) {
+        throw new OnboardingCommandInvalidStateError(
+          'A linked paused import disappeared while onboarding resume was being applied.',
+        );
+      }
+      resumed = true;
+    }
+    return resumed;
+  }
+
   return { start, skip, finish, pause, resume, cancel, retry, restart, expand };
 }
 
@@ -501,7 +614,9 @@ function expansionRequest(
       preparationScope: DEFAULT_PREPARATION_SCOPE,
     };
   }
-  if (!sourceTarget) throw new OnboardingCommandInvalidStateError('Expansion source target is missing.');
+  if (!sourceTarget || sourceTarget.accountId === null) {
+    throw new OnboardingCommandInvalidStateError('Expansion source target is missing or detached.');
+  }
 
   if (body.kind === 'INCLUDE_BULLET') {
     return {
@@ -590,6 +705,12 @@ function isEquivalentExpansion(
     && recipe?.['sourceRunId'] === sourceRunId
     && recipe?.['expansionKind'] === body.kind
     && recipe?.['accountId'] === body.accountId;
+}
+
+function hasBlockingImportAttention(run: OnboardingCommandRunRecord): boolean {
+  return run.targets.some((target) => (
+    target.importStatus !== null && IMPORT_ATTENTION_BLOCKING_STATUSES.has(target.importStatus)
+  ));
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
