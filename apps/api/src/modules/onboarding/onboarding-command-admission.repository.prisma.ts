@@ -128,6 +128,14 @@ export function createOnboardingCommandAdmissionRepository(
 
       try {
         return await database.$transaction(async (transaction) => {
+          // First-run admission is serialized on the owning user row before any import
+          // or preparation work is created. A concurrent loser therefore observes the
+          // winner as active instead of waiting on the partial unique index after it has
+          // already created an unrelated import.
+          if (input.requireFirstRunEligible) {
+            await assertFirstRunEligible(transaction, input.userId);
+          }
+
           const active = await findActivePreparation(transaction, input.userId);
           if (active) {
             if (active.id !== (input.replaceNoRecentRunId ?? null)) {
@@ -138,10 +146,6 @@ export function createOnboardingCommandAdmissionRepository(
             }
           } else if (input.replaceNoRecentRunId != null) {
             throw new OnboardingCommandSourceStateChangedError();
-          }
-
-          if (input.requireFirstRunEligible) {
-            await assertFirstRunEligible(transaction, input.userId);
           }
 
           const targets = [] as Array<PreparationTargetInput & { currentImportRunId: number }>;
@@ -509,9 +513,7 @@ async function createPreparationRun(
         )
       RETURNING "id"
     `);
-    if (!targetRows[0]) {
-      throw new AccountImportAccountNotFoundError();
-    }
+    if (!targetRows[0]) throw new AccountImportAccountNotFoundError();
   }
 
   return run.id;
@@ -554,14 +556,19 @@ function sameDate(left: Date | null, right: Date): boolean {
 }
 
 function isActivePreparationConstraintError(error: unknown): boolean {
-  const candidate = error as { code?: unknown; meta?: { code?: unknown; constraint?: unknown }; message?: unknown };
-  const message = String(candidate?.message ?? '');
-  return (
-    candidate?.code === 'P2002'
+  const candidate = error as {
+    code?: unknown;
+    meta?: { code?: unknown; constraint?: unknown; message?: unknown };
+    message?: unknown;
+  };
+  const message = `${String(candidate?.message ?? '')} ${String(candidate?.meta?.message ?? '')}`;
+  const uniqueViolation = candidate?.code === 'P2002'
     || candidate?.meta?.code === '23505'
-    || candidate?.code === 'P2010' && message.includes('23505')
-  ) && (message.includes('DataPreparationRun_one_active_per_user_key')
-    || String(candidate?.meta?.constraint ?? '').includes('DataPreparationRun_one_active_per_user_key'));
+    || (candidate?.code === 'P2010' && message.includes('23505'));
+  if (!uniqueViolation) return false;
+  return message.includes('DataPreparationRun_one_active_per_user_key')
+    || String(candidate?.meta?.constraint ?? '').includes('DataPreparationRun_one_active_per_user_key')
+    || message.includes('Key ("userId")=');
 }
 
 function validatePositiveInteger(value: number, label: string): void {
