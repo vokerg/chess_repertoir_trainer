@@ -1,6 +1,6 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-08-26
+Last updated: 2026-08-28
 
 GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the product, architecture, acceptance, queue, and historical source of truth.
 
@@ -59,8 +59,8 @@ When repository metadata and issue state disagree, reconcile them before substan
 ### Product/onboarding path
 
 - ONB-008 / #193 — `DONE`; runtime PR #398 squash-merged as `512c248689f41a1164be3da63dc22cc97041614b`; issue closed completed.
-- **ONB-009 / #194 — `READY`; issue open; no runtime PR.**
-- ONB-010 / #195 — `PROPOSED`; remains behind ONB-009.
+- **ONB-009 / #194 — `REVIEW`; issue open; runtime PR #406 on `onb-009/issue-194-lifecycle-commands`.** Acceptance/merge is still required before `DONE`.
+- ONB-010 / #195 — `PROPOSED`; remains behind accepted/merged ONB-009.
 
 ### Durable account-import path
 
@@ -83,12 +83,9 @@ When repository metadata and issue state disagree, reconcile them before substan
 
 ## Completion records reconciled on 2026-08-26
 
-The runtime merges for ONB-008, ONB-015, and ONB-019 already satisfied acceptance and closed their issues, but repository task/queue records remained stale. The 2026-08-26 program reconciliation records:
+The runtime merges for ONB-008, ONB-015, and ONB-019 already satisfied acceptance and closed their issues, but repository task/queue records remained stale. The 2026-08-26 program reconciliation records final runtime PR/head/CI/squash evidence for those tasks and promoted the newly unblocked work.
 
-- final runtime PR/head/CI/squash commit for each task;
-- `DONE` state in task files and canonical ledgers;
-- reassessment of `DECISIONS.md` and `OPEN_QUESTIONS.md`;
-- promotion of newly unblocked ONB-009, ONB-020, ONB-025, and ONB-026 to `READY`.
+ONB-009 was subsequently claimed and implemented on PR #406. Its issue remains open while the task is in `REVIEW`; the issue is closed completed only after accepted squash merge and final completion reconciliation.
 
 ## Claim protocol
 
@@ -104,4 +101,4 @@ The runtime merges for ONB-008, ONB-015, and ONB-019 already satisfied acceptanc
 
 ## Current next action
 
-**ONB-009 / #194** is the lowest-order unclaimed `READY` issue. ONB-025 / #276, ONB-020 / #260, and ONB-026 / #280 are also open and `READY` on independent lanes, subject to their task-specific claim-time checks.
+Complete ONB-009 / #194 review and acceptance/merge. For a new independent claim, **ONB-025 / #276** is the lowest-order open `READY` issue; ONB-020 and ONB-026 are also ready subject to their task-specific checks.
