@@ -7,7 +7,10 @@ import {
 import prisma from '../../prisma';
 import { AccountImportInvalidRetryError } from '../account-imports/account-import.repository.prisma';
 import { admitAccountImportRunInTransaction } from '../account-imports/account-import.transaction.repository.prisma';
-import { relinkPreparationTargetImportInTransaction } from '../preparation/preparation.transaction.repository.prisma';
+import {
+  recordPreparationImportRetryInTransaction,
+  relinkPreparationTargetImportInTransaction,
+} from '../preparation/preparation.transaction.repository.prisma';
 
 const ACTIVE_IMPORT_STATUSES = [
   'QUEUED',
@@ -172,6 +175,16 @@ export function createOnboardingImportAttentionRepository(
             );
           }
           createdIds.push(admitted.importRunId);
+        }
+
+        const generation = await recordPreparationImportRetryInTransaction(transaction, {
+          userId,
+          runId: preparationRunId,
+        });
+        if (generation === null) {
+          throw new AccountImportInvalidRetryError(
+            'Onboarding attention changed while import retry was being admitted.',
+          );
         }
 
         return { importRunIds: createdIds, idempotent: false };
