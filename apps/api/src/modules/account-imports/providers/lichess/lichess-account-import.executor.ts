@@ -377,7 +377,7 @@ async function executeWindow(input: ExecuteWindowInput): Promise<AccountImportEx
 }
 
 interface DurableRun {
-  mode: 'BOUNDED_INITIAL' | 'INCREMENTAL_FORWARD' | 'HISTORICAL_BACKFILL';
+  mode: 'BOUNDED_INITIAL' | 'INCREMENTAL_FORWARD' | 'HISTORICAL_BACKFILL' | 'FULL_HISTORY';
   scope: NonNullable<StoredAccountImportRun['scope']>;
   scopeHash: string;
   requestedFrom: Date;

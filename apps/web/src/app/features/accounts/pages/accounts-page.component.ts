@@ -6,6 +6,7 @@ import {
   FactGridComponent,
   type UiFactItem,
 } from '../../../shared/ui/fact-grid/fact-grid.component';
+import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import {
   PageHeaderAction,
   PageHeaderComponent,
@@ -17,6 +18,7 @@ import { AccountsApiService } from '../data-access/accounts-api.service';
 import type {
   AccountImportRun,
   AccountImportStatus,
+  ExternalAccount,
 } from '../data-access/accounts.models';
 import { dateLabel, providerClass, providerLabel } from '../helpers/account-labels';
 import { AccountsStore } from '../state/accounts.store';
@@ -40,6 +42,7 @@ import { AccountsStore } from '../state/accounts.store';
 })
 export class AccountsPageComponent implements OnInit {
   protected readonly store = inject(AccountsStore);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly providerLabel = providerLabel;
   protected readonly providerClass = providerClass;
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
@@ -52,6 +55,7 @@ export class AccountsPageComponent implements OnInit {
         || this.store.syncingAllAccounts()
         || this.store.syncingAccountId() !== null
         || this.store.backfillingAccountId() !== null
+        || this.store.importingAllHistoryAccountId() !== null
         || this.store.controllingImportRunId() !== null,
       run: () => this.store.syncActiveAccounts(),
     },
@@ -119,6 +123,7 @@ export class AccountsPageComponent implements OnInit {
       case 'BOUNDED_INITIAL': return 'Recent history';
       case 'INCREMENTAL_FORWARD': return 'Forward refresh';
       case 'HISTORICAL_BACKFILL': return 'Older history';
+      case 'FULL_HISTORY': return 'All supported history';
       case 'LEGACY_SYNC': return 'Legacy sync';
     }
   }
@@ -132,7 +137,25 @@ export class AccountsPageComponent implements OnInit {
     const windowProgress = run.windows.total === null
       ? ''
       : ` · ${run.windows.completed}/${run.windows.total} windows`;
-    return `${run.games.seen} seen · ${run.games.imported} imported · ${run.games.duplicate} already present · ${run.games.failed} failed${windowProgress}`;
+    return `${run.games.seen} seen · ${run.games.imported} imported · ${run.games.duplicate} already present · ${run.games.failed} failed${windowProgress} · ${run.games.skippedOutOfScope} outside scope`;
+  }
+
+  protected async confirmImportAllHistory(account: ExternalAccount): Promise<void> {
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Import all supported history?',
+      message: `Queue every available supported Lichess game for @${account.username}?`,
+      details: [
+        'This can cover years of games and may take a while.',
+        'The job continues in the background and can be paused or cancelled.',
+        'The range starts at 2013-01-01, Lichess’s earliest supported export boundary.',
+        'Scope: finished standard Bullet, Blitz, and Rapid games, both rated and casual. Variants and other time controls are excluded.',
+      ],
+      tone: 'warning',
+      confirmLabel: 'Import all history',
+      cancelLabel: 'Cancel',
+    });
+
+    if (confirmed) void this.store.importAllHistory(account);
   }
 
   protected canPause(run: AccountImportRun): boolean {

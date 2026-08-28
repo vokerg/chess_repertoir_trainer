@@ -1,6 +1,7 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import type { UiFactItem } from '../../../shared/ui/fact-grid/fact-grid.component';
 import type { AccountImportRun, ExternalAccount } from '../data-access/accounts.models';
 import { dateLabel } from '../helpers/account-labels';
@@ -10,6 +11,7 @@ import { AccountsPageComponent } from './accounts-page.component';
 describe('AccountsPageComponent', () => {
   let fixture: ComponentFixture<AccountsPageComponent>;
   let store: jasmine.SpyObj<AccountsStore>;
+  let confirmDialog: jasmine.SpyObj<ConfirmDialogService>;
 
   const account: ExternalAccount = {
     id: 7,
@@ -39,6 +41,7 @@ describe('AccountsPageComponent', () => {
         'syncActiveAccounts',
         'syncAccount',
         'backfillAccount',
+        'importAllHistory',
         'pauseImport',
         'resumeImport',
         'cancelImport',
@@ -59,10 +62,13 @@ describe('AccountsPageComponent', () => {
         syncingAllAccounts: signal(false),
         syncingAccountId: signal<number | null>(null),
         backfillingAccountId: signal<number | null>(null),
+        importingAllHistoryAccountId: signal<number | null>(null),
         controllingImportRunId: signal<number | null>(null),
         settingDefaultProgressAccountId: signal<number | null>(null),
       },
     );
+    confirmDialog = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', ['confirm']);
+    confirmDialog.confirm.and.resolveTo(true);
     store.initialize.and.resolveTo();
     store.importRunForAccount.withArgs(account.id).and.returnValue(run);
     store.isImportActive.withArgs(account.id).and.returnValue(true);
@@ -70,7 +76,7 @@ describe('AccountsPageComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [AccountsPageComponent],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), { provide: ConfirmDialogService, useValue: confirmDialog }],
     })
       .overrideComponent(AccountsPageComponent, {
         set: { providers: [{ provide: AccountsStore, useValue: store }] },
@@ -120,7 +126,22 @@ describe('AccountsPageComponent', () => {
     const buttons = buttonLabels(root);
 
     expect(buttons).toContain('Load 3 older months');
+    expect(buttons).toContain('Import all supported history');
     expect(buttons).not.toContain('Reset import cursor');
+    expect(rootText()).toContain('Lichess variants and other time controls are outside this importer.');
+    expect(rootText()).toContain('explicit all-history action is currently available for Lichess accounts only.');
+    expect(rootText()).toContain('newest bounded three-month window');
+    expect(rootText()).toContain('2013-01-01');
+  });
+
+  it('confirms before queueing all supported Lichess history', async () => {
+    await page().confirmImportAllHistory(account);
+
+    expect(confirmDialog.confirm).toHaveBeenCalledOnceWith(jasmine.objectContaining({
+      title: 'Import all supported history?',
+      confirmLabel: 'Import all history',
+    }));
+    expect(store.importAllHistory).toHaveBeenCalledOnceWith(account);
   });
 
   it('keeps destructive account removal disabled pending lifecycle cutover', () => {
@@ -153,11 +174,17 @@ describe('AccountsPageComponent', () => {
   function page(): {
     headerActions(): readonly { run: () => void }[];
     accountFactsById(): Readonly<Record<number, readonly UiFactItem[]>>;
+    confirmImportAllHistory(account: ExternalAccount): Promise<void>;
   } {
     return fixture.componentInstance as unknown as {
       headerActions(): readonly { run: () => void }[];
       accountFactsById(): Readonly<Record<number, readonly UiFactItem[]>>;
+      confirmImportAllHistory(account: ExternalAccount): Promise<void>;
     };
+  }
+
+  function rootText(): string {
+    return (fixture.nativeElement as HTMLElement).textContent ?? '';
   }
 });
 

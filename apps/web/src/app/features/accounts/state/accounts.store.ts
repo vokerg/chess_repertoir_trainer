@@ -37,6 +37,7 @@ export class AccountsStore {
   readonly syncingAllAccounts = signal(false);
   readonly syncingAccountId = signal<number | null>(null);
   readonly backfillingAccountId = signal<number | null>(null);
+  readonly importingAllHistoryAccountId = signal<number | null>(null);
   readonly controllingImportRunId = signal<number | null>(null);
   readonly settingDefaultProgressAccountId = signal<number | null>(null);
   readonly disconnectingLichess = signal(false);
@@ -188,6 +189,23 @@ export class AccountsStore {
       await this.loadImportRuns().catch(() => undefined);
     } finally {
       this.backfillingAccountId.set(null);
+    }
+  }
+
+  async importAllHistory(account: ExternalAccount): Promise<void> {
+    if (this.isImportActive(account.id)) return;
+    this.importingAllHistoryAccountId.set(account.id);
+    this.clearMessages();
+    try {
+      const response = await firstValueFrom(this.api.importAllHistory(account.id));
+      this.patchImportRun(response.importRun);
+      this.notice.set(`Queued all supported Lichess history for ${account.username}. This may take a while and continues in the background.`);
+      this.syncImportPolling();
+    } catch (error) {
+      this.error.set(readApiError(error, `Could not queue all history for ${account.username}.`));
+      await this.loadImportRuns().catch(() => undefined);
+    } finally {
+      this.importingAllHistoryAccountId.set(null);
     }
   }
 
