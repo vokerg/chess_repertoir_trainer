@@ -5,25 +5,18 @@ import {
 } from '../../dist/modules/onboarding/onboarding-command.repository.prisma.js';
 
 let mutationQueries = 0;
-const transaction = {
-  async $executeRaw() { return 0; },
-  dataLifecycleResourceFence: {
-    async findFirst() {
-      return {
-        operationId: 91,
-        resourceType: 'USER',
-        resourceId: 5,
-      };
-    },
-  },
+const database = {
   async $queryRaw() {
     mutationQueries += 1;
-    throw new Error('Disposition mutation must not run while the lifecycle fence is active.');
-  },
-};
-const database = {
-  async $transaction(callback) {
-    return callback(transaction);
+    const error = new Error(
+      'Raw query failed. Code: P0001. Message: ERROR: DATA_LIFECYCLE_WRITE_BLOCKED',
+    );
+    error.code = 'P2010';
+    error.meta = {
+      code: 'P0001',
+      message: 'ERROR: DATA_LIFECYCLE_WRITE_BLOCKED DETAIL: operation=91 resource=USER:5',
+    };
+    throw error;
   },
 };
 const repository = createOnboardingCommandRepository(database);
@@ -41,5 +34,5 @@ for (const command of [
   });
 }
 
-assert.equal(mutationQueries, 0);
+assert.equal(mutationQueries, 2);
 console.log('Onboarding disposition lifecycle fence tests passed.');
