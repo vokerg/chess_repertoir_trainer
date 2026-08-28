@@ -9,6 +9,7 @@ import {
   AccountImportRunNotFoundError,
 } from '../account-imports/account-import.repository.prisma';
 import { admitAccountImportRunInTransaction } from '../account-imports/account-import.transaction.repository.prisma';
+import { lockDataLifecycleUserScope } from '../data-lifecycle/data-lifecycle.guard';
 import {
   completePreparationAttentionInTransaction,
   createPreparationRunInTransaction,
@@ -101,6 +102,12 @@ export function createOnboardingCommandAdmissionRepository(
 
       try {
         return await database.$transaction(async (transaction) => {
+          // Follow the destructive lifecycle coordinator's lock order: acquire the
+          // shared user-scope fence before durable user/account row locks. Downstream
+          // account-import and preparation admission guards re-enter this transaction-
+          // scoped advisory lock while checking their narrower scopes.
+          await lockDataLifecycleUserScope(transaction, input.userId);
+
           // First-run commands serialize on the durable user row before any
           // import/preparation admission. Other command families still rely on
           // the preparation one-active-per-user invariant as their final arbiter.
