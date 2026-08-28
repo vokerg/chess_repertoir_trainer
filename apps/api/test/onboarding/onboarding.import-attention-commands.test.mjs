@@ -112,6 +112,7 @@ try {
 
   const retried = await service.retry(retryUser.id, retryRun.id);
   assert.equal(retried.runId, retryRun.id);
+  assert.equal(retried.retryGeneration, 1);
   assert.equal(retried.idempotent, false);
   const afterRetry = await loadRun(retryRun.id);
   const retryImportId = afterRetry.targets[0].currentImportRunId;
@@ -130,9 +131,29 @@ try {
 
   const replayedRetry = await service.retry(retryUser.id, retryRun.id);
   assert.equal(replayedRetry.runId, retryRun.id);
+  assert.equal(replayedRetry.retryGeneration, 1);
   assert.equal(replayedRetry.idempotent, true);
   assert.equal(await prisma.importRun.count({ where: { userId: retryUser.id } }), 2);
   assert.equal((await loadRun(retryRun.id)).targets[0].currentImportRunId, retryImportId);
+
+  // Reconciliation may consume the attention state before a client recovers
+  // from a lost response. The retry generation remains a durable process-restart
+  // replay marker after the parent has moved back to RUNNING.
+  await prisma.dataPreparationRun.update({
+    where: { id: retryRun.id },
+    data: {
+      status: 'RUNNING',
+      attentionCode: null,
+      attentionDetail: null,
+      reconcileAfter: now,
+    },
+  });
+  const restartedService = createOnboardingCommandService({ now: () => now });
+  const replayedAfterReconcile = await restartedService.retry(retryUser.id, retryRun.id);
+  assert.equal(replayedAfterReconcile.runId, retryRun.id);
+  assert.equal(replayedAfterReconcile.retryGeneration, 1);
+  assert.equal(replayedAfterReconcile.idempotent, true);
+  assert.equal(await prisma.importRun.count({ where: { userId: retryUser.id } }), 2);
 
   // Finish remains ownership-scoped even after disposition has already completed.
   const finishUser = await createUser('Onboarding finish ownership');
@@ -162,6 +183,27 @@ try {
     (error) => error instanceof OnboardingCommandNotFoundError,
   );
 
+  // Concurrent finish replays converge to one mutation while the loser reports
+  // idempotent=true rather than claiming a second state transition.
+  const concurrentFinishUser = await createUser('Onboarding concurrent finish');
+  const concurrentFinishAccount = await createAccount(concurrentFinishUser.id, 'lichess', 'concurrent-finish');
+  const concurrentFinishStart = await service.start(concurrentFinishUser.id, concurrentFinishAccount.id);
+  await prisma.dataPreparationRun.update({
+    where: { id: concurrentFinishStart.runId },
+    data: {
+      status: 'NEEDS_ATTENTION',
+      attentionCode: 'NO_RECENT_GAMES',
+      attentionDetail: 'No recent games.',
+      reconcileAfter: null,
+    },
+  });
+  const concurrentFinish = await Promise.all([
+    service.finish(concurrentFinishUser.id, concurrentFinishStart.runId),
+    service.finish(concurrentFinishUser.id, concurrentFinishStart.runId),
+  ]);
+  assert.deepEqual(concurrentFinish.map((result) => result.idempotent).sort(), [false, true]);
+  assert.ok(concurrentFinish.every((result) => result.disposition === 'COMPLETED'));
+
   // SKIPPED is terminal for explicit finish and cannot be overwritten.
   const skippedUser = await createUser('Onboarding skipped finish gate');
   const skippedAccount = await createAccount(skippedUser.id, 'lichess', 'skipped-finish');
@@ -185,6 +227,31 @@ try {
     (await prisma.appUser.findUniqueOrThrow({ where: { id: skippedUser.id } })).onboardingDisposition,
     'SKIPPED',
   );
+
+  // A skip/finish race has exactly one state-changing winner. The losing command
+  // cannot overwrite the winner's durable disposition.
+  const dispositionRaceUser = await createUser('Onboarding disposition race');
+  const dispositionRaceAccount = await createAccount(dispositionRaceUser.id, 'chess.com', 'disposition-race');
+  const dispositionRaceStart = await service.start(dispositionRaceUser.id, dispositionRaceAccount.id);
+  await prisma.dataPreparationRun.update({
+    where: { id: dispositionRaceStart.runId },
+    data: {
+      status: 'NEEDS_ATTENTION',
+      attentionCode: 'NO_RECENT_GAMES',
+      attentionDetail: 'No recent games.',
+      reconcileAfter: null,
+    },
+  });
+  const dispositionRace = await Promise.allSettled([
+    service.skip(dispositionRaceUser.id),
+    service.finish(dispositionRaceUser.id, dispositionRaceStart.runId),
+  ]);
+  assert.equal(dispositionRace.filter((result) => result.status === 'fulfilled').length, 1);
+  assert.equal(dispositionRace.filter((result) => result.status === 'rejected').length, 1);
+  const persistedDisposition = (
+    await prisma.appUser.findUniqueOrThrow({ where: { id: dispositionRaceUser.id } })
+  ).onboardingDisposition;
+  assert.ok(persistedDisposition === 'SKIPPED' || persistedDisposition === 'COMPLETED');
 
   // Historical targets survive account deletion as detached snapshots. Commands
   // return a defined lifecycle conflict rather than failing hydration with a 500.
