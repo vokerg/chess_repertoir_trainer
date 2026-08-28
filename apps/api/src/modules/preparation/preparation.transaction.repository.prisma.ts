@@ -150,6 +150,34 @@ export async function relinkPreparationTargetImportInTransaction(
   return updated === 1;
 }
 
+export async function completePreparationAttentionInTransaction(
+  transaction: Prisma.TransactionClient,
+  input: {
+    userId: number;
+    runId: number;
+    attentionCode: string;
+  },
+): Promise<boolean> {
+  validatePositiveInteger(input.userId, 'userId');
+  validatePositiveInteger(input.runId, 'runId');
+  if (input.attentionCode.length === 0) throw new Error('attentionCode must be non-empty.');
+
+  const updated = await transaction.$executeRaw(Prisma.sql`
+    UPDATE "DataPreparationRun"
+    SET "status" = 'COMPLETED',
+        "attentionCode" = NULL,
+        "attentionDetail" = NULL,
+        "completedAt" = COALESCE("completedAt", NOW()),
+        "reconcileAfter" = NULL,
+        "updatedAt" = NOW()
+    WHERE "id" = ${input.runId}
+      AND "userId" = ${input.userId}
+      AND "status" = 'NEEDS_ATTENTION'
+      AND "attentionCode" = ${input.attentionCode}
+  `);
+  return updated === 1;
+}
+
 async function assertPreparationTargetsOwned(
   transaction: Prisma.TransactionClient,
   input: CreatePreparationRunInput,
