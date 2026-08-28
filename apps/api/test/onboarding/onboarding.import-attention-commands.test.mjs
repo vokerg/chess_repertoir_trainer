@@ -136,6 +136,20 @@ try {
   assert.equal(await prisma.importRun.count({ where: { userId: retryUser.id } }), 2);
   assert.equal((await loadRun(retryRun.id)).targets[0].currentImportRunId, retryImportId);
 
+  // The retry import may finish before the preparation reconciler consumes the
+  // stale attention state. Durable retry lineage still makes a lost-response
+  // replay idempotent instead of turning the already accepted command into 409.
+  await prisma.importRun.update({
+    where: { id: retryImportId },
+    data: { status: 'COMPLETED', completedAt: now },
+  });
+  const replayedAfterImportCompletion = await createOnboardingCommandService({ now: () => now })
+    .retry(retryUser.id, retryRun.id);
+  assert.equal(replayedAfterImportCompletion.runId, retryRun.id);
+  assert.equal(replayedAfterImportCompletion.retryGeneration, 1);
+  assert.equal(replayedAfterImportCompletion.idempotent, true);
+  assert.equal(await prisma.importRun.count({ where: { userId: retryUser.id } }), 2);
+
   // Reconciliation may consume the attention state before a client recovers
   // from a lost response. The retry generation remains a durable process-restart
   // replay marker after the parent has moved back to RUNNING.
