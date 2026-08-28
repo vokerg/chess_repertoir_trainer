@@ -5,6 +5,10 @@ interface IdRow {
   id: number;
 }
 
+interface GenerationRow {
+  retryGeneration: number;
+}
+
 /**
  * Transaction-scoped preparation persistence for coordinators that must make
  * linked durable work visible atomically. Preparation remains the owner of the
@@ -148,6 +152,26 @@ export async function relinkPreparationTargetImportInTransaction(
       )
   `);
   return updated === 1;
+}
+
+export async function recordPreparationImportRetryInTransaction(
+  transaction: Prisma.TransactionClient,
+  input: { userId: number; runId: number },
+): Promise<number | null> {
+  validatePositiveInteger(input.userId, 'userId');
+  validatePositiveInteger(input.runId, 'runId');
+  const rows = await transaction.$queryRaw<GenerationRow[]>(Prisma.sql`
+    UPDATE "DataPreparationRun"
+    SET "retryGeneration" = "retryGeneration" + 1,
+        "reconcileAfter" = NOW(),
+        "updatedAt" = NOW()
+    WHERE "id" = ${input.runId}
+      AND "userId" = ${input.userId}
+      AND "status" = 'NEEDS_ATTENTION'
+      AND "attentionCode" = 'IMPORT_RETRY_AVAILABLE'
+    RETURNING "retryGeneration"
+  `);
+  return rows[0]?.retryGeneration ?? null;
 }
 
 export async function completePreparationAttentionInTransaction(
