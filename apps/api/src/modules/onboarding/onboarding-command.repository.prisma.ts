@@ -1,17 +1,12 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import type { OnboardingExpandBody } from '@chess-trainer/contracts/onboarding';
 import prisma from '../../prisma';
-import {
-  DataLifecycleWriteBlockedError,
-  assertDataLifecycleWriteAllowed,
-} from '../data-lifecycle/data-lifecycle.guard';
 import type {
   PreparationPurpose,
   PreparationRunStatus,
   PreparationScopeSnapshot,
 } from '../preparation/preparation.types';
 
-const ONBOARDING_DISPOSITION_TRANSACTION_TIMEOUT_MS = 15_000;
 const NON_TERMINAL_PREPARATION_STATUSES = [
   'QUEUED',
   'RUNNING',
@@ -218,80 +213,70 @@ export function createOnboardingCommandRepository(
     async skip(userId, changedAt) {
       assertPositiveId(userId, 'userId');
       try {
-        return await database.$transaction(async (transaction) => {
-          await assertDataLifecycleWriteAllowed(transaction, { userId });
-          const rows = await transaction.$queryRaw<DispositionRow[]>(Prisma.sql`
-            UPDATE "AppUser"
-            SET "onboardingDisposition" = 'SKIPPED',
-                "onboardingDispositionReason" = 'USER_SKIPPED',
-                "onboardingDispositionAt" = ${changedAt},
-                "updatedAt" = ${changedAt}
-            WHERE "id" = ${userId}
-              AND "onboardingDisposition" = 'PENDING'
-            RETURNING
-              "onboardingDisposition",
-              "onboardingDispositionReason",
-              "onboardingDispositionAt"
-          `);
-          if (rows[0]) return { disposition: mapDisposition(rows[0]), changed: true };
-          return {
-            disposition: await getDispositionFromDatabase(transaction, userId),
-            changed: false,
-          };
-        }, {
-          timeout: ONBOARDING_DISPOSITION_TRANSACTION_TIMEOUT_MS,
-        });
+        const rows = await database.$queryRaw<DispositionRow[]>(Prisma.sql`
+          UPDATE "AppUser"
+          SET "onboardingDisposition" = 'SKIPPED',
+              "onboardingDispositionReason" = 'USER_SKIPPED',
+              "onboardingDispositionAt" = ${changedAt},
+              "updatedAt" = ${changedAt}
+          WHERE "id" = ${userId}
+            AND "onboardingDisposition" = 'PENDING'
+          RETURNING
+            "onboardingDisposition",
+            "onboardingDispositionReason",
+            "onboardingDispositionAt"
+        `);
+        if (rows[0]) return { disposition: mapDisposition(rows[0]), changed: true };
       } catch (error) {
-        if (error instanceof DataLifecycleWriteBlockedError) {
+        if (isDatabaseLifecycleWriteBlockedError(error)) {
           throw new OnboardingCommandDispositionBlockedError();
         }
         throw error;
       }
+      return {
+        disposition: await getDispositionFromDatabase(database, userId),
+        changed: false,
+      };
     },
 
     async finishWithAttention(userId, runId, changedAt) {
       assertPositiveId(userId, 'userId');
       assertPositiveId(runId, 'runId');
       try {
-        return await database.$transaction(async (transaction) => {
-          await assertDataLifecycleWriteAllowed(transaction, { userId });
-          const rows = await transaction.$queryRaw<DispositionRow[]>(Prisma.sql`
-            UPDATE "AppUser" AS app_user
-            SET "onboardingDisposition" = 'COMPLETED',
-                "onboardingDispositionReason" = CASE run."attentionCode"
-                  WHEN 'NO_RECENT_GAMES' THEN 'USER_FINISHED_NO_RECENT_GAMES'
-                  WHEN 'ALL_INDEXING_FAILED' THEN 'USER_FINISHED_ALL_INDEXING_FAILED'
-                  WHEN 'IMPORT_RETRY_AVAILABLE' THEN 'USER_FINISHED_IMPORT_RETRY_AVAILABLE'
-                  ELSE 'USER_FINISHED_WITH_ATTENTION'
-                END,
-                "onboardingDispositionAt" = ${changedAt},
-                "updatedAt" = ${changedAt}
-            FROM "DataPreparationRun" AS run
-            WHERE app_user."id" = ${userId}
-              AND app_user."onboardingDisposition" = 'PENDING'
-              AND run."id" = ${runId}
-              AND run."userId" = app_user."id"
-              AND run."status" = 'NEEDS_ATTENTION'
-              AND run."attentionCode" IN (${Prisma.join(FINISHABLE_ATTENTION_CODES.map((code) => Prisma.sql`${code}`))})
-            RETURNING
-              app_user."onboardingDisposition",
-              app_user."onboardingDispositionReason",
-              app_user."onboardingDispositionAt"
-          `);
-          if (rows[0]) return { disposition: mapDisposition(rows[0]), changed: true };
-          const current = await getDispositionFromDatabase(transaction, userId);
-          return current.disposition === 'COMPLETED'
-            ? { disposition: current, changed: false }
-            : null;
-        }, {
-          timeout: ONBOARDING_DISPOSITION_TRANSACTION_TIMEOUT_MS,
-        });
+        const rows = await database.$queryRaw<DispositionRow[]>(Prisma.sql`
+          UPDATE "AppUser" AS app_user
+          SET "onboardingDisposition" = 'COMPLETED',
+              "onboardingDispositionReason" = CASE run."attentionCode"
+                WHEN 'NO_RECENT_GAMES' THEN 'USER_FINISHED_NO_RECENT_GAMES'
+                WHEN 'ALL_INDEXING_FAILED' THEN 'USER_FINISHED_ALL_INDEXING_FAILED'
+                WHEN 'IMPORT_RETRY_AVAILABLE' THEN 'USER_FINISHED_IMPORT_RETRY_AVAILABLE'
+                ELSE 'USER_FINISHED_WITH_ATTENTION'
+              END,
+              "onboardingDispositionAt" = ${changedAt},
+              "updatedAt" = ${changedAt}
+          FROM "DataPreparationRun" AS run
+          WHERE app_user."id" = ${userId}
+            AND app_user."onboardingDisposition" = 'PENDING'
+            AND run."id" = ${runId}
+            AND run."userId" = app_user."id"
+            AND run."status" = 'NEEDS_ATTENTION'
+            AND run."attentionCode" IN (${Prisma.join(FINISHABLE_ATTENTION_CODES.map((code) => Prisma.sql`${code}`))})
+          RETURNING
+            app_user."onboardingDisposition",
+            app_user."onboardingDispositionReason",
+            app_user."onboardingDispositionAt"
+        `);
+        if (rows[0]) return { disposition: mapDisposition(rows[0]), changed: true };
       } catch (error) {
-        if (error instanceof DataLifecycleWriteBlockedError) {
+        if (isDatabaseLifecycleWriteBlockedError(error)) {
           throw new OnboardingCommandDispositionBlockedError();
         }
         throw error;
       }
+      const current = await getDispositionFromDatabase(database, userId);
+      return current.disposition === 'COMPLETED'
+        ? { disposition: current, changed: false }
+        : null;
     },
   };
 }
@@ -390,6 +375,17 @@ async function hydrateRun(
       importRetryOfImportRunId: target.importRetryOfImportRunId,
     })),
   };
+}
+
+function isDatabaseLifecycleWriteBlockedError(error: unknown): boolean {
+  const candidate = error as {
+    message?: unknown;
+    meta?: { code?: unknown; message?: unknown };
+  };
+  const message = [candidate?.message, candidate?.meta?.code, candidate?.meta?.message]
+    .map((value) => String(value ?? ''))
+    .join(' ');
+  return message.includes('DATA_LIFECYCLE_WRITE_BLOCKED');
 }
 
 function mapDisposition(row: DispositionRow): OnboardingCommandDispositionRecord {
