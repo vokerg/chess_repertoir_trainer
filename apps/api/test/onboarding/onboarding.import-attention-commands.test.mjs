@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { PrismaClient } from '@prisma/client';
 import {
   createOnboardingCommandService,
   OnboardingCommandInvalidStateError,
@@ -11,6 +12,75 @@ const prisma = prismaModule.default;
 const suffix = randomUUID();
 const now = new Date('2026-08-31T12:00:00.000Z');
 const users = [];
+
+// Temporary CI diagnosis for the intermittent cross-suite transaction stall.
+// This is removed once the lock owner is identified.
+async function monitorAdmissionLocks() {
+  const monitor = new PrismaClient();
+  let inFlight = null;
+  const timer = setInterval(() => {
+    if (inFlight) return;
+    inFlight = (async () => {
+      const blocked = await monitor.$queryRawUnsafe(`
+        SELECT
+          blocked.pid AS blocked_pid,
+          blocked.state AS blocked_state,
+          blocked.wait_event_type,
+          blocked.wait_event,
+          EXTRACT(EPOCH FROM (clock_timestamp() - blocked.xact_start)) AS blocked_xact_age_seconds,
+          blocked.query AS blocked_query,
+          blocker.pid AS blocking_pid,
+          blocker.state AS blocking_state,
+          EXTRACT(EPOCH FROM (clock_timestamp() - blocker.xact_start)) AS blocking_xact_age_seconds,
+          blocker.query AS blocking_query,
+          lock.classid,
+          lock.objid,
+          lock.mode,
+          lock.granted
+        FROM pg_stat_activity AS blocked
+        CROSS JOIN LATERAL unnest(pg_blocking_pids(blocked.pid)) AS blocker_pid(pid)
+        JOIN pg_stat_activity AS blocker ON blocker.pid = blocker_pid.pid
+        LEFT JOIN pg_locks AS lock
+          ON lock.pid = blocked.pid
+         AND lock.locktype = 'advisory'
+        WHERE blocked.datname = current_database()
+          AND blocked.pid <> pg_backend_pid()
+      `);
+      const advisoryLocks = await monitor.$queryRawUnsafe(`
+        SELECT
+          lock.pid,
+          lock.classid,
+          lock.objid,
+          lock.mode,
+          lock.granted,
+          activity.state,
+          activity.wait_event_type,
+          activity.wait_event,
+          EXTRACT(EPOCH FROM (clock_timestamp() - activity.xact_start)) AS xact_age_seconds,
+          activity.query
+        FROM pg_locks AS lock
+        JOIN pg_stat_activity AS activity ON activity.pid = lock.pid
+        WHERE activity.datname = current_database()
+          AND lock.locktype = 'advisory'
+          AND lock.pid <> pg_backend_pid()
+        ORDER BY lock.granted, lock.pid
+      `);
+      if (blocked.length > 0 || advisoryLocks.some((lock) => !lock.granted)) {
+        console.error('ONBOARDING_ADMISSION_LOCK_DIAGNOSTIC', JSON.stringify({ blocked, advisoryLocks }));
+      }
+    })().catch((error) => {
+      console.error('ONBOARDING_ADMISSION_LOCK_DIAGNOSTIC_ERROR', error);
+    }).finally(() => {
+      inFlight = null;
+    });
+  }, 250);
+
+  return async () => {
+    clearInterval(timer);
+    await inFlight;
+    await monitor.$disconnect();
+  };
+}
 
 async function createUser(label) {
   const user = await prisma.appUser.create({
@@ -49,7 +119,13 @@ try {
   // reconciliation has not yet cleared the attention state.
   const pausedUser = await createUser('Onboarding paused import resume');
   const pausedAccount = await createAccount(pausedUser.id, 'lichess', 'paused-import');
-  const pausedStart = await service.start(pausedUser.id, pausedAccount.id);
+  const stopAdmissionLockMonitor = await monitorAdmissionLocks();
+  let pausedStart;
+  try {
+    pausedStart = await service.start(pausedUser.id, pausedAccount.id);
+  } finally {
+    await stopAdmissionLockMonitor();
+  }
   const pausedRun = await loadRun(pausedStart.runId);
   const pausedImportId = pausedRun.targets[0].currentImportRunId;
   assert.ok(pausedImportId);
