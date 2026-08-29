@@ -5,7 +5,7 @@
     [actions]="headerActions()"
   />
 
-  <app-panel title="Add import source" subtitle="Use the public username for a Lichess or Chess.com account.">
+  <app-panel title="Add import source" subtitle="Use the public username for a Lichess or Chess.com account. The first refresh is intentionally limited to a recent window.">
     <form class="account-form" (ngSubmit)="store.createAccount()">
       <label class="account-field">
         <span>Provider</span>
@@ -53,9 +53,22 @@
 
   <app-panel
     title="Imported accounts"
-    subtitle="Refreshes continue in the worker after you navigate away and restore here after reload."
+    subtitle="Jobs continue in the worker after you navigate away and restore here after reload."
     [stats]="accountStats()"
   >
+    <aside class="import-boundary" aria-labelledby="import-boundary-title">
+      <h3 id="import-boundary-title">What gets imported</h3>
+      <p>
+        The normal importer reads finished standard Bullet, Blitz, and Rapid games, both rated and casual.
+        Lichess variants and other time controls are outside this importer.
+      </p>
+      <p>The explicit all-history action is currently available for Lichess accounts only.</p>
+      <ul>
+        <li><strong>Refresh games</strong> queues only the newest bounded three-month window.</li>
+        <li><strong>Load 3 older months</strong> queues one adjacent older window.</li>
+        <li><strong>Import all supported history</strong> queues Lichess games from 2013-01-01 (its earliest supported export boundary) through now. It may take a while, but it runs in the background.</li>
+      </ul>
+    </aside>
     @if (store.error(); as error) {
       <app-state-message tone="error" [message]="error" />
     }
@@ -183,10 +196,20 @@
                     type="button"
                     class="secondary"
                     (click)="store.backfillAccount(account)"
-                    [disabled]="store.backfillingAccountId() === account.id || store.isImportActive(account.id) || !account.isActive"
+                    [disabled]="store.backfillingAccountId() === account.id || store.importingAllHistoryAccountId() === account.id || store.isImportActive(account.id) || !account.isActive"
                   >
                     {{ store.backfillingAccountId() === account.id ? 'Queueing...' : 'Load 3 older months' }}
                   </button>
+                  @if (account.provider === 'LICHESS') {
+                    <button
+                      type="button"
+                      class="secondary full-history-button"
+                      (click)="confirmImportAllHistory(account)"
+                      [disabled]="store.importingAllHistoryAccountId() === account.id || store.backfillingAccountId() === account.id || store.isImportActive(account.id) || !account.isActive"
+                    >
+                      {{ store.importingAllHistoryAccountId() === account.id ? 'Queueing...' : 'Import all supported history' }}
+                    </button>
+                  }
                   <button
                     type="button"
                     class="secondary default-account-button"

@@ -581,6 +581,8 @@ Reuse current account concepts but simplify presentation:
 
 Creating an `ExternalAccount` should not automatically start an unbounded full-history scan.
 
+The account settings surface may offer an explicit, user-confirmed full-history action after the account exists; that action must remain durable, scoped, and visibly distinct from the bounded first refresh.
+
 ### 5.3 Preview the preparation recipe
 
 Show a plain-language summary before durable start:

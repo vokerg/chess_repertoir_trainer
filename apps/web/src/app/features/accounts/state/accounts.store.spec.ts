@@ -14,6 +14,7 @@ describe('AccountsStore', () => {
       'createAccount',
       'syncAccount',
       'backfillAccount',
+      'importAllHistory',
       'getAccountImports',
       'getActiveAccountImports',
       'pauseImport',
@@ -125,6 +126,25 @@ describe('AccountsStore', () => {
 
     expect(api.pauseImport).toHaveBeenCalledOnceWith(running.id);
     expect(store.importRunForAccount(1)?.status).toBe('PAUSE_REQUESTED');
+  });
+
+  it('queues explicit all-history work as a durable run', async () => {
+    const tracked = account(1, 'history', true);
+    const fullHistory = {
+      ...importRun(12, tracked.id, 'QUEUED'),
+      mode: 'FULL_HISTORY' as const,
+      source: 'USER_ACTION' as const,
+      requestedFrom: '2013-01-01T00:00:00.070Z',
+    } as AccountImportRun;
+    store.accounts.set([tracked]);
+    api.importAllHistory.and.returnValue(of({ importRun: fullHistory }));
+
+    await store.importAllHistory(tracked);
+
+    expect(api.importAllHistory).toHaveBeenCalledOnceWith(tracked.id);
+    expect(store.importRunForAccount(tracked.id)).toEqual(fullHistory);
+    expect(store.notice()).toContain('Queued all supported Lichess history');
+    expect(store.importingAllHistoryAccountId()).toBeNull();
   });
 
   it('resumes a persisted paused import back into the durable queue', async () => {

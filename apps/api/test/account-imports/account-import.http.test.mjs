@@ -29,6 +29,10 @@ try {
     data: { userId, provider: 'CHESS_COM', username: `onb-015-http-${suffix}` },
   });
   createdAccountIds.push(compatibilityAccount.id);
+  const fullHistoryAccount = await prisma.externalAccount.create({
+    data: { userId, provider: 'LICHESS', username: `onb-015-full-history-${suffix}` },
+  });
+  createdAccountIds.push(fullHistoryAccount.id);
 
   const otherUser = await prisma.appUser.create({
     data: {
@@ -208,6 +212,38 @@ try {
     });
     assert.equal(backfillWithoutCoverage.statusCode, 409);
     assert.equal(backfillWithoutCoverage.json().code, 'ACCOUNT_IMPORT_INVALID_RANGE');
+
+    const fullHistory = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${fullHistoryAccount.id}/import-all-history`,
+    });
+    assert.equal(fullHistory.statusCode, 202, fullHistory.body);
+    const fullHistoryRun = fullHistory.json().importRun;
+    assert.equal(fullHistoryRun.accountId, fullHistoryAccount.id);
+    assert.equal(fullHistoryRun.mode, 'FULL_HISTORY');
+    assert.equal(fullHistoryRun.source, 'USER_ACTION');
+    assert.equal(fullHistoryRun.requestedFrom, '2013-01-01T00:00:00.070Z');
+    assert.equal(Date.parse(fullHistoryRun.requestedTo) > Date.parse(fullHistoryRun.requestedFrom), true);
+
+    const duplicateFullHistory = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${fullHistoryAccount.id}/import-all-history`,
+    });
+    assert.equal(duplicateFullHistory.statusCode, 409);
+    assert.equal(duplicateFullHistory.json().code, 'ACCOUNT_IMPORT_ACTIVE');
+
+    const fullHistoryCancel = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${fullHistoryRun.id}/cancel`,
+    });
+    assert.equal(fullHistoryCancel.statusCode, 200);
+
+    const chessComFullHistory = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${compatibilityAccount.id}/import-all-history`,
+    });
+    assert.equal(chessComFullHistory.statusCode, 409);
+    assert.equal(chessComFullHistory.json().code, 'ACCOUNT_IMPORT_INVALID_RANGE');
   } finally {
     await app.close();
   }

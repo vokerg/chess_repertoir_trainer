@@ -567,6 +567,8 @@ Status: `REJECTED`
 
 Do not make all-history preparation the first-use default.
 
+This rejection does not prohibit a later explicit user action that queues full supported game history; it prohibits making that expensive scan implicit during first use.
+
 ### D-102 — Replace the durable worker
 
 Status: `REJECTED`

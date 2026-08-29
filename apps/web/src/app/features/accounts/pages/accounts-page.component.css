@@ -48,6 +48,44 @@
   line-height: 1.45;
 }
 
+.import-boundary {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--ui-border);
+  border-left: 4px solid var(--ui-info);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-info-soft);
+  color: var(--ui-text);
+}
+
+.import-boundary h3,
+.import-boundary p,
+.import-boundary ul {
+  margin: 0;
+}
+
+.import-boundary h3 {
+  font-size: 0.9rem;
+}
+
+.import-boundary p,
+.import-boundary li {
+  color: var(--ui-text-muted);
+  line-height: 1.5;
+}
+
+.import-boundary ul {
+  display: grid;
+  gap: 0.35rem;
+  padding-left: 1.2rem;
+}
+
+.import-boundary strong {
+  color: var(--ui-text);
+}
+
 .accounts-list {
   display: grid;
   gap: var(--space-3);
@@ -242,6 +280,15 @@
 
 .account-delete-button:hover:not(:disabled) {
   background: var(--ui-danger-soft);
+}
+
+.full-history-button {
+  border-color: color-mix(in srgb, var(--ui-warning) 48%, var(--ui-border));
+  color: var(--ui-warning);
+}
+
+.full-history-button:hover:not(:disabled) {
+  background: var(--ui-warning-soft);
 }
 
 .status-note {
