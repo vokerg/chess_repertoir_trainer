@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import {
   createOnboardingCommandService,
@@ -6,12 +7,17 @@ import {
   OnboardingCommandActiveRunError,
   OnboardingCommandInvalidStateError,
 } from '../../dist/modules/onboarding/onboarding-command.service.js';
+import { createOnboardingCommandAdmissionRepository } from '../../dist/modules/onboarding/onboarding-command-admission.repository.prisma.js';
+import { createOnboardingCommandRepository } from '../../dist/modules/onboarding/onboarding-command.repository.prisma.js';
 import prismaModule from '../../dist/prisma.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
 const now = new Date('2026-08-31T12:00:00.000Z');
 const users = [];
+// Keep command transactions on an independent pool because the full integration
+// runner loads many Prisma-backed fixtures into one Node process.
+const commandPrisma = new PrismaClient();
 
 async function createUser(label) {
   const user = await prisma.appUser.create({
@@ -55,7 +61,11 @@ async function terminalizeRun(runId) {
 }
 
 try {
-  const service = createOnboardingCommandService({ now: () => now });
+  const service = createOnboardingCommandService({
+    now: () => now,
+    repository: createOnboardingCommandRepository(commandPrisma),
+    admissionRepository: createOnboardingCommandAdmissionRepository(commandPrisma),
+  });
 
   // Non-equivalent concurrent starts must not leave a losing import accepted without a preparation target.
   const raceUser = await createUser('Onboarding admission race');
@@ -202,5 +212,6 @@ try {
   for (const user of users.reverse()) {
     await prisma.appUser.delete({ where: { id: user.id } }).catch(() => undefined);
   }
+  await commandPrisma.$disconnect();
   await prisma.$disconnect();
 }
