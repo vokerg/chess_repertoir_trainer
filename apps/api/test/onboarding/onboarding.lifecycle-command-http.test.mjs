@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
+import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { buildApp } from '../../dist/app.js';
 import { createOnboardingCommandService } from '../../dist/modules/onboarding/onboarding-command.service.js';
+import { createOnboardingCommandAdmissionRepository } from '../../dist/modules/onboarding/onboarding-command-admission.repository.prisma.js';
+import { createOnboardingCommandRepository } from '../../dist/modules/onboarding/onboarding-command.repository.prisma.js';
 import prismaModule from '../../dist/prisma.js';
 
 const prisma = prismaModule.default;
@@ -14,6 +17,9 @@ let otherUser = null;
 let app = null;
 let accountId = null;
 let preparationId = null;
+// Keep command transactions on an independent pool because the full integration
+// runner loads many Prisma-backed fixtures into one Node process.
+const commandPrisma = new PrismaClient();
 
 try {
   const existingDevUser = await prisma.appUser.findUnique({
@@ -59,7 +65,11 @@ try {
     },
   });
   accountId = account.id;
-  const service = createOnboardingCommandService({ now: () => now });
+  const service = createOnboardingCommandService({
+    now: () => now,
+    repository: createOnboardingCommandRepository(commandPrisma),
+    admissionRepository: createOnboardingCommandAdmissionRepository(commandPrisma),
+  });
   const start = await service.start(user.id, account.id);
   preparationId = start.runId;
   const run = await prisma.dataPreparationRun.findUniqueOrThrow({
@@ -214,5 +224,6 @@ try {
       }).catch(() => undefined);
     }
   }
+  await commandPrisma.$disconnect();
   await prisma.$disconnect();
 }

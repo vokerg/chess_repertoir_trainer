@@ -1,15 +1,21 @@
 import assert from 'node:assert/strict';
+import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import {
   createOnboardingCommandService,
   OnboardingCommandNotFoundError,
 } from '../../dist/modules/onboarding/onboarding-command.service.js';
+import { createOnboardingCommandAdmissionRepository } from '../../dist/modules/onboarding/onboarding-command-admission.repository.prisma.js';
+import { createOnboardingCommandRepository } from '../../dist/modules/onboarding/onboarding-command.repository.prisma.js';
 import prismaModule from '../../dist/prisma.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
 const now = new Date('2026-08-31T12:00:00.000Z');
 const users = [];
+// Keep command transactions on an independent pool because the full integration
+// runner loads many Prisma-backed fixtures into one Node process.
+const commandPrisma = new PrismaClient();
 
 async function createUser(label) {
   const user = await prisma.appUser.create({
@@ -45,7 +51,11 @@ async function terminalizePreparation(runId, importRunId) {
 }
 
 try {
-  const service = createOnboardingCommandService({ now: () => now });
+  const service = createOnboardingCommandService({
+    now: () => now,
+    repository: createOnboardingCommandRepository(commandPrisma),
+    admissionRepository: createOnboardingCommandAdmissionRepository(commandPrisma),
+  });
 
   // Concurrent start is idempotent and accepts only one immutable first-run scope.
   const lifecycleUser = await createUser('Lifecycle command test');
@@ -313,5 +323,6 @@ try {
   for (const user of users.reverse()) {
     await prisma.appUser.delete({ where: { id: user.id } }).catch(() => undefined);
   }
+  await commandPrisma.$disconnect();
   await prisma.$disconnect();
 }
