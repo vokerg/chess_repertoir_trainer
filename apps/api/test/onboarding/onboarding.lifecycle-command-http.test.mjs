@@ -84,6 +84,7 @@ try {
   app = await buildApp({
     logger: false,
     authConfig: { mode: 'dev-single-user', userId: user.id },
+    prisma: { $disconnect: async () => {} },
   });
   await app.ready();
 
