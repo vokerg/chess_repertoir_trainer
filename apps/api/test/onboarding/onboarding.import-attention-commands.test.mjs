@@ -14,112 +14,9 @@ const prisma = prismaModule.default;
 const suffix = randomUUID();
 const now = new Date('2026-08-31T12:00:00.000Z');
 const users = [];
-const lockMonitor = new PrismaClient();
+// Keep command admission on an independent pool because the full integration
+// runner loads many Prisma-backed fixtures into one Node process.
 const commandPrisma = new PrismaClient();
-let stopLockMonitor = () => {};
-
-async function reportOpenTransactions(label) {
-  const rows = await lockMonitor.$queryRawUnsafe(`
-    SELECT
-      pid,
-      state,
-      wait_event_type,
-      wait_event,
-      EXTRACT(EPOCH FROM (clock_timestamp() - xact_start)) AS xact_age_seconds,
-      EXTRACT(EPOCH FROM (clock_timestamp() - query_start)) AS query_age_seconds,
-      pg_blocking_pids(pid)::text AS blocking_pids,
-      query
-    FROM pg_stat_activity
-    WHERE datname = current_database()
-      AND pid <> pg_backend_pid()
-      AND xact_start IS NOT NULL
-    ORDER BY pid
-  `);
-  console.error(`[onboarding-boundary ${label}] ${JSON.stringify(rows.map((row) => ({
-    pid: row.pid,
-    state: row.state,
-    waitEvent: row.wait_event_type ? `${row.wait_event_type}:${row.wait_event}` : null,
-    xactAgeSeconds: row.xact_age_seconds,
-    queryAgeSeconds: row.query_age_seconds,
-    blockingPids: row.blocking_pids,
-    query: String(row.query ?? '').replace(/\s+/g, ' ').slice(0, 240),
-  })))}`);
-}
-
-function startLockMonitor() {
-  if (process.env['CODEX_DISABLE_ONBOARDING_LOCK_MONITOR'] === '1') return () => {};
-  process.env['CODEX_TRACE_LIFECYCLE_TRANSACTIONS'] = '1';
-  let running = false;
-  const sample = async () => {
-    if (running) return;
-    running = true;
-    try {
-      const rows = await lockMonitor.$queryRawUnsafe(`
-        SELECT
-          pid,
-          application_name,
-          state,
-          wait_event_type,
-          wait_event,
-          lock_namespace,
-          lock_key,
-          lock_granted,
-          EXTRACT(EPOCH FROM (clock_timestamp() - xact_start)) AS xact_age_seconds,
-          EXTRACT(EPOCH FROM (clock_timestamp() - query_start)) AS query_age_seconds,
-          pg_blocking_pids(pid)::text AS blocking_pids,
-          query
-        FROM pg_stat_activity
-        LEFT JOIN LATERAL (
-          SELECT
-            l.classid AS lock_namespace,
-            l.objid AS lock_key,
-            l.granted AS lock_granted
-          FROM pg_locks AS l
-          WHERE l.pid = pg_stat_activity.pid
-            AND l.locktype = 'advisory'
-          ORDER BY l.granted DESC
-          LIMIT 1
-        ) AS advisory_lock ON TRUE
-        WHERE datname = current_database()
-          AND pg_stat_activity.pid <> pg_backend_pid()
-          AND (state <> 'idle' OR xact_start IS NOT NULL)
-        ORDER BY pid
-      `);
-      const interesting = rows.filter((row) => (
-        row.wait_event_type !== null
-        || Number(row.xact_age_seconds ?? 0) > 1
-        || Number(row.query_age_seconds ?? 0) > 1
-      ));
-      if (interesting.length > 0) {
-        console.error(`[onboarding-lock-monitor ${new Date().toISOString()}] ${JSON.stringify(
-          interesting.map((row) => ({
-            pid: row.pid,
-            applicationName: row.application_name,
-            state: row.state,
-            waitEvent: row.wait_event_type ? `${row.wait_event_type}:${row.wait_event}` : null,
-            lock: row.lock_namespace === null ? null : {
-              namespace: Number(row.lock_namespace),
-              key: Number(row.lock_key),
-              granted: row.lock_granted,
-            },
-            xactAgeSeconds: row.xact_age_seconds,
-            queryAgeSeconds: row.query_age_seconds,
-            blockingPids: row.blocking_pids,
-            query: String(row.query ?? '').replace(/\s+/g, ' ').slice(0, 400),
-          })),
-        )}`);
-      }
-    } catch (error) {
-      console.error(`[onboarding-lock-monitor-error] ${error.message}`);
-    } finally {
-      running = false;
-    }
-  };
-
-  const interval = setInterval(() => { void sample(); }, 250);
-  void sample();
-  return () => clearInterval(interval);
-}
 
 async function createUser(label) {
   const user = await prisma.appUser.create({
@@ -161,14 +58,8 @@ try {
   // keep the same preparation, and make an immediate replay idempotent while
   // reconciliation has not yet cleared the attention state.
   const pausedUser = await createUser('Onboarding paused import resume');
-  await reportOpenTransactions('after-user');
   const pausedAccount = await createAccount(pausedUser.id, 'lichess', 'paused-import');
-  await reportOpenTransactions('after-account');
-  stopLockMonitor = startLockMonitor();
-  await reportOpenTransactions('before-start');
   const pausedStart = await service.start(pausedUser.id, pausedAccount.id);
-  stopLockMonitor();
-  stopLockMonitor = () => {};
   const pausedRun = await loadRun(pausedStart.runId);
   const pausedImportId = pausedRun.targets[0].currentImportRunId;
   assert.ok(pausedImportId);
@@ -414,11 +305,9 @@ try {
 
   console.log('Onboarding import-attention command tests passed.');
 } finally {
-  stopLockMonitor();
   for (const user of users.reverse()) {
     await prisma.appUser.delete({ where: { id: user.id } }).catch(() => undefined);
   }
-  await lockMonitor.$disconnect();
   await commandPrisma.$disconnect();
   await prisma.$disconnect();
 }

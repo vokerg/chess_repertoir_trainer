@@ -18,7 +18,6 @@ import type { CreatePreparationRunInput } from '../preparation/preparation.types
 
 const IMPORT_PRIORITY = 100;
 const ONBOARDING_ATOMIC_TRANSACTION_TIMEOUT_MS = 30_000;
-let traceAdmissionSequence = 0;
 const NON_TERMINAL_PREPARATION_STATUSES = [
   'QUEUED',
   'RUNNING',
@@ -101,28 +100,8 @@ export function createOnboardingCommandAdmissionRepository(
   return {
     async admit(input) {
       validateAdmissionInput(input);
-      const traceAdmissionId = ++traceAdmissionSequence;
-      if (process.env['CODEX_TRACE_LIFECYCLE_TRANSACTIONS'] === '1') {
-        console.error(`[onboarding-admission-trace] enter id=${traceAdmissionId} user=${input.userId}`);
-      }
-
       try {
         return await database.$transaction(async (transaction) => {
-          if (process.env['CODEX_TRACE_LIFECYCLE_TRANSACTIONS'] === '1') {
-            await transaction.$queryRaw(Prisma.sql`
-              SELECT set_config(
-                'application_name',
-                ${`onboarding-admission:${traceAdmissionId}`},
-                TRUE
-              )
-            `);
-            const rows = await transaction.$queryRaw<Array<{ pid: number }>>(Prisma.sql`
-              SELECT pg_backend_pid()::int AS pid
-            `);
-            console.error(
-              `[onboarding-admission-trace] callback id=${traceAdmissionId} user=${input.userId} pid=${rows[0]?.pid ?? 'unknown'}`,
-            );
-          }
           // Follow the destructive lifecycle coordinator's lock order: acquire the
           // shared user-scope fence before durable user/account row locks. Downstream
           // account-import and preparation admission guards re-enter this transaction-

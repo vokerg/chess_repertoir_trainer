@@ -64,7 +64,6 @@ export async function assertDataLifecycleWriteAllowed(
   input: DataLifecycleWriteScope,
 ): Promise<void> {
   validateScope(input);
-  await traceLifecycleTransaction(transaction, 'before-write-guard', input.userId);
   await lockDataLifecycleUserScope(transaction, input.userId);
 
   const scopeWhere: Prisma.DataLifecycleResourceFenceWhereInput = input.gameId != null
@@ -105,7 +104,6 @@ export async function assertDataLifecycleWriteAllowed(
       resourceId: true,
     },
   });
-  await traceLifecycleTransaction(transaction, 'after-fence-read', input.userId);
   if (fence) {
     throw new DataLifecycleWriteBlockedError(
       fence.operationId,
@@ -143,26 +141,12 @@ export async function lockDataLifecycleUserScope(
   userId: number,
 ): Promise<void> {
   validatePositiveInteger(userId, 'userId');
-  await traceLifecycleTransaction(transaction, 'before-user-lock', userId);
   await transaction.$executeRaw(Prisma.sql`
     SELECT pg_advisory_xact_lock(
       ${DATA_LIFECYCLE_USER_LOCK_NAMESPACE}::integer,
       ${userId}::integer
     )
   `);
-  await traceLifecycleTransaction(transaction, 'after-user-lock', userId);
-}
-
-async function traceLifecycleTransaction(
-  transaction: Prisma.TransactionClient,
-  label: string,
-  userId: number,
-): Promise<void> {
-  if (process.env['CODEX_TRACE_LIFECYCLE_TRANSACTIONS'] !== '1') return;
-  const rows = await transaction.$queryRaw<Array<{ pid: number }>>(Prisma.sql`
-    SELECT pg_backend_pid()::int AS pid
-  `);
-  console.error(`[lifecycle-transaction-trace] ${label} user=${userId} pid=${rows[0]?.pid ?? 'unknown'}`);
 }
 
 function validateScope(input: DataLifecycleWriteScope): void {
