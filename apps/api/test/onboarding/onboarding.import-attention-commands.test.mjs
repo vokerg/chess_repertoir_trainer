@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import {
   createOnboardingCommandService,
@@ -11,6 +12,60 @@ const prisma = prismaModule.default;
 const suffix = randomUUID();
 const now = new Date('2026-08-31T12:00:00.000Z');
 const users = [];
+const lockMonitor = new PrismaClient();
+let stopLockMonitor = () => {};
+
+function startLockMonitor() {
+  let running = false;
+  const sample = async () => {
+    if (running) return;
+    running = true;
+    try {
+      const rows = await lockMonitor.$queryRawUnsafe(`
+        SELECT
+          pid,
+          state,
+          wait_event_type,
+          wait_event,
+          EXTRACT(EPOCH FROM (clock_timestamp() - xact_start)) AS xact_age_seconds,
+          EXTRACT(EPOCH FROM (clock_timestamp() - query_start)) AS query_age_seconds,
+          pg_blocking_pids(pid)::text AS blocking_pids,
+          query
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+          AND pid <> pg_backend_pid()
+          AND (state <> 'idle' OR xact_start IS NOT NULL)
+        ORDER BY pid
+      `);
+      const interesting = rows.filter((row) => (
+        row.wait_event_type !== null
+        || Number(row.xact_age_seconds ?? 0) > 1
+        || Number(row.query_age_seconds ?? 0) > 1
+      ));
+      if (interesting.length > 0) {
+        console.error(`[onboarding-lock-monitor ${new Date().toISOString()}] ${JSON.stringify(
+          interesting.map((row) => ({
+            pid: row.pid,
+            state: row.state,
+            waitEvent: row.wait_event_type ? `${row.wait_event_type}:${row.wait_event}` : null,
+            xactAgeSeconds: row.xact_age_seconds,
+            queryAgeSeconds: row.query_age_seconds,
+            blockingPids: row.blocking_pids,
+            query: String(row.query ?? '').replace(/\s+/g, ' ').slice(0, 400),
+          })),
+        )}`);
+      }
+    } catch (error) {
+      console.error(`[onboarding-lock-monitor-error] ${error.message}`);
+    } finally {
+      running = false;
+    }
+  };
+
+  const interval = setInterval(() => { void sample(); }, 250);
+  void sample();
+  return () => clearInterval(interval);
+}
 
 async function createUser(label) {
   const user = await prisma.appUser.create({
@@ -49,7 +104,10 @@ try {
   // reconciliation has not yet cleared the attention state.
   const pausedUser = await createUser('Onboarding paused import resume');
   const pausedAccount = await createAccount(pausedUser.id, 'lichess', 'paused-import');
+  stopLockMonitor = startLockMonitor();
   const pausedStart = await service.start(pausedUser.id, pausedAccount.id);
+  stopLockMonitor();
+  stopLockMonitor = () => {};
   const pausedRun = await loadRun(pausedStart.runId);
   const pausedImportId = pausedRun.targets[0].currentImportRunId;
   assert.ok(pausedImportId);
@@ -295,8 +353,10 @@ try {
 
   console.log('Onboarding import-attention command tests passed.');
 } finally {
+  stopLockMonitor();
   for (const user of users.reverse()) {
     await prisma.appUser.delete({ where: { id: user.id } }).catch(() => undefined);
   }
+  await lockMonitor.$disconnect();
   await prisma.$disconnect();
 }
