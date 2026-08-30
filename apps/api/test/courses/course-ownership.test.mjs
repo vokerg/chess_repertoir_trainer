@@ -6,6 +6,7 @@ import {
   chapterSchema,
   coursePositionSuggestionsResponseSchema,
   lineListSchema,
+  lineMoveNodeSchema,
   lineMoveTreeSchema,
   lineSchema,
 } from '@chess-trainer/contracts/courses';
@@ -264,6 +265,35 @@ try {
   assert.equal(typeof lineTree.root.node.createdAt, 'string');
   assert.equal(typeof lineTree.root.children[0].node.updatedAt, 'string');
 
+  const createNodeResponse = await app.inject({
+    method: 'POST',
+    url: `/api/lines/${lineA.id}/nodes`,
+    payload: { parentId: nodeA.id, moveUci: 'e7e5' },
+  });
+  assert.equal(createNodeResponse.statusCode, 201);
+  const createdNode = lineMoveNodeSchema.parse(createNodeResponse.json());
+  assert.equal(createdNode.lineId, lineA.id);
+  assert.equal(createdNode.parentId, nodeA.id);
+  assert.equal(createdNode.moveUci, 'e7e5');
+  assert.equal(createdNode.side, 'BLACK');
+  assert.equal(createdNode.colorToMoveBefore, 'BLACK');
+  assert.equal(createdNode.isUserMove, false);
+  assert.equal(typeof createdNode.createdAt, 'string');
+  assert.equal(typeof createdNode.updatedAt, 'string');
+
+  const updateNodeResponse = await app.inject({
+    method: 'PATCH',
+    url: `/api/nodes/${createdNode.id}`,
+    payload: { comment: 'HTTP-updated node', branchLabel: 'Main response' },
+  });
+  assert.equal(updateNodeResponse.statusCode, 200);
+  const updatedNode = lineMoveNodeSchema.parse(updateNodeResponse.json());
+  assert.equal(updatedNode.id, createdNode.id);
+  assert.equal(updatedNode.comment, 'HTTP-updated node');
+  assert.equal(updatedNode.branchLabel, 'Main response');
+  assert.equal(updatedNode.createdAt, createdNode.createdAt);
+  assert.equal(typeof updatedNode.updatedAt, 'string');
+
   assert.equal(await ChapterService.get(userA.id, chapterB.id), null);
   assert.equal(await ChapterService.list(userA.id, courseB.id), null);
   assert.equal(await LineService.get(userA.id, lineB.id), null);
@@ -273,7 +303,7 @@ try {
   assert.equal(await MoveNodeService.deleteSubtree(userA.id, nodeB.id), null);
   assert.equal((await MoveNodeService.update(userB.id, nodeB.id, { comment: 'Owned' }))?.comment, 'Owned');
 
-  console.log('Course ownership, chapter/line response, and position-suggestion response tests passed.');
+  console.log('Course ownership and contracted course-response tests passed.');
 } finally {
   if (app) await app.close();
   if (users.length > 0) {

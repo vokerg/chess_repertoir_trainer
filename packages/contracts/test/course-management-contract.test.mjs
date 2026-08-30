@@ -6,6 +6,7 @@ import {
   courseSchema,
   createCourseSchema,
   lineListSchema,
+  lineMoveNodeSchema,
   lineMoveTreeSchema,
   lineSchema,
   updateCourseSchema,
@@ -140,6 +141,11 @@ const childNode = {
   createdAt: '2026-08-12T12:26:00.000Z',
   updatedAt: '2026-08-12T12:26:00.000Z',
 };
+assert.deepEqual(lineMoveNodeSchema.parse(childNode), childNode);
+assert.equal(lineMoveNodeSchema.safeParse({ ...childNode, side: 'RED' }).success, false);
+assert.equal(lineMoveNodeSchema.safeParse({ ...childNode, createdAt: new Date(childNode.createdAt) }).success, false);
+assert.equal(lineMoveNodeSchema.safeParse({ ...childNode, parentId: 0 }).success, false);
+
 const lineTree = {
   root: {
     node: rootNode,

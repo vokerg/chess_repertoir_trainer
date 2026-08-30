@@ -66,6 +66,7 @@ const bodylessActions = new Map([
   ['POST /api/me/lichess-connection/start', 'creates an authorization URL for the authenticated user'],
   ['POST /api/me/accounts/{id}/sync', 'returns 202 without provider traversal in the HTTP request'],
   ['POST /api/me/accounts/{id}/backfill', 'Queues the three calendar months immediately before proved normal account coverage'],
+  ['POST /api/me/accounts/{id}/import-all-history', 'Queues a durable import from Lichess’s earliest supported game-export boundary'],
   ['POST /api/me/accounts/{id}/reset-cursor', 'clears syncCursorTime only'],
   ['POST /api/me/account-imports/{importRunId}/pause', 'the import run id selects the persisted run to pause'],
   ['POST /api/me/account-imports/{importRunId}/resume', 'the import run id selects the persisted paused run to return to the durable queue'],
@@ -101,6 +102,8 @@ assert.ok(syncOperation?.responses?.['202'], 'account sync must document durable
 assert.equal(syncOperation?.responses?.['200'], undefined, 'account sync no longer completes provider traversal in HTTP');
 const backfillOperation = first.paths['/api/me/accounts/{id}/backfill']?.post;
 assert.ok(backfillOperation?.responses?.['202'], 'account backfill must document durable 202 acceptance');
+const fullHistoryOperation = first.paths['/api/me/accounts/{id}/import-all-history']?.post;
+assert.ok(fullHistoryOperation?.responses?.['202'], 'full-history import must document durable 202 acceptance');
 
 const operationIds = operations.map(({ operation }) => operation.operationId);
 assert.equal(new Set(operationIds).size, operationIds.length, 'Operation IDs must be unique');

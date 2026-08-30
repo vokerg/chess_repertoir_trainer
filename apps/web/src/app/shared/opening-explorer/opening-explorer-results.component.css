@@ -60,16 +60,31 @@
   font-variant-numeric: tabular-nums;
 }
 
-.opening-explorer-result-labels span,
+.opening-explorer-result-labels span {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
 .opening-explorer-move-primary,
 .opening-explorer-move-games,
 .opening-explorer-move-results {
   display: grid;
-  gap: 0.15rem;
+  gap: 0.1rem;
   min-width: 0;
 }
 
-.opening-explorer-result-labels small,
+.opening-explorer-result-labels strong {
+  font-size: 0.94rem;
+}
+
+.opening-explorer-result-labels small {
+  color: var(--ui-text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .opening-explorer-move-row small {
   color: var(--ui-text-muted);
   font-weight: 700;
@@ -83,7 +98,7 @@
   width: 100%;
   border: 0;
   border-radius: var(--ui-radius-control);
-  padding: 0.75rem 0.8rem;
+  padding: 0.68rem 0.8rem;
   background: transparent;
   color: var(--ui-text);
   text-align: left;
@@ -103,6 +118,13 @@
 .opening-explorer-move-primary strong {
   color: var(--ui-action-strong);
   font-family: var(--ui-font-family-mono);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.opening-explorer-move-primary small {
+  font-size: 0.82rem;
+  line-height: 1.3;
 }
 
 .opening-explorer-move-games,
@@ -112,9 +134,37 @@
   text-align: right;
 }
 
+.opening-explorer-move-games strong {
+  font-size: 0.94rem;
+  line-height: 1.25;
+}
+
+.opening-explorer-move-games small {
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.opening-explorer-move-result-values {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  font-size: 0.84rem;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.opening-explorer-move-results small {
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
 @media (max-width: 680px) {
   .opening-explorer-result-labels {
     grid-template-columns: 1fr;
+  }
+
+  .opening-explorer-result-labels span {
+    justify-content: space-between;
   }
 
   .opening-explorer-move-row {
@@ -125,5 +175,9 @@
   .opening-explorer-move-results {
     grid-column: 1 / -1;
     text-align: left;
+  }
+
+  .opening-explorer-move-result-values {
+    justify-content: flex-start;
   }
 }

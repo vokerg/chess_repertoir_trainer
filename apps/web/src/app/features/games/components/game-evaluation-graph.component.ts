@@ -175,6 +175,7 @@ export class GameEvaluationGraphComponent {
     if (points.length === 0) return;
 
     event.preventDefault();
+    event.stopPropagation();
     const currentIndex = Math.max(
       0,
       points.findIndex((point) => point.nodeId === nodeId),

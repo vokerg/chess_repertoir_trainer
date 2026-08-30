@@ -80,6 +80,13 @@ export class AccountsApiService {
     return this.api.post<CreateAccountImportRunResponse>(`/me/accounts/${accountId}/backfill`, {});
   }
 
+  importAllHistory(accountId: number): Observable<CreateAccountImportRunResponse> {
+    return this.api.post<CreateAccountImportRunResponse>(
+      `/me/accounts/${accountId}/import-all-history`,
+      {},
+    );
+  }
+
   getAccountImports(limit = 100): Observable<AccountImportRunListResponse> {
     return this.api.get<AccountImportRunListResponse>(`/me/account-imports?limit=${limit}`);
   }

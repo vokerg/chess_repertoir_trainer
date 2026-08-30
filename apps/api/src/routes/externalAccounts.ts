@@ -520,6 +520,57 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
+  app.post(
+    '/api/me/accounts/:id/import-all-history',
+    {
+      schema: accountSchema(
+        'importAllExternalAccountHistory',
+        'Queue all supported Lichess account history for import',
+        {
+          description: 'Queues a durable import from Lichess’s earliest supported game-export boundary through the current time. The worker runs it in the background; the import scope remains standard Bullet, Blitz, and Rapid games, rated and casual.',
+          params: accountIdParamsSchema,
+          response: {
+            202: createAccountImportRunResponseSchema,
+            400: validationErrorResponseSchema,
+            401: unauthorizedResponseSchema,
+            404: messageResponseSchema,
+            409: accountImportErrorResponseSchema,
+          },
+        },
+      ),
+    },
+    async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      const id = request.params.id;
+      const account = await ExternalAccountService.getForUser(auth.userId, id);
+      if (!account) {
+        reply.code(404);
+        return { message: 'External account not found' };
+      }
+      if (account.provider !== 'LICHESS') {
+        reply.code(409);
+        return {
+          error: 'Full-history import is currently available for Lichess accounts only.',
+          code: 'ACCOUNT_IMPORT_INVALID_RANGE' as const,
+        };
+      }
+
+      try {
+        const result = await AccountImportService.createFullHistoryForUser(auth.userId, id);
+        reply.code(202);
+        return result;
+      } catch (error) {
+        const mapped = mapAccountImportCommandError(error);
+        if (mapped) {
+          reply.code(mapped.statusCode);
+          return mapped.body;
+        }
+        throw error;
+      }
+    },
+  );
+
   app.get(
     '/api/me/accounts/:id/imported-game-workflow-candidates',
     {

@@ -36,6 +36,7 @@ export const durableAccountImportModeSchema = z.enum([
   'BOUNDED_INITIAL',
   'INCREMENTAL_FORWARD',
   'HISTORICAL_BACKFILL',
+  'FULL_HISTORY',
 ]);
 export type DurableAccountImportMode = z.infer<typeof durableAccountImportModeSchema>;
 
@@ -43,6 +44,7 @@ export const accountImportModeSchema = z.enum([
   'BOUNDED_INITIAL',
   'INCREMENTAL_FORWARD',
   'HISTORICAL_BACKFILL',
+  'FULL_HISTORY',
   'LEGACY_SYNC',
 ]);
 export type AccountImportMode = z.infer<typeof accountImportModeSchema>;

@@ -59,6 +59,21 @@ function requestPlanningAndScopeMapping() {
     ],
     'forward windows are deterministic oldest-first ranges',
   );
+  const fullHistory = planLichessImportWindows({
+    requestedFrom,
+    requestedTo,
+    mode: 'FULL_HISTORY',
+    windowDays: 14,
+  });
+  assert.deepEqual(
+    fullHistory.map((window) => [window.from.toISOString(), window.to.toISOString()]),
+    [
+      ['2026-05-18T00:00:00.000Z', '2026-06-01T00:00:00.000Z'],
+      ['2026-05-04T00:00:00.000Z', '2026-05-18T00:00:00.000Z'],
+      ['2026-05-01T00:00:00.000Z', '2026-05-04T00:00:00.000Z'],
+    ],
+    'full-history windows use the bounded historical newest-first planner',
+  );
 
   assert.deepEqual(
     mapAccountImportSpeedsToLichessPerfTypes(['BULLET', 'BLITZ', 'RAPID']),

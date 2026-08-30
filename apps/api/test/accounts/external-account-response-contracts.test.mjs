@@ -179,6 +179,7 @@ async function verifyOpenApi() {
       ['DELETE', '/api/me/accounts/{id}', '200', 'deleteExternalAccount'],
       ['POST', '/api/me/accounts/{id}/sync', '202', 'syncExternalAccount'],
       ['POST', '/api/me/accounts/{id}/backfill', '202', 'backfillExternalAccount'],
+      ['POST', '/api/me/accounts/{id}/import-all-history', '202', 'importAllExternalAccountHistory'],
       ['GET', '/api/me/accounts/{id}/imported-game-workflow-candidates', '200', 'getImportedGameWorkflowCandidates'],
       ['POST', '/api/me/accounts/{id}/reset-cursor', '200', 'resetExternalAccountSyncCursor'],
     ];

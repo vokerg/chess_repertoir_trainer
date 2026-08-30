@@ -6,6 +6,7 @@ import {
   type AccountImportScope,
   type CreateAccountImportRunBody,
   type CreateAccountImportRunResponse,
+  type DurableAccountImportMode,
   type DurableAccountImportSource,
 } from '@chess-trainer/contracts';
 import {
@@ -30,6 +31,12 @@ export const NORMAL_ACCOUNT_REFRESH_SCOPE: AccountImportScope = {
   rated: 'BOTH',
 };
 export const NORMAL_ACCOUNT_REFRESH_MONTHS = 3;
+
+// Lichess documents 1356998400070 as the minimum supported `since` value for
+// the user-games export. Keeping this boundary in the persisted request makes
+// an explicit all-history action exact and restartable without provider work
+// in the HTTP request.
+const LICHESS_API_EARLIEST_GAME_AT = new Date(1_356_998_400_070);
 
 export class AccountImportNotFoundError extends Error {
   readonly code = 'ACCOUNT_IMPORT_NOT_FOUND' as const;
@@ -130,6 +137,26 @@ export const AccountImportService = {
     });
   },
 
+  async createFullHistoryForUser(
+    userId: number,
+    accountId: number,
+    requestedTo = new Date(),
+  ): Promise<CreateAccountImportRunResponse> {
+    if (LICHESS_API_EARLIEST_GAME_AT >= requestedTo) {
+      throw new AccountImportRangeUnavailableError('The requested full-history import range is unavailable.');
+    }
+
+    return createRun({
+      userId,
+      accountId,
+      mode: 'FULL_HISTORY',
+      source: 'USER_ACTION',
+      scope: NORMAL_ACCOUNT_REFRESH_SCOPE,
+      requestedFrom: new Date(LICHESS_API_EARLIEST_GAME_AT.getTime()),
+      requestedTo,
+    });
+  },
+
   async listForUser(
     userId: number,
     active: boolean,
@@ -224,7 +251,7 @@ async function createRun(
   input: {
     userId: number;
     accountId: number;
-    mode: 'BOUNDED_INITIAL' | 'INCREMENTAL_FORWARD' | 'HISTORICAL_BACKFILL';
+    mode: DurableAccountImportMode;
     source: DurableAccountImportSource;
     scope: AccountImportScope;
     requestedFrom: Date;

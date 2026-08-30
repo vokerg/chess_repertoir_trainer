@@ -1,4 +1,5 @@
 import prisma from '../../../../prisma';
+import { decryptToken } from '../../../../services/oauthTokenCrypto';
 import {
   PlayedGameActivityReconciliationService,
 } from '../../../activity-feed/played-game-activity.service';
@@ -40,6 +41,11 @@ import {
 const CHECKPOINT_VERSION = 1 as const;
 const PROVIDER = 'LICHESS' as const;
 
+interface LichessImportAccount {
+  username: string;
+  accessToken?: string | null;
+}
+
 interface LichessImportCheckpointV1 {
   version: typeof CHECKPOINT_VERSION;
   provider: typeof PROVIDER;
@@ -61,7 +67,7 @@ interface LichessAccountImportExecutorDependencies {
   now?: () => number;
   config?: LichessAccountImportConfig;
   baseUrl?: string;
-  loadAccount?: (userId: number, accountId: number) => Promise<{ username: string } | null>;
+  loadAccount?: (userId: number, accountId: number) => Promise<LichessImportAccount | null>;
   reconcileCommittedRange?: typeof PlayedGameActivityReconciliationService.reconcileCommittedRange;
 }
 
@@ -144,6 +150,7 @@ export function createLichessAccountImportExecutor(
             run,
             durable,
             accountUsername: account.username,
+            accessToken: account.accessToken ?? null,
             window: next,
             windowIndex,
             windowDays,
@@ -214,6 +221,7 @@ interface ExecuteWindowInput {
   run: StoredAccountImportRun & { workKey: string };
   durable: DurableRun;
   accountUsername: string;
+  accessToken: string | null;
   window: LichessImportWindow;
   windowIndex: number;
   windowDays: number;
@@ -234,12 +242,14 @@ async function executeWindow(input: ExecuteWindowInput): Promise<AccountImportEx
     mode: input.durable.mode,
     baseUrl: input.baseUrl,
   });
+  const headers: Record<string, string> = { Accept: 'application/x-ndjson' };
+  if (input.accessToken) headers['Authorization'] = `Bearer ${input.accessToken}`;
   const requestStartedAt = input.now();
   let response: Response;
   let providerMs = 0;
   try {
     response = await input.fetchImpl(url, {
-      headers: { Accept: 'application/x-ndjson' },
+      headers,
       signal: input.context.signal,
     });
     providerMs = Math.max(0, input.now() - requestStartedAt);
@@ -377,7 +387,7 @@ async function executeWindow(input: ExecuteWindowInput): Promise<AccountImportEx
 }
 
 interface DurableRun {
-  mode: 'BOUNDED_INITIAL' | 'INCREMENTAL_FORWARD' | 'HISTORICAL_BACKFILL';
+  mode: 'BOUNDED_INITIAL' | 'INCREMENTAL_FORWARD' | 'HISTORICAL_BACKFILL' | 'FULL_HISTORY';
   scope: NonNullable<StoredAccountImportRun['scope']>;
   scopeHash: string;
   requestedFrom: Date;
@@ -523,8 +533,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 async function defaultLoadAccount(
   userId: number,
   accountId: number,
-): Promise<{ username: string } | null> {
-  return prisma.externalAccount.findFirst({
+): Promise<LichessImportAccount | null> {
+  const account = await prisma.externalAccount.findFirst({
     where: {
       id: accountId,
       userId,
@@ -533,4 +543,40 @@ async function defaultLoadAccount(
     },
     select: { username: true },
   });
+  if (!account) return null;
+
+  const connection = await prisma.lichessConnection.findUnique({
+    where: { userId },
+    select: {
+      accessTokenCiphertext: true,
+      accessTokenIv: true,
+      accessTokenAuthTag: true,
+      expiresAt: true,
+      revokedAt: true,
+    },
+  });
+  if (
+    !connection
+    || connection.revokedAt
+    || (connection.expiresAt && connection.expiresAt <= new Date())
+  ) {
+    return account;
+  }
+
+  try {
+    return {
+      ...account,
+      // The token authenticates the app user for public exports; it is not
+      // used to request private games from another tracked username.
+      accessToken: decryptToken({
+        ciphertext: connection.accessTokenCiphertext,
+        iv: connection.accessTokenIv,
+        authTag: connection.accessTokenAuthTag,
+      }),
+    };
+  } catch {
+    // A broken or undecryptable optional credential must not prevent a public
+    // account import from using Lichess's anonymous endpoint.
+    return account;
+  }
 }

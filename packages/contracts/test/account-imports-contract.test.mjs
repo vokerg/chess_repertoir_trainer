@@ -30,6 +30,11 @@ const createBody = {
 };
 assert.deepEqual(createAccountImportRunBodySchema.parse(createBody), createBody);
 assert.equal(
+  createAccountImportRunBodySchema.parse({ ...createBody, mode: 'FULL_HISTORY' }).mode,
+  'FULL_HISTORY',
+  'an explicit full-history request is part of the durable import contract',
+);
+assert.equal(
   createAccountImportRunBodySchema.safeParse({
     ...createBody,
     requestedFrom: createBody.requestedTo,
@@ -75,6 +80,10 @@ const durableRun = {
   error: null,
 };
 assert.deepEqual(accountImportRunSchema.parse(durableRun), durableRun);
+assert.equal(
+  accountImportRunSchema.parse({ ...durableRun, mode: 'FULL_HISTORY' }).mode,
+  'FULL_HISTORY',
+);
 assert.equal(
   accountImportRunSchema.safeParse({
     ...durableRun,

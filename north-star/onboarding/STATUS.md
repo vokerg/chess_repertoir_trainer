@@ -44,7 +44,7 @@ Detailed historical validation remains in task files and append-only reports.
 
 - Normal account refresh no longer performs provider traversal inside the account HTTP request. Durable `ACCOUNT_REFRESH` import runs and persisted projections are authoritative.
 - ONB-009 command acceptance is server-owned and durable; browser presence is not required for provider/import/preparation reconciliation after acceptance.
-- Historical expansion uses bounded durable backfill. Deprecated raw cursor reset remains only a compatibility field-reset route until ONB-020 performs the final destructive/compatibility cutover.
+- Historical expansion offers bounded durable backfill plus an explicit full supported Lichess-history action. Normal refresh remains bounded, and deprecated raw cursor reset remains only a compatibility field-reset route until ONB-020 performs the final destructive/compatibility cutover.
 - Normal product account deletion remains disabled until ONB-020 replaces the legacy immediate backend DELETE with the canonical fenced coordinator.
 - ONB-019 provides lifecycle fences and guarded-commit primitives; it does not itself execute destructive row phases.
 - Terminal job status alone is not drain proof. Destructive work must also prove provider/import claims and relevant `JobTask.workKey` values are clear.

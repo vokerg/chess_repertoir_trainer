@@ -70,6 +70,7 @@ The shared chess domain owns deterministic move validation, fixed-path opponent 
 
 - Track multiple Lichess and Chess.com accounts.
 - Synchronize finished games from either provider.
+- Use the account settings actions for a bounded recent refresh, one older three-month expansion, or an explicit full supported Lichess-history import; the page states the included scope and exclusions.
 - Browse `/games` with SQL-backed filtering, cursor pagination, deep-linkable filter state, responsive evidence cards, and durable processing status.
 - Filter by account, provider, period/custom dates, result, colour, speed, rated status, opponent, opening, rating, analysis status, classification, tags, and accuracy.
 - Open a game review with replay, PGN, indexed plies, analysis context, tactical findings, and optional AI review.
