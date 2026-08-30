@@ -8,17 +8,42 @@ const prisma = prismaModule.default;
 const suffix = randomUUID();
 const now = new Date('2026-08-31T12:00:00.000Z');
 let user = null;
+let createdDevUser = false;
+let originalDisposition = null;
 let otherUser = null;
 let app = null;
+let accountId = null;
+let preparationId = null;
 
 try {
-  user = await prisma.appUser.create({
-    data: {
-      displayName: 'Onboarding lifecycle HTTP user',
-      authProvider: 'test',
-      authSubject: `onboarding-lifecycle-http-${suffix}`,
-    },
+  const existingDevUser = await prisma.appUser.findUnique({
+    where: { authProvider_authSubject: { authProvider: 'dev', authSubject: 'dev-single-user' } },
   });
+  if (existingDevUser) {
+    user = existingDevUser;
+    originalDisposition = {
+      onboardingDisposition: existingDevUser.onboardingDisposition,
+      onboardingDispositionReason: existingDevUser.onboardingDispositionReason,
+      onboardingDispositionAt: existingDevUser.onboardingDispositionAt,
+    };
+    user = await prisma.appUser.update({
+      where: { id: user.id },
+      data: {
+        onboardingDisposition: 'PENDING',
+        onboardingDispositionReason: null,
+        onboardingDispositionAt: null,
+      },
+    });
+  } else {
+    user = await prisma.appUser.create({
+      data: {
+        displayName: 'Local user',
+        authProvider: 'dev',
+        authSubject: 'dev-single-user',
+      },
+    });
+    createdDevUser = true;
+  }
   otherUser = await prisma.appUser.create({
     data: {
       displayName: 'Onboarding lifecycle HTTP other',
@@ -33,8 +58,10 @@ try {
       username: `onboarding-lifecycle-http-${suffix}`,
     },
   });
+  accountId = account.id;
   const service = createOnboardingCommandService({ now: () => now });
   const start = await service.start(user.id, account.id);
+  preparationId = start.runId;
   const run = await prisma.dataPreparationRun.findUniqueOrThrow({
     where: { id: start.runId },
     include: { targets: true },
@@ -170,6 +197,21 @@ try {
 } finally {
   if (app) await app.close().catch(() => undefined);
   if (otherUser) await prisma.appUser.delete({ where: { id: otherUser.id } }).catch(() => undefined);
-  if (user) await prisma.appUser.delete({ where: { id: user.id } }).catch(() => undefined);
+  if (preparationId) {
+    await prisma.dataPreparationRun.delete({ where: { id: preparationId } }).catch(() => undefined);
+  }
+  if (accountId) {
+    await prisma.externalAccount.delete({ where: { id: accountId } }).catch(() => undefined);
+  }
+  if (user) {
+    if (createdDevUser) {
+      await prisma.appUser.delete({ where: { id: user.id } }).catch(() => undefined);
+    } else if (originalDisposition) {
+      await prisma.appUser.update({
+        where: { id: user.id },
+        data: originalDisposition,
+      }).catch(() => undefined);
+    }
+  }
   await prisma.$disconnect();
 }
