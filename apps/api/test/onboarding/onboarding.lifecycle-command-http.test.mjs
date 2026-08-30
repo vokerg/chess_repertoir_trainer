@@ -5,6 +5,7 @@ import { buildApp } from '../../dist/app.js';
 import { createOnboardingCommandService } from '../../dist/modules/onboarding/onboarding-command.service.js';
 import { createOnboardingCommandAdmissionRepository } from '../../dist/modules/onboarding/onboarding-command-admission.repository.prisma.js';
 import { createOnboardingCommandRepository } from '../../dist/modules/onboarding/onboarding-command.repository.prisma.js';
+import { createOnboardingImportAttentionRepository } from '../../dist/modules/onboarding/onboarding-import-attention.repository.prisma.js';
 import prismaModule from '../../dist/prisma.js';
 
 const prisma = prismaModule.default;
@@ -69,6 +70,7 @@ try {
     now: () => now,
     repository: createOnboardingCommandRepository(commandPrisma),
     admissionRepository: createOnboardingCommandAdmissionRepository(commandPrisma),
+    importAttentionRepository: createOnboardingImportAttentionRepository(commandPrisma),
   });
   const start = await service.start(user.id, account.id);
   preparationId = start.runId;
@@ -94,6 +96,7 @@ try {
   app = await buildApp({
     logger: false,
     authConfig: { mode: 'dev-single-user', userId: user.id },
+    onboardingCommandService: service,
     prisma: { $disconnect: async () => {} },
   });
   await app.ready();

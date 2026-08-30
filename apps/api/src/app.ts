@@ -24,6 +24,7 @@ import {
   type AdminRequestBudget,
 } from './modules/admin/admin-request-budget';
 import { createAdminDiagnosticsService } from './modules/admin/admin-diagnostics.service';
+import type { OnboardingCommandServiceBoundary } from './modules/onboarding/onboarding-command.service';
 
 export interface PrismaLifecycle {
   $disconnect(): Promise<void>;
@@ -36,6 +37,7 @@ export interface BuildAppOptions {
   adminAuthConfig?: AdminAuthConfig;
   adminRequestBudget?: AdminRequestBudget;
   adminDiagnosticsService?: ReturnType<typeof createAdminDiagnosticsService>;
+  onboardingCommandService?: OnboardingCommandServiceBoundary;
   prisma?: PrismaLifecycle;
 }
 
@@ -92,6 +94,7 @@ export async function buildApp(options: BuildAppOptions = {}) {
           ? { diagnosticsService: options.adminDiagnosticsService }
           : {}),
       },
+      onboarding: { commandService: options.onboardingCommandService },
     });
 
     await app.register(swaggerUi, {

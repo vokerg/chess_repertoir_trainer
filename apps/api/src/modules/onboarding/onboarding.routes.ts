@@ -19,6 +19,7 @@ import {
   OnboardingCommandInvalidStateError,
   OnboardingCommandNotFoundError,
   OnboardingCommandService,
+  type OnboardingCommandServiceBoundary,
 } from './onboarding-command.service';
 import { OnboardingReadinessService } from './onboarding.service';
 
@@ -28,7 +29,13 @@ const controlDescriptions = {
   cancel: 'The run id selects the persisted preparation whose acknowledged cancellation is requested.',
 } as const;
 
-const onboardingModule: FastifyPluginAsyncZod = async (app) => {
+export interface OnboardingModuleOptions {
+  commandService?: OnboardingCommandServiceBoundary;
+}
+
+const onboardingModule: FastifyPluginAsyncZod<OnboardingModuleOptions> = async (app, options) => {
+  const commandService = options.commandService ?? OnboardingCommandService;
+
   app.route({
     method: 'GET',
     url: '/api/me/onboarding',
@@ -63,7 +70,7 @@ const onboardingModule: FastifyPluginAsyncZod = async (app) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       try {
-        const result = await OnboardingCommandService.start(auth.userId, request.body.accountId);
+        const result = await commandService.start(auth.userId, request.body.accountId);
         reply.code(202);
         return result;
       } catch (error) {
@@ -86,7 +93,7 @@ const onboardingModule: FastifyPluginAsyncZod = async (app) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       try {
-        return await OnboardingCommandService.skip(auth.userId);
+        return await commandService.skip(auth.userId);
       } catch (error) {
         return handleCommandError(error, reply);
       }
@@ -108,7 +115,7 @@ const onboardingModule: FastifyPluginAsyncZod = async (app) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       try {
-        return await OnboardingCommandService.finish(auth.userId, request.params.runId);
+        return await commandService.finish(auth.userId, request.params.runId);
       } catch (error) {
         return handleCommandError(error, reply);
       }
@@ -133,11 +140,11 @@ const onboardingModule: FastifyPluginAsyncZod = async (app) => {
         try {
           switch (action) {
             case 'pause':
-              return await OnboardingCommandService.pause(auth.userId, request.params.runId);
+              return await commandService.pause(auth.userId, request.params.runId);
             case 'resume':
-              return await OnboardingCommandService.resume(auth.userId, request.params.runId);
+              return await commandService.resume(auth.userId, request.params.runId);
             case 'cancel':
-              return await OnboardingCommandService.cancel(auth.userId, request.params.runId);
+              return await commandService.cancel(auth.userId, request.params.runId);
           }
         } catch (error) {
           return handleCommandError(error, reply);
@@ -161,7 +168,7 @@ const onboardingModule: FastifyPluginAsyncZod = async (app) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       try {
-        const result = await OnboardingCommandService.retry(auth.userId, request.params.runId);
+        const result = await commandService.retry(auth.userId, request.params.runId);
         reply.code(202);
         return result;
       } catch (error) {
@@ -185,7 +192,7 @@ const onboardingModule: FastifyPluginAsyncZod = async (app) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       try {
-        const result = await OnboardingCommandService.restart(auth.userId, request.params.runId);
+        const result = await commandService.restart(auth.userId, request.params.runId);
         reply.code(202);
         return result;
       } catch (error) {
@@ -209,7 +216,7 @@ const onboardingModule: FastifyPluginAsyncZod = async (app) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       try {
-        const result = await OnboardingCommandService.expand(auth.userId, request.params.runId, request.body);
+        const result = await commandService.expand(auth.userId, request.params.runId, request.body);
         reply.code(202);
         return result;
       } catch (error) {

@@ -78,6 +78,8 @@ interface Dependencies {
   now?: () => Date;
 }
 
+export type OnboardingCommandServiceBoundary = ReturnType<typeof createOnboardingCommandService>;
+
 interface ImportRequest extends OnboardingImportAdmissionRequest {
   mode: DurableAccountImportMode;
 }
