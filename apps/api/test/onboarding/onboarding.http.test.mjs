@@ -201,6 +201,7 @@ try {
   const app = await buildApp({
     logger: false,
     authConfig: { mode: 'dev-single-user', userId: user.id },
+    prisma: { $disconnect: async () => {} },
   });
   try {
     await app.ready();

@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-08-26
+Last updated: 2026-08-28
 
 ## Program state
 
@@ -8,7 +8,7 @@ Last updated: 2026-08-26
 
 Program tracker: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
-The durable account-import, provider, preparation, onboarding-readiness, account-sync cutover, and destructive-lifecycle persistence foundations are delivered. Remaining implementation is concentrated in onboarding lifecycle/UI, destructive execution, opportunistic stale refresh, whole-user deletion, administrator mutation adapters, and shared-position cleanup.
+The durable account-import, provider, preparation, onboarding-readiness, account-sync cutover, and destructive-lifecycle persistence foundations are delivered. ONB-009 lifecycle commands are implemented on runtime PR #406 and remain in review pending acceptance/merge. Remaining implementation is concentrated in functional onboarding UI, destructive execution, opportunistic stale refresh, whole-user deletion, administrator mutation adapters, and shared-position cleanup.
 
 ## Delivered foundations
 
@@ -22,24 +22,28 @@ The durable account-import, provider, preparation, onboarding-readiness, account
 - **ONB-019 / #259 — DONE.** Destructive lifecycle persistence/fence/audit/provenance foundation delivered through PR #386, squash `d9175c5d60448399b7297393afc55db747717ce2`.
 - ONB-022 / #272 and ONB-023 / #273 — administrator authorization/read-only diagnostics and Angular diagnostics.
 
-Detailed historical validation remains in task files and append-only reports. The 2026-08-26 completion records reconcile the previously stale ONB-008/015/019 repository state with their already-merged runtime PRs and closed-completed issues.
+Detailed historical validation remains in task files and append-only reports.
+
+## Under review
+
+- **ONB-009 / #194 — REVIEW.** Authenticated onboarding start/skip/finish/pause/resume/cancel/retry/restart/expansion commands are implemented on branch `onb-009/issue-194-lifecycle-commands`, runtime PR #406. The implementation remains open until review acceptance and squash merge.
 
 ## Ready implementation
 
-- **ONB-009 / #194 — READY.** Authenticated onboarding start/pause/resume/cancel/retry/restart/expansion commands over delivered import/preparation/readiness state. Lowest-order unclaimed ready task.
 - **ONB-025 / #276 — READY.** Opportunistic stale-account refresh on authenticated application bootstrap over the delivered durable refresh path; recheck ONB-010/020 integration surfaces before claim.
 - **ONB-020 / #260 — READY.** Account/game destructive coordinator over delivered ONB-019 fences/operations and the completed account-import/preparation stack.
 - **ONB-026 / #280 — READY.** Bounded shared-position cleanup; claim-time schema/migration ownership and deployed PostgreSQL transition-relation compatibility checks remain mandatory.
 
 ## Allocated but not ready
 
-- ONB-010 / #195 — `PROPOSED`; depends on ONB-009 for the functional onboarding/Home command surface.
+- ONB-010 / #195 — `PROPOSED`; depends on accepted/merged ONB-009 for the functional onboarding/Home command surface.
 - ONB-021 / #261 — `PROPOSED`; depends on ONB-020 for account/game destructive execution before whole-user/mobile purge.
 - ONB-024 / #274 — `PROPOSED`; depends on applicable canonical lifecycle/cleanup services and proven signed reverification.
 
 ## Current critical boundaries
 
 - Normal account refresh no longer performs provider traversal inside the account HTTP request. Durable `ACCOUNT_REFRESH` import runs and persisted projections are authoritative.
+- ONB-009 command acceptance is server-owned and durable; browser presence is not required for provider/import/preparation reconciliation after acceptance.
 - Historical expansion offers bounded durable backfill plus an explicit full supported Lichess-history action. Normal refresh remains bounded, and deprecated raw cursor reset remains only a compatibility field-reset route until ONB-020 performs the final destructive/compatibility cutover.
 - Normal product account deletion remains disabled until ONB-020 replaces the legacy immediate backend DELETE with the canonical fenced coordinator.
 - ONB-019 provides lifecycle fences and guarded-commit primitives; it does not itself execute destructive row phases.
@@ -51,7 +55,7 @@ Detailed historical validation remains in task files and append-only reports. Th
 ## Canonical ownership
 
 - ONB-008: delivered disposition/readiness projection.
-- ONB-009: onboarding lifecycle commands.
+- ONB-009: onboarding lifecycle commands, currently under review in PR #406.
 - ONB-010: functional Angular onboarding/Home re-entry.
 - ONB-015: delivered normal account-sync cutover and preparation handoff.
 - ONB-019: delivered destructive lifecycle persistence/fences/audit/provenance.
@@ -65,7 +69,8 @@ Detailed historical validation remains in task files and append-only reports. Th
 - ONB-008: final runtime head `d303c692883f9d7354167c7618853a76f80022c9`, CI #3149 / run `32653248564`, squash `512c248689f41a1164be3da63dc22cc97041614b`.
 - ONB-019: final runtime head `c6db4e2b4a40629a5abe11c08b1bb657a3b99518`, CI #3013 / run `32115505177`, squash `d9175c5d60448399b7297393afc55db747717ce2`.
 - ONB-015: runtime head `5a2b6348ee516c477c9353020fd90f365f2cc25a` passed CI #3155 / run `32692461730`; final PR head `fc2aa0d08afebbc952cf5a55693ee99f77b7d29c` passed CI #3156 / run `32692956344`; squash `c89442fbe8945854f0d6d7545e947beb7bebccfe`.
+- ONB-009: runtime PR #406 is in exact-head CI/review validation; final validation evidence is recorded in its task/report and PR checks before handoff.
 
 ## Next deterministic action
 
-**ONB-009 / #194** is the lowest-order unclaimed `READY` task. Before claiming any ready task, recheck live branches/PRs plus the task-specific schema, route, lifecycle, and UI collision surfaces required by its task file.
+Complete ONB-009 / #194 review and acceptance/merge. For a new independent claim, **ONB-025 / #276** is the lowest-order unclaimed `READY` task, followed by ONB-020 and ONB-026 subject to their task-file claim-time checks.
