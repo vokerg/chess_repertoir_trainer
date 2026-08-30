@@ -6,6 +6,8 @@ import {
   OnboardingCommandInvalidStateError,
   OnboardingCommandNotFoundError,
 } from '../../dist/modules/onboarding/onboarding-command.service.js';
+import { createOnboardingCommandAdmissionRepository } from '../../dist/modules/onboarding/onboarding-command-admission.repository.prisma.js';
+import { createOnboardingCommandRepository } from '../../dist/modules/onboarding/onboarding-command.repository.prisma.js';
 import prismaModule from '../../dist/prisma.js';
 
 const prisma = prismaModule.default;
@@ -13,6 +15,7 @@ const suffix = randomUUID();
 const now = new Date('2026-08-31T12:00:00.000Z');
 const users = [];
 const lockMonitor = new PrismaClient();
+const commandPrisma = new PrismaClient();
 let stopLockMonitor = () => {};
 
 async function reportOpenTransactions(label) {
@@ -148,7 +151,11 @@ async function loadRun(runId) {
 }
 
 try {
-  const service = createOnboardingCommandService({ now: () => now });
+  const service = createOnboardingCommandService({
+    now: () => now,
+    repository: createOnboardingCommandRepository(commandPrisma),
+    admissionRepository: createOnboardingCommandAdmissionRepository(commandPrisma),
+  });
 
   // IMPORT_PAUSED is an executable readiness action: resume the linked import,
   // keep the same preparation, and make an immediate replay idempotent while
@@ -412,5 +419,6 @@ try {
     await prisma.appUser.delete({ where: { id: user.id } }).catch(() => undefined);
   }
   await lockMonitor.$disconnect();
+  await commandPrisma.$disconnect();
   await prisma.$disconnect();
 }
