@@ -8,13 +8,14 @@ import {
 } from '../../dist/modules/onboarding/onboarding-command.service.js';
 import { createOnboardingCommandAdmissionRepository } from '../../dist/modules/onboarding/onboarding-command-admission.repository.prisma.js';
 import { createOnboardingCommandRepository } from '../../dist/modules/onboarding/onboarding-command.repository.prisma.js';
+import { createOnboardingImportAttentionRepository } from '../../dist/modules/onboarding/onboarding-import-attention.repository.prisma.js';
 import prismaModule from '../../dist/prisma.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
 const now = new Date('2026-08-31T12:00:00.000Z');
 const users = [];
-// Keep command admission on an independent pool because the full integration
+// Keep command transactions on an independent pool because the full integration
 // runner loads many Prisma-backed fixtures into one Node process.
 const commandPrisma = new PrismaClient();
 
@@ -52,6 +53,7 @@ try {
     now: () => now,
     repository: createOnboardingCommandRepository(commandPrisma),
     admissionRepository: createOnboardingCommandAdmissionRepository(commandPrisma),
+    importAttentionRepository: createOnboardingImportAttentionRepository(commandPrisma),
   });
 
   // IMPORT_PAUSED is an executable readiness action: resume the linked import,
