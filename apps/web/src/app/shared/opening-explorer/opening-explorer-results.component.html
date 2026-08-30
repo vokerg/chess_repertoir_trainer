@@ -60,7 +60,7 @@
       <span class="opening-explorer-move-primary">
         <strong>{{ move.san }}</strong>
         @if (!sameOpening(move.opening, data().opening) && move.opening; as opening) {
-          <small>{{ opening.eco }} · {{ opening.name }}</small>
+          <small>{{ opening.eco }} {{ opening.name }}</small>
         }
       </span>
       <span class="opening-explorer-move-games">
@@ -70,10 +70,10 @@
         <small>{{ percentage(move.games.total, data().games.total) }}% of games</small>
       </span>
       <span class="opening-explorer-move-results">
-        <strong>
-          W {{ percentage(move.games.whiteWins, move.games.total) }}% · D
-          {{ percentage(move.games.draws, move.games.total) }}% · B
-          {{ percentage(move.games.blackWins, move.games.total) }}%
+        <strong class="opening-explorer-move-result-values">
+          <span>W {{ percentage(move.games.whiteWins, move.games.total) }}%</span>
+          <span>D {{ percentage(move.games.draws, move.games.total) }}%</span>
+          <span>B {{ percentage(move.games.blackWins, move.games.total) }}%</span>
         </strong>
         <small>Average rating {{ move.averageRating }}</small>
       </span>
