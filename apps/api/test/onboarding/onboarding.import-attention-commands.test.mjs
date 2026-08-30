@@ -15,6 +15,34 @@ const users = [];
 const lockMonitor = new PrismaClient();
 let stopLockMonitor = () => {};
 
+async function reportOpenTransactions(label) {
+  const rows = await lockMonitor.$queryRawUnsafe(`
+    SELECT
+      pid,
+      state,
+      wait_event_type,
+      wait_event,
+      EXTRACT(EPOCH FROM (clock_timestamp() - xact_start)) AS xact_age_seconds,
+      EXTRACT(EPOCH FROM (clock_timestamp() - query_start)) AS query_age_seconds,
+      pg_blocking_pids(pid)::text AS blocking_pids,
+      query
+    FROM pg_stat_activity
+    WHERE datname = current_database()
+      AND pid <> pg_backend_pid()
+      AND xact_start IS NOT NULL
+    ORDER BY pid
+  `);
+  console.error(`[onboarding-boundary ${label}] ${JSON.stringify(rows.map((row) => ({
+    pid: row.pid,
+    state: row.state,
+    waitEvent: row.wait_event_type ? `${row.wait_event_type}:${row.wait_event}` : null,
+    xactAgeSeconds: row.xact_age_seconds,
+    queryAgeSeconds: row.query_age_seconds,
+    blockingPids: row.blocking_pids,
+    query: String(row.query ?? '').replace(/\s+/g, ' ').slice(0, 240),
+  })))}`);
+}
+
 function startLockMonitor() {
   if (process.env['CODEX_DISABLE_ONBOARDING_LOCK_MONITOR'] === '1') return () => {};
   process.env['CODEX_TRACE_LIFECYCLE_TRANSACTIONS'] = '1';
@@ -126,8 +154,11 @@ try {
   // keep the same preparation, and make an immediate replay idempotent while
   // reconciliation has not yet cleared the attention state.
   const pausedUser = await createUser('Onboarding paused import resume');
+  await reportOpenTransactions('after-user');
   const pausedAccount = await createAccount(pausedUser.id, 'lichess', 'paused-import');
+  await reportOpenTransactions('after-account');
   stopLockMonitor = startLockMonitor();
+  await reportOpenTransactions('before-start');
   const pausedStart = await service.start(pausedUser.id, pausedAccount.id);
   stopLockMonitor();
   stopLockMonitor = () => {};
