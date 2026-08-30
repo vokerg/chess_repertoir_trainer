@@ -16,7 +16,7 @@ import {
   relinkPreparationTargetImportInTransaction,
 } from '../preparation/preparation.transaction.repository.prisma';
 
-const ONBOARDING_ATOMIC_TRANSACTION_TIMEOUT_MS = 15_000;
+const ONBOARDING_ATOMIC_TRANSACTION_TIMEOUT_MS = 30_000;
 const ACTIVE_IMPORT_STATUSES = [
   'QUEUED',
   'RUNNING',

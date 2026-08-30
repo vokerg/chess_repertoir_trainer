@@ -17,7 +17,7 @@ import {
 import type { CreatePreparationRunInput } from '../preparation/preparation.types';
 
 const IMPORT_PRIORITY = 100;
-const ONBOARDING_ATOMIC_TRANSACTION_TIMEOUT_MS = 15_000;
+const ONBOARDING_ATOMIC_TRANSACTION_TIMEOUT_MS = 30_000;
 const NON_TERMINAL_PREPARATION_STATUSES = [
   'QUEUED',
   'RUNNING',
