@@ -16,6 +16,8 @@ const lockMonitor = new PrismaClient();
 let stopLockMonitor = () => {};
 
 function startLockMonitor() {
+  if (process.env['CODEX_DISABLE_ONBOARDING_LOCK_MONITOR'] === '1') return () => {};
+  process.env['CODEX_TRACE_LIFECYCLE_TRANSACTIONS'] = '1';
   let running = false;
   const sample = async () => {
     if (running) return;
@@ -24,16 +26,31 @@ function startLockMonitor() {
       const rows = await lockMonitor.$queryRawUnsafe(`
         SELECT
           pid,
+          application_name,
           state,
           wait_event_type,
           wait_event,
+          lock_namespace,
+          lock_key,
+          lock_granted,
           EXTRACT(EPOCH FROM (clock_timestamp() - xact_start)) AS xact_age_seconds,
           EXTRACT(EPOCH FROM (clock_timestamp() - query_start)) AS query_age_seconds,
           pg_blocking_pids(pid)::text AS blocking_pids,
           query
         FROM pg_stat_activity
+        LEFT JOIN LATERAL (
+          SELECT
+            l.classid AS lock_namespace,
+            l.objid AS lock_key,
+            l.granted AS lock_granted
+          FROM pg_locks AS l
+          WHERE l.pid = pg_stat_activity.pid
+            AND l.locktype = 'advisory'
+          ORDER BY l.granted DESC
+          LIMIT 1
+        ) AS advisory_lock ON TRUE
         WHERE datname = current_database()
-          AND pid <> pg_backend_pid()
+          AND pg_stat_activity.pid <> pg_backend_pid()
           AND (state <> 'idle' OR xact_start IS NOT NULL)
         ORDER BY pid
       `);
@@ -46,8 +63,14 @@ function startLockMonitor() {
         console.error(`[onboarding-lock-monitor ${new Date().toISOString()}] ${JSON.stringify(
           interesting.map((row) => ({
             pid: row.pid,
+            applicationName: row.application_name,
             state: row.state,
             waitEvent: row.wait_event_type ? `${row.wait_event_type}:${row.wait_event}` : null,
+            lock: row.lock_namespace === null ? null : {
+              namespace: Number(row.lock_namespace),
+              key: Number(row.lock_key),
+              granted: row.lock_granted,
+            },
             xactAgeSeconds: row.xact_age_seconds,
             queryAgeSeconds: row.query_age_seconds,
             blockingPids: row.blocking_pids,
