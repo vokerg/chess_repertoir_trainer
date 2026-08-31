@@ -2,22 +2,15 @@ import type {
   AutomaticAccountRefreshFailureCode,
   AutomaticAccountRefreshResponse,
   AutomaticAccountRefreshResult,
-  CreateAccountImportRunResponse,
 } from '@chess-trainer/contracts';
 import { AccountImportAdmissionBlockedError } from './account-import-admission.guard';
 import {
   AccountImportAccountNotFoundError,
-  AccountImportActiveRunError,
-  AccountImportRepository,
-  type AccountImportRepository as AccountImportRepositoryBoundary,
 } from './account-import.repository.prisma';
 import {
-  AUTOMATIC_ACCOUNT_REFRESH_PRIORITY,
-  AccountImportNotControllableError,
-  AccountImportRangeUnavailableError,
-  AccountImportService,
-  toAccountImportRun,
-} from './account-import.service';
+  AccountImportRefreshRetryRequiredError,
+} from './account-import.refresh-policy.repository.prisma';
+import { toAccountImportRun } from './account-import.service';
 import {
   AccountImportAutomaticRefreshRepository,
   type AccountImportAutomaticRefreshRepository as AutomaticRefreshRepositoryBoundary,
@@ -26,19 +19,6 @@ import {
 export const DEFAULT_AUTOMATIC_ACCOUNT_REFRESH_COOLDOWN_MS = 24 * 60 * 60 * 1_000;
 export const DEFAULT_AUTOMATIC_ACCOUNT_REFRESH_RETRY_BASE_MS = 15 * 60 * 1_000;
 export const DEFAULT_AUTOMATIC_ACCOUNT_REFRESH_RETRY_MAX_MS = 6 * 60 * 60 * 1_000;
-
-interface AccountImportCommandBoundary {
-  createAutomaticRefreshForUser(
-    userId: number,
-    accountId: number,
-    requestedTo?: Date,
-  ): Promise<CreateAccountImportRunResponse>;
-  retryForUser(
-    userId: number,
-    importRunId: number,
-    priority?: number,
-  ): Promise<CreateAccountImportRunResponse>;
-}
 
 export interface AccountImportAutomaticRefreshServiceOptions {
   cooldownMs?: number;
@@ -50,14 +30,10 @@ export interface AccountImportAutomaticRefreshServiceOptions {
 export function createAccountImportAutomaticRefreshService(
   dependencies: {
     repository?: AutomaticRefreshRepositoryBoundary;
-    accountImports?: Pick<AccountImportRepositoryBoundary, 'getActiveRunForAccount'>;
-    commands?: AccountImportCommandBoundary;
   } = {},
   options: AccountImportAutomaticRefreshServiceOptions = {},
 ) {
   const repository = dependencies.repository ?? AccountImportAutomaticRefreshRepository;
-  const accountImports = dependencies.accountImports ?? AccountImportRepository;
-  const commands = dependencies.commands ?? AccountImportService;
   const cooldownMs = resolveDuration(
     options.cooldownMs,
     'ACCOUNT_AUTOMATIC_REFRESH_COOLDOWN_MS',
@@ -95,79 +71,60 @@ export function createAccountImportAutomaticRefreshService(
     accountId: number,
     evaluatedAt: Date,
   ): Promise<AutomaticAccountRefreshResult> {
-    const active = await accountImports.getActiveRunForAccount(userId, accountId);
-    if (active) {
-      return {
-        accountId,
-        status: 'alreadyActive',
-        importRun: toAccountImportRun(active),
-      };
-    }
-
-    const snapshot = await repository.getSnapshot(
-      userId,
-      accountId,
-      AUTOMATIC_ACCOUNT_REFRESH_PRIORITY,
-    );
-    if (snapshot.latestSuccessfulForwardAt) {
-      const nextEligibleAt = new Date(
-        snapshot.latestSuccessfulForwardAt.getTime() + cooldownMs,
-      );
-      if (nextEligibleAt.getTime() > evaluatedAt.getTime()) {
-        return {
-          accountId,
-          status: 'fresh',
-          lastSuccessfulRefreshAt: snapshot.latestSuccessfulForwardAt.toISOString(),
-          nextEligibleAt: nextEligibleAt.toISOString(),
-        };
-      }
-    }
-
-    let retryImportRunId: number | null = null;
-    if (
-      snapshot.lastAutomaticFailureRunId !== null
-      && snapshot.lastAutomaticFailureAt
-      && snapshot.automaticFailureCount > 0
-    ) {
-      const retryAt = new Date(
-        snapshot.lastAutomaticFailureAt.getTime()
-          + retryDelayMs(snapshot.automaticFailureCount, retryBaseMs, retryMaxMs),
-      );
-      if (retryAt.getTime() > evaluatedAt.getTime()) {
-        return failure(
-          accountId,
-          'ACCOUNT_IMPORT_RETRY_THROTTLED',
-          'Automatic account refresh is temporarily throttled after a failed attempt.',
-          retryAt,
-        );
-      }
-      retryImportRunId = snapshot.lastAutomaticFailureRunId;
-    }
-
     try {
-      const response = retryImportRunId === null
-        ? await commands.createAutomaticRefreshForUser(userId, accountId, evaluatedAt)
-        : await commands.retryForUser(
-          userId,
-          retryImportRunId,
-          AUTOMATIC_ACCOUNT_REFRESH_PRIORITY,
-        );
-      return { accountId, status: 'accepted', importRun: response.importRun };
-    } catch (error) {
-      if (error instanceof AccountImportActiveRunError) {
-        const concurrent = await accountImports.getActiveRunForAccount(userId, accountId);
-        if (concurrent) {
+      const decision = await repository.evaluateAndAccept(userId, accountId, {
+        evaluatedAt,
+        cooldownMs,
+        retryBaseMs,
+        retryMaxMs,
+      });
+      switch (decision.kind) {
+        case 'accepted':
+          return {
+            accountId,
+            status: 'accepted',
+            importRun: toAccountImportRun(decision.run),
+          };
+        case 'alreadyActive':
           return {
             accountId,
             status: 'alreadyActive',
-            importRun: toAccountImportRun(concurrent),
+            importRun: toAccountImportRun(decision.run),
           };
-        }
+        case 'fresh':
+          return {
+            accountId,
+            status: 'fresh',
+            lastSuccessfulRefreshAt: decision.lastSuccessfulRefreshAt.toISOString(),
+            nextEligibleAt: decision.nextEligibleAt.toISOString(),
+          };
+        case 'retryThrottled':
+          return failure(
+            accountId,
+            'ACCOUNT_IMPORT_RETRY_THROTTLED',
+            'Automatic account refresh is temporarily throttled after a failed attempt.',
+            decision.retryAt,
+          );
+        case 'missingCoverage':
+          return failure(
+            accountId,
+            'ACCOUNT_IMPORT_INVALID_RANGE',
+            'Automatic refresh requires existing recent account coverage.',
+            null,
+          );
+        case 'inactive':
+          return failure(
+            accountId,
+            'ACCOUNT_IMPORT_ADMISSION_BLOCKED',
+            'Automatic account refresh is blocked for an inactive account.',
+            null,
+          );
       }
+    } catch (error) {
       if (error instanceof AccountImportAdmissionBlockedError) {
         return failure(accountId, error.code, error.message, null);
       }
-      if (error instanceof AccountImportRangeUnavailableError || error instanceof AccountImportNotControllableError) {
+      if (error instanceof AccountImportRefreshRetryRequiredError) {
         return failure(accountId, 'ACCOUNT_IMPORT_INVALID_RANGE', error.message, null);
       }
       if (error instanceof AccountImportAccountNotFoundError) {
@@ -186,11 +143,6 @@ export function createAccountImportAutomaticRefreshService(
       );
     }
   }
-}
-
-function retryDelayMs(failureCount: number, baseMs: number, maxMs: number): number {
-  const exponent = Math.min(Math.max(failureCount - 1, 0), 20);
-  return Math.min(baseMs * (2 ** exponent), maxMs);
 }
 
 function failure(
