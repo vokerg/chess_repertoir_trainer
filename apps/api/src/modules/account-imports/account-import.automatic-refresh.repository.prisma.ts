@@ -1,22 +1,36 @@
 import { Prisma, PrismaClient } from '@prisma/client';
+import {
+  accountImportScopeSchema,
+  type AccountImportMode,
+  type AccountImportSource,
+  type AccountImportStatus,
+} from '@chess-trainer/contracts';
 import prisma from '../../prisma';
-import { allowAccountImportAdmission } from './account-import-admission.guard';
-import {
-  AccountImportAccountNotFoundError,
-  createAccountImportRepository,
-} from './account-import.repository.prisma';
-import {
-  accountImportRefreshAdmissionGuard,
-} from './account-import.refresh-policy.repository.prisma';
+import { AccountImportAccountNotFoundError } from './account-import.repository.prisma';
+import { accountImportRefreshAdmissionGuard } from './account-import.refresh-policy.repository.prisma';
 import { NORMAL_ACCOUNT_REFRESH_SCOPE } from './account-import.service';
 import { canonicalizeAccountImportScope } from './account-import.scope';
+import { admitAccountImportRunInTransaction } from './account-import.transaction.repository.prisma';
 import type { StoredAccountImportRun } from './account-import.types';
 
 export const AUTOMATIC_ACCOUNT_REFRESH_PRIORITY = 10;
 
+const NON_TERMINAL_IMPORT_STATUSES = [
+  'QUEUED',
+  'RUNNING',
+  'PAUSE_REQUESTED',
+  'PAUSED',
+  'CANCEL_REQUESTED',
+] as const;
+
 interface AccountRow {
   id: number;
   isActive: boolean;
+}
+
+interface CoverageRow {
+  coveredThrough: Date | null;
+  createdAt: Date;
 }
 
 interface SnapshotRow {
@@ -24,6 +38,43 @@ interface SnapshotRow {
   lastAutomaticFailureRunId: number | null;
   lastAutomaticFailureAt: Date | null;
   automaticFailureCount: number;
+}
+
+interface ImportRunRow {
+  id: number;
+  userId: number;
+  accountId: number;
+  provider: string;
+  mode: string;
+  source: string;
+  status: string;
+  scopeVersion: number | null;
+  scopeHash: string | null;
+  scopeJson: unknown | null;
+  requestedFrom: Date | null;
+  requestedTo: Date | null;
+  retryOfImportRunId: number | null;
+  priority: number;
+  windowsTotal: number | null;
+  windowsCompleted: number;
+  gamesSeen: number;
+  gamesMatchedScope: number;
+  gamesImported: number;
+  gamesDuplicate: number;
+  gamesSkippedOutOfScope: number;
+  gamesFailed: number;
+  lastProgressAt: Date | null;
+  workKey: string | null;
+  claimedAt: Date | null;
+  heartbeatAt: Date | null;
+  retryAt: Date | null;
+  rateLimitUntil: Date | null;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  errorCode: string | null;
+  error: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export type AutomaticRefreshAdmissionDecision =
@@ -80,21 +131,20 @@ export function createAccountImportAutomaticRefreshRepository(
         if (!account) throw new AccountImportAccountNotFoundError();
         if (!account.isActive) return { kind: 'inactive' };
 
-        const client = transactionBoundClient(transaction);
-        const accountImports = createAccountImportRepository(client, allowAccountImportAdmission);
-        const refreshImports = createAccountImportRepository(client, accountImportRefreshAdmissionGuard);
-
-        const active = await accountImports.getActiveRunForAccount(userId, accountId);
+        const active = await readActiveRun(transaction, userId, accountId);
         if (active) return { kind: 'alreadyActive', run: active };
 
-        const coverage = await accountImports.getCoverage(
-          userId,
-          accountId,
-          NORMAL_ACCOUNT_REFRESH_SCOPE,
-        );
+        const canonical = canonicalizeAccountImportScope(NORMAL_ACCOUNT_REFRESH_SCOPE);
+        const coverageRows = await transaction.$queryRaw<CoverageRow[]>(Prisma.sql`
+          SELECT "coveredThrough", "createdAt"
+          FROM "AccountImportCoverage"
+          WHERE "accountId" = ${accountId}
+            AND "scopeHash" = ${canonical.scopeHash}
+          LIMIT 1
+        `);
+        const coverage = coverageRows[0];
         if (!coverage?.coveredThrough) return { kind: 'missingCoverage' };
 
-        const canonical = canonicalizeAccountImportScope(NORMAL_ACCOUNT_REFRESH_SCOPE);
         const snapshot = await readSnapshot(
           transaction,
           userId,
@@ -133,7 +183,8 @@ export function createAccountImportAutomaticRefreshRepository(
             return { kind: 'retryThrottled', retryAt };
           }
 
-          const failed = await accountImports.getRun(
+          const failed = await readRun(
+            transaction,
             userId,
             snapshot.lastAutomaticFailureRunId,
           );
@@ -145,7 +196,7 @@ export function createAccountImportAutomaticRefreshRepository(
             && failed.requestedFrom
             && failed.requestedTo
           ) {
-            const retry = await accountImports.createRun({
+            const admitted = await admitAccountImportRunInTransaction(transaction, {
               userId,
               accountId,
               mode: failed.mode,
@@ -157,7 +208,10 @@ export function createAccountImportAutomaticRefreshRepository(
               windowsTotal: null,
               retryOfImportRunId: failed.id,
             });
-            return { kind: 'accepted', run: retry };
+            return {
+              kind: 'accepted',
+              run: await requireRun(transaction, userId, admitted.importRunId),
+            };
           }
         }
 
@@ -165,21 +219,72 @@ export function createAccountImportAutomaticRefreshRepository(
           return { kind: 'missingCoverage' };
         }
 
-        const run = await refreshImports.createRun({
-          userId,
-          accountId,
-          mode: 'INCREMENTAL_FORWARD',
-          source: 'ACCOUNT_REFRESH',
-          scope: NORMAL_ACCOUNT_REFRESH_SCOPE,
-          requestedFrom: coverage.coveredThrough,
-          requestedTo: options.evaluatedAt,
-          priority: AUTOMATIC_ACCOUNT_REFRESH_PRIORITY,
-          windowsTotal: null,
-        });
-        return { kind: 'accepted', run };
+        const admitted = await admitAccountImportRunInTransaction(
+          transaction,
+          {
+            userId,
+            accountId,
+            mode: 'INCREMENTAL_FORWARD',
+            source: 'ACCOUNT_REFRESH',
+            scope: NORMAL_ACCOUNT_REFRESH_SCOPE,
+            requestedFrom: coverage.coveredThrough,
+            requestedTo: options.evaluatedAt,
+            priority: AUTOMATIC_ACCOUNT_REFRESH_PRIORITY,
+            windowsTotal: null,
+          },
+          { admissionGuard: accountImportRefreshAdmissionGuard },
+        );
+        return {
+          kind: 'accepted',
+          run: await requireRun(transaction, userId, admitted.importRunId),
+        };
       });
     },
   };
+}
+
+async function readActiveRun(
+  transaction: Prisma.TransactionClient,
+  userId: number,
+  accountId: number,
+): Promise<StoredAccountImportRun | null> {
+  const rows = await transaction.$queryRaw<ImportRunRow[]>(Prisma.sql`
+    SELECT ${runColumns('run')}
+    FROM "ImportRun" AS run
+    WHERE run."userId" = ${userId}
+      AND run."accountId" = ${accountId}
+      AND run."status" IN (${Prisma.join(
+        NON_TERMINAL_IMPORT_STATUSES.map((status) => Prisma.sql`${status}`),
+      )})
+    ORDER BY run."createdAt" DESC, run."id" DESC
+    LIMIT 1
+  `);
+  return rows[0] ? toStoredRun(rows[0]) : null;
+}
+
+async function readRun(
+  transaction: Prisma.TransactionClient,
+  userId: number,
+  importRunId: number,
+): Promise<StoredAccountImportRun | null> {
+  const rows = await transaction.$queryRaw<ImportRunRow[]>(Prisma.sql`
+    SELECT ${runColumns('run')}
+    FROM "ImportRun" AS run
+    WHERE run."id" = ${importRunId}
+      AND run."userId" = ${userId}
+    LIMIT 1
+  `);
+  return rows[0] ? toStoredRun(rows[0]) : null;
+}
+
+async function requireRun(
+  transaction: Prisma.TransactionClient,
+  userId: number,
+  importRunId: number,
+): Promise<StoredAccountImportRun> {
+  const run = await readRun(transaction, userId, importRunId);
+  if (!run) throw new Error(`Account import ${importRunId} disappeared after durable admission.`);
+  return run;
 }
 
 async function readSnapshot(
@@ -246,12 +351,54 @@ function retryDelayMs(failureCount: number, baseMs: number, maxMs: number): numb
   return Math.min(baseMs * (2 ** exponent), maxMs);
 }
 
-function transactionBoundClient(transaction: Prisma.TransactionClient): PrismaClient {
+function runColumns(alias?: string): Prisma.Sql {
+  const prefix = alias ? Prisma.raw(`"${alias}".`) : Prisma.empty;
+  return Prisma.join([
+    Prisma.sql`${prefix}"id"`,
+    Prisma.sql`${prefix}"userId"`,
+    Prisma.sql`${prefix}"accountId"`,
+    Prisma.sql`${prefix}"provider"`,
+    Prisma.sql`${prefix}"mode"`,
+    Prisma.sql`${prefix}"source"`,
+    Prisma.sql`${prefix}"status"`,
+    Prisma.sql`${prefix}"scopeVersion"`,
+    Prisma.sql`${prefix}"scopeHash"`,
+    Prisma.sql`${prefix}"scopeJson"`,
+    Prisma.sql`${prefix}"requestedFrom"`,
+    Prisma.sql`${prefix}"requestedTo"`,
+    Prisma.sql`${prefix}"retryOfImportRunId"`,
+    Prisma.sql`${prefix}"priority"`,
+    Prisma.sql`${prefix}"windowsTotal"`,
+    Prisma.sql`${prefix}"windowsCompleted"`,
+    Prisma.sql`${prefix}"gamesSeen"`,
+    Prisma.sql`${prefix}"gamesMatchedScope"`,
+    Prisma.sql`${prefix}"gamesImported"`,
+    Prisma.sql`${prefix}"gamesDuplicate"`,
+    Prisma.sql`${prefix}"gamesSkippedOutOfScope"`,
+    Prisma.sql`${prefix}"gamesFailed"`,
+    Prisma.sql`${prefix}"lastProgressAt"`,
+    Prisma.sql`${prefix}"workKey"`,
+    Prisma.sql`${prefix}"claimedAt"`,
+    Prisma.sql`${prefix}"heartbeatAt"`,
+    Prisma.sql`${prefix}"retryAt"`,
+    Prisma.sql`${prefix}"rateLimitUntil"`,
+    Prisma.sql`${prefix}"startedAt"`,
+    Prisma.sql`${prefix}"completedAt"`,
+    Prisma.sql`${prefix}"errorCode"`,
+    Prisma.sql`${prefix}"error"`,
+    Prisma.sql`${prefix}"createdAt"`,
+    Prisma.sql`${prefix}"updatedAt"`,
+  ]);
+}
+
+function toStoredRun(row: ImportRunRow): StoredAccountImportRun {
   return {
-    $transaction: async <T>(callback: (tx: Prisma.TransactionClient) => Promise<T>) => callback(transaction),
-    $queryRaw: transaction.$queryRaw.bind(transaction),
-    $executeRaw: transaction.$executeRaw.bind(transaction),
-  } as unknown as PrismaClient;
+    ...row,
+    mode: row.mode as AccountImportMode,
+    source: row.source as AccountImportSource,
+    status: row.status as AccountImportStatus,
+    scope: row.scopeJson === null ? null : accountImportScopeSchema.parse(row.scopeJson),
+  };
 }
 
 export const AccountImportAutomaticRefreshRepository =
