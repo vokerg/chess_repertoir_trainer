@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import prismaModule from '../../dist/prisma.js';
 import { canonicalizeAccountImportScope } from '../../dist/modules/account-imports/account-import.scope.js';
 import { AccountImportAutomaticRefreshService } from '../../dist/modules/account-imports/account-import.automatic-refresh.service.js';
+import { AccountImportPreparationHandoffRepository } from '../../dist/modules/preparation/account-import-preparation-handoff.repository.prisma.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
@@ -96,7 +97,7 @@ try {
       recipeJson: { kind: 'ACCOUNT_IMPORT_EXPANSION', importRunIds: [failed.id] },
     },
   });
-  await prisma.dataPreparationTarget.create({
+  const target = await prisma.dataPreparationTarget.create({
     data: {
       preparationRunId: preparation.id,
       accountId: account.id,
@@ -125,6 +126,20 @@ try {
   });
   assert.equal(retry.retryOfImportRunId, failed.id);
   assert.equal(retry.priority, 10);
+
+  assert.equal(
+    await AccountImportPreparationHandoffRepository.reconcileNext(),
+    true,
+    'the delivered preparation handoff must attach the immutable retry generation',
+  );
+  const advancedTarget = await prisma.dataPreparationTarget.findUniqueOrThrow({
+    where: { id: target.id },
+  });
+  assert.equal(
+    advancedTarget.currentImportRunId,
+    retry.id,
+    'preparation must continue following the automatic retry instead of the failed parent',
+  );
 } finally {
   if (userId !== undefined) {
     await prisma.appUser.deleteMany({ where: { id: userId } });
