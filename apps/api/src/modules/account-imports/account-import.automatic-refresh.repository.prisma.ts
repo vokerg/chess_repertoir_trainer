@@ -219,21 +219,24 @@ export function createAccountImportAutomaticRefreshRepository(
           return { kind: 'missingCoverage' };
         }
 
-        const admitted = await admitAccountImportRunInTransaction(
-          transaction,
-          {
-            userId,
-            accountId,
-            mode: 'INCREMENTAL_FORWARD',
-            source: 'ACCOUNT_REFRESH',
-            scope: NORMAL_ACCOUNT_REFRESH_SCOPE,
-            requestedFrom: coverage.coveredThrough,
-            requestedTo: options.evaluatedAt,
-            priority: AUTOMATIC_ACCOUNT_REFRESH_PRIORITY,
-            windowsTotal: null,
-          },
-          { admissionGuard: accountImportRefreshAdmissionGuard },
-        );
+        // Preserve ONB-015 refresh-specific recovery semantics before using the
+        // generic transaction-owned admission helper, which still performs the
+        // mandatory ONB-019 lifecycle admission and durable insert validation.
+        await accountImportRefreshAdmissionGuard.assertAllowed(transaction, {
+          userId,
+          accountId,
+        });
+        const admitted = await admitAccountImportRunInTransaction(transaction, {
+          userId,
+          accountId,
+          mode: 'INCREMENTAL_FORWARD',
+          source: 'ACCOUNT_REFRESH',
+          scope: NORMAL_ACCOUNT_REFRESH_SCOPE,
+          requestedFrom: coverage.coveredThrough,
+          requestedTo: options.evaluatedAt,
+          priority: AUTOMATIC_ACCOUNT_REFRESH_PRIORITY,
+          windowsTotal: null,
+        });
         return {
           kind: 'accepted',
           run: await requireRun(transaction, userId, admitted.importRunId),
