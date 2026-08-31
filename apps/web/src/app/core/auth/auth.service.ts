@@ -89,10 +89,7 @@ export class AuthService {
     if (!this.clerk) return;
     await this.clerk.signOut();
     this.clerkUserState.set(null);
-    this.appUserState.set(null);
-    this.resolvedAppSessionState.set(null);
-    this.appUserLoadingState.set(false);
-    this.resolvedSessionId = null;
+    this.clearResolvedAppSession();
   }
 
   async mountSignIn(node: HTMLDivElement, fallbackRedirectUrl: string): Promise<void> {
@@ -155,11 +152,12 @@ export class AuthService {
 
   private syncFromClerk(): void {
     this.clerkUserState.set(this.clerk?.user ?? null);
-    if (!this.clerk?.session) {
-      this.appUserState.set(null);
-      this.resolvedAppSessionState.set(null);
-      this.appUserLoadingState.set(false);
-      this.resolvedSessionId = null;
+    const activeSessionId = this.clerk?.session?.id ?? null;
+    if (
+      activeSessionId === null
+      || (this.resolvedSessionId !== null && this.resolvedSessionId !== activeSessionId)
+    ) {
+      this.clearResolvedAppSession();
     }
   }
 
@@ -198,6 +196,14 @@ export class AuthService {
     } finally {
       if (this.isCurrentAuthSession(sessionId)) this.appUserLoadingState.set(false);
     }
+  }
+
+  private clearResolvedAppSession(): void {
+    this.appUserState.set(null);
+    this.resolvedAppSessionState.set(null);
+    this.appUserLoadingState.set(false);
+    this.appUserErrorState.set(null);
+    this.resolvedSessionId = null;
   }
 
   private isCurrentAuthSession(sessionId: string): boolean {
