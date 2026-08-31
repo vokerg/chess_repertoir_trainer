@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
+import { AccountImportSessionStore } from './core/account-imports/account-import-session.store';
 import { AuthService } from './core/auth/auth.service';
 import { ImportedGameJobPanelComponent } from './core/jobs/imported-game-job-panel.component';
 import { ImportedGameJobStore } from './core/jobs/imported-game-job.store';
@@ -25,14 +26,21 @@ export class AppComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly accountImportStore = inject(AccountImportSessionStore);
   protected readonly jobStore = inject(ImportedGameJobStore);
   protected readonly isStandaloneExperience = signal(this.isStandaloneUrl(this.router.url));
 
   constructor() {
     effect(() => {
       if (!this.auth.initialized()) return;
-      if (this.auth.isSignedIn()) void this.jobStore.initialize();
-      else this.jobStore.reset();
+      if (this.auth.isSignedIn()) {
+        void this.jobStore.initialize();
+        const appUser = this.auth.appUser();
+        if (appUser) void this.accountImportStore.initialize(appUser.user.id);
+      } else {
+        this.jobStore.reset();
+        this.accountImportStore.reset();
+      }
     });
 
     this.router.events

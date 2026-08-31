@@ -222,6 +222,57 @@ export const accountImportCoverageResponseSchema = z.object({
 });
 export type AccountImportCoverageResponse = z.infer<typeof accountImportCoverageResponseSchema>;
 
+export const automaticAccountRefreshFailureCodeSchema = z.enum([
+  'ACCOUNT_IMPORT_ADMISSION_BLOCKED',
+  'ACCOUNT_IMPORT_INVALID_RANGE',
+  'ACCOUNT_IMPORT_NOT_FOUND',
+  'ACCOUNT_IMPORT_RETRY_THROTTLED',
+  'ACCOUNT_IMPORT_UNEXPECTED',
+]);
+export type AutomaticAccountRefreshFailureCode = z.infer<
+  typeof automaticAccountRefreshFailureCodeSchema
+>;
+
+const automaticAccountRefreshBaseSchema = z.object({
+  accountId: z.number().int().positive(),
+});
+
+const automaticAccountRefreshAcceptedSchema = automaticAccountRefreshBaseSchema.extend({
+  status: z.literal('accepted'),
+  importRun: accountImportRunSchema,
+});
+
+const automaticAccountRefreshAlreadyActiveSchema = automaticAccountRefreshBaseSchema.extend({
+  status: z.literal('alreadyActive'),
+  importRun: accountImportRunSchema,
+});
+
+const automaticAccountRefreshFreshSchema = automaticAccountRefreshBaseSchema.extend({
+  status: z.literal('fresh'),
+  lastSuccessfulRefreshAt: isoDateTimeSchema,
+  nextEligibleAt: isoDateTimeSchema,
+});
+
+const automaticAccountRefreshFailedSchema = automaticAccountRefreshBaseSchema.extend({
+  status: z.literal('failed'),
+  code: automaticAccountRefreshFailureCodeSchema,
+  error: z.string().min(1),
+  retryAt: nullableIsoDateTimeSchema,
+});
+
+export const automaticAccountRefreshResultSchema = z.discriminatedUnion('status', [
+  automaticAccountRefreshAcceptedSchema,
+  automaticAccountRefreshAlreadyActiveSchema,
+  automaticAccountRefreshFreshSchema,
+  automaticAccountRefreshFailedSchema,
+]);
+export type AutomaticAccountRefreshResult = z.infer<typeof automaticAccountRefreshResultSchema>;
+
+export const automaticAccountRefreshResponseSchema = z.object({
+  items: z.array(automaticAccountRefreshResultSchema),
+});
+export type AutomaticAccountRefreshResponse = z.infer<typeof automaticAccountRefreshResponseSchema>;
+
 export const accountImportErrorCodeSchema = z.enum([
   'ACCOUNT_IMPORT_ACTIVE',
   'ACCOUNT_IMPORT_ADMISSION_BLOCKED',
