@@ -10,6 +10,7 @@ import { AccountImportBootstrapApiService } from './account-import-bootstrap-api
 export class AccountImportSessionStore {
   private readonly api = inject(AccountImportBootstrapApiService);
   private initializationInFlight: Promise<void> | null = null;
+  private initializingUserId: number | null = null;
   private initializedUserId: number | null = null;
   private sessionGeneration = 0;
 
@@ -23,19 +24,27 @@ export class AccountImportSessionStore {
 
   async initialize(userId: number): Promise<void> {
     if (this.initializedUserId === userId) return;
-    if (this.initializationInFlight) return this.initializationInFlight;
 
     if (this.initializedUserId !== null && this.initializedUserId !== userId) {
+      this.reset();
+    }
+
+    if (this.initializationInFlight) {
+      if (this.initializingUserId === userId) return this.initializationInFlight;
       this.reset();
     }
 
     const generation = this.sessionGeneration;
     const task = this.performInitialization(userId, generation);
     this.initializationInFlight = task;
+    this.initializingUserId = userId;
     try {
       await task;
     } finally {
-      if (this.initializationInFlight === task) this.initializationInFlight = null;
+      if (this.initializationInFlight === task) {
+        this.initializationInFlight = null;
+        this.initializingUserId = null;
+      }
       if (this.isCurrent(userId, generation)) this.initializedUserId = userId;
     }
   }
@@ -43,6 +52,7 @@ export class AccountImportSessionStore {
   reset(): void {
     this.sessionGeneration += 1;
     this.initializationInFlight = null;
+    this.initializingUserId = null;
     this.initializedUserId = null;
     this.runsState.set({});
     this.responseState.set(null);
