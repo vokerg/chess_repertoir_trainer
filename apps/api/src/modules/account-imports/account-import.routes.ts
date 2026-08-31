@@ -5,6 +5,7 @@ import {
   accountImportRunListResponseSchema,
   accountImportRunParamsSchema,
   accountImportRunResponseSchema,
+  automaticAccountRefreshResponseSchema,
   createAccountImportRunBodySchema,
   createAccountImportRunResponseSchema,
 } from '@chess-trainer/contracts';
@@ -21,6 +22,7 @@ import {
   AccountImportNotFoundError,
   AccountImportService,
 } from './account-import.service';
+import { AccountImportAutomaticRefreshService } from './account-import.automatic-refresh.service';
 
 const accountImportModule: FastifyPluginAsyncZod = async (app) => {
   app.route({
@@ -63,6 +65,26 @@ const accountImportModule: FastifyPluginAsyncZod = async (app) => {
         }
         throw error;
       }
+    },
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/api/me/account-imports/automatic-refresh',
+    schema: {
+      operationId: 'refreshStaleExternalAccounts',
+      tags: ['Account Imports'],
+      summary: 'Evaluate stale owned accounts for automatic refresh',
+      description: 'Bodyless authenticated bootstrap command. It evaluates active owned accounts, persists eligible incremental-forward work, reuses existing active imports, and returns without provider traversal.',
+      response: {
+        200: automaticAccountRefreshResponseSchema,
+        401: unauthorizedResponseSchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      return AccountImportAutomaticRefreshService.refreshForUser(auth.userId);
     },
   });
 

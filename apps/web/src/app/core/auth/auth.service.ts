@@ -26,6 +26,11 @@ export interface CurrentAppUserResponse {
   auth: AuthSummary;
 }
 
+export interface ResolvedAppSession {
+  appUser: CurrentAppUserResponse;
+  generation: number;
+}
+
 type ClerkUser = NonNullable<Clerk['user']>;
 
 @Injectable({ providedIn: 'root' })
@@ -36,13 +41,16 @@ export class AuthService {
   private readonly initializingState = signal<Promise<void> | null>(null);
   private readonly clerkUserState = signal<ClerkUser | null>(null);
   private readonly appUserState = signal<CurrentAppUserResponse | null>(null);
+  private readonly resolvedAppSessionState = signal<ResolvedAppSession | null>(null);
   private readonly appUserLoadingState = signal(false);
   private readonly appUserErrorState = signal<string | null>(null);
   private resolvedSessionId: string | null = null;
+  private sessionGeneration = 0;
 
   readonly initialized = this.initializedState.asReadonly();
   readonly clerkUser = this.clerkUserState.asReadonly();
   readonly appUser = this.appUserState.asReadonly();
+  readonly resolvedAppSession = this.resolvedAppSessionState.asReadonly();
   readonly appUserLoading = this.appUserLoadingState.asReadonly();
   readonly appUserError = this.appUserErrorState.asReadonly();
   readonly isDevAuth = computed(() => !this.clerk);
@@ -81,8 +89,7 @@ export class AuthService {
     if (!this.clerk) return;
     await this.clerk.signOut();
     this.clerkUserState.set(null);
-    this.appUserState.set(null);
-    this.resolvedSessionId = null;
+    this.clearResolvedAppSession();
   }
 
   async mountSignIn(node: HTMLDivElement, fallbackRedirectUrl: string): Promise<void> {
@@ -145,9 +152,12 @@ export class AuthService {
 
   private syncFromClerk(): void {
     this.clerkUserState.set(this.clerk?.user ?? null);
-    if (!this.clerk?.session) {
-      this.appUserState.set(null);
-      this.resolvedSessionId = null;
+    const activeSessionId = this.clerk?.session?.id ?? null;
+    if (
+      activeSessionId === null
+      || (this.resolvedSessionId !== null && this.resolvedSessionId !== activeSessionId)
+    ) {
+      this.clearResolvedAppSession();
     }
   }
 
@@ -169,13 +179,35 @@ export class AuthService {
       const currentUser = await firstValueFrom(
         this.http.get<CurrentAppUserResponse>(`${appConfig.apiBaseUrl}/me`, { headers }),
       );
-      this.appUserState.set(currentUser);
+      if (!this.isCurrentAuthSession(sessionId)) return;
+
+      if (this.resolvedSessionId !== sessionId) this.sessionGeneration += 1;
       this.resolvedSessionId = sessionId;
+      this.appUserState.set(currentUser);
+      this.resolvedAppSessionState.set({
+        appUser: currentUser,
+        generation: this.sessionGeneration,
+      });
     } catch (error) {
+      if (!this.isCurrentAuthSession(sessionId)) return;
       this.appUserState.set(null);
+      this.resolvedAppSessionState.set(null);
       this.appUserErrorState.set(error instanceof Error ? error.message : 'Unable to load user');
     } finally {
-      this.appUserLoadingState.set(false);
+      if (this.isCurrentAuthSession(sessionId)) this.appUserLoadingState.set(false);
     }
+  }
+
+  private clearResolvedAppSession(): void {
+    this.appUserState.set(null);
+    this.resolvedAppSessionState.set(null);
+    this.appUserLoadingState.set(false);
+    this.appUserErrorState.set(null);
+    this.resolvedSessionId = null;
+  }
+
+  private isCurrentAuthSession(sessionId: string): boolean {
+    if (!this.clerk) return sessionId === 'dev';
+    return this.clerk.session?.id === sessionId;
   }
 }

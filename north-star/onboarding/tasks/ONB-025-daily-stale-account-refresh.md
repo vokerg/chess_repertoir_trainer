@@ -1,6 +1,6 @@
 # ONB-025 — Trigger daily stale account refresh on authenticated app bootstrap
 
-Status: READY
+Status: REVIEW
 
 Priority: P1
 
@@ -8,17 +8,17 @@ Order: 155
 
 Delivery class: Implementation
 
-Planning maturity: Researched; ONB-015 durable account-sync cutover and ONB-019 lifecycle-fence foundation are delivered; ready for claim with ONB-010/020 coordination rechecked
+Planning maturity: Implementation complete on the claimed runtime branch; PR #276 is under CI/review validation
 
 GitHub issue: [#276](https://github.com/vokerg/chess_repertoir_trainer/issues/276)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT / ONB-025 implementation session
 
-Claim branch: none
+Claim branch: `onb-025/issue-276-daily-stale-account-refresh-runtime`
 
-Claimed at: none
+Claimed at: 2026-08-31
 
-Claim scope: none
+Claim scope: authenticated stale-account refresh command over the delivered durable account-import lifecycle; persisted successful-refresh cooldown and automatic-failure retry throttling; bounded per-account results; root Angular authenticated-session bootstrap restoration; focused API/contract/concurrency/store tests; no provider traversal, cron, onboarding UI, destructive lifecycle execution, or manual-refresh restriction
 
 Promoted at: 2026-08-26 through merged-task completion reconciliation
 
@@ -88,6 +88,10 @@ Before claim, re-inspect current ONB-015 account-import command/store APIs, ONB-
 
 ## Completion
 
-Report: none
+Implementation report: `north-star/onboarding/reports/ONB-025-2026-08-31-daily-stale-account-refresh.md`
+
+Runtime pull request: [#276](https://github.com/vokerg/chess_repertoir_trainer/pull/276)
+
+Runtime validation: pending final exact-head CI before review handoff; local execution was unavailable because the task container could not resolve `github.com`.
 
 Completed at: none
