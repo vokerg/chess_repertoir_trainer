@@ -63,6 +63,34 @@ try {
   assert.equal(retryDecision.kind, 'accepted');
   assert.equal(retryDecision.run.retryOfImportRunId, retrySource.id);
   assert.equal(retryDecision.run.priority, 10);
+
+  const superseded = await createCoveredAccount(user.id, 'superseded-retry', 25 * HOUR);
+  const automaticParent = await createAutomaticFailure(
+    user.id,
+    superseded.account.id,
+    NOW.getTime() - 20 * MINUTE,
+  );
+  await createManualRetryFailure(user.id, automaticParent, NOW.getTime() - MINUTE);
+  const supersededDecision = await evaluate(
+    user.id,
+    superseded.account.id,
+    5 * MINUTE,
+    20 * MINUTE,
+  );
+  assert.equal(supersededDecision.kind, 'accepted');
+  assert.equal(
+    supersededDecision.run.retryOfImportRunId,
+    null,
+    'a manual retry child supersedes the older automatic failure as retry authority',
+  );
+  const staleParentChildren = await prisma.importRun.count({
+    where: { retryOfImportRunId: automaticParent.id },
+  });
+  assert.equal(
+    staleParentChildren,
+    1,
+    'automatic bootstrap must not fork a second retry from a superseded automatic parent',
+  );
 } finally {
   if (userId !== undefined) await prisma.appUser.deleteMany({ where: { id: userId } });
   await prisma.$disconnect();
@@ -145,6 +173,30 @@ async function createAutomaticFailure(ownerId, accountId, completedAtMs) {
       completedAt,
       errorCode: 'PROVIDER_TEMPORARY',
       error: 'Temporary provider failure.',
+    },
+  });
+}
+
+async function createManualRetryFailure(ownerId, source, completedAtMs) {
+  const account = await prisma.externalAccount.findUniqueOrThrow({ where: { id: source.accountId } });
+  return prisma.importRun.create({
+    data: {
+      userId: ownerId,
+      accountId: source.accountId,
+      provider: account.provider,
+      mode: source.mode,
+      source: 'ACCOUNT_REFRESH',
+      status: 'FAILED',
+      scopeVersion: source.scopeVersion,
+      scopeHash: source.scopeHash,
+      scopeJson: source.scopeJson,
+      requestedFrom: source.requestedFrom,
+      requestedTo: source.requestedTo,
+      retryOfImportRunId: source.id,
+      priority: 100,
+      completedAt: new Date(completedAtMs),
+      errorCode: 'PROVIDER_TEMPORARY',
+      error: 'Manual retry also failed.',
     },
   });
 }
