@@ -35,8 +35,13 @@ export class AppComponent {
       if (!this.auth.initialized()) return;
       if (this.auth.isSignedIn()) {
         void this.jobStore.initialize();
-        const appUser = this.auth.appUser();
-        if (appUser) void this.accountImportStore.initialize(appUser.user.id);
+        const session = this.auth.resolvedAppSession();
+        if (session) {
+          void this.accountImportStore.initialize(
+            session.appUser.user.id,
+            session.generation,
+          );
+        }
       } else {
         this.jobStore.reset();
         this.accountImportStore.reset();
