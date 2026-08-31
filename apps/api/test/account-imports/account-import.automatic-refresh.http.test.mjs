@@ -72,6 +72,18 @@ try {
     assert.equal(firstItems.has(inactive.account.id), false, 'inactive accounts are not evaluated');
     assert.equal(firstItems.has(foreign.account.id), false, 'foreign accounts are ownership scoped');
 
+    const manualFresh = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${fresh.account.id}/sync`,
+    });
+    assert.equal(manualFresh.statusCode, 202, manualFresh.body);
+    assert.equal(manualFresh.json().importRun.priority, 100);
+    assert.equal(
+      manualFresh.json().importRun.mode,
+      'INCREMENTAL_FORWARD',
+      'automatic cooldown must not restrict explicit manual refresh',
+    );
+
     const staleAgain = await app.inject({
       method: 'POST',
       url: '/api/me/account-imports/automatic-refresh',
