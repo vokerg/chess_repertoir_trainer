@@ -92,6 +92,30 @@ describe('AccountImportSessionStore', () => {
     expect(api.refreshStaleAccounts).toHaveBeenCalledTimes(2);
     expect(store.runs()).toEqual({ 102: nextResponse.items[0].importRun });
   });
+
+  it('supersedes an in-flight bootstrap when the authenticated user changes directly', async () => {
+    const firstResponse$ = new Subject<AutomaticAccountRefreshResponse>();
+    const secondResponse = {
+      items: [{ accountId: 202, status: 'accepted', importRun: accountImportRun(2, 202) }],
+    } satisfies AutomaticAccountRefreshResponse;
+    api.refreshStaleAccounts.and.returnValues(firstResponse$, of(secondResponse));
+
+    const first = store.initialize(7);
+    const second = store.initialize(8);
+
+    expect(api.refreshStaleAccounts).toHaveBeenCalledTimes(2);
+    await second;
+    expect(store.runs()).toEqual({ 202: secondResponse.items[0].importRun });
+
+    firstResponse$.next({
+      items: [{ accountId: 101, status: 'accepted', importRun: accountImportRun(1, 101) }],
+    });
+    firstResponse$.complete();
+    await first;
+
+    expect(store.runs()).toEqual({ 202: secondResponse.items[0].importRun });
+    expect(store.response()).toEqual(secondResponse);
+  });
 });
 
 function accountImportRun(id: number, accountId: number): AccountImportRun {
