@@ -8,12 +8,11 @@ import {
 import {
   accountImportRefreshAdmissionGuard,
 } from './account-import.refresh-policy.repository.prisma';
-import {
-  AUTOMATIC_ACCOUNT_REFRESH_PRIORITY,
-  NORMAL_ACCOUNT_REFRESH_SCOPE,
-} from './account-import.service';
+import { NORMAL_ACCOUNT_REFRESH_SCOPE } from './account-import.service';
 import { canonicalizeAccountImportScope } from './account-import.scope';
 import type { StoredAccountImportRun } from './account-import.types';
+
+export const AUTOMATIC_ACCOUNT_REFRESH_PRIORITY = 10;
 
 interface AccountRow {
   id: number;
