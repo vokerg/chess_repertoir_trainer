@@ -1,9 +1,6 @@
 import { Prisma } from '@prisma/client';
 import type { CreateAccountImportRunInput } from './account-import.types';
-import {
-  allowAccountImportAdmission,
-  type AccountImportAdmissionGuard,
-} from './account-import-admission.guard';
+import { allowAccountImportAdmission } from './account-import-admission.guard';
 import { canonicalizeAccountImportScope } from './account-import.scope';
 import {
   AccountImportAccountNotFoundError,
@@ -47,7 +44,6 @@ interface RetryRunRow extends IdRow {
 
 export interface AccountImportTransactionAdmissionOptions {
   reuseEquivalentActive?: boolean;
-  admissionGuard?: AccountImportAdmissionGuard;
 }
 
 export interface AccountImportTransactionAdmissionResult {
@@ -77,7 +73,7 @@ export async function admitAccountImportRunInTransaction(
   const account = accountRows[0];
   if (!account) throw new AccountImportAccountNotFoundError();
 
-  await (options.admissionGuard ?? allowAccountImportAdmission).assertAllowed(transaction, {
+  await allowAccountImportAdmission.assertAllowed(transaction, {
     userId: input.userId,
     accountId: input.accountId,
   });
