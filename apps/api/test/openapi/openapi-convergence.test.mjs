@@ -68,6 +68,7 @@ const bodylessActions = new Map([
   ['POST /api/me/accounts/{id}/backfill', 'Queues the three calendar months immediately before proved normal account coverage'],
   ['POST /api/me/accounts/{id}/import-all-history', 'Queues a durable import from Lichess’s earliest supported game-export boundary'],
   ['POST /api/me/accounts/{id}/reset-cursor', 'clears syncCursorTime only'],
+  ['POST /api/me/account-imports/automatic-refresh', 'Bodyless authenticated bootstrap command'],
   ['POST /api/me/account-imports/{importRunId}/pause', 'the import run id selects the persisted run to pause'],
   ['POST /api/me/account-imports/{importRunId}/resume', 'the import run id selects the persisted paused run to return to the durable queue'],
   ['POST /api/me/account-imports/{importRunId}/cancel', 'the import run id selects the persisted run to cancel'],
