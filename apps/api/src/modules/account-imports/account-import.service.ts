@@ -25,7 +25,6 @@ import {
 import type { StoredAccountImportRun } from './account-import.types';
 
 export const USER_ACTION_ACCOUNT_IMPORT_PRIORITY = 100;
-export const AUTOMATIC_ACCOUNT_REFRESH_PRIORITY = 10;
 export const NORMAL_ACCOUNT_REFRESH_SCOPE: AccountImportScope = {
   variant: 'STANDARD',
   speeds: ['BULLET', 'BLITZ', 'RAPID'],
@@ -110,38 +109,6 @@ export const AccountImportService = {
     });
   },
 
-  async createAutomaticRefreshForUser(
-    userId: number,
-    accountId: number,
-    requestedTo = new Date(),
-  ): Promise<CreateAccountImportRunResponse> {
-    const coverage = await AccountImportRepository.getCoverage(
-      userId,
-      accountId,
-      NORMAL_ACCOUNT_REFRESH_SCOPE,
-    );
-    if (!coverage?.coveredThrough) {
-      throw new AccountImportRangeUnavailableError(
-        'Automatic refresh requires existing recent account coverage.',
-      );
-    }
-
-    if (coverage.coveredThrough >= requestedTo) {
-      throw new AccountImportRangeUnavailableError('Account import coverage is already current.');
-    }
-
-    return createAccountRefreshRun({
-      userId,
-      accountId,
-      mode: 'INCREMENTAL_FORWARD',
-      source: 'ACCOUNT_REFRESH',
-      scope: NORMAL_ACCOUNT_REFRESH_SCOPE,
-      requestedFrom: coverage.coveredThrough,
-      requestedTo,
-      priority: AUTOMATIC_ACCOUNT_REFRESH_PRIORITY,
-    });
-  },
-
   async createHistoricalBackfillForUser(
     userId: number,
     accountId: number,
@@ -218,11 +185,7 @@ export const AccountImportService = {
     return { importRun: toAccountImportRun(await requireRun(userId, importRunId)) };
   },
 
-  async retryForUser(
-    userId: number,
-    importRunId: number,
-    priority = USER_ACTION_ACCOUNT_IMPORT_PRIORITY,
-  ): Promise<CreateAccountImportRunResponse> {
+  async retryForUser(userId: number, importRunId: number): Promise<CreateAccountImportRunResponse> {
     const source = await requireRun(userId, importRunId);
     if (source.status !== 'FAILED' && source.status !== 'CANCELLED') {
       throw new AccountImportNotControllableError(
@@ -247,7 +210,7 @@ export const AccountImportService = {
         scope: source.scope,
         requestedFrom: source.requestedFrom,
         requestedTo: source.requestedTo,
-        priority,
+        priority: USER_ACTION_ACCOUNT_IMPORT_PRIORITY,
         windowsTotal: null,
         retryOfImportRunId: source.id,
       });
@@ -273,7 +236,6 @@ async function createAccountRefreshRun(input: {
   scope: AccountImportScope;
   requestedFrom: Date;
   requestedTo: Date;
-  priority?: number;
 }): Promise<CreateAccountImportRunResponse> {
   try {
     return await createRun(input, AccountRefreshImportRepository);
@@ -294,13 +256,12 @@ async function createRun(
     scope: AccountImportScope;
     requestedFrom: Date;
     requestedTo: Date;
-    priority?: number;
   },
   repository: Pick<AccountImportRepositoryBoundary, 'createRun'> = AccountImportRepository,
 ): Promise<CreateAccountImportRunResponse> {
   const run = await repository.createRun({
     ...input,
-    priority: input.priority ?? USER_ACTION_ACCOUNT_IMPORT_PRIORITY,
+    priority: USER_ACTION_ACCOUNT_IMPORT_PRIORITY,
     windowsTotal: null,
   });
   return { importRun: toAccountImportRun(run) };
