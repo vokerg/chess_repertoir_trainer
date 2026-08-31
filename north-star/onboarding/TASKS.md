@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Task Queue
 
-Last updated: 2026-08-28
+Last updated: 2026-08-31
 
 This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, claim metadata, and completion evidence.
 
@@ -25,7 +25,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | DONE | Implement bounded Lichess import adapter | Implementation | Runtime PR #357; completion PR #376 |
 | 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | DONE | Implement bounded Chess.com import adapter | Implementation | Runtime PR #356; completion PR #383; real canary #2812 |
 | 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | DONE | Cut over account sync and preparation handoff | Implementation | Runtime PR #400, squash `c89442f`; completion reconciled 2026-08-26 |
-| 155 | ONB-025 | [#276](https://github.com/vokerg/chess_repertoir_trainer/issues/276) | P1 | READY | Trigger daily stale account refresh on authenticated app bootstrap | Implementation | ONB-015/019 delivered; recheck ONB-010/020 integration surfaces before claim |
+| 155 | ONB-025 | [#276](https://github.com/vokerg/chess_repertoir_trainer/issues/276) | P1 | REVIEW | Trigger daily stale account refresh on authenticated app bootstrap | Implementation | Runtime PR #276 on `onb-025/issue-276-daily-stale-account-refresh-runtime`; validation/review handoff in progress |
 | 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | DONE | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | Runtime PR #386, squash `d9175c5`; completion reconciled 2026-08-26 |
 | 170 | ONB-020 | [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260) | P0 | READY | Implement account and imported-game destructive lifecycle coordinator | Implementation | ONB-004/007/011/012/015/017/018/019 delivered; fresh collision check required |
 | 180 | ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) | P0 | PROPOSED | Implement whole-user deletion and mobile purge handshake | Implementation | Depends on ONB-020 plus delivered ONB-019 foundation and mobile contracts |
@@ -38,11 +38,10 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 
 Only `READY` tasks may be newly claimed unless the user explicitly authorizes otherwise.
 
-1. **ONB-025 / #276** — independent stale-account-refresh follow-up over the delivered durable account-import path.
-2. **ONB-020 / #260** — destructive account/game coordinator over the delivered ONB-019 foundation.
-3. **ONB-026 / #280** — shared-position cleanup implementation; claim-time PostgreSQL and migration checks are mandatory.
+1. **ONB-020 / #260** — destructive account/game coordinator over the delivered ONB-019 foundation.
+2. **ONB-026 / #280** — shared-position cleanup implementation; claim-time PostgreSQL and migration checks are mandatory.
 
-ONB-009 is already claimed and under review in PR #406; it is not part of the unclaimed ready queue. `READY` does not waive each task file's claim-time collision, environment, migration, or provider/deployment checks.
+ONB-025 is already claimed and under review in PR #276; it is not part of the unclaimed ready queue. ONB-009 remains recorded in review pending its separate completion reconciliation. `READY` does not waive each task file's claim-time collision, environment, migration, or provider/deployment checks.
 
 ## Recently reconciled runtime delivery
 
