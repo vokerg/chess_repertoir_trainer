@@ -91,6 +91,7 @@ export class AuthService {
     this.clerkUserState.set(null);
     this.appUserState.set(null);
     this.resolvedAppSessionState.set(null);
+    this.appUserLoadingState.set(false);
     this.resolvedSessionId = null;
   }
 
@@ -157,6 +158,7 @@ export class AuthService {
     if (!this.clerk?.session) {
       this.appUserState.set(null);
       this.resolvedAppSessionState.set(null);
+      this.appUserLoadingState.set(false);
       this.resolvedSessionId = null;
     }
   }
@@ -179,6 +181,8 @@ export class AuthService {
       const currentUser = await firstValueFrom(
         this.http.get<CurrentAppUserResponse>(`${appConfig.apiBaseUrl}/me`, { headers }),
       );
+      if (!this.isCurrentAuthSession(sessionId)) return;
+
       if (this.resolvedSessionId !== sessionId) this.sessionGeneration += 1;
       this.resolvedSessionId = sessionId;
       this.appUserState.set(currentUser);
@@ -187,11 +191,17 @@ export class AuthService {
         generation: this.sessionGeneration,
       });
     } catch (error) {
+      if (!this.isCurrentAuthSession(sessionId)) return;
       this.appUserState.set(null);
       this.resolvedAppSessionState.set(null);
       this.appUserErrorState.set(error instanceof Error ? error.message : 'Unable to load user');
     } finally {
-      this.appUserLoadingState.set(false);
+      if (this.isCurrentAuthSession(sessionId)) this.appUserLoadingState.set(false);
     }
+  }
+
+  private isCurrentAuthSession(sessionId: string): boolean {
+    if (!this.clerk) return sessionId === 'dev';
+    return this.clerk.session?.id === sessionId;
   }
 }
