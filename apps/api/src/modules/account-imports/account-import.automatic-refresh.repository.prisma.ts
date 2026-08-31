@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import prisma from '../../prisma';
+import { allowAccountImportAdmission } from './account-import-admission.guard';
 import {
   AccountImportAccountNotFoundError,
   createAccountImportRepository,
@@ -80,15 +81,14 @@ export function createAccountImportAutomaticRefreshRepository(
         if (!account) throw new AccountImportAccountNotFoundError();
         if (!account.isActive) return { kind: 'inactive' };
 
-        const repository = createAccountImportRepository(
-          transactionBoundClient(transaction),
-          accountImportRefreshAdmissionGuard,
-        );
+        const client = transactionBoundClient(transaction);
+        const accountImports = createAccountImportRepository(client, allowAccountImportAdmission);
+        const refreshImports = createAccountImportRepository(client, accountImportRefreshAdmissionGuard);
 
-        const active = await repository.getActiveRunForAccount(userId, accountId);
+        const active = await accountImports.getActiveRunForAccount(userId, accountId);
         if (active) return { kind: 'alreadyActive', run: active };
 
-        const coverage = await repository.getCoverage(
+        const coverage = await accountImports.getCoverage(
           userId,
           accountId,
           NORMAL_ACCOUNT_REFRESH_SCOPE,
@@ -134,7 +134,7 @@ export function createAccountImportAutomaticRefreshRepository(
             return { kind: 'retryThrottled', retryAt };
           }
 
-          const failed = await repository.getRun(
+          const failed = await accountImports.getRun(
             userId,
             snapshot.lastAutomaticFailureRunId,
           );
@@ -146,7 +146,7 @@ export function createAccountImportAutomaticRefreshRepository(
             && failed.requestedFrom
             && failed.requestedTo
           ) {
-            const retry = await repository.createRun({
+            const retry = await accountImports.createRun({
               userId,
               accountId,
               mode: failed.mode,
@@ -166,7 +166,7 @@ export function createAccountImportAutomaticRefreshRepository(
           return { kind: 'missingCoverage' };
         }
 
-        const run = await repository.createRun({
+        const run = await refreshImports.createRun({
           userId,
           accountId,
           mode: 'INCREMENTAL_FORWARD',
