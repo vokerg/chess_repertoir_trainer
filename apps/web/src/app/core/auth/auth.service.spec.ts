@@ -89,6 +89,34 @@ describe('AuthService Clerk mounts', () => {
     expect(auth.resolvedAppSession()?.appUser.user.id).toBe(8);
     expect(auth.resolvedAppSession()?.generation).toBe(1);
   });
+
+  it('clears resolved app state immediately when Clerk replaces the active session', async () => {
+    currentSession = fakeSession('session-a', 'token-a');
+    const first = resolveAppUser(auth, 'session-a');
+    await Promise.resolve();
+    http.expectOne((request) =>
+      request.url === `${appConfig.apiBaseUrl}/me`
+      && request.headers.get('Authorization') === 'Bearer token-a',
+    ).flush(currentUserResponse(7, 'subject-a'));
+    await first;
+    expect(auth.resolvedAppSession()?.appUser.user.id).toBe(7);
+    expect(auth.resolvedAppSession()?.generation).toBe(1);
+
+    currentSession = fakeSession('session-b', 'token-b');
+    syncFromClerk(auth);
+    expect(auth.appUser()).toBeNull();
+    expect(auth.resolvedAppSession()).toBeNull();
+
+    const second = resolveAppUser(auth, 'session-b');
+    await Promise.resolve();
+    http.expectOne((request) =>
+      request.url === `${appConfig.apiBaseUrl}/me`
+      && request.headers.get('Authorization') === 'Bearer token-b',
+    ).flush(currentUserResponse(8, 'subject-b'));
+    await second;
+    expect(auth.resolvedAppSession()?.appUser.user.id).toBe(8);
+    expect(auth.resolvedAppSession()?.generation).toBe(2);
+  });
 });
 
 function fakeSession(id: string, token: string): NonNullable<Clerk['session']> {
@@ -102,6 +130,10 @@ function resolveAppUser(auth: AuthService, sessionId: string): Promise<void> {
   return (auth as unknown as {
     resolveAppUserOnce(value: string): Promise<void>;
   }).resolveAppUserOnce(sessionId);
+}
+
+function syncFromClerk(auth: AuthService): void {
+  (auth as unknown as { syncFromClerk(): void }).syncFromClerk();
 }
 
 function currentUserResponse(userId: number, externalSubject: string): CurrentAppUserResponse {
