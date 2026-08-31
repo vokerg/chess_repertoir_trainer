@@ -13,6 +13,7 @@ import {
 } from './account-import.repository.prisma';
 import {
   AUTOMATIC_ACCOUNT_REFRESH_PRIORITY,
+  AccountImportNotControllableError,
   AccountImportRangeUnavailableError,
   AccountImportService,
   toAccountImportRun,
@@ -31,6 +32,11 @@ interface AccountImportCommandBoundary {
     userId: number,
     accountId: number,
     requestedTo?: Date,
+  ): Promise<CreateAccountImportRunResponse>;
+  retryForUser(
+    userId: number,
+    importRunId: number,
+    priority?: number,
   ): Promise<CreateAccountImportRunResponse>;
 }
 
@@ -117,7 +123,12 @@ export function createAccountImportAutomaticRefreshService(
       }
     }
 
-    if (snapshot.lastAutomaticFailureAt && snapshot.automaticFailureCount > 0) {
+    let retryImportRunId: number | null = null;
+    if (
+      snapshot.lastAutomaticFailureRunId !== null
+      && snapshot.lastAutomaticFailureAt
+      && snapshot.automaticFailureCount > 0
+    ) {
       const retryAt = new Date(
         snapshot.lastAutomaticFailureAt.getTime()
           + retryDelayMs(snapshot.automaticFailureCount, retryBaseMs, retryMaxMs),
@@ -130,14 +141,17 @@ export function createAccountImportAutomaticRefreshService(
           retryAt,
         );
       }
+      retryImportRunId = snapshot.lastAutomaticFailureRunId;
     }
 
     try {
-      const response = await commands.createAutomaticRefreshForUser(
-        userId,
-        accountId,
-        evaluatedAt,
-      );
+      const response = retryImportRunId === null
+        ? await commands.createAutomaticRefreshForUser(userId, accountId, evaluatedAt)
+        : await commands.retryForUser(
+          userId,
+          retryImportRunId,
+          AUTOMATIC_ACCOUNT_REFRESH_PRIORITY,
+        );
       return { accountId, status: 'accepted', importRun: response.importRun };
     } catch (error) {
       if (error instanceof AccountImportActiveRunError) {
@@ -153,8 +167,8 @@ export function createAccountImportAutomaticRefreshService(
       if (error instanceof AccountImportAdmissionBlockedError) {
         return failure(accountId, error.code, error.message, null);
       }
-      if (error instanceof AccountImportRangeUnavailableError) {
-        return failure(accountId, error.code, error.message, null);
+      if (error instanceof AccountImportRangeUnavailableError || error instanceof AccountImportNotControllableError) {
+        return failure(accountId, 'ACCOUNT_IMPORT_INVALID_RANGE', error.message, null);
       }
       if (error instanceof AccountImportAccountNotFoundError) {
         return failure(

@@ -35,6 +35,7 @@ const MINUTE = 60 * 1_000;
     accountIds: [1],
     snapshots: new Map([[1, {
       latestSuccessfulForwardAt: new Date(NOW.getTime() - 23 * HOUR),
+      lastAutomaticFailureRunId: null,
       lastAutomaticFailureAt: null,
       automaticFailureCount: 0,
     }]]),
@@ -55,6 +56,7 @@ const MINUTE = 60 * 1_000;
     accountIds: [1],
     snapshots: new Map([[1, {
       latestSuccessfulForwardAt: new Date(NOW.getTime() - 24 * HOUR),
+      lastAutomaticFailureRunId: null,
       lastAutomaticFailureAt: null,
       automaticFailureCount: 0,
     }]]),
@@ -75,6 +77,7 @@ const MINUTE = 60 * 1_000;
     accountIds: [1],
     snapshots: new Map([[1, {
       latestSuccessfulForwardAt: new Date(NOW.getTime() - 25 * HOUR),
+      lastAutomaticFailureRunId: 29,
       lastAutomaticFailureAt: new Date(NOW.getTime() - 9 * MINUTE),
       automaticFailureCount: 2,
     }]]),
@@ -94,17 +97,25 @@ const MINUTE = 60 * 1_000;
 }
 
 {
-  let commandCalls = 0;
+  let createCalls = 0;
+  let retryCall = null;
+  const retryRun = storedRun(31, 1, 'QUEUED');
+  retryRun.retryOfImportRunId = 29;
   const service = createService({
     accountIds: [1],
     snapshots: new Map([[1, {
       latestSuccessfulForwardAt: new Date(NOW.getTime() - 25 * HOUR),
+      lastAutomaticFailureRunId: 29,
       lastAutomaticFailureAt: new Date(NOW.getTime() - 10 * MINUTE),
       automaticFailureCount: 2,
     }]]),
     command: async () => {
-      commandCalls += 1;
-      return { importRun: toAccountImportRun(storedRun(31, 1, 'QUEUED')) };
+      createCalls += 1;
+      return { importRun: toAccountImportRun(storedRun(32, 1, 'QUEUED')) };
+    },
+    retryCommand: async (userId, importRunId, priority) => {
+      retryCall = { userId, importRunId, priority };
+      return { importRun: toAccountImportRun(retryRun) };
     },
     retryBaseMs: 5 * MINUTE,
     retryMaxMs: 20 * MINUTE,
@@ -112,7 +123,9 @@ const MINUTE = 60 * 1_000;
 
   const result = await service.refreshForUser(7);
   assert.equal(result.items[0].status, 'accepted');
-  assert.equal(commandCalls, 1, 'the exact retry boundary is eligible again');
+  assert.equal(result.items[0].importRun.retryOfImportRunId, 29);
+  assert.equal(createCalls, 0, 'expired automatic backoff retries the failed immutable range');
+  assert.deepEqual(retryCall, { userId: 7, importRunId: 29, priority: 10 });
 }
 
 {
@@ -139,6 +152,7 @@ function createService({
   activeByAccount = new Map(),
   snapshots = new Map(),
   command,
+  retryCommand = command,
   retryBaseMs,
   retryMaxMs,
 }) {
@@ -151,6 +165,7 @@ function createService({
         async getSnapshot(_userId, accountId) {
           return snapshots.get(accountId) ?? {
             latestSuccessfulForwardAt: null,
+            lastAutomaticFailureRunId: null,
             lastAutomaticFailureAt: null,
             automaticFailureCount: 0,
           };
@@ -163,6 +178,7 @@ function createService({
       },
       commands: {
         createAutomaticRefreshForUser: command,
+        retryForUser: retryCommand,
       },
     },
     {

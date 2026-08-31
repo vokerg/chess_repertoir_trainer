@@ -218,7 +218,11 @@ export const AccountImportService = {
     return { importRun: toAccountImportRun(await requireRun(userId, importRunId)) };
   },
 
-  async retryForUser(userId: number, importRunId: number): Promise<CreateAccountImportRunResponse> {
+  async retryForUser(
+    userId: number,
+    importRunId: number,
+    priority = USER_ACTION_ACCOUNT_IMPORT_PRIORITY,
+  ): Promise<CreateAccountImportRunResponse> {
     const source = await requireRun(userId, importRunId);
     if (source.status !== 'FAILED' && source.status !== 'CANCELLED') {
       throw new AccountImportNotControllableError(
@@ -243,7 +247,7 @@ export const AccountImportService = {
         scope: source.scope,
         requestedFrom: source.requestedFrom,
         requestedTo: source.requestedTo,
-        priority: USER_ACTION_ACCOUNT_IMPORT_PRIORITY,
+        priority,
         windowsTotal: null,
         retryOfImportRunId: source.id,
       });

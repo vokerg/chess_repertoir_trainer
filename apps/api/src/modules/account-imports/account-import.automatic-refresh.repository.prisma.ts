@@ -3,12 +3,14 @@ import prisma from '../../prisma';
 
 export interface AccountAutomaticRefreshSnapshot {
   latestSuccessfulForwardAt: Date | null;
+  lastAutomaticFailureRunId: number | null;
   lastAutomaticFailureAt: Date | null;
   automaticFailureCount: number;
 }
 
 interface SnapshotRow {
   latestSuccessfulForwardAt: Date | null;
+  lastAutomaticFailureRunId: number | null;
   lastAutomaticFailureAt: Date | null;
   automaticFailureCount: number;
 }
@@ -63,7 +65,7 @@ export function createAccountImportAutomaticRefreshRepository(
           LIMIT 1
         ),
         automatic_failures AS (
-          SELECT run."completedAt"
+          SELECT run."id", run."completedAt"
           FROM "ImportRun" AS run
           JOIN normal_coverage AS coverage
             ON coverage."scopeHash" = run."scopeHash"
@@ -72,21 +74,29 @@ export function createAccountImportAutomaticRefreshRepository(
             AND run."source" = 'ACCOUNT_REFRESH'
             AND run."mode" = 'INCREMENTAL_FORWARD'
             AND run."priority" = ${automaticPriority}
-            AND run."status" IN ('FAILED', 'CANCELLED')
+            AND run."status" = 'FAILED'
             AND run."completedAt" IS NOT NULL
             AND run."completedAt" >= coverage."createdAt"
             AND (
               NOT EXISTS (SELECT 1 FROM latest_success)
               OR run."completedAt" > (SELECT "completedAt" FROM latest_success)
             )
+        ),
+        latest_automatic_failure AS (
+          SELECT "id", "completedAt"
+          FROM automatic_failures
+          ORDER BY "completedAt" DESC, "id" DESC
+          LIMIT 1
         )
         SELECT
           (SELECT "completedAt" FROM latest_success) AS "latestSuccessfulForwardAt",
-          (SELECT MAX("completedAt") FROM automatic_failures) AS "lastAutomaticFailureAt",
+          (SELECT "id" FROM latest_automatic_failure) AS "lastAutomaticFailureRunId",
+          (SELECT "completedAt" FROM latest_automatic_failure) AS "lastAutomaticFailureAt",
           (SELECT COUNT(*)::integer FROM automatic_failures) AS "automaticFailureCount"
       `);
       return rows[0] ?? {
         latestSuccessfulForwardAt: null,
+        lastAutomaticFailureRunId: null,
         lastAutomaticFailureAt: null,
         automaticFailureCount: 0,
       };
