@@ -41,6 +41,8 @@ export class AppComponent {
             session.appUser.user.id,
             session.generation,
           );
+        } else {
+          this.accountImportStore.reset();
         }
       } else {
         this.jobStore.reset();
