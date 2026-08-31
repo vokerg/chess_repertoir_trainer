@@ -330,9 +330,14 @@ async function readSnapshot(
         )
     ),
     latest_automatic_failure AS (
-      SELECT "id", "completedAt"
-      FROM automatic_failures
-      ORDER BY "completedAt" DESC, "id" DESC
+      SELECT failure."id", failure."completedAt"
+      FROM automatic_failures AS failure
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM "ImportRun" AS retry
+        WHERE retry."retryOfImportRunId" = failure."id"
+      )
+      ORDER BY failure."completedAt" DESC, failure."id" DESC
       LIMIT 1
     )
     SELECT
