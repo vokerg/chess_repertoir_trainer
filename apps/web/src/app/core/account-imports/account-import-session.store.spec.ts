@@ -50,8 +50,8 @@ describe('AccountImportSessionStore', () => {
       ],
     }));
 
-    await store.initialize(7);
-    await store.initialize(7);
+    await store.initialize(7, 1);
+    await store.initialize(7, 1);
 
     expect(api.refreshStaleAccounts).toHaveBeenCalledTimes(1);
     expect(store.runs()).toEqual({ 101: accepted, 102: active });
@@ -62,8 +62,8 @@ describe('AccountImportSessionStore', () => {
   it('does not turn a bootstrap request failure into a reload loop inside the same session', async () => {
     api.refreshStaleAccounts.and.returnValue(throwError(() => new Error('Temporary API failure')));
 
-    await store.initialize(7);
-    await store.initialize(7);
+    await store.initialize(7, 1);
+    await store.initialize(7, 1);
 
     expect(api.refreshStaleAccounts).toHaveBeenCalledTimes(1);
     expect(store.error()).toContain('Temporary API failure');
@@ -74,7 +74,7 @@ describe('AccountImportSessionStore', () => {
     const response$ = new Subject<AutomaticAccountRefreshResponse>();
     api.refreshStaleAccounts.and.returnValue(response$);
 
-    const first = store.initialize(7);
+    const first = store.initialize(7, 1);
     store.reset();
     response$.next({ items: [{ accountId: 101, status: 'accepted', importRun: accountImportRun(1, 101) }] });
     response$.complete();
@@ -87,7 +87,7 @@ describe('AccountImportSessionStore', () => {
       items: [{ accountId: 102, status: 'accepted', importRun: accountImportRun(2, 102) }],
     } satisfies AutomaticAccountRefreshResponse;
     api.refreshStaleAccounts.and.returnValue(of(nextResponse));
-    await store.initialize(7);
+    await store.initialize(7, 2);
 
     expect(api.refreshStaleAccounts).toHaveBeenCalledTimes(2);
     expect(store.runs()).toEqual({ 102: nextResponse.items[0].importRun });
@@ -100,8 +100,8 @@ describe('AccountImportSessionStore', () => {
     } satisfies AutomaticAccountRefreshResponse;
     api.refreshStaleAccounts.and.returnValues(firstResponse$, of(secondResponse));
 
-    const first = store.initialize(7);
-    const second = store.initialize(8);
+    const first = store.initialize(7, 1);
+    const second = store.initialize(8, 2);
 
     expect(api.refreshStaleAccounts).toHaveBeenCalledTimes(2);
     await second;
@@ -115,6 +115,23 @@ describe('AccountImportSessionStore', () => {
 
     expect(store.runs()).toEqual({ 202: secondResponse.items[0].importRun });
     expect(store.response()).toEqual(secondResponse);
+  });
+
+  it('runs again when a new auth session resolves for the same application user', async () => {
+    const firstResponse = {
+      items: [{ accountId: 101, status: 'accepted', importRun: accountImportRun(1, 101) }],
+    } satisfies AutomaticAccountRefreshResponse;
+    const secondResponse = {
+      items: [{ accountId: 102, status: 'alreadyActive', importRun: accountImportRun(2, 102) }],
+    } satisfies AutomaticAccountRefreshResponse;
+    api.refreshStaleAccounts.and.returnValues(of(firstResponse), of(secondResponse));
+
+    await store.initialize(7, 1);
+    await store.initialize(7, 2);
+
+    expect(api.refreshStaleAccounts).toHaveBeenCalledTimes(2);
+    expect(store.response()).toEqual(secondResponse);
+    expect(store.runs()).toEqual({ 102: secondResponse.items[0].importRun });
   });
 });
 
