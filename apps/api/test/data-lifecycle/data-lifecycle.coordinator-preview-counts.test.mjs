@@ -7,6 +7,7 @@ const prisma = prismaModule.default;
 const repository = createAccountGameDataLifecycleCoordinatorRepository(prisma);
 const suffix = randomUUID();
 let userId;
+const positionIds = [];
 
 try {
   const user = await prisma.appUser.create({
@@ -29,11 +30,35 @@ try {
       pgn: '1. e4 e5 2. Nf3',
     },
   });
+  const positions = await Promise.all([1, 2, 3].map((ordinal) => prisma.position.create({
+    data: {
+      positionKey: Buffer.from(`preview-${suffix}-${ordinal}`, 'utf8'),
+      normalizedFen: `8/8/8/8/8/8/${ordinal}7/K6k w - - 0 1`,
+    },
+  })));
+  positionIds.push(...positions.map(({ id }) => id));
   await prisma.importedGamePly.createMany({
     data: [
-      { importedGameId: game.id, plyNumber: 1, moveUci: 'e2e4', scoreLossCp: 15, classificationCode: 2 },
-      { importedGameId: game.id, plyNumber: 2, moveUci: 'e7e5' },
-      { importedGameId: game.id, plyNumber: 3, moveUci: 'g1f3' },
+      {
+        importedGameId: game.id,
+        positionId: positions[0].id,
+        plyNumber: 1,
+        moveUci: 'e2e4',
+        scoreLossCp: 15,
+        classificationCode: 2,
+      },
+      {
+        importedGameId: game.id,
+        positionId: positions[1].id,
+        plyNumber: 2,
+        moveUci: 'e7e5',
+      },
+      {
+        importedGameId: game.id,
+        positionId: positions[2].id,
+        plyNumber: 3,
+        moveUci: 'g1f3',
+      },
     ],
   });
 
@@ -65,5 +90,6 @@ try {
   console.log('Data lifecycle destructive preview count tests passed.');
 } finally {
   if (userId) await prisma.appUser.deleteMany({ where: { id: userId } });
+  if (positionIds.length > 0) await prisma.position.deleteMany({ where: { id: { in: positionIds } } });
   await prisma.$disconnect();
 }
