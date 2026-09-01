@@ -71,6 +71,24 @@ try {
     );
     assert.equal(coverageAfterReset?.coveredThrough?.getTime(), coveredThrough.getTime());
 
+    const deletion = await app.inject({
+      method: 'DELETE',
+      url: `/api/me/accounts/${account.id}`,
+    });
+    assert.equal(deletion.statusCode, 409, deletion.body);
+    assert.equal(deletion.json().code, 'DATA_LIFECYCLE_INVALID_STATE');
+    assert.equal(await prisma.externalAccount.count({ where: { id: account.id } }), 1);
+
+    const openApi = (await app.inject({ method: 'GET', url: '/api/docs/openapi.json' })).json();
+    const legacyDelete = openApi.paths['/api/me/accounts/{id}'].delete;
+    const legacyReset = openApi.paths['/api/me/accounts/{id}/reset-cursor'].post;
+    assert.equal(legacyDelete.deprecated, true);
+    assert.equal(legacyDelete.responses['200'], undefined);
+    assert.notEqual(legacyDelete.responses['409'], undefined);
+    assert.equal(legacyReset.deprecated, true);
+    assert.equal(legacyReset.responses['200'], undefined);
+    assert.notEqual(legacyReset.responses['410'], undefined);
+
     const backfill = await app.inject({
       method: 'POST',
       url: `/api/me/accounts/${account.id}/backfill`,
