@@ -1,5 +1,44 @@
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type {
+  FastifyReply,
+  FastifyRequest,
+  onRouteHookHandler,
+} from 'fastify';
+import { dataLifecycleErrorResponseSchema } from '@chess-trainer/contracts/data-lifecycle';
 import { requireAuth } from '../auth/request-auth';
+import { messageResponseSchema } from './legacy-route.schemas';
+
+export const describeExternalAccountLifecycleCompatibility: onRouteHookHandler = (routeOptions) => {
+  const methods = Array.isArray(routeOptions.method) ? routeOptions.method : [routeOptions.method];
+  const schema = routeOptions.schema;
+  if (!schema) return;
+
+  if (methods.includes('DELETE') && routeOptions.url === '/api/me/accounts/:id') {
+    const response = { ...(schema.response ?? {}) } as Record<string | number, unknown>;
+    delete response[200];
+    response[409] = dataLifecycleErrorResponseSchema;
+    routeOptions.schema = {
+      ...schema,
+      deprecated: true,
+      summary: 'Legacy direct account deletion is disabled',
+      description: 'This compatibility URL no longer performs an immediate account cascade. Create and execute a DELETE_EXTERNAL_ACCOUNT data-lifecycle operation instead.',
+      response,
+    };
+    return;
+  }
+
+  if (methods.includes('POST') && routeOptions.url === '/api/me/accounts/:id/reset-cursor') {
+    const response = { ...(schema.response ?? {}) } as Record<string | number, unknown>;
+    delete response[200];
+    response[410] = messageResponseSchema;
+    routeOptions.schema = {
+      ...schema,
+      deprecated: true,
+      summary: 'Legacy raw sync-cursor reset is removed',
+      description: 'Raw sync-cursor mutation is no longer available. Use durable historical backfill to import older history or PURGE_ACCOUNT_DATA for a destructive account reset.',
+      response,
+    };
+  }
+};
 
 export async function enforceExternalAccountLifecycleCompatibility(
   request: FastifyRequest,
