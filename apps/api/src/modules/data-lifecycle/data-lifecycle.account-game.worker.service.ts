@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { Prisma } from '@prisma/client';
 import {
   AccountImportLifecycleRepository,
   type AccountImportLifecycleRepository as ImportRepositoryBoundary,
@@ -21,6 +22,7 @@ import {
   AccountGameDataLifecycleOperationRepository,
   type AccountGameDataLifecycleOperationRepository as OperationRepositoryBoundary,
 } from './data-lifecycle.account-game-operation.repository.prisma';
+import { lockDataLifecycleUserScope } from './data-lifecycle.guard';
 import {
   DataLifecycleRepository,
   type DataLifecycleRepository as LifecycleRepositoryBoundary,
@@ -132,6 +134,15 @@ export function createAccountGameDataLifecycleWorker(
     try {
       await processClaim(operation, workKey);
     } catch (error) {
+      try {
+        if (await settleRequestedStop(operation, workKey)) return true;
+      } catch (stopSettleError) {
+        logger.warn(
+          safeErrorContext(stopSettleError, operation),
+          'Data lifecycle stop request could not settle because the claim changed',
+        );
+      }
+
       logger.error(safeErrorContext(error, operation), 'Data lifecycle operation step failed');
       try {
         await lifecycleRepository.failClaimed(operation.id, workKey, errorCode(error));
@@ -282,12 +293,12 @@ export function createAccountGameDataLifecycleWorker(
       await moveToVerify(operation, workKey);
       return;
     }
-    await lifecycleRepository.runDestructiveTransaction({
-      operationId: operation.id,
-      targetUserId: operation.targetUserId,
+    await runDestructiveBatch(
+      operation,
       workKey,
-      checkpoint: { version: 1, phase: 'UNANALYSE', afterGameId: lastId(gameIds) },
-    }, (transaction) => executionRepository.unanalyseGameBatch(transaction, scope, gameIds));
+      { version: 1, phase: 'UNANALYSE', afterGameId: lastId(gameIds) },
+      (transaction) => executionRepository.unanalyseGameBatch(transaction, scope, gameIds),
+    );
     await release(operation, workKey);
   }
 
@@ -312,12 +323,12 @@ export function createAccountGameDataLifecycleWorker(
         await release(operation, workKey);
         return;
       }
-      await lifecycleRepository.runDestructiveTransaction({
-        operationId: operation.id,
-        targetUserId: operation.targetUserId,
+      await runDestructiveBatch(
+        operation,
         workKey,
-        checkpoint: { version: 1, phase: 'UNANALYSE', afterGameId: lastId(gameIds) },
-      }, (transaction) => executionRepository.unanalyseGameBatch(transaction, scope, gameIds));
+        { version: 1, phase: 'UNANALYSE', afterGameId: lastId(gameIds) },
+        (transaction) => executionRepository.unanalyseGameBatch(transaction, scope, gameIds),
+      );
       await release(operation, workKey);
       return;
     }
@@ -332,12 +343,12 @@ export function createAccountGameDataLifecycleWorker(
       await moveToVerify(operation, workKey);
       return;
     }
-    await lifecycleRepository.runDestructiveTransaction({
-      operationId: operation.id,
-      targetUserId: operation.targetUserId,
+    await runDestructiveBatch(
+      operation,
       workKey,
-      checkpoint: { version: 1, phase: 'UNINDEX', afterGameId: lastId(gameIds) },
-    }, (transaction) => executionRepository.unindexGameBatch(transaction, scope, gameIds));
+      { version: 1, phase: 'UNINDEX', afterGameId: lastId(gameIds) },
+      (transaction) => executionRepository.unindexGameBatch(transaction, scope, gameIds),
+    );
     await release(operation, workKey);
   }
 
@@ -363,12 +374,12 @@ export function createAccountGameDataLifecycleWorker(
         await release(operation, workKey);
         return;
       }
-      await lifecycleRepository.runDestructiveTransaction({
-        operationId: operation.id,
-        targetUserId: operation.targetUserId,
+      await runDestructiveBatch(
+        operation,
         workKey,
-        checkpoint: { version: 1, phase: 'PURGE_GAMES', afterGameId: lastId(gameIds) },
-      }, (transaction) => executionRepository.purgeAccountGameBatch(transaction, scope, gameIds));
+        { version: 1, phase: 'PURGE_GAMES', afterGameId: lastId(gameIds) },
+        (transaction) => executionRepository.purgeAccountGameBatch(transaction, scope, gameIds),
+      );
       await release(operation, workKey);
       return;
     }
@@ -377,24 +388,24 @@ export function createAccountGameDataLifecycleWorker(
       const nextCheckpoint: LifecycleCheckpoint = deleteAccount
         ? { version: 1, phase: 'ACCOUNT_DELETE', afterGameId: null }
         : doneCheckpoint();
-      await lifecycleRepository.runDestructiveTransaction({
-        operationId: operation.id,
-        targetUserId: operation.targetUserId,
+      await runDestructiveBatch(
+        operation,
         workKey,
-        checkpoint: nextCheckpoint,
-      }, (transaction) => executionRepository.finalizeAccountPurge(transaction, scope));
+        nextCheckpoint,
+        (transaction) => executionRepository.finalizeAccountPurge(transaction, scope),
+      );
       await release(operation, workKey);
       return;
     }
 
     if (deleteAccount && checkpoint.phase === 'ACCOUNT_DELETE') {
       await appendAuditOnce(operation, 'ACCOUNT_DELETE_AGGREGATE_SNAPSHOT');
-      await lifecycleRepository.runDestructiveTransaction({
-        operationId: operation.id,
-        targetUserId: operation.targetUserId,
+      await runDestructiveBatch(
+        operation,
         workKey,
-        checkpoint: doneCheckpoint(),
-      }, (transaction) => executionRepository.deleteExternalAccount(transaction, scope));
+        doneCheckpoint(),
+        (transaction) => executionRepository.deleteExternalAccount(transaction, scope),
+      );
       await release(operation, workKey);
       return;
     }
@@ -435,6 +446,82 @@ export function createAccountGameDataLifecycleWorker(
     const next = await lifecycleRepository.advanceClaimed(operation.id, workKey, 'VERIFYING');
     await appendAudit(next, 'DESTRUCTIVE_PHASES_COMPLETED');
     await release(operation, workKey);
+  }
+
+  async function runDestructiveBatch(
+    operation: StoredDataLifecycleOperation,
+    workKey: string,
+    checkpoint: LifecycleCheckpoint,
+    work: (transaction: Prisma.TransactionClient) => Promise<void>,
+  ): Promise<void> {
+    await lifecycleRepository.runDestructiveTransaction({
+      operationId: operation.id,
+      targetUserId: operation.targetUserId,
+      workKey,
+      checkpoint,
+      beforeUserLock: async (transaction) => {
+        // Acquire the lifecycle user lock inside this same transaction before validating
+        // the stop request. runDestructiveTransaction acquires the same xact lock again;
+        // this is intentionally re-entrant and keeps validation plus mutation on one boundary.
+        await lockDataLifecycleUserScope(transaction, operation.targetUserId);
+        const current = await transaction.dataLifecycleOperation.findUnique({
+          where: { id: operation.id },
+          select: {
+            targetUserId: true,
+            status: true,
+            workKey: true,
+            stopRequest: true,
+            firstDestructiveCommitAt: true,
+          },
+        });
+        if (
+          !current
+          || current.targetUserId !== operation.targetUserId
+          || current.workKey !== workKey
+          || current.status !== 'EXECUTING'
+        ) {
+          throw new Error('DATA_LIFECYCLE_CLAIM_LOST');
+        }
+        if (current.stopRequest === 'CANCEL' && current.firstDestructiveCommitAt === null) {
+          throw new Error('DATA_LIFECYCLE_CANCEL_REQUESTED');
+        }
+        if (
+          current.stopRequest === 'STOP_AFTER_BATCH'
+          && current.firstDestructiveCommitAt !== null
+        ) {
+          throw new Error('DATA_LIFECYCLE_STOPPED_AFTER_BATCH');
+        }
+      },
+    }, work);
+  }
+
+  async function settleRequestedStop(
+    operation: StoredDataLifecycleOperation,
+    workKey: string,
+  ): Promise<boolean> {
+    const current = await lifecycleRepository.getForTargetUser(operation.targetUserId, operation.id);
+    if (!current || current.workKey !== workKey) return false;
+
+    if (
+      current.stopRequest === 'CANCEL'
+      && current.firstDestructiveCommitAt === null
+      && current.status === 'CANCEL_REQUESTED'
+    ) {
+      await lifecycleRepository.completeCancellationBeforeMutation(operation.id, workKey);
+      return true;
+    }
+    if (
+      current.stopRequest === 'STOP_AFTER_BATCH'
+      && current.firstDestructiveCommitAt !== null
+    ) {
+      await lifecycleRepository.failClaimed(
+        operation.id,
+        workKey,
+        'DATA_LIFECYCLE_STOPPED_AFTER_BATCH',
+      );
+      return true;
+    }
+    return false;
   }
 
   async function release(operation: StoredDataLifecycleOperation, workKey: string) {
