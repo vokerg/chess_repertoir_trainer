@@ -67,9 +67,16 @@ try {
       pgn: '1. e4 e5',
     },
   });
+  const position = await prisma.position.create({
+    data: {
+      positionKey: Buffer.from(randomUUID().replaceAll('-', ''), 'hex'),
+      normalizedFen: '8/8/8/8/8/8/8/K6k w - - 0 1',
+    },
+  });
   await prisma.importedGamePly.create({
     data: {
       importedGameId: game.id,
+      positionId: position.id,
       plyNumber: 1,
       moveUci: 'e2e4',
       scoreLossCp: 50,
@@ -143,5 +150,6 @@ try {
     await prisma.dataLifecycleOperation.deleteMany({ where: { id: { in: operationIds } } });
   }
   if (userId !== undefined) await prisma.appUser.deleteMany({ where: { id: userId } });
+  await prisma.position.deleteMany({ where: { id: position.id } }).catch(() => {});
   await prisma.$disconnect();
 }
