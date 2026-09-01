@@ -435,36 +435,50 @@ function scopeGameWhere(scope: Extract<AccountGameDataLifecycleScope, { resource
   };
 }
 
+async function scenarioCopyWhere(
+  transaction: Prisma.TransactionClient,
+  userId: number,
+  gameIds: number[],
+) {
+  const detectionIds = (
+    await transaction.tacticalDetection.findMany({
+      where: { userId, importedGameId: { in: gameIds } },
+      select: { id: true },
+      orderBy: { id: 'asc' },
+    })
+  ).map(({ id }) => id);
+
+  return {
+    userId,
+    OR: [
+      { importedGameId: { in: gameIds } },
+      { tacticalDetection: { importedGameId: { in: gameIds } } },
+      {
+        sourceType: 'TACTICAL_DETECTION',
+        sourceId: { in: detectionIds },
+      },
+    ],
+  };
+}
+
 async function deleteScenarioCopies(
   transaction: Prisma.TransactionClient,
   userId: number,
   gameIds: number[],
 ): Promise<number> {
   const result = await transaction.scenarioTrainingSession.deleteMany({
-    where: {
-      userId,
-      OR: [
-        { importedGameId: { in: gameIds } },
-        { tacticalDetection: { importedGameId: { in: gameIds } } },
-      ],
-    },
+    where: await scenarioCopyWhere(transaction, userId, gameIds),
   });
   return result.count;
 }
 
-function countScenarioCopies(
+async function countScenarioCopies(
   transaction: Prisma.TransactionClient,
   userId: number,
   gameIds: number[],
 ): Promise<number> {
   return transaction.scenarioTrainingSession.count({
-    where: {
-      userId,
-      OR: [
-        { importedGameId: { in: gameIds } },
-        { tacticalDetection: { importedGameId: { in: gameIds } } },
-      ],
-    },
+    where: await scenarioCopyWhere(transaction, userId, gameIds),
   });
 }
 
