@@ -1,6 +1,6 @@
 # ONB-020 — Implement account and imported-game destructive lifecycle coordinator
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P0
 
@@ -8,17 +8,17 @@ Order: 170
 
 Delivery class: Implementation
 
-Planning maturity: Allocated by ONB-004; ONB-019 lifecycle foundation, durable import/account-sync cutover, and preparation foundations are delivered; ready for claim after a fresh collision check
+Planning maturity: Claimed from current main after the required fresh branch/PR, Prisma/migration, lifecycle-foundation, account-route, and drain-boundary collision check
 
 GitHub issue: [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT / ONB-020 implementation session
 
-Claim branch: none
+Claim branch: `onb-020/issue-260-account-game-destructive-lifecycle`
 
-Claimed at: none
+Claimed at: 2026-09-01
 
-Claim scope: none
+Claim scope: account/game destructive lifecycle coordinator over delivered ONB-019 primitives; bounded preview/execution, fencing/drain, un-analysis/un-index/account purge/delete phases, existing route cutover, and focused lifecycle/race/restart validation; no whole-user deletion, shared-position cleanup, or administrator UI
 
 Promoted at: 2026-08-26 through merged-task completion reconciliation
 
