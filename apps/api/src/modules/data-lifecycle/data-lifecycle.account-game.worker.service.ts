@@ -452,7 +452,7 @@ export function createAccountGameDataLifecycleWorker(
     operation: StoredDataLifecycleOperation,
     workKey: string,
     checkpoint: LifecycleCheckpoint,
-    work: (transaction: Prisma.TransactionClient) => Promise<void>,
+    work: (transaction: Prisma.TransactionClient) => Promise<unknown>,
   ): Promise<void> {
     await lifecycleRepository.runDestructiveTransaction({
       operationId: operation.id,
