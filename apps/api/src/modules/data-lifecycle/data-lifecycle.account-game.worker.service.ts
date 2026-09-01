@@ -390,7 +390,7 @@ export function createAccountGameDataLifecycleWorker(
     }
 
     if (deleteAccount && checkpoint.phase === 'ACCOUNT_DELETE') {
-      await appendAudit(operation, 'ACCOUNT_DELETE_AGGREGATE_SNAPSHOT');
+      await appendAuditOnce(operation, 'ACCOUNT_DELETE_AGGREGATE_SNAPSHOT');
       await lifecycleRepository.runDestructiveTransaction({
         operationId: operation.id,
         targetUserId: operation.targetUserId,
@@ -441,6 +441,11 @@ export function createAccountGameDataLifecycleWorker(
 
   async function release(operation: StoredDataLifecycleOperation, workKey: string) {
     await operationRepository.releaseClaim(operation.id, workKey);
+  }
+
+  async function appendAuditOnce(operation: StoredDataLifecycleOperation, eventType: string) {
+    if (await operationRepository.hasAuditEvent(operation.id, eventType)) return;
+    await appendAudit(operation, eventType);
   }
 
   async function appendAudit(operation: StoredDataLifecycleOperation, eventType: string) {
