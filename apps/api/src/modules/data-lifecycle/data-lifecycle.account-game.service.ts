@@ -11,6 +11,7 @@ import {
 } from '@chess-trainer/contracts/data-lifecycle';
 import {
   AccountGameDataLifecycleCoordinatorRepository,
+  createAccountGameDataLifecycleCoordinatorRepository,
   type AccountGameDataLifecycleAction,
   type AccountGameDataLifecycleScope,
   type AccountGameDataLifecycleCoordinatorRepository as CoordinatorRepositoryBoundary,
@@ -132,19 +133,22 @@ export function createAccountGameDataLifecycleService(
 
       let started: StoredDataLifecycleOperation;
       if (operation.status === 'PREVIEWED') {
-        const action = operation.action as AccountGameDataLifecycleAction;
-        const scope = accountGameScope(operation);
-        const currentCounts = await coordinatorRepository.countAffectedRows(action, scope);
-        const currentPreviewHash = hashPreview(action, scope, currentCounts);
-        if (currentPreviewHash !== operation.previewHash) {
-          throw new DataLifecyclePreviewInvalidError();
-        }
         started = await lifecycleRepository.startExecution({
           operationId,
           targetUserId: userId,
           previewTokenHash: hashOpaqueLifecycleToken(parsed.previewToken),
-          previewHash: currentPreviewHash,
+          previewHash: operation.previewHash,
           idempotencyKeyHash,
+          validateBeforeFence: async (transaction, lockedOperation) => {
+            const action = lockedOperation.action as AccountGameDataLifecycleAction;
+            const scope = accountGameScope(lockedOperation);
+            const lockedCoordinator = createAccountGameDataLifecycleCoordinatorRepository(transaction);
+            const currentCounts = await lockedCoordinator.countAffectedRows(action, scope);
+            const currentPreviewHash = hashPreview(action, scope, currentCounts);
+            if (currentPreviewHash !== lockedOperation.previewHash) {
+              throw new DataLifecyclePreviewInvalidError();
+            }
+          },
         });
         await appendAudit(lifecycleRepository, auditKeyring, started, 'EXECUTION_REQUESTED');
       } else if (operation.status === 'NEEDS_ATTENTION') {
