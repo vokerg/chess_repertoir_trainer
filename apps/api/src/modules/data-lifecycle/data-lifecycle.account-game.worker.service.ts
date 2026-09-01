@@ -176,12 +176,10 @@ export function createAccountGameDataLifecycleWorker(
 
   async function processClaim(operation: StoredDataLifecycleOperation, workKey: string): Promise<void> {
     switch (operation.status) {
-      case 'FENCING': {
-        const next = await lifecycleRepository.advanceClaimed(operation.id, workKey, 'CANCEL_REQUESTED');
-        await appendAudit(next, 'FENCE_INSTALLED');
-        await release(operation, workKey);
+      case 'FENCING':
+        await appendAuditOnce(operation, 'FENCE_INSTALLED');
+        await processCancellation(operation, workKey);
         return;
-      }
       case 'CANCEL_REQUESTED':
         await processCancellation(operation, workKey);
         return;
