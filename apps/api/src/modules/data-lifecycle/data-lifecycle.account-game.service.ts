@@ -13,11 +13,11 @@ import {
   AccountGameDataLifecycleCoordinatorRepository,
   type AccountGameDataLifecycleAction,
   type AccountGameDataLifecycleScope,
-  type AccountGameDataLifecycleCoordinatorRepository,
+  type AccountGameDataLifecycleCoordinatorRepository as CoordinatorRepositoryBoundary,
 } from './data-lifecycle.coordinator.repository.prisma';
 import {
   AccountGameDataLifecycleOperationRepository,
-  type AccountGameDataLifecycleOperationRepository,
+  type AccountGameDataLifecycleOperationRepository as OperationRepositoryBoundary,
 } from './data-lifecycle.account-game-operation.repository.prisma';
 import {
   DataLifecycleInvalidStateError,
@@ -66,8 +66,8 @@ export interface AccountGameDataLifecycleService {
 
 export interface CreateAccountGameDataLifecycleServiceInput {
   lifecycleRepository?: DataLifecycleRepositoryBoundary;
-  coordinatorRepository?: AccountGameDataLifecycleCoordinatorRepository;
-  operationRepository?: AccountGameDataLifecycleOperationRepository;
+  coordinatorRepository?: CoordinatorRepositoryBoundary;
+  operationRepository?: OperationRepositoryBoundary;
   auditKeyring?: LifecycleHmacKeyring;
   now?: () => Date;
   randomToken?: () => string;
