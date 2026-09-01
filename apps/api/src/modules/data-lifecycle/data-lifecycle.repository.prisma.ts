@@ -129,6 +129,10 @@ export interface StartDataLifecycleExecutionInput {
   idempotencyKeyHash: string;
   receiptTokenHash?: string | null;
   receiptExpiresAt?: Date | null;
+  validateBeforeFence?: (
+    transaction: Prisma.TransactionClient,
+    operation: StoredDataLifecycleOperation,
+  ) => Promise<void>;
 }
 
 export interface DataLifecycleDestructiveTransactionInput {
@@ -312,6 +316,9 @@ export function createDataLifecycleRepository(
         const scope = dataLifecycleScopeSchema.parse(operation.scopeJson);
         if (scope.userId !== input.targetUserId) throw new DataLifecyclePreviewInvalidError();
         await assertScopeStillOwned(transaction, scope);
+        if (input.validateBeforeFence) {
+          await input.validateBeforeFence(transaction, toStoredOperation(operation));
+        }
 
         const conflict = await transaction.dataLifecycleResourceFence.findFirst({
           where: {
@@ -919,6 +926,9 @@ function validateStartExecution(input: StartDataLifecycleExecutionInput): void {
   validateSha256(input.idempotencyKeyHash, 'idempotencyKeyHash');
   if (input.receiptTokenHash != null) validateSha256(input.receiptTokenHash, 'receiptTokenHash');
   if (input.receiptExpiresAt != null) validateDate(input.receiptExpiresAt, 'receiptExpiresAt');
+  if (input.validateBeforeFence != null && typeof input.validateBeforeFence !== 'function') {
+    throw new Error('Lifecycle validateBeforeFence callback must be a function.');
+  }
 }
 
 function validateAudit(input: AppendLifecycleAuditInput): void {
