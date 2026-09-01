@@ -17,13 +17,13 @@ Authenticated callers use durable preview, execute/resume, status, and stop rout
 
 Preview revalidates ownership and records bounded affected-row aggregates, an immutable scope/hash, a short-lived opaque preview token, warning codes, and the required typed confirmation phrase. Execute re-counts the live target while holding the same lifecycle user lock that immediately precedes fence insertion; a changed affected-row snapshot is rejected as `DATA_LIFECYCLE_PREVIEW_INVALID` before any fence is persisted. This closes the writer-between-recount-and-fence race rather than relying on an unlocked preflight check.
 
-The worker advances forward-only through fencing, cancellation request, drain, execution, and verification. It requests cancellation of target durable imports, preparation work, and only the affected imported-game `JobTask` rows. It does not call the public whole-`JobRun` cancel command, so unrelated games in a mixed run are not terminated.
+The worker advances forward-only through `FENCING`, `WAITING_FOR_DRAIN`, `EXECUTING`, and `VERIFYING`. While the operation remains in `FENCING`, it requests cancellation of target durable imports, preparation work, and only the affected imported-game `JobTask` rows; once cancellation targeting is exhausted it advances directly to `WAITING_FOR_DRAIN`. `CANCEL_REQUESTED` remains reserved for cancellation of the lifecycle operation itself. The worker does not call the public whole-`JobRun` cancel command, so unrelated games in a mixed run are not terminated.
 
 Drain requires target import activity/claims, preparation work, active target job tasks, and residual target `JobTask.workKey` leases to clear. Legacy synchronous import work is treated as an explicit blocker rather than silently racing destructive execution.
 
 Destructive batches are deterministic by imported-game id. The configurable worker batch size defaults to 25 and is hard-bounded to 100. Checkpoint updates and `firstDestructiveCommitAt` are persisted in the same `runDestructiveTransaction(...)` transaction as the destructive batch.
 
-Before the first destructive commit, cancellation/failure may settle terminally and releases the fence. After the first commit, stop/failure becomes `NEEDS_ATTENTION`, retains the fence/checkpoint, and can only resume with the original idempotency key. Verified completion is the only post-mutation path that releases the fence.
+Before each destructive batch, the worker rechecks the durable stop state while holding the lifecycle user advisory lock in the same database transaction that will perform the mutation. If a pre-mutation cancel request or post-mutation `STOP_AFTER_BATCH` request has won that lock boundary, the next destructive batch is not admitted. Before the first destructive commit, cancellation/failure may settle terminally and releases the fence. After the first commit, stop/failure becomes `NEEDS_ATTENTION`, retains the fence/checkpoint, and can only resume with the original idempotency key. Verified completion is the only post-mutation path that releases the fence.
 
 ## Per-action semantics
 
@@ -47,7 +47,9 @@ The `ExternalAccount` remains reusable. Terminal `ImportRun` history remains his
 
 Account deletion performs account purge first, then clears `AppUser.defaultProgressAccountId` if necessary and deletes the `ExternalAccount`. Account-owned `ImportRun` history cascades with the account. An independent `LichessConnection` is retained and its `externalAccountId` becomes null through the database relation.
 
-A bounded `ACCOUNT_DELETE_AGGREGATE_SNAPSHOT` audit event is persisted before final deletion. The worker now checks for that event before appending it, so a failure/crash after the audit write but before the delete transaction can resume without duplicating the snapshot.
+The ONB-019 bound-operation guard continues to require exact fence containment for normal writes. A narrow database authorization rule permits only the `defaultProgressAccountId -> null` pointer clear (plus `updatedAt`) when the transaction is bound to a `DELETE_EXTERNAL_ACCOUNT` operation whose active ACCOUNT fence exactly matches that pointer. It does not turn an ACCOUNT fence into general USER-scope authorization.
+
+A bounded `ACCOUNT_DELETE_AGGREGATE_SNAPSHOT` audit event is persisted before final deletion. The worker checks for that event before appending it, so a failure/crash after the audit write but before the delete transaction can resume without duplicating the snapshot in the sequential restart path.
 
 ## Compatibility cutover
 
@@ -82,11 +84,14 @@ The implementation was repeatedly reviewed adversarially while the PR was in dra
 9. a stale external-account contract test that still asserted the removed unsafe behavior;
 10. final account-delete audit snapshot duplication after a restart between audit and delete;
 11. missing deployment-template lifecycle HMAC configuration;
-12. an execute-time stale-preview race where a guarded writer could commit after an unlocked re-count but before fence creation. Execute-time affected-row validation now runs under the lifecycle user lock immediately before fence insertion, with a two-client regression proving the stale preview is rejected and no fence is created.
+12. an execute-time stale-preview race where a guarded writer could commit after an unlocked re-count but before fence creation. Execute-time affected-row validation now runs under the lifecycle user lock immediately before fence insertion, with a two-client regression proving the stale preview is rejected and no fence is created;
+13. normal dependency cancellation incorrectly attempted the lifecycle transition `FENCING -> CANCEL_REQUESTED -> WAITING_FOR_DRAIN`, violating the ONB-019 forward-state contract. Dependency cancellation now occurs while remaining `FENCING`, followed by the valid direct transition to `WAITING_FOR_DRAIN`;
+14. a stop-boundary race where a durable `STOP_AFTER_BATCH` request could win after an `EXECUTING` claim but before the worker opened its next destructive transaction. The worker now rechecks stop state under the lifecycle user lock in the same transaction as batch admission; a PostgreSQL race test proves the next game remains untouched and the operation settles fenced in `NEEDS_ATTENTION`;
+15. final account deletion attempted to clear `AppUser.defaultProgressAccountId` under an ACCOUNT fence and was correctly rejected by the ONB-019 scope guard. A narrow migration now authorizes only that exact pointer clear for the matching bound `DELETE_EXTERNAL_ACCOUNT` operation while preserving USER-scope rejection for unrelated AppUser writes.
 
-Focused PostgreSQL coverage exercises affected-row matrices, scoped job cancellation/drain including residual worker leases, un-analysis/un-index retention and opening provenance, stale previews including the writer-versus-fence race, a 101-game bounded purge, checkpointed restart/stop/resume, scenario delete-before-cascade ordering, terminal import-history retention/current-coverage separation, account deletion/default-reference/import cascade, independent OAuth retention, and audit-snapshot idempotency.
+Focused PostgreSQL coverage exercises affected-row matrices, scoped job cancellation/drain including residual worker leases, un-analysis/un-index retention and opening provenance, stale previews including the writer-versus-fence race, a 101-game bounded purge, checkpointed restart/stop/resume, a stop-request-versus-next-batch race, scenario delete-before-cascade ordering, terminal import-history retention/current-coverage separation, account deletion/default-reference/import cascade, independent OAuth retention, and audit-snapshot idempotency.
 
-Adjacent ONB-019 tests continue to provide the resource-fence concurrency matrix, guarded synchronous-writer races, stale-claim/fence recovery, and pre-/post-mutation failure semantics. Existing durable account-import worker tests prove cancellation is acknowledged only after provider execution has quiesced.
+Adjacent ONB-019 tests continue to provide the resource-fence concurrency matrix, guarded synchronous-writer races, stale-claim/fence recovery, exact bound-scope authorization, and pre-/post-mutation failure semantics. Existing durable account-import worker tests prove cancellation is acknowledged only after provider execution has quiesced.
 
 ## Residual ownership
 
