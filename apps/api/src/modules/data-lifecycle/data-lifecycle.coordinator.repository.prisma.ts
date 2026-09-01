@@ -53,7 +53,7 @@ export interface DataLifecycleDrainSnapshot {
 export interface DataLifecycleCancellationTargets {
   importRunIds: number[];
   preparationRunIds: number[];
-  jobRunIds: number[];
+  jobTaskIds: number[];
   hasMore: boolean;
 }
 
@@ -230,7 +230,7 @@ export function createAccountGameDataLifecycleCoordinatorRepository(
       await assertScopeOwned(database, normalizedScope);
       const take = boundedLimit + 1;
 
-      const [importRuns, preparationRuns, jobRuns] = await Promise.all([
+      const [importRuns, preparationRuns, jobTasks] = await Promise.all([
         database.importRun.findMany({
           where: {
             ...targetImportWhere(normalizedScope),
@@ -246,8 +246,15 @@ export function createAccountGameDataLifecycleCoordinatorRepository(
           orderBy: { id: 'asc' },
           take,
         }),
-        database.jobRun.findMany({
-          where: targetActiveJobWhere(normalizedScope),
+        database.jobTask.findMany({
+          where: {
+            status: { in: [...ACTIVE_JOB_TASK_STATUSES] },
+            importedGame: targetGameWhere(normalizedScope),
+            jobRun: {
+              userId: normalizedScope.userId,
+              status: { in: [...ACTIVE_JOB_STATUSES] },
+            },
+          },
           select: { id: true },
           orderBy: { id: 'asc' },
           take,
@@ -257,10 +264,10 @@ export function createAccountGameDataLifecycleCoordinatorRepository(
       return {
         importRunIds: importRuns.slice(0, boundedLimit).map(({ id }) => id),
         preparationRunIds: preparationRuns.slice(0, boundedLimit).map(({ id }) => id),
-        jobRunIds: jobRuns.slice(0, boundedLimit).map(({ id }) => id),
+        jobTaskIds: jobTasks.slice(0, boundedLimit).map(({ id }) => id),
         hasMore: importRuns.length > boundedLimit
           || preparationRuns.length > boundedLimit
-          || jobRuns.length > boundedLimit,
+          || jobTasks.length > boundedLimit,
       };
     },
 
