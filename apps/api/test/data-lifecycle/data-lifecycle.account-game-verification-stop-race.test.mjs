@@ -12,6 +12,7 @@ const auditKeyring = new LifecycleHmacKeyring([{ version: 1, secret: `verificati
 const service = createAccountGameDataLifecycleService({ auditKeyring });
 const operationIds = [];
 let userId;
+let positionId;
 
 let verificationReachedResolve;
 const verificationReached = new Promise((resolve) => { verificationReachedResolve = resolve; });
@@ -73,10 +74,11 @@ try {
       normalizedFen: '8/8/8/8/8/8/8/K6k w - - 0 1',
     },
   });
+  positionId = position.id;
   await prisma.importedGamePly.create({
     data: {
       importedGameId: game.id,
-      positionId: position.id,
+      positionId,
       plyNumber: 1,
       moveUci: 'e2e4',
       scoreLossCp: 50,
@@ -150,6 +152,6 @@ try {
     await prisma.dataLifecycleOperation.deleteMany({ where: { id: { in: operationIds } } });
   }
   if (userId !== undefined) await prisma.appUser.deleteMany({ where: { id: userId } });
-  await prisma.position.deleteMany({ where: { id: position.id } }).catch(() => {});
+  if (positionId !== undefined) await prisma.position.deleteMany({ where: { id: positionId } });
   await prisma.$disconnect();
 }
