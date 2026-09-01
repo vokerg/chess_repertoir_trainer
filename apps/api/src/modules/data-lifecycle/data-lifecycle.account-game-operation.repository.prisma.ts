@@ -30,6 +30,7 @@ interface ClaimedOperationRow {
 export interface AccountGameDataLifecycleOperationRepository {
   claimNext(workKey: string): Promise<StoredDataLifecycleOperation | null>;
   releaseClaim(operationId: number, workKey: string): Promise<boolean>;
+  recoverStaleClaims(staleBefore: Date): Promise<number>;
   resumeNeedsAttention(targetUserId: number, operationId: number): Promise<StoredDataLifecycleOperation>;
 }
 
@@ -81,6 +82,23 @@ export function createAccountGameDataLifecycleOperationRepository(
           AND "status" IN (${Prisma.join(CLAIMABLE_STATUSES.map((status) => Prisma.sql`${status}`))})
       `);
       return updated === 1;
+    },
+
+    async recoverStaleClaims(staleBefore) {
+      if (!(staleBefore instanceof Date) || Number.isNaN(staleBefore.getTime())) {
+        throw new Error('Lifecycle staleBefore must be a valid Date.');
+      }
+      return database.$executeRaw(Prisma.sql`
+        UPDATE "DataLifecycleOperation"
+        SET "workKey" = NULL,
+            "claimedAt" = NULL,
+            "heartbeatAt" = NULL,
+            "updatedAt" = NOW()
+        WHERE "action" IN (${Prisma.join(ACCOUNT_GAME_ACTIONS.map((action) => Prisma.sql`${action}`))})
+          AND "status" IN (${Prisma.join(CLAIMABLE_STATUSES.map((status) => Prisma.sql`${status}`))})
+          AND "workKey" IS NOT NULL
+          AND COALESCE("heartbeatAt", "claimedAt") < ${staleBefore}
+      `);
     },
 
     async resumeNeedsAttention(targetUserId, operationId) {
