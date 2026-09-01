@@ -112,20 +112,20 @@ export const accountGameDataLifecyclePreviewRequestSchema = z.discriminatedUnion
     action: z.literal('UNANALYSE_GAMES'),
     accountId: z.number().int().positive(),
     gameIds: z.array(z.number().int().positive()).min(1).max(100),
-  }),
+  }).strict(),
   z.object({
     action: z.literal('UNINDEX_GAMES'),
     accountId: z.number().int().positive(),
     gameIds: z.array(z.number().int().positive()).min(1).max(100),
-  }),
+  }).strict(),
   z.object({
     action: z.literal('PURGE_ACCOUNT_DATA'),
     accountId: z.number().int().positive(),
-  }),
+  }).strict(),
   z.object({
     action: z.literal('DELETE_EXTERNAL_ACCOUNT'),
     accountId: z.number().int().positive(),
-  }),
+  }).strict(),
 ]);
 export type AccountGameDataLifecyclePreviewRequest = z.infer<
   typeof accountGameDataLifecyclePreviewRequestSchema
@@ -135,7 +135,7 @@ export const dataLifecycleExecuteRequestSchema = z.object({
   previewToken: z.string().min(16).max(512),
   confirmationPhrase: z.string().min(1).max(120),
   idempotencyKey: z.string().min(8).max(200),
-});
+}).strict();
 export type DataLifecycleExecuteRequest = z.infer<typeof dataLifecycleExecuteRequestSchema>;
 
 export const dataLifecycleOperationResponseSchema = z.object({
