@@ -12,6 +12,7 @@ import openingStrugglesModule from '../modules/opening-struggles/opening-struggl
 import labModule from '../modules/lab/lab.routes';
 import jobsModule from '../modules/jobs/job-run.routes';
 import accountImportModule from '../modules/account-imports/account-import.routes';
+import dataLifecycleModule from '../modules/data-lifecycle/data-lifecycle.account-game.routes';
 import adminModule, { type AdminModuleOptions } from '../modules/admin/admin.routes';
 import externalAccountsRoutes from './externalAccounts';
 import lichessAuthRoutes from './lichessAuth';
@@ -47,6 +48,7 @@ export default function registerRoutes(app: FastifyInstance, options: RegisterRo
   app.register(labModule);
   app.register(jobsModule);
   app.register(accountImportModule);
+  app.register(dataLifecycleModule);
   app.register(adminModule, options.admin);
   app.register(repertoireCoverageModule);
   app.register(mcpModule);
