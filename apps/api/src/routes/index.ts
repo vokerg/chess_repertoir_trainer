@@ -15,7 +15,10 @@ import accountImportModule from '../modules/account-imports/account-import.route
 import dataLifecycleModule from '../modules/data-lifecycle/data-lifecycle.account-game.routes';
 import adminModule, { type AdminModuleOptions } from '../modules/admin/admin.routes';
 import externalAccountsRoutes from './externalAccounts';
-import { enforceExternalAccountLifecycleCompatibility } from './external-account-lifecycle-compatibility';
+import {
+  describeExternalAccountLifecycleCompatibility,
+  enforceExternalAccountLifecycleCompatibility,
+} from './external-account-lifecycle-compatibility';
 import lichessAuthRoutes from './lichessAuth';
 import repertoireCoverageModule from '../modules/repertoire-coverage/repertoire-coverage.routes';
 import mcpModule from '../modules/mcp/mcp.routes';
@@ -36,6 +39,7 @@ export interface RegisterRoutesOptions {
 }
 
 export default function registerRoutes(app: FastifyInstance, options: RegisterRoutesOptions): void {
+  app.addHook('onRoute', describeExternalAccountLifecycleCompatibility);
   app.addHook('preHandler', enforceExternalAccountLifecycleCompatibility);
   app.register(coursesModule);
   app.register(builderCourseReintegrationModule);
