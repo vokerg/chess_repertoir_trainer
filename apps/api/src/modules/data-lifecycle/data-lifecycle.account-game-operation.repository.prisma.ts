@@ -3,7 +3,7 @@ import prisma from '../../prisma';
 import { lockDataLifecycleUserScope } from './data-lifecycle.guard';
 import {
   DataLifecycleInvalidStateError,
-  DataLifecycleRepository,
+  createDataLifecycleRepository,
   type StoredDataLifecycleOperation,
 } from './data-lifecycle.repository.prisma';
 
@@ -36,6 +36,8 @@ export interface AccountGameDataLifecycleOperationRepository {
 export function createAccountGameDataLifecycleOperationRepository(
   database: PrismaClient = prisma,
 ): AccountGameDataLifecycleOperationRepository {
+  const lifecycleRepository = createDataLifecycleRepository(database);
+
   return {
     async claimNext(workKey) {
       validateWorkKey(workKey);
@@ -62,7 +64,7 @@ export function createAccountGameDataLifecycleOperationRepository(
       `);
       const claimed = rows[0];
       if (!claimed) return null;
-      return DataLifecycleRepository.getForTargetUser(claimed.targetUserId, claimed.id);
+      return lifecycleRepository.getForTargetUser(claimed.targetUserId, claimed.id);
     },
 
     async releaseClaim(operationId, workKey) {
@@ -120,7 +122,7 @@ export function createAccountGameDataLifecycleOperationRepository(
         }
       });
 
-      const operation = await DataLifecycleRepository.getForTargetUser(targetUserId, operationId);
+      const operation = await lifecycleRepository.getForTargetUser(targetUserId, operationId);
       if (!operation) throw new DataLifecycleInvalidStateError('Lifecycle operation disappeared after resume.');
       return operation;
     },
