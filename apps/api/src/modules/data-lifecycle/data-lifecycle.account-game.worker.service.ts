@@ -1,16 +1,15 @@
 import { randomUUID } from 'node:crypto';
-import type { DataLifecycleAction } from '@chess-trainer/contracts/data-lifecycle';
 import {
   AccountImportLifecycleRepository,
-  type AccountImportLifecycleRepository as AccountImportLifecycleRepositoryBoundary,
+  type AccountImportLifecycleRepository as ImportRepositoryBoundary,
 } from '../account-imports/account-import.lifecycle.repository.prisma';
 import {
   PreparationReconcilerRepository,
-  type PreparationReconcilerRepository as PreparationReconcilerRepositoryBoundary,
+  type PreparationReconcilerRepository as PreparationRepositoryBoundary,
 } from '../preparation/preparation-reconciler.repository.prisma';
 import {
   AccountGameDataLifecycleCoordinatorRepository,
-  type AccountGameDataLifecycleCoordinatorRepository,
+  type AccountGameDataLifecycleCoordinatorRepository as CoordinatorRepositoryBoundary,
   type AccountGameDataLifecycleScope,
 } from './data-lifecycle.coordinator.repository.prisma';
 import {
@@ -24,7 +23,7 @@ import {
 } from './data-lifecycle.account-game-operation.repository.prisma';
 import {
   DataLifecycleRepository,
-  type DataLifecycleRepository as DataLifecycleRepositoryBoundary,
+  type DataLifecycleRepository as LifecycleRepositoryBoundary,
   type StoredDataLifecycleOperation,
 } from './data-lifecycle.repository.prisma';
 import {
@@ -40,12 +39,12 @@ export interface AccountGameDataLifecycleWorkerLogger {
 }
 
 export interface CreateAccountGameDataLifecycleWorkerInput {
-  lifecycleRepository?: DataLifecycleRepositoryBoundary;
-  coordinatorRepository?: AccountGameDataLifecycleCoordinatorRepository;
+  lifecycleRepository?: LifecycleRepositoryBoundary;
+  coordinatorRepository?: CoordinatorRepositoryBoundary;
   executionRepository?: ExecutionRepositoryBoundary;
   operationRepository?: OperationRepositoryBoundary;
-  importRepository?: AccountImportLifecycleRepositoryBoundary;
-  preparationRepository?: PreparationReconcilerRepositoryBoundary;
+  importRepository?: ImportRepositoryBoundary;
+  preparationRepository?: PreparationRepositoryBoundary;
   auditKeyring?: LifecycleHmacKeyring;
   config: AccountGameDataLifecycleWorkerConfig;
   logger?: AccountGameDataLifecycleWorkerLogger;
@@ -117,33 +116,25 @@ export function createAccountGameDataLifecycleWorker(
       return false;
     }
 
-    let claimLost = false;
     let heartbeatChain = Promise.resolve();
     const heartbeat = setInterval(() => {
       heartbeatChain = heartbeatChain
         .then(async () => {
           const retained = await lifecycleRepository.heartbeat(operation.id, workKey);
-          if (!retained) claimLost = true;
+          if (!retained) {
+            logger.warn({ operationId: operation.id }, 'Data lifecycle claim heartbeat was rejected');
+          }
         })
-        .catch((error) => {
-          logger.warn(safeErrorContext(error, operation), 'Data lifecycle heartbeat failed');
-        });
+        .catch((error) => logger.warn(safeErrorContext(error, operation), 'Data lifecycle heartbeat failed'));
     }, input.config.heartbeatIntervalMs);
     heartbeat.unref();
 
     try {
       await processClaim(operation, workKey);
-      if (claimLost) {
-        logger.warn({ operationId: operation.id }, 'Data lifecycle claim was lost while processing');
-      }
     } catch (error) {
       logger.error(safeErrorContext(error, operation), 'Data lifecycle operation step failed');
       try {
-        await lifecycleRepository.failClaimed(
-          operation.id,
-          workKey,
-          errorCode(error),
-        );
+        await lifecycleRepository.failClaimed(operation.id, workKey, errorCode(error));
       } catch (settleError) {
         logger.warn(
           safeErrorContext(settleError, operation),
@@ -157,7 +148,7 @@ export function createAccountGameDataLifecycleWorker(
     return true;
   };
 
-  return {
+  const worker: AccountGameDataLifecycleWorker = {
     requestStop,
     runOnce,
     async run() {
@@ -181,13 +172,14 @@ export function createAccountGameDataLifecycleWorker(
       }
     },
   };
+  return worker;
 
   async function processClaim(operation: StoredDataLifecycleOperation, workKey: string): Promise<void> {
     switch (operation.status) {
       case 'FENCING': {
         const next = await lifecycleRepository.advanceClaimed(operation.id, workKey, 'CANCEL_REQUESTED');
         await appendAudit(next, 'FENCE_INSTALLED');
-        await operationRepository.releaseClaim(operation.id, workKey);
+        await release(operation, workKey);
         return;
       }
       case 'CANCEL_REQUESTED':
@@ -203,21 +195,16 @@ export function createAccountGameDataLifecycleWorker(
         await processVerification(operation, workKey);
         return;
       default:
-        await operationRepository.releaseClaim(operation.id, workKey);
+        await release(operation, workKey);
     }
   }
 
-  async function processCancellation(
-    operation: StoredDataLifecycleOperation,
-    workKey: string,
-  ): Promise<void> {
-    if (operation.stopRequest === 'CANCEL' && operation.firstDestructiveCommitAt === null) {
+  async function processCancellation(operation: StoredDataLifecycleOperation, workKey: string) {
+    if (canCancelBeforeMutation(operation)) {
       await lifecycleRepository.completeCancellationBeforeMutation(operation.id, workKey);
       return;
     }
-    const scope = accountGameScope(operation);
-    const targets = await coordinatorRepository.listCancellationTargets(scope);
-
+    const targets = await coordinatorRepository.listCancellationTargets(accountGameScope(operation));
     for (const importRunId of targets.importRunIds) {
       await importRepository.requestCancel(operation.targetUserId, importRunId);
     }
@@ -227,50 +214,36 @@ export function createAccountGameDataLifecycleWorker(
     await executionRepository.cancelScopedJobTasks(operation.targetUserId, targets.jobTaskIds);
 
     if (targets.jobTaskIds.length > 0) {
-      await operationRepository.releaseClaim(operation.id, workKey);
+      await release(operation, workKey);
       return;
     }
-
     const next = await lifecycleRepository.advanceClaimed(operation.id, workKey, 'WAITING_FOR_DRAIN');
     await appendAudit(next, 'CANCELLATION_REQUESTED');
-    await operationRepository.releaseClaim(operation.id, workKey);
+    await release(operation, workKey);
   }
 
-  async function processDrain(
-    operation: StoredDataLifecycleOperation,
-    workKey: string,
-  ): Promise<void> {
-    if (operation.stopRequest === 'CANCEL' && operation.firstDestructiveCommitAt === null) {
+  async function processDrain(operation: StoredDataLifecycleOperation, workKey: string) {
+    if (canCancelBeforeMutation(operation)) {
       await lifecycleRepository.completeCancellationBeforeMutation(operation.id, workKey);
       return;
     }
     const snapshot = await coordinatorRepository.loadDrainSnapshot(accountGameScope(operation));
-    if (snapshot.legacyImportBlockers > 0) {
-      throw new Error('DATA_LIFECYCLE_LEGACY_IMPORT_BLOCKED');
-    }
+    if (snapshot.legacyImportBlockers > 0) throw new Error('DATA_LIFECYCLE_LEGACY_IMPORT_BLOCKED');
     if (!snapshot.drained) {
-      await operationRepository.releaseClaim(operation.id, workKey);
+      await release(operation, workKey);
       return;
     }
-
     const next = await lifecycleRepository.advanceClaimed(operation.id, workKey, 'EXECUTING');
     await appendAudit(next, 'DRAIN_CONFIRMED');
-    await operationRepository.releaseClaim(operation.id, workKey);
+    await release(operation, workKey);
   }
 
-  async function processExecution(
-    operation: StoredDataLifecycleOperation,
-    workKey: string,
-  ): Promise<void> {
+  async function processExecution(operation: StoredDataLifecycleOperation, workKey: string) {
     if (operation.firstDestructiveCommitAt !== null && operation.stopRequest === 'STOP_AFTER_BATCH') {
-      await lifecycleRepository.failClaimed(
-        operation.id,
-        workKey,
-        'DATA_LIFECYCLE_STOPPED_AFTER_BATCH',
-      );
+      await lifecycleRepository.failClaimed(operation.id, workKey, 'DATA_LIFECYCLE_STOPPED_AFTER_BATCH');
       return;
     }
-    if (operation.firstDestructiveCommitAt === null && operation.stopRequest === 'CANCEL') {
+    if (canCancelBeforeMutation(operation)) {
       await lifecycleRepository.completeCancellationBeforeMutation(operation.id, workKey);
       return;
     }
@@ -298,32 +271,29 @@ export function createAccountGameDataLifecycleWorker(
     operation: StoredDataLifecycleOperation,
     workKey: string,
     checkpoint: LifecycleCheckpoint,
-  ): Promise<void> {
+  ) {
     const scope = gameScope(operation);
     if (checkpoint.phase !== 'UNANALYSE') throw new Error('Invalid un-analysis lifecycle checkpoint.');
     const gameIds = await coordinatorRepository.nextGameBatch(scope, checkpoint.afterGameId);
     if (gameIds.length === 0) {
       await lifecycleRepository.updateCheckpoint(operation.id, workKey, doneCheckpoint());
-      const next = await lifecycleRepository.advanceClaimed(operation.id, workKey, 'VERIFYING');
-      await appendAudit(next, 'DESTRUCTIVE_PHASES_COMPLETED');
-      await operationRepository.releaseClaim(operation.id, workKey);
+      await moveToVerify(operation, workKey);
       return;
     }
-
     await lifecycleRepository.runDestructiveTransaction({
       operationId: operation.id,
       targetUserId: operation.targetUserId,
       workKey,
-      checkpoint: { version: 1, phase: 'UNANALYSE', afterGameId: gameIds.at(-1) ?? null },
+      checkpoint: { version: 1, phase: 'UNANALYSE', afterGameId: lastId(gameIds) },
     }, (transaction) => executionRepository.unanalyseGameBatch(transaction, scope, gameIds));
-    await operationRepository.releaseClaim(operation.id, workKey);
+    await release(operation, workKey);
   }
 
   async function executeUnindexStep(
     operation: StoredDataLifecycleOperation,
     workKey: string,
     checkpoint: LifecycleCheckpoint,
-  ): Promise<void> {
+  ) {
     const scope = gameScope(operation);
     if (checkpoint.phase === 'UNANALYSE') {
       const gameIds = await coordinatorRepository.nextGameBatch(scope, checkpoint.afterGameId);
@@ -333,35 +303,32 @@ export function createAccountGameDataLifecycleWorker(
           phase: 'UNINDEX',
           afterGameId: null,
         });
-        await operationRepository.releaseClaim(operation.id, workKey);
+        await release(operation, workKey);
         return;
       }
       await lifecycleRepository.runDestructiveTransaction({
         operationId: operation.id,
         targetUserId: operation.targetUserId,
         workKey,
-        checkpoint: { version: 1, phase: 'UNANALYSE', afterGameId: gameIds.at(-1) ?? null },
+        checkpoint: { version: 1, phase: 'UNANALYSE', afterGameId: lastId(gameIds) },
       }, (transaction) => executionRepository.unanalyseGameBatch(transaction, scope, gameIds));
-      await operationRepository.releaseClaim(operation.id, workKey);
+      await release(operation, workKey);
       return;
     }
-
     if (checkpoint.phase !== 'UNINDEX') throw new Error('Invalid un-index lifecycle checkpoint.');
     const gameIds = await coordinatorRepository.nextGameBatch(scope, checkpoint.afterGameId);
     if (gameIds.length === 0) {
       await lifecycleRepository.updateCheckpoint(operation.id, workKey, doneCheckpoint());
-      const next = await lifecycleRepository.advanceClaimed(operation.id, workKey, 'VERIFYING');
-      await appendAudit(next, 'DESTRUCTIVE_PHASES_COMPLETED');
-      await operationRepository.releaseClaim(operation.id, workKey);
+      await moveToVerify(operation, workKey);
       return;
     }
     await lifecycleRepository.runDestructiveTransaction({
       operationId: operation.id,
       targetUserId: operation.targetUserId,
       workKey,
-      checkpoint: { version: 1, phase: 'UNINDEX', afterGameId: gameIds.at(-1) ?? null },
+      checkpoint: { version: 1, phase: 'UNINDEX', afterGameId: lastId(gameIds) },
     }, (transaction) => executionRepository.unindexGameBatch(transaction, scope, gameIds));
-    await operationRepository.releaseClaim(operation.id, workKey);
+    await release(operation, workKey);
   }
 
   async function executePurgeStep(
@@ -369,7 +336,7 @@ export function createAccountGameDataLifecycleWorker(
     workKey: string,
     checkpoint: LifecycleCheckpoint,
     deleteAccount: boolean,
-  ): Promise<void> {
+  ) {
     const scope = accountScope(operation);
     if (checkpoint.phase === 'PURGE_GAMES') {
       const gameIds = await coordinatorRepository.nextGameBatch(scope, checkpoint.afterGameId);
@@ -379,16 +346,16 @@ export function createAccountGameDataLifecycleWorker(
           phase: 'PURGE_FINALIZE',
           afterGameId: null,
         });
-        await operationRepository.releaseClaim(operation.id, workKey);
+        await release(operation, workKey);
         return;
       }
       await lifecycleRepository.runDestructiveTransaction({
         operationId: operation.id,
         targetUserId: operation.targetUserId,
         workKey,
-        checkpoint: { version: 1, phase: 'PURGE_GAMES', afterGameId: gameIds.at(-1) ?? null },
+        checkpoint: { version: 1, phase: 'PURGE_GAMES', afterGameId: lastId(gameIds) },
       }, (transaction) => executionRepository.purgeAccountGameBatch(transaction, scope, gameIds));
-      await operationRepository.releaseClaim(operation.id, workKey);
+      await release(operation, workKey);
       return;
     }
 
@@ -402,7 +369,7 @@ export function createAccountGameDataLifecycleWorker(
         workKey,
         checkpoint: nextCheckpoint,
       }, (transaction) => executionRepository.finalizeAccountPurge(transaction, scope));
-      await operationRepository.releaseClaim(operation.id, workKey);
+      await release(operation, workKey);
       return;
     }
 
@@ -414,24 +381,18 @@ export function createAccountGameDataLifecycleWorker(
         workKey,
         checkpoint: doneCheckpoint(),
       }, (transaction) => executionRepository.deleteExternalAccount(transaction, scope));
-      await operationRepository.releaseClaim(operation.id, workKey);
+      await release(operation, workKey);
       return;
     }
 
     if (checkpoint.phase === 'DONE') {
-      const next = await lifecycleRepository.advanceClaimed(operation.id, workKey, 'VERIFYING');
-      await appendAudit(next, 'DESTRUCTIVE_PHASES_COMPLETED');
-      await operationRepository.releaseClaim(operation.id, workKey);
+      await moveToVerify(operation, workKey);
       return;
     }
-
     throw new Error('Invalid account lifecycle checkpoint.');
   }
 
-  async function processVerification(
-    operation: StoredDataLifecycleOperation,
-    workKey: string,
-  ): Promise<void> {
+  async function processVerification(operation: StoredDataLifecycleOperation, workKey: string) {
     let verification: DataLifecycleVerification;
     switch (operation.action) {
       case 'UNANALYSE_GAMES':
@@ -449,19 +410,24 @@ export function createAccountGameDataLifecycleWorker(
       default:
         throw new Error(`Unsupported account/game lifecycle action: ${operation.action}`);
     }
-
     if (!verification.ok) {
-      await lifecycleRepository.failClaimed(
-        operation.id,
-        workKey,
-        'DATA_LIFECYCLE_VERIFICATION_FAILED',
-      );
+      await lifecycleRepository.failClaimed(operation.id, workKey, 'DATA_LIFECYCLE_VERIFICATION_FAILED');
       return;
     }
     await lifecycleRepository.completeVerified(operation.id, workKey, verification);
   }
 
-  async function appendAudit(operation: StoredDataLifecycleOperation, eventType: string): Promise<void> {
+  async function moveToVerify(operation: StoredDataLifecycleOperation, workKey: string) {
+    const next = await lifecycleRepository.advanceClaimed(operation.id, workKey, 'VERIFYING');
+    await appendAudit(next, 'DESTRUCTIVE_PHASES_COMPLETED');
+    await release(operation, workKey);
+  }
+
+  async function release(operation: StoredDataLifecycleOperation, workKey: string) {
+    await operationRepository.releaseClaim(operation.id, workKey);
+  }
+
+  async function appendAudit(operation: StoredDataLifecycleOperation, eventType: string) {
     const principal = auditKeyring.current(`APP_USER:${operation.targetUserId}`, 'audit-principal');
     await lifecycleRepository.appendAudit({
       operationId: operation.id,
@@ -480,18 +446,19 @@ export function createAccountGameDataLifecycleWorker(
 
   function waitForPoll(delayMs: number): Promise<void> {
     return new Promise((resolve) => {
-      const timer = setTimeout(() => {
-        if (wakePoll === wake) wakePoll = null;
-        resolve();
-      }, delayMs);
       const wake = () => {
         clearTimeout(timer);
         if (wakePoll === wake) wakePoll = null;
         resolve();
       };
+      const timer = setTimeout(wake, delayMs);
       wakePoll = wake;
     });
   }
+}
+
+function canCancelBeforeMutation(operation: StoredDataLifecycleOperation): boolean {
+  return operation.stopRequest === 'CANCEL' && operation.firstDestructiveCommitAt === null;
 }
 
 function parseCheckpoint(operation: StoredDataLifecycleOperation): LifecycleCheckpoint {
@@ -516,9 +483,9 @@ function parseCheckpoint(operation: StoredDataLifecycleOperation): LifecycleChec
     'ACCOUNT_DELETE',
     'DONE',
   ].includes(checkpoint.phase ?? '');
-  const validAfter = checkpoint.afterGameId === null
+  const validAfterGameId = checkpoint.afterGameId === null
     || (Number.isSafeInteger(checkpoint.afterGameId) && Number(checkpoint.afterGameId) > 0);
-  if (checkpoint.version !== 1 || !validPhase || !validAfter) {
+  if (checkpoint.version !== 1 || !validPhase || !validAfterGameId) {
     throw new Error('Invalid data lifecycle checkpoint.');
   }
   return checkpoint as LifecycleCheckpoint;
@@ -526,6 +493,12 @@ function parseCheckpoint(operation: StoredDataLifecycleOperation): LifecycleChec
 
 function doneCheckpoint(): LifecycleCheckpoint {
   return { version: 1, phase: 'DONE', afterGameId: null };
+}
+
+function lastId(gameIds: number[]): number {
+  const value = gameIds.at(-1);
+  if (!value) throw new Error('Lifecycle game batch unexpectedly had no final id.');
+  return value;
 }
 
 function accountGameScope(operation: StoredDataLifecycleOperation): AccountGameDataLifecycleScope {
@@ -566,11 +539,4 @@ function safeErrorContext(
     errorName: error instanceof Error ? error.name : 'UnknownError',
     errorMessage: error instanceof Error ? error.message : String(error),
   };
-}
-
-export function isAccountGameLifecycleAction(action: DataLifecycleAction): boolean {
-  return action === 'UNANALYSE_GAMES'
-    || action === 'UNINDEX_GAMES'
-    || action === 'PURGE_ACCOUNT_DATA'
-    || action === 'DELETE_EXTERNAL_ACCOUNT';
 }
