@@ -25,6 +25,27 @@ function hash(value) {
   return createHash('sha256').update(value).digest('hex');
 }
 
+function canonicalImportData(accountId, provider, label) {
+  return {
+    userId,
+    accountId,
+    provider,
+    mode: 'HISTORICAL_BACKFILL',
+    source: 'ACCOUNT_REFRESH',
+    status: 'COMPLETED',
+    scopeVersion: 1,
+    scopeHash: hash(`scope:${label}:${suffix}`),
+    scopeJson: {
+      variant: 'STANDARD',
+      speeds: ['BULLET', 'BLITZ', 'RAPID'],
+      rated: 'BOTH',
+    },
+    requestedFrom: new Date('2026-01-01T00:00:00.000Z'),
+    requestedTo: new Date('2026-08-01T00:00:00.000Z'),
+    completedAt: new Date(),
+  };
+}
+
 function newWorker() {
   return createAccountGameDataLifecycleWorker({
     config: workerConfig,
@@ -33,44 +54,43 @@ function newWorker() {
   });
 }
 
-async function previewAndExecute(userIdValue, request, keySuffix) {
-  const preview = await service.preview(userIdValue, request);
+async function previewAndExecute(request, label) {
+  const preview = await service.preview(userId, request);
   operationIds.push(preview.operationId);
   const credentials = {
     previewToken: preview.previewToken,
     confirmationPhrase: preview.confirmationPhrase,
-    idempotencyKey: `onb-020-${keySuffix}-${suffix}`,
+    idempotencyKey: `onb-020-${label}-${suffix}`,
   };
-  const execution = await service.execute(userIdValue, preview.operationId, credentials);
+  const execution = await service.execute(userId, preview.operationId, credentials);
   assert.equal(execution.status, 'FENCING');
   return { preview, credentials };
 }
 
-async function settleCompleted(userIdValue, operationId, worker = newWorker(), maxSteps = 80) {
+async function settleCompleted(operationId, worker = newWorker(), maxSteps = 80) {
   for (let step = 0; step < maxSteps; step += 1) {
-    const operation = await service.get(userIdValue, operationId);
+    const operation = await service.get(userId, operationId);
     if (operation.status === 'COMPLETED') return operation;
     if (['NEEDS_ATTENTION', 'FAILED', 'CANCELLED', 'EXPIRED'].includes(operation.status)) {
-      assert.fail(`Lifecycle operation ${operationId} settled unexpectedly as ${operation.status}: ${operation.errorCode}`);
+      assert.fail(`Operation ${operationId} settled as ${operation.status}: ${operation.errorCode}`);
     }
-    const didWork = await worker.runOnce();
-    assert.equal(didWork, true, `expected lifecycle work while ${operation.status}`);
+    assert.equal(await worker.runOnce(), true, `expected work while ${operation.status}`);
   }
-  assert.fail(`Lifecycle operation ${operationId} did not complete within ${maxSteps} steps`);
+  assert.fail(`Operation ${operationId} did not complete within ${maxSteps} steps`);
 }
 
-async function driveToStatus(userIdValue, operationId, expectedStatus, worker = newWorker(), maxSteps = 20) {
+async function driveToStatus(operationId, expectedStatus, worker, maxSteps = 20) {
   for (let step = 0; step < maxSteps; step += 1) {
-    const operation = await service.get(userIdValue, operationId);
+    const operation = await service.get(userId, operationId);
     if (operation.status === expectedStatus) return operation;
     await worker.runOnce();
   }
-  const operation = await service.get(userIdValue, operationId);
+  const operation = await service.get(userId, operationId);
   assert.equal(operation.status, expectedStatus);
   return operation;
 }
 
-async function createIndexedGame({ accountId, providerGameId, openingProvenance, openingName, openingEco }) {
+async function createIndexedGame(accountId, providerGameId, openingProvenance, openingName, openingEco) {
   const position = await prisma.position.create({
     data: {
       positionKey: Buffer.from(hash(`position:${providerGameId}`).slice(0, 32), 'hex'),
@@ -118,10 +138,10 @@ async function createIndexedGame({ accountId, providerGameId, openingProvenance,
   return { game, position };
 }
 
-async function addAnalysisEvidence(game) {
+async function addAnalysisEvidence(gameId) {
   const run = await prisma.gameAnalysisRun.create({
     data: {
-      importedGameId: game.id,
+      importedGameId: gameId,
       status: 'COMPLETED',
       positionsTotal: 1,
       positionsDone: 1,
@@ -132,7 +152,7 @@ async function addAnalysisEvidence(game) {
     },
   });
   await prisma.importedGame.update({
-    where: { id: game.id },
+    where: { id: gameId },
     data: {
       latestAnalysisRunId: run.id,
       latestAnalysisStatus: 'COMPLETED',
@@ -145,16 +165,16 @@ async function addAnalysisEvidence(game) {
   await prisma.importedGameAiReview.create({
     data: {
       userId,
-      importedGameId: game.id,
+      importedGameId: gameId,
       analysisRunId: run.id,
-      inputHash: hash(`review:${game.id}`),
+      inputHash: hash(`review:${gameId}`),
       provider: 'TEST',
       model: 'test-model',
       content: { summary: 'test review' },
       generatedAt: new Date(),
     },
   });
-  const thresholdsHash = hash(`thresholds:${game.id}`);
+  const thresholdsHash = hash(`thresholds:${gameId}`);
   const detectionRun = await prisma.tacticalDetectionRun.create({
     data: {
       userId,
@@ -168,7 +188,7 @@ async function addAnalysisEvidence(game) {
     data: {
       runId: detectionRun.id,
       userId,
-      importedGameId: game.id,
+      importedGameId: gameId,
       kind: 'MISSED_SHOT',
       thresholdsHash,
       triggerPlyNumber: 1,
@@ -176,17 +196,12 @@ async function addAnalysisEvidence(game) {
     },
   });
   await prisma.tacticalDetectionProcessedGame.create({
-    data: {
-      userId,
-      importedGameId: game.id,
-      thresholdsHash,
-      runId: detectionRun.id,
-    },
+    data: { userId, importedGameId: gameId, thresholdsHash, runId: detectionRun.id },
   });
   const feedback = await prisma.tacticalDetectionFeedback.create({
     data: {
       userId,
-      importedGameId: game.id,
+      importedGameId: gameId,
       kind: 'MISSED_SHOT',
       triggerPlyNumber: 1,
       status: 'DISLIKED',
@@ -200,14 +215,52 @@ async function addAnalysisEvidence(game) {
       sourceType: 'TACTICAL_DETECTION',
       sourceId: detection.id,
       tacticalDetectionId: detection.id,
-      importedGameId: game.id,
+      importedGameId: gameId,
       userColor: 'WHITE',
       startFen: '8/8/8/8/8/8/8/K6k w - - 0 1',
       challengePlyNumber: 1,
       contextPlies: [],
     },
   });
-  return { run, detectionRun, detection, feedback, scenario };
+  return { detection, feedback, scenario };
+}
+
+async function createScenarioForGame(gameId, label) {
+  const thresholdsHash = hash(`scenario:${label}:${suffix}`);
+  const run = await prisma.tacticalDetectionRun.create({
+    data: {
+      userId,
+      from: new Date(Date.now() - 60_000),
+      to: new Date(),
+      thresholds: {},
+      thresholdsHash,
+    },
+  });
+  const detection = await prisma.tacticalDetection.create({
+    data: {
+      runId: run.id,
+      userId,
+      importedGameId: gameId,
+      kind: 'MISSED_SHOT',
+      thresholdsHash,
+      triggerPlyNumber: 1,
+      moveUci: 'e2e4',
+    },
+  });
+  return prisma.scenarioTrainingSession.create({
+    data: {
+      userId,
+      scenarioType: 'MISSED_OPPORTUNITY',
+      sourceType: 'TACTICAL_DETECTION',
+      sourceId: detection.id,
+      tacticalDetectionId: detection.id,
+      importedGameId: gameId,
+      userColor: 'WHITE',
+      startFen: '8/8/8/8/8/8/8/K6k w - - 0 1',
+      challengePlyNumber: 1,
+      contextPlies: [],
+    },
+  });
 }
 
 try {
@@ -220,33 +273,31 @@ try {
   });
   userId = user.id;
 
-  // UNANALYSE keeps shared engine evidence, feedback, and the copied scenario while
-  // removing all per-game analysis/tactical evidence and recomputing tags.
   const gameAccount = await prisma.externalAccount.create({
     data: { userId, provider: 'LICHESS', username: `games-${suffix}` },
   });
-  const local = await createIndexedGame({
-    accountId: gameAccount.id,
-    providerGameId: `local-${suffix}`,
-    openingProvenance: 'LOCAL_BOOK',
-    openingName: 'Local Opening',
-    openingEco: 'A00',
-  });
-  const provider = await createIndexedGame({
-    accountId: gameAccount.id,
-    providerGameId: `provider-${suffix}`,
-    openingProvenance: 'PROVIDER',
-    openingName: 'Provider Opening',
-    openingEco: 'B00',
-  });
-  const evidence = await addAnalysisEvidence(local.game);
+  const local = await createIndexedGame(
+    gameAccount.id,
+    `local-${suffix}`,
+    'LOCAL_BOOK',
+    'Local Opening',
+    'A00',
+  );
+  const provider = await createIndexedGame(
+    gameAccount.id,
+    `provider-${suffix}`,
+    'PROVIDER',
+    'Provider Opening',
+    'B00',
+  );
+  const evidence = await addAnalysisEvidence(local.game.id);
 
-  const unanalyse = await previewAndExecute(userId, {
+  const unanalyse = await previewAndExecute({
     action: 'UNANALYSE_GAMES',
     accountId: gameAccount.id,
     gameIds: [local.game.id],
   }, 'unanalyse');
-  await settleCompleted(userId, unanalyse.preview.operationId);
+  await settleCompleted(unanalyse.preview.operationId);
 
   assert.equal(await prisma.gameAnalysisRun.count({ where: { importedGameId: local.game.id } }), 0);
   assert.equal(await prisma.importedGameAiReview.count({ where: { importedGameId: local.game.id } }), 0);
@@ -270,24 +321,22 @@ try {
   assert.equal(unanalysedGame.openingProvenance, 'LOCAL_BOOK');
   assert.equal(unanalysedGame.openingName, 'Local Opening');
 
-  // UNINDEX always includes un-analysis, deletes only per-game index rows, and clears
-  // local opening attribution without touching provider opening metadata or shared positions.
-  const unindex = await previewAndExecute(userId, {
+  const unindex = await previewAndExecute({
     action: 'UNINDEX_GAMES',
     accountId: gameAccount.id,
     gameIds: [local.game.id, provider.game.id],
   }, 'unindex');
-  await settleCompleted(userId, unindex.preview.operationId);
+  await settleCompleted(unindex.preview.operationId);
   assert.equal(
-    await prisma.importedGamePly.count({ where: { importedGameId: { in: [local.game.id, provider.game.id] } } }),
+    await prisma.importedGamePly.count({
+      where: { importedGameId: { in: [local.game.id, provider.game.id] } },
+    }),
     0,
   );
   assert.equal(await prisma.positionAnalysis.count({ where: { positionId: local.position.id } }), 1);
   assert.equal(await prisma.positionAnalysis.count({ where: { positionId: provider.position.id } }), 1);
-  const [localAfterUnindex, providerAfterUnindex] = await Promise.all([
-    prisma.importedGame.findUniqueOrThrow({ where: { id: local.game.id } }),
-    prisma.importedGame.findUniqueOrThrow({ where: { id: provider.game.id } }),
-  ]);
+  const localAfterUnindex = await prisma.importedGame.findUniqueOrThrow({ where: { id: local.game.id } });
+  const providerAfterUnindex = await prisma.importedGame.findUniqueOrThrow({ where: { id: provider.game.id } });
   assert.equal(localAfterUnindex.openingProvenance, 'NONE');
   assert.equal(localAfterUnindex.openingName, null);
   assert.equal(localAfterUnindex.openingEco, null);
@@ -296,7 +345,6 @@ try {
   assert.equal(providerAfterUnindex.openingEco, 'B00');
   assert.equal(await prisma.scenarioTrainingSession.count({ where: { id: evidence.scenario.id } }), 1);
 
-  // A preview is stale when its affected-row matrix changes before execution.
   const staleGame = await prisma.importedGame.create({
     data: {
       userId,
@@ -313,7 +361,7 @@ try {
   });
   operationIds.push(stalePreview.operationId);
   await prisma.gameAnalysisRun.create({
-    data: { importedGameId: staleGame.id, status: 'COMPLETED', positionsTotal: 0, positionsDone: 0 },
+    data: { importedGameId: staleGame.id, status: 'COMPLETED' },
   });
   await assert.rejects(
     service.execute(userId, stalePreview.operationId, {
@@ -325,8 +373,6 @@ try {
   );
   assert.equal((await service.get(userId, stalePreview.operationId)).status, 'PREVIEWED');
 
-  // PURGE uses bounded forward-only batches. Stop after the first committed batch,
-  // verify the durable checkpoint/fence, then recreate the worker and resume to completion.
   const purgeAccount = await prisma.externalAccount.create({
     data: {
       userId,
@@ -351,60 +397,18 @@ try {
     select: { id: true },
     orderBy: { id: 'asc' },
   });
-  const purgeThresholds = hash(`purge-thresholds-${suffix}`);
-  const purgeDetectionRun = await prisma.tacticalDetectionRun.create({
-    data: {
-      userId,
-      from: new Date(Date.now() - 60_000),
-      to: new Date(),
-      thresholds: {},
-      thresholdsHash: purgeThresholds,
-    },
-  });
-  const purgeDetection = await prisma.tacticalDetection.create({
-    data: {
-      runId: purgeDetectionRun.id,
-      userId,
-      importedGameId: purgeGames[0].id,
-      kind: 'MISSED_SHOT',
-      thresholdsHash: purgeThresholds,
-      triggerPlyNumber: 1,
-      moveUci: 'e2e4',
-    },
-  });
-  const purgeScenario = await prisma.scenarioTrainingSession.create({
-    data: {
-      userId,
-      scenarioType: 'MISSED_OPPORTUNITY',
-      sourceType: 'TACTICAL_DETECTION',
-      sourceId: purgeDetection.id,
-      tacticalDetectionId: purgeDetection.id,
-      importedGameId: purgeGames[0].id,
-      userColor: 'WHITE',
-      startFen: '8/8/8/8/8/8/8/K6k w - - 0 1',
-      challengePlyNumber: 1,
-      contextPlies: [],
-    },
-  });
+  const purgeScenario = await createScenarioForGame(purgeGames[0].id, 'purge');
   const terminalImport = await prisma.importRun.create({
-    data: {
-      userId,
-      accountId: purgeAccount.id,
-      provider: 'LICHESS',
-      mode: 'HISTORICAL_BACKFILL',
-      source: 'ACCOUNT_REFRESH',
-      status: 'COMPLETED',
-      completedAt: new Date(),
-    },
+    data: canonicalImportData(purgeAccount.id, 'LICHESS', 'purge'),
   });
   await prisma.accountImportCoverage.create({
     data: {
       accountId: purgeAccount.id,
-      scopeVersion: 1,
-      scopeHash: hash(`purge-scope-${suffix}`),
-      scopeJson: { variant: 'STANDARD' },
-      coveredFrom: new Date('2026-01-01T00:00:00.000Z'),
-      coveredThrough: new Date('2026-08-01T00:00:00.000Z'),
+      scopeVersion: terminalImport.scopeVersion,
+      scopeHash: terminalImport.scopeHash,
+      scopeJson: terminalImport.scopeJson,
+      coveredFrom: terminalImport.requestedFrom,
+      coveredThrough: terminalImport.requestedTo,
       lastCompletedImportRunId: terminalImport.id,
     },
   });
@@ -424,22 +428,22 @@ try {
     },
   });
 
-  const purge = await previewAndExecute(userId, {
+  const purge = await previewAndExecute({
     action: 'PURGE_ACCOUNT_DATA',
     accountId: purgeAccount.id,
   }, 'purge');
   const purgeWorker = newWorker();
-  await driveToStatus(userId, purge.preview.operationId, 'EXECUTING', purgeWorker);
+  await driveToStatus(purge.preview.operationId, 'EXECUTING', purgeWorker);
   await purgeWorker.runOnce();
   assert.equal(
     await prisma.importedGame.count({ where: { accountId: purgeAccount.id } }),
     76,
-    'configured 25-game destructive batch limit must be honored',
+    'the configured 25-game batch limit must be honored',
   );
-  const afterFirstPurgeBatch = await service.get(userId, purge.preview.operationId);
-  assert.equal(afterFirstPurgeBatch.checkpoint?.phase, 'PURGE_GAMES');
-  assert.equal(afterFirstPurgeBatch.checkpoint?.afterGameId, purgeGames[24].id);
-  assert.ok(afterFirstPurgeBatch.firstDestructiveCommitAt);
+  const firstBatch = await service.get(userId, purge.preview.operationId);
+  assert.equal(firstBatch.checkpoint?.phase, 'PURGE_GAMES');
+  assert.equal(firstBatch.checkpoint?.afterGameId, purgeGames[24].id);
+  assert.ok(firstBatch.firstDestructiveCommitAt);
   assert.equal(await prisma.scenarioTrainingSession.count({ where: { id: purgeScenario.id } }), 0);
 
   const stop = await service.requestStop(userId, purge.preview.operationId);
@@ -453,14 +457,12 @@ try {
       where: { operationId: purge.preview.operationId, releasedAt: null },
     }),
     1,
-    'partial execution retains its fence',
   );
 
   const resumed = await service.execute(userId, purge.preview.operationId, purge.credentials);
   assert.equal(resumed.status, 'EXECUTING');
   assert.equal(resumed.stopRequest, 'NONE');
-  const completedPurge = await settleCompleted(userId, purge.preview.operationId, newWorker());
-  assert.equal(completedPurge.status, 'COMPLETED');
+  await settleCompleted(purge.preview.operationId, newWorker());
   assert.equal(await prisma.importedGame.count({ where: { accountId: purgeAccount.id } }), 0);
   assert.equal(await prisma.externalAccount.count({ where: { id: purgeAccount.id } }), 1);
   assert.equal(await prisma.importRun.count({ where: { id: terminalImport.id } }), 1);
@@ -470,8 +472,10 @@ try {
   assert.equal(purgedAccount.lastSyncAt, null);
   assert.equal(purgedAccount.syncCursorTime, null);
   assert.equal(purgedAccount.lastSyncRunId, null);
-  const retainedOauth = await prisma.lichessConnection.findUniqueOrThrow({ where: { id: oauth.id } });
-  assert.equal(retainedOauth.externalAccountId, purgeAccount.id);
+  assert.equal(
+    (await prisma.lichessConnection.findUniqueOrThrow({ where: { id: oauth.id } })).externalAccountId,
+    purgeAccount.id,
+  );
   assert.equal(
     await prisma.dataLifecycleResourceFence.count({
       where: { operationId: purge.preview.operationId, releasedAt: null },
@@ -479,8 +483,6 @@ try {
     0,
   );
 
-  // DELETE_EXTERNAL_ACCOUNT runs purge first, snapshots bounded audit data, clears the
-  // default account pointer, and lets the account FK cascade remove retained import history.
   const deleteAccount = await prisma.externalAccount.create({
     data: { userId, provider: 'CHESS_COM', username: `delete-${suffix}` },
   });
@@ -497,58 +499,16 @@ try {
       pgn: '1. c4 e5',
     },
   });
-  const deleteThresholds = hash(`delete-thresholds-${suffix}`);
-  const deleteDetectionRun = await prisma.tacticalDetectionRun.create({
-    data: {
-      userId,
-      from: new Date(Date.now() - 60_000),
-      to: new Date(),
-      thresholds: {},
-      thresholdsHash: deleteThresholds,
-    },
-  });
-  const deleteDetection = await prisma.tacticalDetection.create({
-    data: {
-      runId: deleteDetectionRun.id,
-      userId,
-      importedGameId: deleteGame.id,
-      kind: 'MISSED_SHOT',
-      thresholdsHash: deleteThresholds,
-      triggerPlyNumber: 1,
-      moveUci: 'c2c4',
-    },
-  });
-  const deleteScenario = await prisma.scenarioTrainingSession.create({
-    data: {
-      userId,
-      scenarioType: 'MISSED_OPPORTUNITY',
-      sourceType: 'TACTICAL_DETECTION',
-      sourceId: deleteDetection.id,
-      tacticalDetectionId: deleteDetection.id,
-      importedGameId: deleteGame.id,
-      userColor: 'WHITE',
-      startFen: '8/8/8/8/8/8/8/K6k w - - 0 1',
-      challengePlyNumber: 1,
-      contextPlies: [],
-    },
-  });
+  const deleteScenario = await createScenarioForGame(deleteGame.id, 'delete');
   const deleteImport = await prisma.importRun.create({
-    data: {
-      userId,
-      accountId: deleteAccount.id,
-      provider: 'CHESS_COM',
-      mode: 'HISTORICAL_BACKFILL',
-      source: 'ACCOUNT_REFRESH',
-      status: 'COMPLETED',
-      completedAt: new Date(),
-    },
+    data: canonicalImportData(deleteAccount.id, 'CHESS_COM', 'delete'),
   });
 
-  const deletion = await previewAndExecute(userId, {
+  const deletion = await previewAndExecute({
     action: 'DELETE_EXTERNAL_ACCOUNT',
     accountId: deleteAccount.id,
   }, 'delete');
-  await settleCompleted(userId, deletion.preview.operationId);
+  await settleCompleted(deletion.preview.operationId);
   assert.equal(await prisma.externalAccount.count({ where: { id: deleteAccount.id } }), 0);
   assert.equal(await prisma.importedGame.count({ where: { id: deleteGame.id } }), 0);
   assert.equal(await prisma.importRun.count({ where: { id: deleteImport.id } }), 0);
@@ -575,8 +535,6 @@ try {
     await prisma.deletedAuthIdentityTombstone.deleteMany({ where: { operationId: { in: operationIds } } });
     await prisma.dataLifecycleOperation.deleteMany({ where: { id: { in: operationIds } } });
   }
-  if (userId !== undefined) {
-    await prisma.appUser.deleteMany({ where: { id: userId } });
-  }
+  if (userId !== undefined) await prisma.appUser.deleteMany({ where: { id: userId } });
   await prisma.$disconnect();
 }
