@@ -86,6 +86,10 @@ try {
       },
     },
   });
+  const targetTask = await prisma.jobTask.findFirstOrThrow({
+    where: { jobRunId: jobRun.id, importedGameId: targetGame.id },
+    select: { id: true },
+  });
 
   const scope = {
     resourceType: 'GAME',
@@ -101,11 +105,11 @@ try {
     assert.equal(snapshot.drained, true);
 
     const targets = await repository.listCancellationTargets(scope);
-    assert.deepEqual(targets.jobRunIds, []);
+    assert.deepEqual(targets.jobTaskIds, []);
   }
 
-  await prisma.jobTask.updateMany({
-    where: { jobRunId: jobRun.id, importedGameId: targetGame.id },
+  await prisma.jobTask.update({
+    where: { id: targetTask.id },
     data: {
       status: 'QUEUED',
       startedAt: null,
@@ -119,20 +123,21 @@ try {
     assert.equal(snapshot.drained, false);
 
     const targets = await repository.listCancellationTargets(scope);
-    assert.deepEqual(targets.jobRunIds, [jobRun.id]);
+    assert.deepEqual(targets.jobTaskIds, [targetTask.id]);
   }
 
+  const settledAt = new Date();
+  await prisma.jobTask.updateMany({
+    where: { jobRunId: jobRun.id },
+    data: { status: 'CANCELLED', settledAt },
+  });
+  await prisma.jobTask.update({
+    where: { id: targetTask.id },
+    data: { workKey: `GAME_WORK:${suffix}` },
+  });
   await prisma.jobRun.update({
     where: { id: jobRun.id },
-    data: { status: 'CANCELLED', completedAt: new Date() },
-  });
-  await prisma.jobTask.updateMany({
-    where: { jobRunId: jobRun.id, importedGameId: targetGame.id },
-    data: {
-      status: 'CANCELLED',
-      workKey: `GAME_WORK:${suffix}`,
-      settledAt: new Date(),
-    },
+    data: { status: 'CANCELLED', completedAt: settledAt },
   });
 
   {
@@ -142,7 +147,7 @@ try {
     assert.equal(snapshot.drained, false);
 
     const targets = await repository.listCancellationTargets(scope);
-    assert.deepEqual(targets.jobRunIds, []);
+    assert.deepEqual(targets.jobTaskIds, []);
   }
 
   console.log('Data lifecycle coordinator drain tests passed.');
