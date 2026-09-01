@@ -1,6 +1,6 @@
 # Destructive data lifecycle foundation
 
-This document describes the current persistence and write-admission foundation for destructive data lifecycle work. It is infrastructure only: no public destructive lifecycle API or row-deletion executor is implemented here.
+This document describes the current persistence and write-admission foundation for destructive data lifecycle work. ONB-020 now consumes this foundation for public account/imported-game preview, execution, cancellation/drain, bounded destructive batches, and verification; whole-user deletion remains downstream.
 
 ## Durable records
 
@@ -51,6 +51,16 @@ After `firstDestructiveCommitAt` is set, a stop request becomes `STOP_AFTER_BATC
 
 Fences are released only for verified completion or a pre-mutation cancellation/failure path. Downstream executors remain responsible for verification before declaring completion.
 
+### ONB-020 account/game consumer
+
+ONB-020 implements `UNANALYSE_GAMES`, `UNINDEX_GAMES`, `PURGE_ACCOUNT_DATA`, and `DELETE_EXTERNAL_ACCOUNT` over this state machine. Authenticated preview/execute/status/stop routes live under `/api/me/data-lifecycle`, and the existing persistent worker process claims the account/game lifecycle operations.
+
+The account/game worker requests cancellation through the existing import/preparation control paths and cancels only affected imported-game `JobTask` rows. It waits for target durable claims and residual task work keys before mutation. Destructive game batches are deterministic, configurable, and never exceed 100 ids.
+
+Account purge deletes copied scenario data before source links can be lost to `SET NULL` cascades, deletes imported games in bounded batches, clears current coverage/rating/sync-frontier state, and retains terminal import history plus the reusable account. Account deletion performs purge first, then deletes the account and account-owned import history while independent OAuth remains and its account link becomes null.
+
+Legacy immediate account deletion and raw sync-cursor reset are retained only as deprecated non-mutating compatibility URLs; they no longer bypass the lifecycle coordinator.
+
 ## Preview, idempotency, and receipt semantics
 
 GAME preview scopes are bounded to at most 100 explicit game ids. Every preview has an expiry and immutable scope/hash binding. Preview creation acquires the user lifecycle lock and verifies the target USER/ACCOUNT/GAME ownership before persisting the preview; execution revalidates ownership again immediately before fencing.
@@ -97,6 +107,6 @@ Preview expiry is an explicit state transition. Terminal operation cleanup defau
 
 Operations referenced by a deleted-identity tombstone are excluded from generic terminal cleanup so post-deletion identity/status lookup remains available for the tombstone horizon. Terminal operation cleanup also refuses to remove an operation that still owns an active resource fence. Audit retention is independent of target-row lifetime.
 
-## Scope not implemented yet
+## Remaining downstream scope
 
-This foundation does not perform destructive row mutation. Public lifecycle routes, Angular UI, destructive batch execution, verification policy, shared Position cleanup, and administrator authorization remain downstream work. Consumers must not infer that account/game/user deletion is available merely because the persistence and fence infrastructure exists.
+ONB-020 does not implement `DELETE_APP_USER`, device-local purge, shared `Position` cleanup, administrator mutation exposure, or a new Angular destructive-account interaction. Those remain separately owned by ONB-021, ONB-026, ONB-024, or later product/UI work. Account/game destructive mutation is available only through the canonical lifecycle preview/execute protocol; consumers must not restore direct unfenced delete/reset paths.
