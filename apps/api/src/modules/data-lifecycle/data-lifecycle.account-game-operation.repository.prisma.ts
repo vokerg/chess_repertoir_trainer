@@ -31,6 +31,7 @@ export interface AccountGameDataLifecycleOperationRepository {
   claimNext(workKey: string): Promise<StoredDataLifecycleOperation | null>;
   releaseClaim(operationId: number, workKey: string): Promise<boolean>;
   recoverStaleClaims(staleBefore: Date): Promise<number>;
+  hasAuditEvent(operationId: number, eventType: string): Promise<boolean>;
   resumeNeedsAttention(targetUserId: number, operationId: number): Promise<StoredDataLifecycleOperation>;
 }
 
@@ -101,6 +102,14 @@ export function createAccountGameDataLifecycleOperationRepository(
       `);
     },
 
+    async hasAuditEvent(operationId, eventType) {
+      validatePositiveInteger(operationId, 'operationId');
+      validateAuditEventType(eventType);
+      return (await database.dataLifecycleAuditEvent.count({
+        where: { operationId, eventType },
+      })) > 0;
+    },
+
     async resumeNeedsAttention(targetUserId, operationId) {
       validatePositiveInteger(targetUserId, 'targetUserId');
       validatePositiveInteger(operationId, 'operationId');
@@ -153,6 +162,10 @@ function validatePositiveInteger(value: number, label: string): void {
 
 function validateWorkKey(value: string): void {
   if (!value.trim() || value.length > 80) throw new Error('Lifecycle workKey must contain 1-80 characters.');
+}
+
+function validateAuditEventType(value: string): void {
+  if (!value.trim() || value.length > 80) throw new Error('Lifecycle audit event type must contain 1-80 characters.');
 }
 
 export const AccountGameDataLifecycleOperationRepository =
