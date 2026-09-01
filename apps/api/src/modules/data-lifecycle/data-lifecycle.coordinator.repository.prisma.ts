@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import {
   dataLifecycleActionSchema,
   dataLifecyclePreviewCountsSchema,
@@ -18,6 +18,8 @@ export type AccountGameDataLifecycleScope = Extract<
   DataLifecycleScope,
   { resourceType: 'GAME' | 'ACCOUNT' }
 >;
+
+type CoordinatorDatabase = PrismaClient | Prisma.TransactionClient;
 
 const ACTIVE_IMPORT_STATUSES = [
   'QUEUED',
@@ -84,7 +86,7 @@ export class DataLifecycleScopeNotFoundError extends Error {
 }
 
 export function createAccountGameDataLifecycleCoordinatorRepository(
-  database: PrismaClient = prisma,
+  database: CoordinatorDatabase = prisma,
 ): AccountGameDataLifecycleCoordinatorRepository {
   return {
     async countAffectedRows(action, scope) {
@@ -327,7 +329,7 @@ function assertActionMatchesScope(
 }
 
 async function assertScopeOwned(
-  database: PrismaClient,
+  database: CoordinatorDatabase,
   scope: AccountGameDataLifecycleScope,
 ): Promise<void> {
   const account = await database.externalAccount.findFirst({
