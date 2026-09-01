@@ -12,6 +12,8 @@ import {
 import {
   createLichessAccountImportExecutor,
 } from './modules/account-imports/providers/lichess/lichess-account-import.executor';
+import { loadAccountGameDataLifecycleWorkerConfig } from './modules/data-lifecycle/data-lifecycle.account-game.worker.config';
+import { createAccountGameDataLifecycleWorker } from './modules/data-lifecycle/data-lifecycle.account-game.worker.service';
 import { defaultJobTaskExecutorRegistry } from './modules/jobs/imported-game-job-executors';
 import { JobRunRepository } from './modules/jobs/job-run.repository.prisma';
 import { loadJobWorkerConfig } from './modules/jobs/job-worker.config';
@@ -31,8 +33,13 @@ defaultAccountImportExecutorRegistry.register(createLichessAccountImportExecutor
 async function bootstrap() {
   const config = loadJobWorkerConfig();
   const accountImportConfig = loadAccountImportWorkerConfig();
+  const lifecycleConfig = loadAccountGameDataLifecycleWorkerConfig();
   const preparationConfig = readPreparationConfig();
-  const shutdownTimeoutMs = Math.max(config.shutdownTimeoutMs, accountImportConfig.shutdownTimeoutMs);
+  const shutdownTimeoutMs = Math.max(
+    config.shutdownTimeoutMs,
+    accountImportConfig.shutdownTimeoutMs,
+    lifecycleConfig.shutdownTimeoutMs,
+  );
   const worker = createJobWorker({
     repository: JobWorkerRepository,
     executors: defaultJobTaskExecutorRegistry,
@@ -50,6 +57,7 @@ async function bootstrap() {
     ) > 0,
   });
   const preparationWorker = createPreparationReconciler({ config: preparationConfig });
+  const lifecycleWorker = createAccountGameDataLifecycleWorker({ config: lifecycleConfig });
   let shuttingDown = false;
   let retentionTimer: NodeJS.Timeout | undefined;
   let retentionInFlight: Promise<void> | null = null;
@@ -89,11 +97,14 @@ async function bootstrap() {
   const jobWorkerPromise = worker.run();
   const accountImportWorkerPromise = accountImportWorker.run();
   const preparationWorkerPromise = preparationWorker.run();
-  const runPromise = Promise.all([
+  const lifecycleWorkerPromise = lifecycleWorker.run();
+  const workerPromises = [
     jobWorkerPromise,
     accountImportWorkerPromise,
     preparationWorkerPromise,
-  ]);
+    lifecycleWorkerPromise,
+  ];
+  const runPromise = Promise.all(workerPromises);
 
   const shutdown = async (signal: NodeJS.Signals) => {
     if (shuttingDown) return;
@@ -106,6 +117,7 @@ async function bootstrap() {
     worker.requestStop(`Worker received ${signal}.`);
     accountImportWorker.requestStop(`Worker received ${signal}.`);
     preparationWorker.requestStop();
+    lifecycleWorker.requestStop();
 
     const stopped = await settlesWithin(cleanupCompleted, shutdownTimeoutMs);
     if (!stopped) {
@@ -130,8 +142,9 @@ async function bootstrap() {
     worker.requestStop('Peer worker failed.');
     accountImportWorker.requestStop('Peer worker failed.');
     preparationWorker.requestStop();
+    lifecycleWorker.requestStop();
     const peerStopped = await settlesWithin(
-      Promise.allSettled([jobWorkerPromise, accountImportWorkerPromise, preparationWorkerPromise]),
+      Promise.allSettled(workerPromises),
       shutdownTimeoutMs,
     );
     if (!peerStopped) {
