@@ -132,11 +132,15 @@ export function createAccountGameDataLifecycleService(
 
       let started: StoredDataLifecycleOperation;
       if (operation.status === 'PREVIEWED') {
+        const action = operation.action as AccountGameDataLifecycleAction;
+        const scope = accountGameScope(operation);
+        const currentCounts = await coordinatorRepository.countAffectedRows(action, scope);
+        const currentPreviewHash = hashPreview(action, scope, currentCounts);
         started = await lifecycleRepository.startExecution({
           operationId,
           targetUserId: userId,
           previewTokenHash: hashOpaqueLifecycleToken(parsed.previewToken),
-          previewHash: operation.previewHash,
+          previewHash: currentPreviewHash,
           idempotencyKeyHash,
         });
         await appendAudit(lifecycleRepository, auditKeyring, started, 'EXECUTION_REQUESTED');
@@ -266,6 +270,13 @@ async function requireAccountGameOperation(
     throw new DataLifecycleOperationNotFoundError();
   }
   return operation;
+}
+
+function accountGameScope(operation: StoredDataLifecycleOperation): AccountGameDataLifecycleScope {
+  if (operation.scope.resourceType === 'USER') {
+    throw new DataLifecycleInvalidStateError('Whole-user lifecycle operations belong to ONB-021.');
+  }
+  return operation.scope;
 }
 
 function auditPrincipal(keyring: LifecycleHmacKeyring, userId: number) {
