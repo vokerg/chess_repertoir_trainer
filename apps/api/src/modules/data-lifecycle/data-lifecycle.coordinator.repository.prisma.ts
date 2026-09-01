@@ -37,6 +37,7 @@ const ACTIVE_PREPARATION_STATUSES = [
 ] as const;
 
 const ACTIVE_JOB_STATUSES = ['QUEUED', 'RUNNING'] as const;
+const ACTIVE_JOB_TASK_STATUSES = ['QUEUED', 'RUNNING'] as const;
 export const DATA_LIFECYCLE_GAME_BATCH_LIMIT = 100;
 
 export interface DataLifecycleDrainSnapshot {
@@ -372,6 +373,7 @@ function targetActiveJobWhere(scope: AccountGameDataLifecycleScope) {
     status: { in: [...ACTIVE_JOB_STATUSES] },
     tasks: {
       some: {
+        status: { in: [...ACTIVE_JOB_TASK_STATUSES] },
         importedGame: targetGameWhere(scope),
       },
     },
