@@ -15,7 +15,7 @@ Authenticated callers use durable preview, execute/resume, status, and stop rout
 
 ## Execution model
 
-Preview revalidates ownership and records bounded affected-row aggregates, an immutable scope/hash, a short-lived opaque preview token, warning codes, and the required typed confirmation phrase. Execute re-counts the live target before installing the persisted ONB-019 resource fence; a changed affected-row snapshot is rejected as `DATA_LIFECYCLE_PREVIEW_INVALID`.
+Preview revalidates ownership and records bounded affected-row aggregates, an immutable scope/hash, a short-lived opaque preview token, warning codes, and the required typed confirmation phrase. Execute re-counts the live target while holding the same lifecycle user lock that immediately precedes fence insertion; a changed affected-row snapshot is rejected as `DATA_LIFECYCLE_PREVIEW_INVALID` before any fence is persisted. This closes the writer-between-recount-and-fence race rather than relying on an unlocked preflight check.
 
 The worker advances forward-only through fencing, cancellation request, drain, execution, and verification. It requests cancellation of target durable imports, preparation work, and only the affected imported-game `JobTask` rows. It does not call the public whole-`JobRun` cancel command, so unrelated games in a mixed run are not terminated.
 
@@ -81,9 +81,10 @@ The implementation was repeatedly reviewed adversarially while the PR was in dra
 8. legacy account DELETE/reset runtime and OpenAPI contract drift;
 9. a stale external-account contract test that still asserted the removed unsafe behavior;
 10. final account-delete audit snapshot duplication after a restart between audit and delete;
-11. missing deployment-template lifecycle HMAC configuration.
+11. missing deployment-template lifecycle HMAC configuration;
+12. an execute-time stale-preview race where a guarded writer could commit after an unlocked re-count but before fence creation. Execute-time affected-row validation now runs under the lifecycle user lock immediately before fence insertion, with a two-client regression proving the stale preview is rejected and no fence is created.
 
-Focused PostgreSQL coverage exercises affected-row matrices, scoped job cancellation/drain including residual worker leases, un-analysis/un-index retention and opening provenance, stale previews, a 101-game bounded purge, checkpointed restart/stop/resume, scenario delete-before-cascade ordering, terminal import-history retention/current-coverage separation, account deletion/default-reference/import cascade, independent OAuth retention, and audit-snapshot idempotency.
+Focused PostgreSQL coverage exercises affected-row matrices, scoped job cancellation/drain including residual worker leases, un-analysis/un-index retention and opening provenance, stale previews including the writer-versus-fence race, a 101-game bounded purge, checkpointed restart/stop/resume, scenario delete-before-cascade ordering, terminal import-history retention/current-coverage separation, account deletion/default-reference/import cascade, independent OAuth retention, and audit-snapshot idempotency.
 
 Adjacent ONB-019 tests continue to provide the resource-fence concurrency matrix, guarded synchronous-writer races, stale-claim/fence recovery, and pre-/post-mutation failure semantics. Existing durable account-import worker tests prove cancellation is acknowledged only after provider execution has quiesced.
 
