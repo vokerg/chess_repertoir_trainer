@@ -136,6 +136,9 @@ export function createAccountGameDataLifecycleService(
         const scope = accountGameScope(operation);
         const currentCounts = await coordinatorRepository.countAffectedRows(action, scope);
         const currentPreviewHash = hashPreview(action, scope, currentCounts);
+        if (currentPreviewHash !== operation.previewHash) {
+          throw new DataLifecyclePreviewInvalidError();
+        }
         started = await lifecycleRepository.startExecution({
           operationId,
           targetUserId: userId,
