@@ -99,7 +99,7 @@ export function createAccountGameDataLifecycleCoordinatorRepository(
       const activeJobWhere = targetActiveJobWhere(normalizedScope);
       const accountAction = normalizedScope.resourceType === 'ACCOUNT';
       const deletesAccount = normalizedAction === 'DELETE_EXTERNAL_ACCOUNT';
-      const unindexes = normalizedAction === 'UNINDEX_GAMES';
+      const deletesAllPlies = normalizedAction === 'UNINDEX_GAMES' || accountAction;
 
       const [
         games,
@@ -116,7 +116,7 @@ export function createAccountGameDataLifecycleCoordinatorRepository(
         database.importedGamePly.count({
           where: {
             importedGame: gameWhere,
-            ...(unindexes
+            ...(deletesAllPlies
               ? {}
               : {
                   OR: [
