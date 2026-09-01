@@ -274,7 +274,11 @@ export function createAccountGameDataLifecycleWorker(
   ) {
     const scope = gameScope(operation);
     if (checkpoint.phase !== 'UNANALYSE') throw new Error('Invalid un-analysis lifecycle checkpoint.');
-    const gameIds = await coordinatorRepository.nextGameBatch(scope, checkpoint.afterGameId);
+    const gameIds = await coordinatorRepository.nextGameBatch(
+      scope,
+      checkpoint.afterGameId,
+      input.config.gameBatchLimit,
+    );
     if (gameIds.length === 0) {
       await lifecycleRepository.updateCheckpoint(operation.id, workKey, doneCheckpoint());
       await moveToVerify(operation, workKey);
@@ -296,7 +300,11 @@ export function createAccountGameDataLifecycleWorker(
   ) {
     const scope = gameScope(operation);
     if (checkpoint.phase === 'UNANALYSE') {
-      const gameIds = await coordinatorRepository.nextGameBatch(scope, checkpoint.afterGameId);
+      const gameIds = await coordinatorRepository.nextGameBatch(
+        scope,
+        checkpoint.afterGameId,
+        input.config.gameBatchLimit,
+      );
       if (gameIds.length === 0) {
         await lifecycleRepository.updateCheckpoint(operation.id, workKey, {
           version: 1,
@@ -316,7 +324,11 @@ export function createAccountGameDataLifecycleWorker(
       return;
     }
     if (checkpoint.phase !== 'UNINDEX') throw new Error('Invalid un-index lifecycle checkpoint.');
-    const gameIds = await coordinatorRepository.nextGameBatch(scope, checkpoint.afterGameId);
+    const gameIds = await coordinatorRepository.nextGameBatch(
+      scope,
+      checkpoint.afterGameId,
+      input.config.gameBatchLimit,
+    );
     if (gameIds.length === 0) {
       await lifecycleRepository.updateCheckpoint(operation.id, workKey, doneCheckpoint());
       await moveToVerify(operation, workKey);
@@ -339,7 +351,11 @@ export function createAccountGameDataLifecycleWorker(
   ) {
     const scope = accountScope(operation);
     if (checkpoint.phase === 'PURGE_GAMES') {
-      const gameIds = await coordinatorRepository.nextGameBatch(scope, checkpoint.afterGameId);
+      const gameIds = await coordinatorRepository.nextGameBatch(
+        scope,
+        checkpoint.afterGameId,
+        input.config.gameBatchLimit,
+      );
       if (gameIds.length === 0) {
         await lifecycleRepository.updateCheckpoint(operation.id, workKey, {
           version: 1,
