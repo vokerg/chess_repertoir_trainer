@@ -102,6 +102,6 @@ Before claim, re-inspect current Prisma migrations, lifecycle repository/service
 
 Report: none
 
-Pull request: none
+Pull request: [#408](https://github.com/vokerg/chess_repertoir_trainer/pull/408) — draft/in progress
 
 Completed at: none
