@@ -213,7 +213,7 @@ export function createAccountGameDataLifecycleWorker(
     }
     await executionRepository.cancelScopedJobTasks(operation.targetUserId, targets.jobTaskIds);
 
-    if (targets.jobTaskIds.length > 0) {
+    if (targets.hasMore || targets.jobTaskIds.length > 0) {
       await release(operation, workKey);
       return;
     }
