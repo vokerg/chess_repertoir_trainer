@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
 import {
+  accountGameDataLifecycleActionSchema,
+  accountGameDataLifecyclePreviewRequestSchema,
   dataLifecycleActionSchema,
   dataLifecycleErrorCodeSchema,
+  dataLifecycleExecuteRequestSchema,
+  dataLifecycleOperationResponseSchema,
   dataLifecycleOperationStatusSchema,
   dataLifecyclePreviewCountsSchema,
+  dataLifecyclePreviewResponseSchema,
   dataLifecycleResourceTypeSchema,
   dataLifecycleScopeSchema,
   dataLifecycleStopRequestSchema,
@@ -20,6 +25,16 @@ for (const action of [
 ]) {
   assert.equal(dataLifecycleActionSchema.parse(action), action);
 }
+
+for (const action of [
+  'UNANALYSE_GAMES',
+  'UNINDEX_GAMES',
+  'PURGE_ACCOUNT_DATA',
+  'DELETE_EXTERNAL_ACCOUNT',
+]) {
+  assert.equal(accountGameDataLifecycleActionSchema.parse(action), action);
+}
+assert.equal(accountGameDataLifecycleActionSchema.safeParse('DELETE_APP_USER').success, false);
 
 assert.equal(dataLifecycleOperationStatusSchema.parse('NEEDS_ATTENTION'), 'NEEDS_ATTENTION');
 assert.equal(dataLifecycleResourceTypeSchema.parse('GAME'), 'GAME');
@@ -65,5 +80,74 @@ const counts = {
 };
 assert.deepEqual(dataLifecyclePreviewCountsSchema.parse(counts), counts);
 assert.equal(dataLifecyclePreviewCountsSchema.safeParse({ ...counts, games: -1 }).success, false);
+
+assert.deepEqual(accountGameDataLifecyclePreviewRequestSchema.parse({
+  action: 'UNINDEX_GAMES',
+  accountId: 12,
+  gameIds: [90, 91],
+}), {
+  action: 'UNINDEX_GAMES',
+  accountId: 12,
+  gameIds: [90, 91],
+});
+assert.deepEqual(accountGameDataLifecyclePreviewRequestSchema.parse({
+  action: 'PURGE_ACCOUNT_DATA',
+  accountId: 12,
+}), {
+  action: 'PURGE_ACCOUNT_DATA',
+  accountId: 12,
+});
+assert.equal(accountGameDataLifecyclePreviewRequestSchema.safeParse({
+  action: 'UNANALYSE_GAMES',
+  accountId: 12,
+}).success, false);
+assert.equal(accountGameDataLifecyclePreviewRequestSchema.safeParse({
+  action: 'DELETE_EXTERNAL_ACCOUNT',
+  accountId: 12,
+  gameIds: [90],
+}).success, false);
+
+assert.deepEqual(dataLifecycleExecuteRequestSchema.parse({
+  previewToken: '0123456789abcdef0123456789abcdef',
+  confirmationPhrase: 'DELETE ACCOUNT 12',
+  idempotencyKey: 'delete-account-12-request-1',
+}), {
+  previewToken: '0123456789abcdef0123456789abcdef',
+  confirmationPhrase: 'DELETE ACCOUNT 12',
+  idempotencyKey: 'delete-account-12-request-1',
+});
+
+const operation = {
+  operationId: 44,
+  action: 'PURGE_ACCOUNT_DATA',
+  status: 'WAITING_FOR_DRAIN',
+  scope: { resourceType: 'ACCOUNT', userId: 4, accountId: 12 },
+  previewCounts: counts,
+  previewExpiresAt: '2026-09-01T08:00:00.000Z',
+  confirmationPhrase: 'PURGE ACCOUNT 12',
+  warningCodes: ['DESTRUCTIVE_OPERATION'],
+  stopRequest: 'NONE',
+  firstDestructiveCommitAt: null,
+  checkpoint: null,
+  verification: null,
+  terminalResult: null,
+  errorCode: null,
+  startedAt: '2026-09-01T07:50:00.000Z',
+  completedAt: null,
+  createdAt: '2026-09-01T07:45:00.000Z',
+  updatedAt: '2026-09-01T07:51:00.000Z',
+};
+assert.deepEqual(dataLifecycleOperationResponseSchema.parse(operation), operation);
+assert.deepEqual(dataLifecyclePreviewResponseSchema.parse({
+  ...operation,
+  status: 'PREVIEWED',
+  startedAt: null,
+  previewToken: '0123456789abcdef0123456789abcdef',
+}), {
+  ...operation,
+  status: 'PREVIEWED',
+  startedAt: null,
+  previewToken: '0123456789abcdef0123456789abcdef',
+});
 
 console.log('Data lifecycle contract tests passed.');
