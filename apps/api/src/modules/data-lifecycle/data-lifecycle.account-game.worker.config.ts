@@ -4,6 +4,7 @@ export interface AccountGameDataLifecycleWorkerConfig {
   staleAfterMs: number;
   staleRecoveryIntervalMs: number;
   shutdownTimeoutMs: number;
+  gameBatchLimit: number;
 }
 
 const DEFAULT_POLL_INTERVAL_MS = 1_000;
@@ -11,6 +12,8 @@ const DEFAULT_HEARTBEAT_INTERVAL_MS = 10_000;
 const DEFAULT_STALE_AFTER_MS = 60_000;
 const DEFAULT_STALE_RECOVERY_INTERVAL_MS = 30_000;
 const DEFAULT_SHUTDOWN_TIMEOUT_MS = 30_000;
+const DEFAULT_GAME_BATCH_LIMIT = 25;
+const MAX_GAME_BATCH_LIMIT = 100;
 
 export function loadAccountGameDataLifecycleWorkerConfig(
   environment: NodeJS.ProcessEnv = process.env,
@@ -41,6 +44,12 @@ export function loadAccountGameDataLifecycleWorkerConfig(
       DEFAULT_SHUTDOWN_TIMEOUT_MS,
       'DATA_LIFECYCLE_WORKER_SHUTDOWN_TIMEOUT_MS',
     ),
+    gameBatchLimit: boundedPositiveInteger(
+      environment['DATA_LIFECYCLE_WORKER_GAME_BATCH_LIMIT'],
+      DEFAULT_GAME_BATCH_LIMIT,
+      MAX_GAME_BATCH_LIMIT,
+      'DATA_LIFECYCLE_WORKER_GAME_BATCH_LIMIT',
+    ),
   };
 
   if (config.staleAfterMs <= config.heartbeatIntervalMs * 2) {
@@ -55,5 +64,16 @@ function positiveInteger(value: string | undefined, fallback: number, name: stri
   if (value === undefined || value.trim() === '') return fallback;
   const parsed = Number(value);
   if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error(`${name} must be a positive integer.`);
+  return parsed;
+}
+
+function boundedPositiveInteger(
+  value: string | undefined,
+  fallback: number,
+  maximum: number,
+  name: string,
+): number {
+  const parsed = positiveInteger(value, fallback, name);
+  if (parsed > maximum) throw new Error(`${name} must not exceed ${maximum}.`);
   return parsed;
 }
