@@ -9,6 +9,14 @@ export const dataLifecycleActionSchema = z.enum([
 ]);
 export type DataLifecycleAction = z.infer<typeof dataLifecycleActionSchema>;
 
+export const accountGameDataLifecycleActionSchema = z.enum([
+  'UNANALYSE_GAMES',
+  'UNINDEX_GAMES',
+  'PURGE_ACCOUNT_DATA',
+  'DELETE_EXTERNAL_ACCOUNT',
+]);
+export type AccountGameDataLifecycleAction = z.infer<typeof accountGameDataLifecycleActionSchema>;
+
 export const dataLifecycleOperationStatusSchema = z.enum([
   'PREVIEWED',
   'QUEUED',
@@ -98,3 +106,67 @@ export const dataLifecycleScopeSchema = z.discriminatedUnion('resourceType', [
   }),
 ]);
 export type DataLifecycleScope = z.infer<typeof dataLifecycleScopeSchema>;
+
+export const accountGameDataLifecyclePreviewRequestSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('UNANALYSE_GAMES'),
+    accountId: z.number().int().positive(),
+    gameIds: z.array(z.number().int().positive()).min(1).max(100),
+  }).strict(),
+  z.object({
+    action: z.literal('UNINDEX_GAMES'),
+    accountId: z.number().int().positive(),
+    gameIds: z.array(z.number().int().positive()).min(1).max(100),
+  }).strict(),
+  z.object({
+    action: z.literal('PURGE_ACCOUNT_DATA'),
+    accountId: z.number().int().positive(),
+  }).strict(),
+  z.object({
+    action: z.literal('DELETE_EXTERNAL_ACCOUNT'),
+    accountId: z.number().int().positive(),
+  }).strict(),
+]);
+export type AccountGameDataLifecyclePreviewRequest = z.infer<
+  typeof accountGameDataLifecyclePreviewRequestSchema
+>;
+
+export const dataLifecycleExecuteRequestSchema = z.object({
+  previewToken: z.string().min(16).max(512),
+  confirmationPhrase: z.string().min(1).max(120),
+  idempotencyKey: z.string().min(8).max(200),
+}).strict();
+export type DataLifecycleExecuteRequest = z.infer<typeof dataLifecycleExecuteRequestSchema>;
+
+export const dataLifecycleOperationResponseSchema = z.object({
+  operationId: z.number().int().positive(),
+  action: dataLifecycleActionSchema,
+  status: dataLifecycleOperationStatusSchema,
+  scope: dataLifecycleScopeSchema,
+  previewCounts: dataLifecyclePreviewCountsSchema,
+  previewExpiresAt: z.string().datetime(),
+  confirmationPhrase: z.string(),
+  warningCodes: z.array(z.string()),
+  stopRequest: dataLifecycleStopRequestSchema,
+  firstDestructiveCommitAt: z.string().datetime().nullable(),
+  checkpoint: z.unknown().nullable(),
+  verification: z.unknown().nullable(),
+  terminalResult: dataLifecycleTerminalResultSchema.nullable(),
+  errorCode: z.string().nullable(),
+  startedAt: z.string().datetime().nullable(),
+  completedAt: z.string().datetime().nullable(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export type DataLifecycleOperationResponse = z.infer<typeof dataLifecycleOperationResponseSchema>;
+
+export const dataLifecyclePreviewResponseSchema = dataLifecycleOperationResponseSchema.extend({
+  previewToken: z.string().min(16),
+});
+export type DataLifecyclePreviewResponse = z.infer<typeof dataLifecyclePreviewResponseSchema>;
+
+export const dataLifecycleErrorResponseSchema = z.object({
+  error: z.string(),
+  code: dataLifecycleErrorCodeSchema,
+});
+export type DataLifecycleErrorResponse = z.infer<typeof dataLifecycleErrorResponseSchema>;

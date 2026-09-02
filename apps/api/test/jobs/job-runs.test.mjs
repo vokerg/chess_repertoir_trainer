@@ -413,11 +413,18 @@ try {
       method: 'DELETE',
       url: `/api/me/accounts/${retentionAccount.id}`,
     });
-    assert.equal(deleteAccountResponse.statusCode, 200);
-    assert.equal(
+    assert.equal(deleteAccountResponse.statusCode, 409, deleteAccountResponse.body);
+    assert.equal(deleteAccountResponse.json().code, 'DATA_LIFECYCLE_INVALID_STATE');
+    assert.notEqual(
       await prisma.importedGame.findUnique({ where: { id: retentionGame.id } }),
       null,
+      'legacy account DELETE cannot perform the former unfenced cascade',
     );
+
+    // This test is about JobTask's ImportedGame SetNull relationship, not the account
+    // lifecycle. Delete only the fixture game directly so the job retention assertion
+    // remains isolated from ONB-020's asynchronous account-deletion coordinator.
+    await prisma.importedGame.delete({ where: { id: retentionGame.id } });
 
     const retainedTasksResponse = await app.inject({
       method: 'GET',

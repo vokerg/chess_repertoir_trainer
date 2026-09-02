@@ -12,9 +12,9 @@ let userId;
 try {
   const user = await prisma.appUser.create({
     data: {
-      displayName: 'ONB-015 compatibility routes',
+      displayName: 'ONB-020 compatibility routes',
       authProvider: 'test',
-      authSubject: `onb-015-compatibility-${suffix}`,
+      authSubject: `onb-020-compatibility-${suffix}`,
     },
   });
   userId = user.id;
@@ -23,7 +23,7 @@ try {
     data: {
       userId: user.id,
       provider: 'LICHESS',
-      username: `onb-015-compatibility-${suffix}`,
+      username: `onb-020-compatibility-${suffix}`,
       syncCursorTime: legacyCursor,
     },
   });
@@ -52,18 +52,42 @@ try {
       method: 'POST',
       url: `/api/me/accounts/${account.id}/reset-cursor`,
     });
-    assert.equal(reset.statusCode, 200, reset.body);
+    assert.equal(reset.statusCode, 410, reset.body);
+    assert.match(reset.json().message, /Raw sync-cursor reset has been removed/);
+
     const persistedAfterReset = await prisma.externalAccount.findUnique({ where: { id: account.id } });
-    assert.equal(persistedAfterReset?.syncCursorTime, null);
+    assert.equal(
+      persistedAfterReset?.syncCursorTime?.getTime(),
+      legacyCursor.getTime(),
+      'deprecated raw reset cannot mutate the legacy sync frontier after lifecycle cutover',
+    );
     const coverageAfterReset = await prisma.accountImportCoverage.findUnique({
       where: { accountId_scopeHash: { accountId: account.id, scopeHash: canonical.scopeHash } },
     });
     assert.equal(
       coverageAfterReset?.coveredFrom?.getTime(),
       coveredFrom.getTime(),
-      'deprecated legacy cursor reset does not rewind durable coverage',
+      'raw reset cutover does not rewind durable coverage',
     );
     assert.equal(coverageAfterReset?.coveredThrough?.getTime(), coveredThrough.getTime());
+
+    const deletion = await app.inject({
+      method: 'DELETE',
+      url: `/api/me/accounts/${account.id}`,
+    });
+    assert.equal(deletion.statusCode, 409, deletion.body);
+    assert.equal(deletion.json().code, 'DATA_LIFECYCLE_INVALID_STATE');
+    assert.equal(await prisma.externalAccount.count({ where: { id: account.id } }), 1);
+
+    const openApi = (await app.inject({ method: 'GET', url: '/api/docs/openapi.json' })).json();
+    const legacyDelete = openApi.paths['/api/me/accounts/{id}'].delete;
+    const legacyReset = openApi.paths['/api/me/accounts/{id}/reset-cursor'].post;
+    assert.equal(legacyDelete.deprecated, true);
+    assert.equal(legacyDelete.responses['200'], undefined);
+    assert.notEqual(legacyDelete.responses['409'], undefined);
+    assert.equal(legacyReset.deprecated, true);
+    assert.equal(legacyReset.responses['200'], undefined);
+    assert.notEqual(legacyReset.responses['410'], undefined);
 
     const backfill = await app.inject({
       method: 'POST',

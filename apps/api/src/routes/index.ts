@@ -12,8 +12,13 @@ import openingStrugglesModule from '../modules/opening-struggles/opening-struggl
 import labModule from '../modules/lab/lab.routes';
 import jobsModule from '../modules/jobs/job-run.routes';
 import accountImportModule from '../modules/account-imports/account-import.routes';
+import dataLifecycleModule from '../modules/data-lifecycle/data-lifecycle.account-game.routes';
 import adminModule, { type AdminModuleOptions } from '../modules/admin/admin.routes';
 import externalAccountsRoutes from './externalAccounts';
+import {
+  describeExternalAccountLifecycleCompatibility,
+  enforceExternalAccountLifecycleCompatibility,
+} from './external-account-lifecycle-compatibility';
 import lichessAuthRoutes from './lichessAuth';
 import repertoireCoverageModule from '../modules/repertoire-coverage/repertoire-coverage.routes';
 import mcpModule from '../modules/mcp/mcp.routes';
@@ -34,6 +39,8 @@ export interface RegisterRoutesOptions {
 }
 
 export default function registerRoutes(app: FastifyInstance, options: RegisterRoutesOptions): void {
+  app.addHook('onRoute', describeExternalAccountLifecycleCompatibility);
+  app.addHook('preHandler', enforceExternalAccountLifecycleCompatibility);
   app.register(coursesModule);
   app.register(builderCourseReintegrationModule);
   app.register(trainingModule);
@@ -47,6 +54,7 @@ export default function registerRoutes(app: FastifyInstance, options: RegisterRo
   app.register(labModule);
   app.register(jobsModule);
   app.register(accountImportModule);
+  app.register(dataLifecycleModule);
   app.register(adminModule, options.admin);
   app.register(repertoireCoverageModule);
   app.register(mcpModule);

@@ -1,6 +1,6 @@
 # ONB-020 — Implement account and imported-game destructive lifecycle coordinator
 
-Status: READY
+Status: DONE
 
 Priority: P0
 
@@ -8,17 +8,17 @@ Order: 170
 
 Delivery class: Implementation
 
-Planning maturity: Allocated by ONB-004; ONB-019 lifecycle foundation, durable import/account-sync cutover, and preparation foundations are delivered; ready for claim after a fresh collision check
+Planning maturity: Delivered through PR #408 after repeated adversarial self-review of the coordinator, destructive phases, cancellation/drain, compatibility cutover, restart semantics, deployment configuration, and PostgreSQL validation
 
 GitHub issue: [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT / ONB-020 implementation session
 
-Claim branch: none
+Implementation branch: `onb-020/issue-260-account-game-destructive-lifecycle`
 
-Claimed at: none
+Claimed at: 2026-09-01
 
-Claim scope: none
+Claim scope: account/game destructive lifecycle coordinator over delivered ONB-019 primitives; bounded preview/execution, fencing/drain, un-analysis/un-index/account purge/delete phases, existing route cutover, and focused lifecycle/race/restart validation; no whole-user deletion, shared-position cleanup, or administrator UI
 
 Promoted at: 2026-08-26 through merged-task completion reconciliation
 
@@ -100,8 +100,12 @@ Before claim, re-inspect current Prisma migrations, lifecycle repository/service
 
 ## Completion
 
-Report: none
+Implementation report: `north-star/onboarding/reports/ONB-020-2026-09-01-account-game-destructive-lifecycle.md`
 
-Pull request: none
+Runtime pull request: [#408](https://github.com/vokerg/chess_repertoir_trainer/pull/408)
 
-Completed at: none
+Validation: the exact final PR head is required to pass the full repository CI against current `main` before squash merge.
+
+Residual ownership: ONB-021 owns whole-user/mobile purge; ONB-024 owns administrator exposure; ONB-026 owns shared-position cleanup; Angular destructive-account UX may consume the lifecycle API separately without restoring direct unfenced delete.
+
+Completed at: 2026-09-01

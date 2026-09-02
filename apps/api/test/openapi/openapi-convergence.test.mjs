@@ -30,17 +30,27 @@ const redirectOperations = new Set([
   'GET /api/board-image',
   'GET /api/auth/lichess/callback',
 ]);
+const disabledCompatibilityOperations = new Map([
+  ['DELETE /api/me/accounts/{id}', '409'],
+  ['POST /api/me/accounts/{id}/reset-cursor', '410'],
+]);
 
 assert.ok(operations.every(({ operation }) => operation.operationId));
 assert.ok(operations.every(({ operation }) => Array.isArray(operation.tags) && operation.tags.length > 0));
 assert.ok(operations.every(({ operation }) => typeof operation.summary === 'string' && operation.summary.trim().length > 0));
 
 for (const { method, path, operation } of operations) {
+  const key = `${method.toUpperCase()} ${path}`;
   const successfulStatuses = Object.keys(operation.responses ?? {}).filter((status) => /^2\d\d$/.test(status));
-  if (redirectOperations.has(`${method.toUpperCase()} ${path}`)) {
+  if (redirectOperations.has(key)) {
     assert.deepEqual(Object.keys(operation.responses).filter((status) => /^3\d\d$/.test(status)), ['302']);
+  } else if (disabledCompatibilityOperations.has(key)) {
+    const compatibilityStatus = disabledCompatibilityOperations.get(key);
+    assert.equal(operation.deprecated, true, `${key} must be marked deprecated`);
+    assert.equal(successfulStatuses.length, 0, `${key} must not advertise a successful legacy mutation`);
+    assert.ok(operation.responses?.[compatibilityStatus], `${key} must document ${compatibilityStatus}`);
   } else {
-    assert.ok(successfulStatuses.length > 0, `${method.toUpperCase()} ${path} must document a 2xx response`);
+    assert.ok(successfulStatuses.length > 0, `${key} must document a 2xx response`);
   }
 
   for (const variable of path.matchAll(/\{([^}]+)\}/g)) {
@@ -67,7 +77,7 @@ const bodylessActions = new Map([
   ['POST /api/me/accounts/{id}/sync', 'returns 202 without provider traversal in the HTTP request'],
   ['POST /api/me/accounts/{id}/backfill', 'Queues the three calendar months immediately before proved normal account coverage'],
   ['POST /api/me/accounts/{id}/import-all-history', 'Queues a durable import from Lichess’s earliest supported game-export boundary'],
-  ['POST /api/me/accounts/{id}/reset-cursor', 'clears syncCursorTime only'],
+  ['POST /api/me/accounts/{id}/reset-cursor', 'Raw sync-cursor mutation is no longer available'],
   ['POST /api/me/account-imports/automatic-refresh', 'Bodyless authenticated bootstrap command'],
   ['POST /api/me/account-imports/{importRunId}/pause', 'the import run id selects the persisted run to pause'],
   ['POST /api/me/account-imports/{importRunId}/resume', 'the import run id selects the persisted paused run to return to the durable queue'],
@@ -80,6 +90,7 @@ const bodylessActions = new Map([
   ['POST /api/me/onboarding/runs/{runId}/cancel', 'run id selects the persisted preparation whose acknowledged cancellation is requested'],
   ['POST /api/me/onboarding/runs/{runId}/retry', 'run id selects persisted failed preparation evidence eligible for a retry generation'],
   ['POST /api/me/onboarding/runs/{runId}/restart', 'run id supplies the persisted immutable preparation scope and recovery lineage'],
+  ['POST /api/me/data-lifecycle/{operationId}/stop', 'Before the first destructive commit this requests terminal cancellation'],
 ]);
 
 for (const { method, path, operation } of operations.filter(({ method }) => ['post', 'patch', 'put'].includes(method))) {
