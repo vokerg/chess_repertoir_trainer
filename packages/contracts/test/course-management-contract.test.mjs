@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import {
+  analysisReintegrationApplyErrorResponseSchema,
+  analysisReintegrationApplyResponseSchema,
+  analysisReintegrationPreviewResponseSchema,
   chapterListSchema,
   chapterSchema,
   coursePositionSuggestionsResponseSchema,
@@ -205,6 +208,90 @@ assert.deepEqual(coursePositionSuggestionsResponseSchema.parse(positionSuggestio
 assert.equal(coursePositionSuggestionsResponseSchema.safeParse({
   ...positionSuggestions,
   suggestions: [{ ...positionSuggestions.suggestions[0], courseId: '3' }],
+}).success, false);
+
+const reintegrationPreviewMove = {
+  moveUci: 'e2e4',
+  moveSan: 'e4',
+  fenBefore: 'startpos',
+  fenAfter: 'after-e4',
+  normalizedFenBefore: 'normalized-start',
+  status: 'CREATES',
+  existingNodeId: null,
+  reason: null,
+  children: [],
+};
+const reintegrationConflict = {
+  normalizedFenBefore: 'normalized-start',
+  sideToMove: 'WHITE',
+  proposedMoveUci: 'e2e4',
+  proposedMoveSan: 'e4',
+  existingMoves: [{
+    moveUci: 'd2d4',
+    moveSan: 'd4',
+    lineRefs: [{ lineId: 14, lineName: 'Main line', nodeId: 31, moveSequenceSan: '1. d4' }],
+  }],
+};
+const reintegrationCounts = {
+  reusedMoves: 0,
+  createdMoves: 1,
+  conflictingMoves: 1,
+  totalAnalysisMoves: 1,
+};
+const reintegrationPreview = {
+  analysisRootFen: 'startpos',
+  analysisRootNormalizedFen: 'normalized-start',
+  candidates: [{
+    lineId: 14,
+    lineName: 'Main line',
+    sideToTrain: 'WHITE',
+    anchor: {
+      kind: 'LINE_START',
+      lineId: 14,
+      lineName: 'Main line',
+      nodeId: null,
+      fen: 'startpos',
+      normalizedFen: 'normalized-start',
+      moveSequenceSan: null,
+    },
+    counts: reintegrationCounts,
+    conflicts: [reintegrationConflict],
+    warnings: ['Different trained-side move already exists in this course.'],
+    previewTree: [reintegrationPreviewMove],
+  }],
+  newLine: {
+    allowed: false,
+    counts: reintegrationCounts,
+    conflicts: [reintegrationConflict],
+    warnings: [],
+    previewTree: [reintegrationPreviewMove],
+  },
+};
+assert.deepEqual(analysisReintegrationPreviewResponseSchema.parse(reintegrationPreview), reintegrationPreview);
+assert.equal(analysisReintegrationPreviewResponseSchema.safeParse({
+  ...reintegrationPreview,
+  newLine: { ...reintegrationPreview.newLine, previewTree: undefined },
+}).success, false);
+
+const reintegrationApply = {
+  targetKind: 'EXISTING_LINE',
+  lineId: 14,
+  lineName: 'Main line',
+  createdMoves: 1,
+  reusedMoves: 0,
+};
+assert.deepEqual(analysisReintegrationApplyResponseSchema.parse(reintegrationApply), reintegrationApply);
+assert.equal(analysisReintegrationApplyResponseSchema.safeParse({ ...reintegrationApply, createdMoves: -1 }).success, false);
+assert.deepEqual(analysisReintegrationApplyErrorResponseSchema.parse({
+  error: 'Analysis tree has repertoire conflicts.',
+  conflicts: [reintegrationConflict],
+}), {
+  error: 'Analysis tree has repertoire conflicts.',
+  conflicts: [reintegrationConflict],
+});
+assert.equal(analysisReintegrationApplyErrorResponseSchema.safeParse({
+  error: 'Analysis tree has repertoire conflicts.',
+  conflicts: [{ proposedMoveUci: 'e2e4' }],
 }).success, false);
 
 console.log('Course management contract tests passed.');
