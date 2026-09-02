@@ -1,11 +1,3 @@
-export type {
-  AnalysisReintegrationApplyResponse,
-  AnalysisReintegrationCandidate,
-  AnalysisReintegrationConflict,
-  AnalysisReintegrationCounts,
-  AnalysisReintegrationPreviewResponse,
-} from '@chess-trainer/contracts/courses';
-
 export type RepertoireColor = 'WHITE' | 'BLACK';
 export interface AnalysisReintegrationMovePayload { moveUci: string; children: AnalysisReintegrationMovePayload[]; }
 export interface AnalysisReintegrationTreePayload { rootFen: string; children: AnalysisReintegrationMovePayload[]; }
