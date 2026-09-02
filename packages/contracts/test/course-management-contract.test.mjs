@@ -216,9 +216,9 @@ const reintegrationPreviewMove = {
   fenBefore: 'startpos',
   fenAfter: 'after-e4',
   normalizedFenBefore: 'normalized-start',
-  status: 'CREATES',
+  status: 'CONFLICT',
   existingNodeId: null,
-  reason: null,
+  reason: 'Different trained-side move already exists in this course.',
   children: [],
 };
 const reintegrationConflict = {
@@ -234,7 +234,7 @@ const reintegrationConflict = {
 };
 const reintegrationCounts = {
   reusedMoves: 0,
-  createdMoves: 1,
+  createdMoves: 0,
   conflictingMoves: 1,
   totalAnalysisMoves: 1,
 };
