@@ -256,7 +256,7 @@ const reintegrationPreview = {
     },
     counts: reintegrationCounts,
     conflicts: [reintegrationConflict],
-    warnings: ['Different trained-side move already exists in this course.'],
+    warnings: [],
     previewTree: [reintegrationPreviewMove],
   }],
   newLine: {
