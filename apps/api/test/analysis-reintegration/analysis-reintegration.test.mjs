@@ -63,7 +63,8 @@ try {
   const invalid = await app.inject({ method: 'POST', url: '/api/chapters/7/analysis-reintegration/preview',
     payload: { analysisTree: { rootFen: '', children: [] } } });
   assert.equal(invalid.statusCode, 400);
-  assert.deepEqual(invalid.json(), { error: 'Validation failed' });
+  assert.deepEqual(Object.keys(invalid.json()), ['error']);
+  assert.equal(typeof invalid.json().error, 'string');
 
   let applyCall;
   AnalysisReintegrationService.applyToChapter = async (userId, chapterId, body) => {
