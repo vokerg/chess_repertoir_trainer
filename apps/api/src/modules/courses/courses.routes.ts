@@ -24,13 +24,16 @@ import { AnalysisReintegrationError, AnalysisReintegrationService } from './anal
 import { getAvailableSublineRows } from './sublines.service';
 import {
   apiErrorResponseSchema,
-  legacyOpaqueResponseSchema,
   messageResponseSchema,
   noContentResponseSchema,
   unauthorizedResponseSchema,
 } from '../../routes/legacy-route.schemas';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 import {
+  analysisReintegrationApplyErrorResponseSchema,
+  analysisReintegrationApplyResponseSchema,
+  analysisReintegrationErrorResponseSchema,
+  analysisReintegrationPreviewResponseSchema,
   chapterListSchema,
   chapterSchema,
   courseListSchema,
@@ -450,7 +453,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     schema: courseRouteSchema('previewChapterAnalysisReintegration', ['Chapters'], 'Preview analysis moves that can be added to a chapter', {
       params: chapterIdParamsSchema,
       body: previewAnalysisReintegrationSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+      response: { 200: analysisReintegrationPreviewResponseSchema, 400: analysisReintegrationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: analysisReintegrationErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -468,7 +471,7 @@ const coursesModule: FastifyPluginAsyncZod = async (app) => {
     schema: courseRouteSchema('applyChapterAnalysisReintegration', ['Chapters'], 'Apply selected analysis moves to a chapter', {
       params: chapterIdParamsSchema,
       body: applyAnalysisReintegrationSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: legacyOpaqueResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema, 409: legacyOpaqueResponseSchema },
+      response: { 200: analysisReintegrationApplyResponseSchema, 400: analysisReintegrationApplyErrorResponseSchema, 401: unauthorizedResponseSchema, 404: analysisReintegrationErrorResponseSchema, 409: analysisReintegrationApplyErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
