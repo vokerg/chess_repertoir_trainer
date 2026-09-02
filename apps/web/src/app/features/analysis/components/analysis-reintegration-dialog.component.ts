@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AnalysisReintegrationCandidate, RepertoireColor } from '../data-access/analysis-reintegration.models';
+import type { AnalysisReintegrationCandidate } from '@chess-trainer/contracts/courses';
+import type { RepertoireColor } from '../data-access/analysis-reintegration.models';
 import { AnalysisReintegrationStore, candidateKey } from '../state/analysis-reintegration.store';
 
 @Component({ selector: 'app-analysis-reintegration-dialog', standalone: true,
