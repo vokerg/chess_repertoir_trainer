@@ -2,24 +2,15 @@ import { HttpBackend, HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Clerk } from '@clerk/clerk-js';
 import { firstValueFrom } from 'rxjs';
+import type { CurrentAppUserResponse as CurrentAppUserWireResponse } from '@chess-trainer/contracts/external-accounts';
 import { appConfig } from '../../app-config';
 
-export interface AppUser {
-  id: number;
-  displayName: string | null;
-  authProvider: string | null;
-  authSubject: string | null;
-  email: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type AppUser = Pick<
+  CurrentAppUserWireResponse['user'],
+  'id' | 'displayName' | 'authProvider' | 'authSubject' | 'email' | 'createdAt' | 'updatedAt'
+>;
 
-export interface AuthSummary {
-  userId: number;
-  provider: 'clerk' | 'dev';
-  externalSubject: string;
-  email?: string;
-}
+export type AuthSummary = CurrentAppUserWireResponse['auth'];
 
 export interface CurrentAppUserResponse {
   user: AppUser;

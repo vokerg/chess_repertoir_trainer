@@ -16,23 +16,23 @@ Run:
 npm run check:hygiene
 ```
 
-The guard currently ratchets use of `legacyOpaqueResponseSchema`. `scripts/check-repository-hygiene.mjs` records the exact reviewed token count for every remaining consumer file, including its import and route response references. New consumer files and net increases in an existing file fail the check; migrating or deleting a usage requires reducing that file's baseline in the same change, and removing the last usage requires removing the file entry entirely.
+`legacyOpaqueResponseSchema` has been retired from API consumers. `scripts/check-repository-hygiene.mjs` keeps a zero-use baseline and scans API source so any future consumer fails the guard immediately. Cross-workspace payloads must use concrete schemas in `packages/contracts`; feature-local responses may use concrete API-local schemas when they are not shared.
 
-This is intentionally a debt-count ratchet rather than a parser or identity-level route allowlist. A one-for-one replacement of one legacy response with another inside the same file would leave the count unchanged, so code review must still reject newly introduced opaque responses. The guard prevents unnoticed growth; it does not replace route-level review.
+The guard is intentionally narrow and does not replace route-level review. Code review must still reject newly introduced unconstrained response schemas or contracts that do not match the real service/repository output.
 
-The Analysis routes are no longer part of that baseline. `@chess-trainer/contracts/analysis` owns position-analysis cache responses plus imported-game analysis read/create/ply-mutation responses; the API preserves the existing service outputs and error behavior, and Angular consumes the shared imported-game analysis DTOs while retaining its broader local position-cache state model.
+The Analysis routes use `@chess-trainer/contracts/analysis` for position-analysis cache responses plus imported-game analysis read/create/ply-mutation responses; the API preserves the existing service outputs and error behavior, and Angular consumes the shared imported-game analysis DTOs while retaining its broader local position-cache state model.
 
-The statistics routes are no longer part of that baseline. Their aggregate summary, line/chapter/course statistics, and subline-status responses use schemas from `@chess-trainer/contracts/training`, and the Angular Lines client consumes the inferred DTOs instead of duplicate handwritten response interfaces.
+The statistics routes use schemas from `@chess-trainer/contracts/training` for aggregate summary, line/chapter/course statistics, and subline-status responses, and the Angular Lines client consumes the inferred DTOs instead of duplicate handwritten response interfaces.
 
-Lab routes are no longer part of the opaque-response baseline. `@chess-trainer/contracts/lab` owns the shared Lab wire DTOs, including monthly games, training log, and tactical-detection responses; the API explicitly serializes persistence dates to ISO date-time strings, and Angular consumes the shared types instead of maintaining duplicate response models.
+Lab routes use `@chess-trainer/contracts/lab` for shared Lab wire DTOs, including monthly games, training log, and tactical-detection responses; the API explicitly serializes persistence dates to ISO date-time strings, and Angular consumes the shared types instead of maintaining duplicate response models.
 
-Imported-game routes are no longer part of the opaque-response baseline. The opening-analysis core and performance routes now use shared response contracts alongside the existing imported-game DTOs, the top-games route uses the same shared contract family, and Angular consumes the inferred opening-analysis DTOs instead of maintaining duplicate response interfaces.
+Imported-game routes use shared response contracts for opening-analysis core/performance/top-games alongside the existing imported-game DTOs, and Angular consumes the inferred opening-analysis DTOs instead of maintaining duplicate response interfaces.
 
-Scenario-training routes are no longer part of the opaque-response baseline. `@chess-trainer/contracts/scenario-training` owns session, history, attempt-result, and dislike response DTOs; Fastify validates every successful response against those schemas, and Angular consumes the inferred response types instead of maintaining handwritten copies. The contract preserves source-game deletion semantics by requiring `importedGameId` with a nullable value.
+Scenario-training routes use `@chess-trainer/contracts/scenario-training` for session, history, attempt-result, and dislike response DTOs; Fastify validates every successful response against those schemas, and Angular consumes the inferred response types instead of maintaining handwritten copies. The contract preserves source-game deletion semantics by requiring `importedGameId` with a nullable value.
 
-Courses routes are no longer part of the opaque-response baseline. `@chess-trainer/contracts/courses` owns position suggestions, chapter resources, line resource/list/tree and move-node mutation responses, plus chapter analysis-reintegration preview/apply/error responses. Reintegration contracts include the recursive preview tree and structured conflict details emitted by the merge planner; Fastify validates those payloads without changing status or error behavior, and Angular consumes the shared reintegration response DTOs instead of maintaining handwritten copies.
+Courses routes use `@chess-trainer/contracts/courses` for position suggestions, chapter resources, line resource/list/tree and move-node mutation responses, plus chapter analysis-reintegration preview/apply/error responses. Reintegration contracts include the recursive preview tree and structured conflict details emitted by the merge planner; Fastify validates those payloads without changing status or error behavior, and Angular consumes the shared reintegration response DTOs instead of maintaining handwritten copies.
 
-The stable External Accounts resource/read-model surface is concrete. `@chess-trainer/contracts/external-accounts` owns account list/create/get/update/delete, default-progress-account, rating-history, and rating-stats responses; the API explicitly converts Prisma account dates to ISO strings before validation, and Angular account/profile consumers derive their DTOs from the shared contract. The External Accounts hygiene baseline is intentionally retained at two occurrences: the import plus `/api/me`. That remaining response has separate lifecycle/cutover ownership and is not stabilized opportunistically by RH-003 Courses work.
+External Accounts routes use `@chess-trainer/contracts/external-accounts` for the current application user/session response, account list/create/get/update/delete, default-progress-account, workflow summary, rating-history, rating-stats, and performance responses. The API explicitly converts Prisma user/account dates to ISO strings before validation where needed, and Angular auth/account/profile consumers derive their wire DTOs from the shared contracts. `GET /api/me` was the final production `legacyOpaqueResponseSchema` consumer; its migration reduces the repository opaque-response baseline to zero.
 
 CI runs the hygiene guard independently from the architecture guardrails so cleanup-specific constraints stay visible and can expand without turning the architecture script into a general lint bucket.
 
@@ -40,7 +40,7 @@ CI runs the hygiene guard independently from the architecture guardrails so clea
 
 1. Inventory and classify suspected residue as referenced, dynamically referenced, generated, tooling-only, historical, or proven zero-reference.
 2. Remove only proven zero-reference artifacts, with focused tests or build coverage for the owning area.
-3. Migrate transitional response contracts endpoint-by-endpoint and reduce the exact hygiene baseline in the same change.
+3. Keep response contracts concrete and shared when payloads cross workspace boundaries.
 4. Refactor oversized modules only along existing domain boundaries.
 5. Reconcile canonical docs, feature tests, Web/Mobile/MCP capability ownership, and operational scripts after the code change is verified.
 
