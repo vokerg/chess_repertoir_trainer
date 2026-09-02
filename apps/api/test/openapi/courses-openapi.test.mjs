@@ -10,6 +10,8 @@ const courseOperations = [
   ['/api/chapters/{chapterId}/lines', 'get', 'listChapterLines'],
   ['/api/chapters/{chapterId}/lines', 'post', 'createChapterLine'],
   ['/api/chapters/{chapterId}/lines/import-pgn', 'post', 'importChapterLinePgn'],
+  ['/api/chapters/{chapterId}/analysis-reintegration/preview', 'post', 'previewChapterAnalysisReintegration'],
+  ['/api/chapters/{chapterId}/analysis-reintegration/apply', 'post', 'applyChapterAnalysisReintegration'],
   ['/api/lines/{id}', 'get', 'getLine'],
   ['/api/lines/{id}', 'patch', 'updateLine'],
   ['/api/lines/{id}/copy', 'post', 'copyLine'],
@@ -160,6 +162,42 @@ assertLineSchema(first, responseSchema(first, '/api/chapters/{chapterId}/lines/i
 assertLineSchema(first, responseSchema(first, '/api/lines/{id}', 'get', '200'));
 assertLineSchema(first, responseSchema(first, '/api/lines/{id}', 'patch', '200'));
 assertLineSchema(first, responseSchema(first, '/api/lines/{id}/copy', 'post', '201'));
+
+const reintegrationPreviewSchema = responseSchema(
+  first,
+  '/api/chapters/{chapterId}/analysis-reintegration/preview',
+  'post',
+  '200',
+);
+for (const property of ['analysisRootFen', 'analysisRootNormalizedFen', 'candidates', 'newLine']) {
+  assert.ok(reintegrationPreviewSchema.properties?.[property], `Expected reintegration preview property ${property}`);
+}
+const reintegrationCandidates = resolveSchema(first, reintegrationPreviewSchema.properties.candidates);
+assert.equal(reintegrationCandidates.type, 'array');
+const reintegrationCandidate = resolveSchema(first, reintegrationCandidates.items);
+for (const property of ['lineId', 'anchor', 'counts', 'conflicts', 'warnings', 'previewTree']) {
+  assert.ok(reintegrationCandidate.properties?.[property], `Expected reintegration candidate property ${property}`);
+}
+const newLinePreview = resolveSchema(first, reintegrationPreviewSchema.properties.newLine);
+assert.ok(newLinePreview.properties?.previewTree, 'Expected new-line reintegration preview tree');
+
+const reintegrationApplySchema = responseSchema(
+  first,
+  '/api/chapters/{chapterId}/analysis-reintegration/apply',
+  'post',
+  '200',
+);
+for (const property of ['targetKind', 'lineId', 'lineName', 'createdMoves', 'reusedMoves']) {
+  assert.ok(reintegrationApplySchema.properties?.[property], `Expected reintegration apply property ${property}`);
+}
+const reintegrationConflictErrorSchema = responseSchema(
+  first,
+  '/api/chapters/{chapterId}/analysis-reintegration/apply',
+  'post',
+  '409',
+);
+assert.ok(reintegrationConflictErrorSchema.properties?.error, 'Expected reintegration error message');
+assert.ok(reintegrationConflictErrorSchema.properties?.conflicts, 'Expected optional reintegration conflict details');
 
 const lineTreeResponseSchema = responseSchema(first, '/api/lines/{id}/tree', 'get', '200');
 const root = assertMoveTreeNodeSchema(first, lineTreeResponseSchema.properties?.root);
