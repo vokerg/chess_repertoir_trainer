@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import {
   AnalysisMergeMove,
+  MergePreviewConflict,
   normalizeFenForPosition,
   previewChapterReintegration,
   previewCreateNewLine,
@@ -24,7 +25,7 @@ import {
 } from './analysis-reintegration.schemas';
 
 export class AnalysisReintegrationError extends Error {
-  constructor(message: string, readonly status: number, readonly conflicts?: unknown[]) {
+  constructor(message: string, readonly status: number, readonly conflicts?: MergePreviewConflict[]) {
     super(message);
   }
 }
@@ -125,7 +126,7 @@ async function applyChildren(tx: Prisma.TransactionClient, userId: number, lineI
   return { created, reused };
 }
 
-function rejectConflicts(count: number, conflicts: unknown[]): void {
+function rejectConflicts(count: number, conflicts: MergePreviewConflict[]): void {
   if (count > 0) throw new AnalysisReintegrationError('Analysis tree has repertoire conflicts.', 409, conflicts);
 }
 
