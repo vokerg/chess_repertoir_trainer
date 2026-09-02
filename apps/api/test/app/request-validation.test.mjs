@@ -23,6 +23,8 @@ try {
     { method: 'GET', url: '/api/imported-games?limit=not-a-number' },
     { method: 'POST', url: '/api/job-runs/not-a-number/cancel' },
     { method: 'GET', url: '/api/board-image?fen=startpos&pov=sideways' },
+    { method: 'POST', url: '/api/chapters/1/analysis-reintegration/preview',
+      payload: { analysisTree: { rootFen: '', children: [] } } },
   ];
 
   for (const request of malformedRequests) {

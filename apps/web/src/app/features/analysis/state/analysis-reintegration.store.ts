@@ -1,8 +1,16 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import type {
+  AnalysisReintegrationCandidate,
+  AnalysisReintegrationPreviewResponse,
+} from '@chess-trainer/contracts/courses';
 import { AnalysisReintegrationApiService } from '../data-access/analysis-reintegration-api.service';
-import { AnalysisReintegrationCandidate, AnalysisReintegrationPreviewResponse,
-  AnalysisReintegrationTreePayload, ChapterOption, CourseOption, RepertoireColor } from '../data-access/analysis-reintegration.models';
+import {
+  AnalysisReintegrationTreePayload,
+  ChapterOption,
+  CourseOption,
+  RepertoireColor,
+} from '../data-access/analysis-reintegration.models';
 
 @Injectable()
 export class AnalysisReintegrationStore {

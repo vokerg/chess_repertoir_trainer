@@ -1,9 +1,16 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import type {
+  AnalysisReintegrationApplyResponse,
+  AnalysisReintegrationPreviewResponse,
+} from '@chess-trainer/contracts/courses';
 import { ApiService } from '../../../core/api/api.service';
-import { AnalysisReintegrationApplyRequest, AnalysisReintegrationApplyResponse,
-  AnalysisReintegrationPreviewRequest, AnalysisReintegrationPreviewResponse,
-  ChapterOption, CourseOption } from './analysis-reintegration.models';
+import {
+  AnalysisReintegrationApplyRequest,
+  AnalysisReintegrationPreviewRequest,
+  ChapterOption,
+  CourseOption,
+} from './analysis-reintegration.models';
 
 @Injectable()
 export class AnalysisReintegrationApiService {
