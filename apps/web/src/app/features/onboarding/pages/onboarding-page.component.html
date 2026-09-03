@@ -146,6 +146,10 @@
               <button type="button" [disabled]="store.mutating()" (click)="handleAction(action)">
                 {{ action.code.replaceAll('_', ' ') }}
               </button>
+            } @else if (action.code === 'SKIP_ONBOARDING' && readiness.preparation) {
+              <button type="button" class="secondary" [disabled]="store.mutating()" (click)="store.skip()">
+                Skip guidance
+              </button>
             } @else if (action.code !== 'START_ONBOARDING' && action.code !== 'SKIP_ONBOARDING') {
               <a [routerLink]="action.destination">{{ action.code.replaceAll('_', ' ') }}</a>
             }
