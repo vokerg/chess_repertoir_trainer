@@ -163,12 +163,13 @@ export function createPositionCleanupWorker(input: {
 
   function waitForPoll(delayMs: number): Promise<void> {
     return new Promise((resolve) => {
+      let wake: () => void;
       const timer = setTimeout(() => {
         if (wakePoll === wake) wakePoll = null;
         resolve();
       }, delayMs);
       timer.unref();
-      const wake = () => {
+      wake = () => {
         clearTimeout(timer);
         if (wakePoll === wake) wakePoll = null;
         resolve();
