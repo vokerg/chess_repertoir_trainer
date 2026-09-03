@@ -37,6 +37,37 @@
     </div>
   }
 
+  @if (onboarding(); as readiness) {
+    @if (onboardingNeedsFocus(readiness)) {
+      <a class="onboarding-reentry onboarding-reentry-primary" routerLink="/onboarding">
+        <div>
+          <span class="action-kicker">PREPARATION</span>
+          <strong>{{ onboardingHeadline(readiness) }}</strong>
+          @if (readiness.preparation; as preparation) {
+            <span>
+              {{ preparation.games.committed }} games found · {{ preparation.games.indexed }} indexed · {{ preparation.games.analysed }} analysed
+            </span>
+          } @else {
+            <span>Start with one connected account and keep using the app while preparation runs.</span>
+          }
+        </div>
+        <span class="onboarding-reentry-cta">Open onboarding <span aria-hidden="true">→</span></span>
+      </a>
+    } @else if (readiness.preparation; as preparation) {
+      <a class="onboarding-reentry onboarding-reentry-compact" routerLink="/onboarding">
+        <div>
+          <span class="action-kicker">PREPARATION</span>
+          <strong>Recent chess ready to use</strong>
+          <span>
+            {{ preparation.games.indexed }} indexed · {{ preparation.games.analysed }} analysed
+            @if (readiness.presentationState === 'CORE_READY') { · deeper analysis continues }
+          </span>
+        </div>
+        <span aria-hidden="true">→</span>
+      </a>
+    }
+  }
+
   @if (store.loading() && !store.error()) {
     <div class="home-loading" aria-live="polite">
       <div class="loading-primary"></div>
