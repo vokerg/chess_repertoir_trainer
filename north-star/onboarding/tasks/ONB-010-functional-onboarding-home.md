@@ -1,6 +1,6 @@
 # ONB-010 — Build functional onboarding and Home re-entry
 
-Status: PROPOSED
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -8,17 +8,17 @@ Order: 100
 
 Delivery class: Implementation
 
-Planning maturity: Decisioned by ONB-001/007/016; blocked on functional backend lifecycle
+Planning maturity: Backend lifecycle dependencies are delivered; Angular implementation is in progress on draft PR #413
 
 GitHub issue: [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT / onboarding implementation session
 
-Claim branch: none
+Claim branch: `onb-010/issue-195-functional-onboarding-home`
 
-Claimed at: none
+Claimed at: 2026-09-03
 
-Claim scope: none
+Claim scope: protected Angular onboarding route, typed readiness/command client, route-local server-authoritative store, first-run and lifecycle controls, truthful progress/reveal presentation, Home re-entry, and focused Angular coverage; no provider/worker/Prisma lifecycle ownership, no client-side workflow orchestration or ETA, no mobile UI, and no final VT-302 polish
 
 ## Outcome
 
@@ -154,6 +154,6 @@ The current account Settings surface intentionally exposes many operational cont
 
 Report: none
 
-Pull request: none
+Pull request: #413 (draft; implementation and validation in progress)
 
 Completed at: none
