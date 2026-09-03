@@ -31,6 +31,7 @@ export class OnboardingStore {
   readonly loading = signal(false);
   readonly mutating = signal(false);
   readonly error = signal<string | null>(null);
+  readonly accountsError = signal<string | null>(null);
   readonly notice = signal<string | null>(null);
 
   readonly selectedAccount = computed(() =>
@@ -50,18 +51,30 @@ export class OnboardingStore {
     const requestId = ++this.refreshRequestId;
     this.loading.set(true);
     this.error.set(null);
+    this.accountsError.set(null);
+
+    const [readinessResult, accountsResult] = await Promise.allSettled([
+      firstValueFrom(this.api.getReadiness()),
+      firstValueFrom(this.accountsApi.getAccounts()),
+    ]);
+    if (requestId !== this.refreshRequestId) return;
+
     try {
-      const [readiness, accounts] = await Promise.all([
-        firstValueFrom(this.api.getReadiness()),
-        firstValueFrom(this.accountsApi.getAccounts()),
-      ]);
-      if (requestId !== this.refreshRequestId) return;
+      if (readinessResult.status === 'rejected') throw readinessResult.reason;
+      const readiness = readinessResult.value;
       this.readiness.set(readiness);
-      this.accounts.set(accounts);
-      this.selectDefaultAccount(accounts, readiness);
+
+      if (accountsResult.status === 'fulfilled') {
+        this.accounts.set(accountsResult.value);
+        this.selectDefaultAccount(accountsResult.value, readiness);
+      } else {
+        this.accounts.set([]);
+        this.selectedAccountId.set(null);
+        this.accountsError.set(readApiError(accountsResult.reason, 'Could not load connected accounts.'));
+      }
+
       this.syncPolling();
     } catch (error) {
-      if (requestId !== this.refreshRequestId) return;
       this.error.set(readApiError(error, 'Could not load onboarding state.'));
     } finally {
       if (requestId === this.refreshRequestId) this.loading.set(false);
