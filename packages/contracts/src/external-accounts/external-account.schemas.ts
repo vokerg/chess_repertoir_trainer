@@ -32,6 +32,33 @@ export const defaultProgressAccountResponseSchema = z.object({
   accounts: externalAccountListResponseSchema,
 });
 
+export const currentAppUserSchema = z.object({
+  id: z.number().int().positive(),
+  displayName: z.string().nullable(),
+  authProvider: z.string().nullable(),
+  authSubject: z.string().nullable(),
+  email: z.string().nullable(),
+  timeZone: z.string(),
+  onboardingDisposition: z.string(),
+  onboardingDispositionReason: z.string().nullable(),
+  onboardingDispositionAt: z.iso.datetime({ offset: true }).nullable(),
+  defaultProgressAccountId: z.number().int().positive().nullable(),
+  createdAt: z.iso.datetime({ offset: true }),
+  updatedAt: z.iso.datetime({ offset: true }),
+});
+
+export const currentAppUserAuthSchema = z.object({
+  userId: z.number().int().positive(),
+  provider: z.enum(['dev', 'clerk']),
+  externalSubject: z.string().min(1),
+  email: z.string().optional(),
+});
+
+export const currentAppUserResponseSchema = z.object({
+  user: currentAppUserSchema,
+  auth: currentAppUserAuthSchema,
+});
+
 export const externalAccountWorkflowSummaryResponseSchema = z.object({
   accountId: z.number().int().positive(),
   eligibleCount: z.number().int().nonnegative(),
@@ -116,6 +143,9 @@ export type ExternalAccountProvider = z.infer<typeof externalAccountProviderSche
 export type ExternalAccountResponse = z.infer<typeof externalAccountResponseSchema>;
 export type ExternalAccountDeleteResponse = z.infer<typeof externalAccountDeleteResponseSchema>;
 export type DefaultProgressAccountResponse = z.infer<typeof defaultProgressAccountResponseSchema>;
+export type CurrentAppUser = z.infer<typeof currentAppUserSchema>;
+export type CurrentAppUserAuth = z.infer<typeof currentAppUserAuthSchema>;
+export type CurrentAppUserResponse = z.infer<typeof currentAppUserResponseSchema>;
 export type ExternalAccountWorkflowSummaryResponse = z.infer<
   typeof externalAccountWorkflowSummaryResponseSchema
 >;

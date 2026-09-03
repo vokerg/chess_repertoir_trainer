@@ -21,7 +21,6 @@ import {
   AccountImportService,
 } from '../modules/account-imports/account-import.service';
 import {
-  legacyOpaqueResponseSchema,
   messageResponseSchema,
   unauthorizedResponseSchema,
 } from './legacy-route.schemas';
@@ -32,6 +31,7 @@ import {
   accountPerformanceStatsResponseSchema,
   accountRatingHistoryResponseSchema,
   accountRatingStatsResponseSchema,
+  currentAppUserResponseSchema,
   defaultProgressAccountResponseSchema,
   externalAccountDeleteResponseSchema,
   externalAccountListResponseSchema,
@@ -164,7 +164,7 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
     '/api/me',
     {
       schema: accountSchema('getCurrentUser', 'Get the authenticated application user', {
-        response: { 200: legacyOpaqueResponseSchema, 401: unauthorizedResponseSchema },
+        response: { 200: currentAppUserResponseSchema, 401: unauthorizedResponseSchema },
       }),
     },
     async (request, reply) => {
@@ -172,7 +172,15 @@ const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
       if (!auth) return;
 
       const user = await CurrentAppUserService.getById(auth.userId);
-      return { user, auth };
+      return currentAppUserResponseSchema.parse({
+        user: {
+          ...user,
+          onboardingDispositionAt: user.onboardingDispositionAt?.toISOString() ?? null,
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.updatedAt.toISOString(),
+        },
+        auth,
+      });
     },
   );
 

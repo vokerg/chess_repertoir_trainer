@@ -6,12 +6,9 @@ import { fileURLToPath } from 'node:url';
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const apiSourceRoot = new URL('../apps/api/src/', import.meta.url);
 
-// Counts include the import reference plus every route response reference in the file.
-// Keep this map exact: contract migrations must reduce the relevant count in the same change.
-// This is a debt-count ratchet, not an identity-level allowlist for individual route usages.
-const expectedLegacyOpaqueResponseOccurrences = new Map([
-  ['apps/api/src/routes/externalAccounts.ts', 2],
-]);
+// Keep this map empty now that all route responses use concrete schemas.
+// Any future legacyOpaqueResponseSchema consumer fails this guard immediately.
+const expectedLegacyOpaqueResponseOccurrences = new Map();
 
 const actualLegacyOccurrences = new Map(
   sourceFiles(apiSourceRoot)
@@ -30,8 +27,7 @@ assert.deepEqual(
   [...actualLegacyOccurrences.entries()].sort(([left], [right]) => left.localeCompare(right)),
   [...expectedLegacyOpaqueResponseOccurrences.entries()].sort(([left], [right]) => left.localeCompare(right)),
   [
-    'legacyOpaqueResponseSchema is transitional debt: exact per-file usage counts must match the reviewed baseline.',
-    'New consumer files and net usage growth fail this check; migrated/deleted usages must reduce the baseline in the same change.',
+    'legacyOpaqueResponseSchema is retired: no API source file may consume it.',
     'Define a concrete response schema, preferably in packages/contracts when the payload crosses workspace boundaries.',
   ].join(' '),
 );
