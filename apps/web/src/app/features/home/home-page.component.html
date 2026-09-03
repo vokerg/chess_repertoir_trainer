@@ -53,6 +53,20 @@
         </div>
         <span class="onboarding-reentry-cta">Open onboarding <span aria-hidden="true">→</span></span>
       </a>
+    } @else if (readiness.disposition.value === 'SKIPPED') {
+      @if (readiness.preparation; as preparation) {
+        <a class="onboarding-reentry onboarding-reentry-compact" routerLink="/onboarding">
+          <div>
+            <span class="action-kicker">PREPARATION</span>
+            <strong>Onboarding guidance skipped</strong>
+            <span>
+              Preparation {{ preparation.status.replaceAll('_', ' ').toLowerCase() }} ·
+              {{ preparation.games.indexed }} indexed · {{ preparation.games.analysed }} analysed
+            </span>
+          </div>
+          <span aria-hidden="true">→</span>
+        </a>
+      }
     } @else if (readiness.preparation; as preparation) {
       <a class="onboarding-reentry onboarding-reentry-compact" routerLink="/onboarding">
         <div>
