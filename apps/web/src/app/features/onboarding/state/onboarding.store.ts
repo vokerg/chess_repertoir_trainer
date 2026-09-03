@@ -47,6 +47,7 @@ export class OnboardingStore {
   }
 
   async initialize(): Promise<void> {
+    const requestId = ++this.refreshRequestId;
     this.loading.set(true);
     this.error.set(null);
     try {
@@ -54,14 +55,16 @@ export class OnboardingStore {
         firstValueFrom(this.api.getReadiness()),
         firstValueFrom(this.accountsApi.getAccounts()),
       ]);
+      if (requestId !== this.refreshRequestId) return;
       this.readiness.set(readiness);
       this.accounts.set(accounts);
       this.selectDefaultAccount(accounts, readiness);
       this.syncPolling();
     } catch (error) {
+      if (requestId !== this.refreshRequestId) return;
       this.error.set(readApiError(error, 'Could not load onboarding state.'));
     } finally {
-      this.loading.set(false);
+      if (requestId === this.refreshRequestId) this.loading.set(false);
     }
   }
 
