@@ -420,16 +420,14 @@ export function createPositionCleanupRepository(
             RETURNING position."id"
           )
           SELECT
-            COUNT(input."positionId")::int AS "inspected",
+            (SELECT COUNT(*)::int FROM input) AS "inspected",
             (SELECT COUNT(*)::int FROM eligible) AS "matched",
-            COALESCE(MAX(input."positionId"), ${run.evaluateAfterPositionId})::int AS "checkpoint",
+            COALESCE((SELECT MAX("positionId") FROM input), ${run.evaluateAfterPositionId})::int AS "checkpoint",
             (SELECT COUNT(*)::int FROM deleted) AS "deleted",
             dependent."analysisRowsDeleted" AS "analysisRowsDeleted",
             dependent."cacheRowsDeleted" AS "cacheRowsDeleted",
             ((SELECT COUNT(*) FROM graced) - (SELECT COUNT(*) FROM eligible))::int AS "skippedReferenced"
-          FROM input
-          CROSS JOIN dependent
-          GROUP BY dependent."analysisRowsDeleted", dependent."cacheRowsDeleted"
+          FROM dependent
         `);
         const summary = rows[0];
         if (!summary) throw new Error('Position cleanup delete summary was not returned.');
