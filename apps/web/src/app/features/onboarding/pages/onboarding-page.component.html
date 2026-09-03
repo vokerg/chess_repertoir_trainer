@@ -49,7 +49,12 @@
               <p>Standard blitz and rapid games are prepared first. The server owns the exact scope and workflow.</p>
             </div>
 
-            @if (store.hasConnectedAccount()) {
+            @if (store.accountsError(); as accountsError) {
+              <div class="empty-account">
+                <p>{{ accountsError }}</p>
+                <button type="button" class="secondary" (click)="store.initialize()">Retry account list</button>
+              </div>
+            } @else if (store.hasConnectedAccount()) {
               <label class="account-field">
                 <span>Account</span>
                 <select
