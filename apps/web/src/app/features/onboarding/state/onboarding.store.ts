@@ -109,6 +109,16 @@ export class OnboardingStore {
     );
   }
 
+  async expandOlderHistory(): Promise<void> {
+    const runId = this.activeRunId();
+    const accountId = this.selectedAccountId();
+    if (runId === null || accountId === null) return;
+    await this.runMutation(
+      () => firstValueFrom(this.api.expand(runId, { kind: 'OLDER_HISTORY', accountId })),
+      'Older game history expansion started.',
+    );
+  }
+
   async finish(): Promise<void> {
     const runId = this.activeRunId();
     if (runId === null) return;
