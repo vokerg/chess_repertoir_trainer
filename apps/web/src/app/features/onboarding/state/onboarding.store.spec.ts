@@ -1,6 +1,6 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import type { OnboardingReadinessResponse } from '@chess-trainer/contracts/onboarding';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { AccountsApiService } from '../../accounts/data-access/accounts-api.service';
 import type { ExternalAccount } from '../../accounts/data-access/accounts.models';
 import { OnboardingApiService } from '../data-access/onboarding-api.service';
@@ -100,6 +100,93 @@ describe('OnboardingStore', () => {
     expect(onboardingApi.getReadiness).toHaveBeenCalledTimes(2);
     expect(store.presentationState()).toBe('PREPARING');
     expect(store.notice()).toBe('Preparation resumed.');
+  });
+
+  it('keeps polling a durable active run when skipped presentation masks its lifecycle state', fakeAsync(() => {
+    const skippedRunning = readiness({
+      disposition: {
+        value: 'SKIPPED',
+        reason: 'USER_SKIPPED',
+        changedAt: '2026-09-03T06:10:00.000Z',
+      },
+      presentationState: 'SKIPPED',
+      preparation: { ...preparation(1), status: 'RUNNING' },
+      actions: [{ code: 'VIEW_HOME', destination: '/home' }],
+    });
+    onboardingApi.getReadiness.and.returnValue(of(skippedRunning));
+    accountsApi.getAccounts.and.returnValue(of([account(1, 'player', true, true)]));
+
+    void store.initialize();
+    flushMicrotasks();
+    expect(onboardingApi.getReadiness).toHaveBeenCalledTimes(1);
+
+    tick(3_000);
+    flushMicrotasks();
+
+    expect(onboardingApi.getReadiness).toHaveBeenCalledTimes(2);
+  }));
+
+  it('skips guidance without cancelling an already accepted preparation', async () => {
+    const running = readiness({
+      presentationState: 'PREPARING',
+      preparation: { ...preparation(1), status: 'RUNNING' },
+      actions: [
+        { code: 'VIEW_ONBOARDING', destination: '/onboarding' },
+        { code: 'PAUSE_PREPARATION', destination: '/onboarding' },
+        { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+        { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
+      ],
+    });
+    const skipped = readiness({
+      disposition: {
+        value: 'SKIPPED',
+        reason: 'USER_SKIPPED',
+        changedAt: '2026-09-03T06:10:00.000Z',
+      },
+      presentationState: 'SKIPPED',
+      preparation: { ...preparation(1), status: 'RUNNING' },
+      actions: [
+        { code: 'VIEW_HOME', destination: '/home' },
+        { code: 'VIEW_ONBOARDING', destination: '/onboarding' },
+        { code: 'PAUSE_PREPARATION', destination: '/onboarding' },
+        { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+      ],
+    });
+    onboardingApi.getReadiness.and.returnValues(of(running), of(skipped));
+    onboardingApi.skip.and.returnValue(of({
+      disposition: 'SKIPPED',
+      reason: 'USER_SKIPPED',
+      changedAt: '2026-09-03T06:10:00.000Z',
+      idempotent: false,
+    }));
+    accountsApi.getAccounts.and.returnValue(of([account(1, 'player', true, true)]));
+
+    await store.initialize();
+    await store.skip();
+
+    expect(onboardingApi.skip).toHaveBeenCalledTimes(1);
+    expect(onboardingApi.cancel).not.toHaveBeenCalled();
+    expect(store.readiness()?.disposition.value).toBe('SKIPPED');
+    expect(store.readiness()?.preparation?.status).toBe('RUNNING');
+  });
+
+  it('ignores an older readiness response that resolves after a newer refresh', async () => {
+    const olderResponse = new Subject<OnboardingReadinessResponse>();
+    const newerResponse = new Subject<OnboardingReadinessResponse>();
+    onboardingApi.getReadiness.and.returnValues(olderResponse, newerResponse);
+
+    const olderRefresh = store.refresh();
+    const newerRefresh = store.refresh();
+
+    newerResponse.next(readiness({ presentationState: 'CORE_READY' }));
+    newerResponse.complete();
+    await newerRefresh;
+
+    olderResponse.next(readiness({ presentationState: 'PREPARING' }));
+    olderResponse.complete();
+    await olderRefresh;
+
+    expect(store.presentationState()).toBe('CORE_READY');
   });
 });
 
