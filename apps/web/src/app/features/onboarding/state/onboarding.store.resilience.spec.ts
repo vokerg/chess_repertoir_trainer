@@ -1,27 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import type { OnboardingReadinessResponse } from '@chess-trainer/contracts/onboarding';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { AccountsApiService } from '../../accounts/data-access/accounts-api.service';
 import { OnboardingApiService } from '../data-access/onboarding-api.service';
 import { OnboardingStore } from './onboarding.store';
 
 describe('OnboardingStore partial availability', () => {
   it('keeps authoritative preparation readable when the account list is unavailable', async () => {
-    const onboardingApi = jasmine.createSpyObj<OnboardingApiService>('OnboardingApiService', [
-      'getReadiness', 'start', 'skip', 'finish', 'pause', 'resume', 'cancel', 'retry', 'restart', 'expand',
-    ]);
-    const accountsApi = jasmine.createSpyObj<AccountsApiService>('AccountsApiService', ['getAccounts']);
+    const { store, onboardingApi, accountsApi } = setupStore();
     onboardingApi.getReadiness.and.returnValue(of(activeReadiness()));
     accountsApi.getAccounts.and.returnValue(throwError(() => ({ error: 'Account list unavailable.' })));
-
-    TestBed.configureTestingModule({
-      providers: [
-        OnboardingStore,
-        { provide: OnboardingApiService, useValue: onboardingApi },
-        { provide: AccountsApiService, useValue: accountsApi },
-      ],
-    });
-    const store = TestBed.inject(OnboardingStore);
 
     await store.initialize();
 
@@ -31,7 +19,57 @@ describe('OnboardingStore partial availability', () => {
     expect(store.activeRunId()).toBe(41);
     expect(store.readiness()?.preparation?.games.committed).toBe(12);
   });
+
+  it('clears initialization loading when a newer refresh supersedes its readiness response', async () => {
+    const { store, onboardingApi, accountsApi } = setupStore();
+    const initializationReadiness = new Subject<OnboardingReadinessResponse>();
+    const refreshedReadiness = new Subject<OnboardingReadinessResponse>();
+    onboardingApi.getReadiness.and.returnValues(initializationReadiness, refreshedReadiness);
+    accountsApi.getAccounts.and.returnValue(of([]));
+
+    const initialization = store.initialize();
+    expect(store.loading()).toBeTrue();
+
+    const refresh = store.refresh();
+    const newer = activeReadiness();
+    newer.presentationState = 'CORE_READY';
+    refreshedReadiness.next(newer);
+    refreshedReadiness.complete();
+    await refresh;
+
+    initializationReadiness.next(activeReadiness());
+    initializationReadiness.complete();
+    await initialization;
+
+    expect(store.loading()).toBeFalse();
+    expect(store.presentationState()).toBe('CORE_READY');
+  });
 });
+
+function setupStore(): {
+  store: OnboardingStore;
+  onboardingApi: jasmine.SpyObj<OnboardingApiService>;
+  accountsApi: jasmine.SpyObj<AccountsApiService>;
+} {
+  const onboardingApi = jasmine.createSpyObj<OnboardingApiService>('OnboardingApiService', [
+    'getReadiness', 'start', 'skip', 'finish', 'pause', 'resume', 'cancel', 'retry', 'restart', 'expand',
+  ]);
+  const accountsApi = jasmine.createSpyObj<AccountsApiService>('AccountsApiService', ['getAccounts']);
+
+  TestBed.configureTestingModule({
+    providers: [
+      OnboardingStore,
+      { provide: OnboardingApiService, useValue: onboardingApi },
+      { provide: AccountsApiService, useValue: accountsApi },
+    ],
+  });
+
+  return {
+    store: TestBed.inject(OnboardingStore),
+    onboardingApi,
+    accountsApi,
+  };
+}
 
 function activeReadiness(): OnboardingReadinessResponse {
   return {
