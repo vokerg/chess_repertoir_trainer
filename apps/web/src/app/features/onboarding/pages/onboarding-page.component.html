@@ -150,7 +150,15 @@
               <button type="button" class="secondary" [disabled]="store.mutating()" (click)="store.skip()">
                 Skip guidance
               </button>
-            } @else if (action.code !== 'START_ONBOARDING' && action.code !== 'SKIP_ONBOARDING') {
+            } @else if (action.code === 'EXPAND_RANGE') {
+              <button type="button" class="primary" [disabled]="store.mutating()" (click)="store.expandOlderHistory()">
+                Search older games
+              </button>
+            } @else if (
+              action.code !== 'START_ONBOARDING'
+              && action.code !== 'SKIP_ONBOARDING'
+              && action.code !== 'VIEW_ONBOARDING'
+            ) {
               <a [routerLink]="action.destination">{{ action.code.replaceAll('_', ' ') }}</a>
             }
           }
