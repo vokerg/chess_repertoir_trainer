@@ -24,6 +24,7 @@ export class OnboardingStore {
   private readonly destroyRef = inject(DestroyRef);
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private refreshRequestId = 0;
+  private initializeRequestId = 0;
 
   readonly readiness = signal<OnboardingReadinessResponse | null>(null);
   readonly accounts = signal<ExternalAccount[]>([]);
@@ -48,18 +49,19 @@ export class OnboardingStore {
   }
 
   async initialize(): Promise<void> {
+    const initializeId = ++this.initializeRequestId;
     const requestId = ++this.refreshRequestId;
     this.loading.set(true);
     this.error.set(null);
     this.accountsError.set(null);
 
-    const [readinessResult, accountsResult] = await Promise.allSettled([
-      firstValueFrom(this.api.getReadiness()),
-      firstValueFrom(this.accountsApi.getAccounts()),
-    ]);
-    if (requestId !== this.refreshRequestId) return;
-
     try {
+      const [readinessResult, accountsResult] = await Promise.allSettled([
+        firstValueFrom(this.api.getReadiness()),
+        firstValueFrom(this.accountsApi.getAccounts()),
+      ]);
+      if (requestId !== this.refreshRequestId) return;
+
       if (readinessResult.status === 'rejected') throw readinessResult.reason;
       const readiness = readinessResult.value;
       this.readiness.set(readiness);
@@ -75,9 +77,10 @@ export class OnboardingStore {
 
       this.syncPolling();
     } catch (error) {
+      if (requestId !== this.refreshRequestId) return;
       this.error.set(readApiError(error, 'Could not load onboarding state.'));
     } finally {
-      if (requestId === this.refreshRequestId) this.loading.set(false);
+      if (initializeId === this.initializeRequestId) this.loading.set(false);
     }
   }
 
