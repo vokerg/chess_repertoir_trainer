@@ -28,6 +28,15 @@ export const routes: Routes = [
       import('./features/home/home-page.component').then((m) => m.HomePageComponent),
   },
   {
+    path: 'onboarding',
+    title: 'Get started | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/onboarding/pages/onboarding-page.component').then(
+        (m) => m.OnboardingPageComponent,
+      ),
+  },
+  {
     path: 'library',
     title: 'Study | Chess Repertoire Trainer',
     canActivate: [authGuard],
