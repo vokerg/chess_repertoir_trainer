@@ -9,10 +9,12 @@ import type { ExternalAccount } from '../../accounts/data-access/accounts.models
 import { OnboardingApiService } from '../data-access/onboarding-api.service';
 
 const POLL_MS = 3_000;
-const ACTIVE_STATES = new Set([
-  'PREPARING',
+const ACTIVE_RUN_STATUSES = new Set([
+  'QUEUED',
+  'RUNNING',
   'PAUSE_REQUESTED',
   'CANCEL_REQUESTED',
+  'NEEDS_ATTENTION',
 ]);
 
 @Injectable()
@@ -21,6 +23,7 @@ export class OnboardingStore {
   private readonly accountsApi = inject(AccountsApiService);
   private readonly destroyRef = inject(DestroyRef);
   private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private refreshRequestId = 0;
 
   readonly readiness = signal<OnboardingReadinessResponse | null>(null);
   readonly accounts = signal<ExternalAccount[]>([]);
@@ -63,10 +66,15 @@ export class OnboardingStore {
   }
 
   async refresh(): Promise<void> {
+    const requestId = ++this.refreshRequestId;
     try {
-      this.readiness.set(await firstValueFrom(this.api.getReadiness()));
+      const readiness = await firstValueFrom(this.api.getReadiness());
+      if (requestId !== this.refreshRequestId) return;
+      this.readiness.set(readiness);
+      this.error.set(null);
       this.syncPolling();
     } catch (error) {
+      if (requestId !== this.refreshRequestId) return;
       this.error.set(readApiError(error, 'Could not refresh onboarding progress.'));
     }
   }
@@ -163,7 +171,8 @@ export class OnboardingStore {
   }
 
   private syncPolling(): void {
-    const shouldPoll = ACTIVE_STATES.has(this.presentationState());
+    const runStatus = this.readiness()?.preparation?.status ?? null;
+    const shouldPoll = runStatus !== null && ACTIVE_RUN_STATUSES.has(runStatus);
     if (shouldPoll && this.pollTimer === null) {
       this.pollTimer = setInterval(() => void this.refresh(), POLL_MS);
     } else if (!shouldPoll) {
