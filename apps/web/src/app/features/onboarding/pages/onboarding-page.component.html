@@ -67,7 +67,7 @@
                 <button type="button" class="primary" [disabled]="store.mutating()" (click)="store.start()">
                   {{ store.mutating() ? 'Starting…' : 'Start preparation' }}
                 </button>
-                @if (readiness.actions.some(action => action.code === 'SKIP_ONBOARDING')) {
+                @if (store.hasAction('SKIP_ONBOARDING')) {
                   <button type="button" class="secondary" [disabled]="store.mutating()" (click)="store.skip()">
                     Skip guidance
                   </button>
