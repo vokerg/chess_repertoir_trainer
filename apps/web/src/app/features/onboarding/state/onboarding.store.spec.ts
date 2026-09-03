@@ -1,4 +1,4 @@
-import { TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
+import { TestBed, discardPeriodicTasks, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import type { OnboardingReadinessResponse } from '@chess-trainer/contracts/onboarding';
 import { Subject, of } from 'rxjs';
 import { AccountsApiService } from '../../accounts/data-access/accounts-api.service';
@@ -124,6 +124,7 @@ describe('OnboardingStore', () => {
     flushMicrotasks();
 
     expect(onboardingApi.getReadiness).toHaveBeenCalledTimes(2);
+    discardPeriodicTasks();
   }));
 
   it('skips guidance without cancelling an already accepted preparation', async () => {
