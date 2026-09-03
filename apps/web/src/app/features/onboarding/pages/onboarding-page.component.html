@@ -1,0 +1,173 @@
+<section class="onboarding-page" aria-labelledby="onboarding-title">
+  <header class="onboarding-header">
+    <div>
+      <p class="eyebrow">GET STARTED</p>
+      <h1 id="onboarding-title">Prepare your recent chess without blocking the rest of the app.</h1>
+      <p>
+        Start with one connected account. Import, indexing, and analysis continue in the background and this page resumes from server state on every visit.
+      </p>
+    </div>
+    <a routerLink="/home" class="leave-link">Leave for Home</a>
+  </header>
+
+  @if (store.loading()) {
+    <div class="state-card" aria-live="polite">Loading your preparation state…</div>
+  } @else {
+    @if (store.error(); as error) {
+      <div class="message error" role="alert">
+        <strong>Onboarding is unavailable</strong>
+        <span>{{ error }}</span>
+        <button type="button" (click)="store.initialize()">Try again</button>
+      </div>
+    }
+
+    @if (store.notice(); as notice) {
+      <div class="message" role="status">{{ notice }}</div>
+    }
+
+    @if (store.readiness(); as readiness) {
+      <section class="state-card" aria-labelledby="state-title">
+        <div class="state-heading">
+          <div>
+            <p class="eyebrow">CURRENT STATE</p>
+            <h2 id="state-title">{{ readiness.presentationState.replaceAll('_', ' ') }}</h2>
+          </div>
+          <span class="state-badge">{{ readiness.disposition.value }}</span>
+        </div>
+
+        @if (readiness.attention; as attention) {
+          <div class="attention" role="status">
+            <strong>{{ attention.code.replaceAll('_', ' ') }}</strong>
+            @if (attention.detail) { <span>{{ attention.detail }}</span> }
+          </div>
+        }
+
+        @if (!readiness.preparation && store.canStart()) {
+          <div class="start-layout">
+            <div>
+              <h3>Use the default recent-first recipe</h3>
+              <p>Standard blitz and rapid games are prepared first. The server owns the exact scope and workflow.</p>
+            </div>
+
+            @if (store.hasConnectedAccount()) {
+              <label class="account-field">
+                <span>Account</span>
+                <select
+                  [value]="store.selectedAccountId() ?? ''"
+                  (change)="store.selectAccount(+$any($event.target).value)"
+                >
+                  @for (account of store.accounts(); track account.id) {
+                    <option [value]="account.id">
+                      {{ providerLabel(account.provider) }} · {{ account.username }}
+                    </option>
+                  }
+                </select>
+              </label>
+              <div class="primary-actions">
+                <button type="button" class="primary" [disabled]="store.mutating()" (click)="store.start()">
+                  {{ store.mutating() ? 'Starting…' : 'Start preparation' }}
+                </button>
+                @if (readiness.actions.some(action => action.code === 'SKIP_ONBOARDING')) {
+                  <button type="button" class="secondary" [disabled]="store.mutating()" (click)="store.skip()">
+                    Skip guidance
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="empty-account">
+                <p>Connect a chess account before starting preparation.</p>
+                <a routerLink="/settings/accounts" class="primary-link">Connect account</a>
+              </div>
+            }
+          </div>
+        }
+
+        @if (readiness.preparation; as preparation) {
+          <div class="progress-grid">
+            <article>
+              <span>Games committed</span>
+              <strong>{{ preparation.games.committed }}</strong>
+              <small>No overall percentage while provider discovery can still change the denominator.</small>
+            </article>
+            <article>
+              <span>Indexed</span>
+              <strong>{{ preparation.games.indexed }}</strong>
+              @if (preparation.fixedCoverage.index; as indexCoverage) {
+                <small>{{ progressLabel(indexCoverage.settled, indexCoverage.total) }} settled · {{ indexCoverage.percentage }}%</small>
+              } @else {
+                <small>Waiting for a fixed indexing scope.</small>
+              }
+            </article>
+            <article>
+              <span>Analysed</span>
+              <strong>{{ preparation.games.analysed }}</strong>
+              @if (preparation.fixedCoverage.analysis; as analysisCoverage) {
+                <small>{{ progressLabel(analysisCoverage.settled, analysisCoverage.total) }} settled · {{ analysisCoverage.percentage }}%</small>
+              } @else {
+                <small>Analysis expands only from server-selected evidence.</small>
+              }
+            </article>
+          </div>
+
+          <div class="targets">
+            @for (target of preparation.targets; track target.id) {
+              <article class="target-row">
+                <div>
+                  <strong>{{ providerLabel(target.provider) }} · {{ target.username }}</strong>
+                  <span>{{ target.games.committed }} committed · {{ target.games.indexed }} indexed · {{ target.games.analysed }} analysed</span>
+                </div>
+                <span>{{ target.importStatus || 'Waiting' }}</span>
+              </article>
+            }
+          </div>
+
+          @if (readiness.reveals.length > 0) {
+            <section class="reveal-section" aria-labelledby="reveal-title">
+              <div>
+                <p class="eyebrow">READY TO USE</p>
+                <h3 id="reveal-title">Useful evidence is available before the tail finishes.</h3>
+              </div>
+              <div class="reveal-grid">
+                @for (reveal of readiness.reveals; track reveal.kind + '-' + reveal.importedGameId) {
+                  <a [routerLink]="reveal.destination" class="reveal-card">
+                    <span>{{ reveal.kind.replaceAll('_', ' ') }}</span>
+                    <strong>{{ reveal.title }}</strong>
+                    @if (reveal.detail) { <small>{{ reveal.detail }}</small> }
+                  </a>
+                }
+              </div>
+            </section>
+          }
+        }
+
+        <div class="server-actions" aria-label="Available onboarding actions">
+          @for (action of readiness.actions; track action.code) {
+            @if (isMutatingAction(action.code)) {
+              <button type="button" [disabled]="store.mutating()" (click)="handleAction(action)">
+                {{ action.code.replaceAll('_', ' ') }}
+              </button>
+            } @else if (action.code !== 'START_ONBOARDING' && action.code !== 'SKIP_ONBOARDING') {
+              <a [routerLink]="action.destination">{{ action.code.replaceAll('_', ' ') }}</a>
+            }
+          }
+        </div>
+      </section>
+
+      <section class="readiness-card" aria-labelledby="readiness-title">
+        <div>
+          <p class="eyebrow">FEATURE READINESS</p>
+          <h2 id="readiness-title">Use what is authoritative now.</h2>
+        </div>
+        <div class="readiness-grid">
+          @for (feature of readiness.readiness; track feature.feature) {
+            <article>
+              <strong>{{ feature.feature }}</strong>
+              <span>{{ feature.state.replaceAll('-', ' ') }}</span>
+              <small>{{ feature.evidenceCount }} evidence items</small>
+            </article>
+          }
+        </div>
+      </section>
+    }
+  }
+</section>
