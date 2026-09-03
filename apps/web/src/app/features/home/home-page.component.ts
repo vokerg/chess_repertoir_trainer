@@ -28,7 +28,7 @@ interface HomeShortcut {
     HomeDashboardStore,
   ],
   templateUrl: './home-page.component.html',
-  styleUrl: './home-page.component.css',
+  styleUrls: ['./home-page.component.css', './home-onboarding.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomePageComponent implements OnInit {
