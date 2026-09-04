@@ -193,6 +193,12 @@ export const onboardingRevealSchema = z.object({
   kind: z.enum(['IMPORTED_GAME', 'OPENING', 'ANALYSIS']),
   importedGameId: z.number().int().positive(),
   accountId: z.number().int().positive(),
+  sampleCount: countSchema,
+  evidenceState: onboardingFeatureStateSchema,
+  scope: z.object({
+    provider: z.string().min(1),
+    username: z.string().min(1),
+  }).strict(),
   title: z.string().min(1),
   detail: z.string().nullable(),
   destination: z.string().min(1),
