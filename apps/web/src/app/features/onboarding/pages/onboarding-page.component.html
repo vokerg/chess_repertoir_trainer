@@ -68,22 +68,25 @@
                   }
                 </select>
               </label>
-              <div class="primary-actions">
-                <button type="button" class="primary" [disabled]="store.mutating()" (click)="store.start()">
-                  {{ store.mutating() ? 'Starting…' : 'Start preparation' }}
-                </button>
-                @if (store.hasAction('SKIP_ONBOARDING')) {
-                  <button type="button" class="secondary" [disabled]="store.mutating()" (click)="store.skip()">
-                    Skip guidance
-                  </button>
-                }
-              </div>
             } @else {
               <div class="empty-account">
                 <p>Connect a chess account before starting preparation.</p>
                 <a routerLink="/settings/accounts" class="primary-link">Connect account</a>
               </div>
             }
+
+            <div class="primary-actions">
+              @if (store.hasConnectedAccount() && !store.accountsError()) {
+                <button type="button" class="primary" [disabled]="store.mutating()" (click)="store.start()">
+                  {{ store.mutating() ? 'Starting…' : 'Start preparation' }}
+                </button>
+              }
+              @if (store.hasAction('SKIP_ONBOARDING')) {
+                <button type="button" class="secondary" [disabled]="store.mutating()" (click)="store.skip()">
+                  Skip guidance
+                </button>
+              }
+            </div>
           </div>
         }
 
