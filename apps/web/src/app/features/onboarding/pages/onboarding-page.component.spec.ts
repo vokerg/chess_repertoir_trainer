@@ -28,12 +28,14 @@ describe('OnboardingPageComponent', () => {
 
   it('renders rate-limit attention with the canonical server actions, checked-empty readiness, and no fake reveal', () => {
     store.readiness.set(readiness({
+      presentationState: 'PREPARING',
       attention: {
         code: 'IMPORT_RATE_LIMITED',
         detail: 'Provider retry window is still active.',
       },
       actions: [
         { code: 'VIEW_ONBOARDING', destination: '/onboarding' },
+        { code: 'PAUSE_PREPARATION', destination: '/onboarding' },
         { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
         { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
       ],
@@ -51,6 +53,7 @@ describe('OnboardingPageComponent', () => {
     const content = normalizedText(fixture);
     expect(content).toContain('Provider rate limit is delaying import');
     expect(content).toContain('Provider retry window is still active.');
+    expect(content).toContain('Pause preparation');
     expect(content).toContain('Stop preparation');
     expect(content).toContain('Skip guidance');
     expect(content).toContain('checked empty');
@@ -58,14 +61,16 @@ describe('OnboardingPageComponent', () => {
     expect(fixture.nativeElement.querySelector('.reveal-section')).toBeNull();
   });
 
-  it('renders a stalled reconciliation as a calm product state with deterministic actions', () => {
+  it('renders stalled reconciliation as a calm product state with deterministic server actions', () => {
     store.readiness.set(readiness({
+      presentationState: 'PREPARING',
       attention: {
         code: 'RECONCILE_DUE_CRITICAL',
         detail: 'No reconciliation settlement has been observed yet.',
       },
       actions: [
         { code: 'VIEW_ONBOARDING', destination: '/onboarding' },
+        { code: 'PAUSE_PREPARATION', destination: '/onboarding' },
         { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
         { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
       ],
@@ -76,6 +81,7 @@ describe('OnboardingPageComponent', () => {
     const content = normalizedText(fixture);
     expect(content).toContain('Preparation reconciliation has stalled');
     expect(content).toContain('No reconciliation settlement has been observed yet.');
+    expect(content).toContain('Pause preparation');
     expect(content).toContain('Stop preparation');
     expect(content).toContain('Skip guidance');
     expect(content).not.toContain('RECONCILE_DUE_CRITICAL');
@@ -168,12 +174,15 @@ describe('OnboardingPageComponent', () => {
     ]);
   });
 
-  it('renders only server-supplied reveals and preserves their canonical destination', () => {
+  it('renders only server-supplied reveals with sample, scope, state, and canonical destination', () => {
     store.readiness.set(readiness({
       reveals: [{
         kind: 'IMPORTED_GAME',
         importedGameId: 77,
         accountId: 1,
+        sampleCount: 12,
+        evidenceState: 'ready',
+        scope: { provider: 'LICHESS', username: 'first' },
         title: 'A recent rapid game is ready',
         detail: 'Opening evidence is available now.',
         destination: '/games/77',
@@ -184,6 +193,7 @@ describe('OnboardingPageComponent', () => {
 
     const reveal = fixture.nativeElement.querySelector('.reveal-card') as HTMLAnchorElement;
     expect(reveal.textContent).toContain('A recent rapid game is ready');
+    expect(reveal.textContent).toContain('12 games · ready · Lichess · first');
     expect(reveal.textContent).toContain('Opening evidence is available now.');
     expect(reveal.getAttribute('href')).toBe('/games/77');
   });
