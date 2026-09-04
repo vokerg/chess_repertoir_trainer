@@ -157,10 +157,6 @@ function presentationState(
   disposition: OnboardingDispositionValue,
   run: OnboardingRunRecord | null,
 ): OnboardingReadinessResponse['presentationState'] {
-  // SKIPPED is the durable first-run guidance decision. A later EXPANSION (or
-  // recovery descended only from expansion) may have its own readiness
-  // milestones without completing onboarding, so those milestones must not
-  // overwrite the skipped presentation.
   if (disposition === 'SKIPPED') return 'SKIPPED';
   if (run?.analysisCompletedAt) return 'COMPLETE';
   if (run?.coreReadyAt) return 'CORE_READY';
@@ -379,10 +375,20 @@ function featureReadiness(
   ];
 }
 
+function revealFeature(kind: 'IMPORTED_GAME' | 'OPENING' | 'ANALYSIS'): OnboardingFeatureReadiness['feature'] {
+  if (kind === 'ANALYSIS') return 'analysis';
+  if (kind === 'OPENING') return 'openings';
+  return 'games';
+}
+
+function revealSampleCount(kind: 'IMPORTED_GAME' | 'OPENING' | 'ANALYSIS', target: OnboardingTargetRecord): number {
+  if (kind === 'ANALYSIS') return target.analysedCount;
+  if (kind === 'OPENING') return target.indexedCount;
+  return target.importedCount;
+}
+
 function fixedCoverage(scope: OnboardingScopeTotals) {
   const importComplete = scope.targetCount > 0 && scope.completedImportTargets === scope.targetCount;
-  // A zero-game import is an attention/checked-empty outcome, not a meaningful
-  // "100% indexed" progress surface.
   const index = importComplete && scope.committedCount > 0 ? {
     settled: scope.indexedCount + scope.indexFailedCount,
     total: scope.committedCount,
@@ -469,6 +475,35 @@ export function createOnboardingReadinessService(dependencies: Dependencies = {}
         && scope.activeIndexBatches === 0,
       );
       const analysisChecked = Boolean(run?.analysisCompletedAt);
+      const readiness = featureReadiness(evidence, tacticalEvidence, importChecked, indexChecked, analysisChecked);
+      const revealItems = reveals.flatMap((reveal) => {
+        const target = targets.find((candidate) => candidate.accountId === reveal.accountId);
+        if (!target) return [];
+        const feature = revealFeature(reveal.kind);
+        const evidenceState = readiness.find((item) => item.feature === feature)?.state ?? 'locked';
+        const sampleCount = revealSampleCount(reveal.kind, target);
+        if (sampleCount <= 0) return [];
+        return [{
+          kind: reveal.kind,
+          importedGameId: reveal.importedGameId,
+          accountId: reveal.accountId,
+          sampleCount,
+          evidenceState,
+          scope: {
+            provider: target.provider,
+            username: target.username,
+          },
+          title: reveal.kind === 'ANALYSIS'
+            ? 'Game analysis ready'
+            : reveal.kind === 'OPENING'
+              ? 'Opening identified'
+              : 'Game imported',
+          detail: reveal.openingName
+            ? `${reveal.openingEco ? `${reveal.openingEco} · ` : ''}${reveal.openingName}`
+            : null,
+          destination: reveal.kind === 'OPENING' ? '/opening-analysis' : `/games/${reveal.importedGameId}`,
+        }];
+      });
 
       return {
         contractVersion: ONBOARDING_CONTRACT_VERSION,
@@ -501,22 +536,9 @@ export function createOnboardingReadinessService(dependencies: Dependencies = {}
           latestMilestone: latestMilestone(run),
         } : null,
         attention,
-        readiness: featureReadiness(evidence, tacticalEvidence, importChecked, indexChecked, analysisChecked),
+        readiness,
         actions: allowedActions(state, attention?.code ?? null, run, disposition.disposition),
-        reveals: reveals.map((reveal) => ({
-          kind: reveal.kind,
-          importedGameId: reveal.importedGameId,
-          accountId: reveal.accountId,
-          title: reveal.kind === 'ANALYSIS'
-            ? 'Game analysis ready'
-            : reveal.kind === 'OPENING'
-              ? 'Opening identified'
-              : 'Game imported',
-          detail: reveal.openingName
-            ? `${reveal.openingEco ? `${reveal.openingEco} · ` : ''}${reveal.openingName}`
-            : null,
-          destination: reveal.kind === 'OPENING' ? '/opening-analysis' : `/games/${reveal.importedGameId}`,
-        })),
+        reveals: revealItems,
         observedAt: observedAt.toISOString(),
       };
     },
