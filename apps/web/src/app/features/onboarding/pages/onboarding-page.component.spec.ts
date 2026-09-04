@@ -1,0 +1,282 @@
+import { signal } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import type { OnboardingReadinessResponse } from '@chess-trainer/contracts/onboarding';
+import type { ExternalAccount } from '../../accounts/data-access/accounts.models';
+import { OnboardingStore } from '../state/onboarding.store';
+import { OnboardingPageComponent } from './onboarding-page.component';
+
+describe('OnboardingPageComponent', () => {
+  let fixture: ComponentFixture<OnboardingPageComponent>;
+  let store: ReturnType<typeof storeStub>;
+
+  beforeEach(async () => {
+    store = storeStub();
+    await TestBed.configureTestingModule({
+      imports: [OnboardingPageComponent],
+      providers: [provideRouter([])],
+    })
+      .overrideComponent(OnboardingPageComponent, {
+        set: {
+          providers: [{ provide: OnboardingStore, useValue: store }],
+        },
+      })
+      .compileComponents();
+
+    fixture = TestBed.createComponent(OnboardingPageComponent);
+  });
+
+  it('renders server rate-limit attention, deterministic retry, checked-empty readiness, and no fake reveal', () => {
+    store.readiness.set(readiness({
+      attention: {
+        code: 'IMPORT_RATE_LIMITED',
+        detail: 'Provider retry window is still active.',
+      },
+      actions: [
+        { code: 'VIEW_HOME', destination: '/home' },
+        { code: 'RETRY_PREPARATION', destination: '/onboarding' },
+      ],
+      readiness: [
+        { feature: 'games', state: 'partial', evidenceCount: 4 },
+        { feature: 'openings', state: 'partial', evidenceCount: 2 },
+        { feature: 'analysis', state: 'locked', evidenceCount: 0 },
+        { feature: 'tactics', state: 'checked-empty', evidenceCount: 0 },
+      ],
+      reveals: [],
+    }));
+
+    fixture.detectChanges();
+
+    const content = normalizedText(fixture);
+    expect(content).toContain('IMPORT RATE LIMITED');
+    expect(content).toContain('Provider retry window is still active.');
+    expect(content).toContain('RETRY PREPARATION');
+    expect(content).toContain('checked empty');
+    expect(fixture.nativeElement.querySelector('.reveal-section')).toBeNull();
+  });
+
+  it('shows exact counts without an overall percentage when provider discovery is open', () => {
+    const openDiscovery = readiness();
+    openDiscovery.preparation!.providerWindows = { completed: 2, total: null, percentage: null };
+    openDiscovery.preparation!.fixedCoverage = { index: null, analysis: null };
+    store.readiness.set(openDiscovery);
+
+    fixture.detectChanges();
+
+    const content = normalizedText(fixture);
+    expect(content).toContain('Total provider windows are still being discovered.');
+    expect(content).toContain('No overall percentage while provider discovery can still change the denominator.');
+    expect(content).not.toContain('%');
+  });
+
+  it('renders only server-supplied fixed percentages and exact task counters', () => {
+    const fixed = readiness();
+    fixed.preparation!.providerWindows = { completed: 2, total: 3, percentage: 66.67 };
+    fixed.preparation!.fixedCoverage = {
+      index: { settled: 6, total: 12, remaining: 6, percentage: 50 },
+      analysis: { settled: 2, total: 8, remaining: 6, percentage: 25 },
+    };
+    fixed.preparation!.technicalBatches = {
+      batchCount: 3,
+      queuedBatches: 1,
+      runningBatches: 1,
+      terminalBatches: 1,
+      selectedTasks: 20,
+      queuedTasks: 3,
+      runningTasks: 1,
+      completedTasks: 4,
+      skippedTasks: 4,
+      failedTasks: 2,
+      cancelledTasks: 0,
+      remainingTasks: 10,
+    };
+    store.readiness.set(fixed);
+
+    fixture.detectChanges();
+
+    const content = normalizedText(fixture);
+    expect(content).toContain('2 of 3 checked · 66.67%');
+    expect(content).toContain('6 of 12 settled · 50%');
+    expect(content).toContain('2 of 8 settled · 25%');
+    const counters = Array.from(
+      fixture.nativeElement.querySelectorAll('.technical-progress article'),
+      (element: Element) => element.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(counters).toEqual([
+      'Selected 20',
+      'Queued 3',
+      'Running 1',
+      'Failed 2',
+      'Skipped 4',
+      'Remaining 10',
+    ]);
+  });
+
+  it('renders explicit additional-account expansion instead of the Settings destination', () => {
+    const additional = account(2, 'CHESS_COM', 'second');
+    store.accounts.set([account(1, 'LICHESS', 'first'), additional]);
+    store.expansionAccounts.set([additional]);
+    store.expansionAccountId.set(2);
+    store.selectedExpansionAccount.set(additional);
+    store.readiness.set(readiness({
+      actions: [
+        { code: 'VIEW_HOME', destination: '/home' },
+        { code: 'ADD_ACCOUNT', destination: '/settings/accounts' },
+      ],
+    }));
+
+    fixture.detectChanges();
+
+    const content = normalizedText(fixture);
+    expect(content).toContain('Try another account without replacing the first run.');
+    expect(content).toContain('Add account to preparation');
+    expect(content).not.toContain('ADD ACCOUNT');
+  });
+});
+
+function storeStub() {
+  const readinessSignal = signal<OnboardingReadinessResponse | null>(null);
+  const accountsSignal = signal<ExternalAccount[]>([]);
+  const expansionAccountsSignal = signal<ExternalAccount[]>([]);
+  const selectedExpansionAccountSignal = signal<ExternalAccount | null>(null);
+  return {
+    loading: signal(false),
+    error: signal<string | null>(null),
+    notice: signal<string | null>(null),
+    readiness: readinessSignal,
+    accountsError: signal<string | null>(null),
+    hasConnectedAccount: () => accountsSignal().length > 0,
+    selectedAccountId: signal<number | null>(1),
+    accounts: accountsSignal,
+    accountProvider: signal<'LICHESS' | 'CHESS_COM'>('LICHESS'),
+    accountUsername: signal(''),
+    savingAccount: signal(false),
+    accountFormError: signal<string | null>(null),
+    mutating: signal(false),
+    expansionAccounts: expansionAccountsSignal,
+    expansionAccountId: signal<number | null>(null),
+    selectedExpansionAccount: selectedExpansionAccountSignal,
+    initialize: jasmine.createSpy('initialize'),
+    selectAccount: jasmine.createSpy('selectAccount'),
+    setAccountProvider: jasmine.createSpy('setAccountProvider'),
+    setAccountUsername: jasmine.createSpy('setAccountUsername'),
+    createAccount: jasmine.createSpy('createAccount'),
+    start: jasmine.createSpy('start'),
+    skip: jasmine.createSpy('skip'),
+    selectExpansionAccount: jasmine.createSpy('selectExpansionAccount'),
+    addSelectedAccountToPreparation: jasmine.createSpy('addSelectedAccountToPreparation'),
+    expandOlderHistory: jasmine.createSpy('expandOlderHistory'),
+    runAction: jasmine.createSpy('runAction'),
+    hasAction: (code: string) => readinessSignal()?.actions.some((action) => action.code === code) ?? false,
+  };
+}
+
+function readiness(
+  overrides: Partial<OnboardingReadinessResponse> = {},
+): OnboardingReadinessResponse {
+  return {
+    contractVersion: '2026-08-v1',
+    disposition: { value: 'PENDING', reason: null, changedAt: null },
+    presentationState: 'NEEDS_ATTENTION',
+    preparation: {
+      runId: 41,
+      status: 'NEEDS_ATTENTION',
+      purpose: 'ONBOARDING',
+      targetsTotal: 1,
+      targetsTruncated: false,
+      providerWindows: { completed: 1, total: null, percentage: null },
+      games: {
+        committed: 12,
+        indexed: 6,
+        indexPending: 6,
+        indexFailed: 0,
+        analysed: 2,
+        analysisPending: 4,
+        analysisRunning: 0,
+        analysisFailed: 0,
+      },
+      fixedCoverage: { index: null, analysis: null },
+      technicalBatches: {
+        batchCount: 1,
+        queuedBatches: 0,
+        runningBatches: 0,
+        terminalBatches: 1,
+        selectedTasks: 8,
+        queuedTasks: 0,
+        runningTasks: 0,
+        completedTasks: 6,
+        skippedTasks: 1,
+        failedTasks: 1,
+        cancelledTasks: 0,
+        remainingTasks: 2,
+      },
+      latestBatches: [],
+      targets: [{
+        id: 11,
+        accountId: 1,
+        provider: 'LICHESS',
+        username: 'first',
+        ordinal: 0,
+        importStatus: 'COMPLETED',
+        providerWindows: { completed: 1, total: null, percentage: null },
+        games: {
+          committed: 12,
+          indexed: 6,
+          indexPending: 6,
+          indexFailed: 0,
+          analysed: 2,
+          analysisPending: 4,
+          analysisRunning: 0,
+          analysisFailed: 0,
+        },
+        milestones: {
+          firstImportedAt: '2026-09-04T04:00:00.000Z',
+          firstIndexedAt: '2026-09-04T04:05:00.000Z',
+          firstAnalysedAt: '2026-09-04T04:10:00.000Z',
+          coreReadyAt: null,
+        },
+      }],
+      milestones: {
+        firstImportedAt: '2026-09-04T04:00:00.000Z',
+        firstIndexedAt: '2026-09-04T04:05:00.000Z',
+        firstAnalysedAt: '2026-09-04T04:10:00.000Z',
+        coreReadyAt: null,
+        analysisCompletedAt: null,
+      },
+      latestMilestone: {
+        kind: 'FIRST_ANALYSED',
+        occurredAt: '2026-09-04T04:10:00.000Z',
+      },
+    },
+    attention: { code: 'INDEXING_PARTIAL', detail: 'Some indexing work is still pending.' },
+    readiness: [
+      { feature: 'games', state: 'ready', evidenceCount: 12 },
+      { feature: 'openings', state: 'partial', evidenceCount: 6 },
+      { feature: 'analysis', state: 'partial', evidenceCount: 2 },
+      { feature: 'tactics', state: 'checked-empty', evidenceCount: 0 },
+    ],
+    actions: [{ code: 'VIEW_HOME', destination: '/home' }],
+    reveals: [],
+    observedAt: '2026-09-04T05:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function account(
+  id: number,
+  provider: 'LICHESS' | 'CHESS_COM',
+  username: string,
+): ExternalAccount {
+  return {
+    id,
+    provider,
+    username,
+    displayName: username,
+    isActive: true,
+    isDefaultProgressAccount: id === 1,
+  } as ExternalAccount;
+}
+
+function normalizedText(fixture: ComponentFixture<OnboardingPageComponent>): string {
+  return fixture.nativeElement.textContent.replace(/\s+/g, ' ').trim();
+}
