@@ -26,15 +26,16 @@ describe('OnboardingPageComponent', () => {
     fixture = TestBed.createComponent(OnboardingPageComponent);
   });
 
-  it('renders server rate-limit attention, deterministic retry, checked-empty readiness, and no fake reveal', () => {
+  it('renders rate-limit attention with the canonical server actions, checked-empty readiness, and no fake reveal', () => {
     store.readiness.set(readiness({
       attention: {
         code: 'IMPORT_RATE_LIMITED',
         detail: 'Provider retry window is still active.',
       },
       actions: [
-        { code: 'VIEW_HOME', destination: '/home' },
-        { code: 'RETRY_PREPARATION', destination: '/onboarding' },
+        { code: 'VIEW_ONBOARDING', destination: '/onboarding' },
+        { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+        { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
       ],
       readiness: [
         { feature: 'games', state: 'partial', evidenceCount: 4 },
@@ -48,11 +49,61 @@ describe('OnboardingPageComponent', () => {
     fixture.detectChanges();
 
     const content = normalizedText(fixture);
-    expect(content).toContain('IMPORT RATE LIMITED');
+    expect(content).toContain('Provider rate limit is delaying import');
     expect(content).toContain('Provider retry window is still active.');
-    expect(content).toContain('RETRY PREPARATION');
+    expect(content).toContain('Stop preparation');
+    expect(content).toContain('Skip guidance');
     expect(content).toContain('checked empty');
+    expect(content).not.toContain('IMPORT_RATE_LIMITED');
     expect(fixture.nativeElement.querySelector('.reveal-section')).toBeNull();
+  });
+
+  it('renders a stalled reconciliation as a calm product state with deterministic actions', () => {
+    store.readiness.set(readiness({
+      attention: {
+        code: 'RECONCILE_DUE_CRITICAL',
+        detail: 'No reconciliation settlement has been observed yet.',
+      },
+      actions: [
+        { code: 'VIEW_ONBOARDING', destination: '/onboarding' },
+        { code: 'CANCEL_PREPARATION', destination: '/onboarding' },
+        { code: 'SKIP_ONBOARDING', destination: '/onboarding' },
+      ],
+    }));
+
+    fixture.detectChanges();
+
+    const content = normalizedText(fixture);
+    expect(content).toContain('Preparation reconciliation has stalled');
+    expect(content).toContain('No reconciliation settlement has been observed yet.');
+    expect(content).toContain('Stop preparation');
+    expect(content).toContain('Skip guidance');
+    expect(content).not.toContain('RECONCILE_DUE_CRITICAL');
+  });
+
+  it('derives the preparation narrative only from persisted server milestones', () => {
+    const findingGames = readiness({ presentationState: 'PREPARING', attention: null });
+    findingGames.preparation!.status = 'RUNNING';
+    findingGames.preparation!.milestones = {
+      firstImportedAt: null,
+      firstIndexedAt: null,
+      firstAnalysedAt: null,
+      coreReadyAt: null,
+      analysisCompletedAt: null,
+    };
+    store.readiness.set(findingGames);
+    fixture.detectChanges();
+    expect(normalizedText(fixture)).toContain('Finding your recent games');
+
+    findingGames.preparation!.milestones.firstImportedAt = '2026-09-04T04:00:00.000Z';
+    store.readiness.set({ ...findingGames });
+    fixture.detectChanges();
+    expect(normalizedText(fixture)).toContain('Preparing opening evidence');
+
+    findingGames.preparation!.milestones.firstIndexedAt = '2026-09-04T04:05:00.000Z';
+    store.readiness.set({ ...findingGames });
+    fixture.detectChanges();
+    expect(normalizedText(fixture)).toContain('Analysing a first sample');
   });
 
   it('shows exact counts without an overall percentage when provider discovery is open', () => {
@@ -64,12 +115,15 @@ describe('OnboardingPageComponent', () => {
     fixture.detectChanges();
 
     const content = normalizedText(fixture);
-    expect(content).toContain('Total provider windows are still being discovered.');
-    expect(content).toContain('No overall percentage while provider discovery can still change the denominator.');
+    expect(content).toContain('The total history window is still being discovered.');
+    expect(content).toContain('No overall percentage while more provider history can still be discovered.');
     expect(content).not.toContain('%');
+    expect(content).not.toContain('almost done');
+    expect(content).not.toContain('expected completion');
+    expect(content).not.toMatch(/\bETA\b/);
   });
 
-  it('renders only server-supplied fixed percentages and exact task counters', () => {
+  it('renders only server-supplied fixed percentages and exact task counters as advanced detail', () => {
     const fixed = readiness();
     fixed.preparation!.providerWindows = { completed: 2, total: 3, percentage: 66.67 };
     fixed.preparation!.fixedCoverage = {
@@ -98,6 +152,8 @@ describe('OnboardingPageComponent', () => {
     expect(content).toContain('2 of 3 checked · 66.67%');
     expect(content).toContain('6 of 12 settled · 50%');
     expect(content).toContain('2 of 8 settled · 25%');
+    const details = fixture.nativeElement.querySelector('.technical-details') as HTMLDetailsElement;
+    expect(details.open).toBeFalse();
     const counters = Array.from(
       fixture.nativeElement.querySelectorAll('.technical-progress article'),
       (element: Element) => element.textContent?.replace(/\s+/g, ' ').trim(),
@@ -110,6 +166,26 @@ describe('OnboardingPageComponent', () => {
       'Skipped 4',
       'Remaining 10',
     ]);
+  });
+
+  it('renders only server-supplied reveals and preserves their canonical destination', () => {
+    store.readiness.set(readiness({
+      reveals: [{
+        kind: 'IMPORTED_GAME',
+        importedGameId: 77,
+        accountId: 1,
+        title: 'A recent rapid game is ready',
+        detail: 'Opening evidence is available now.',
+        destination: '/games/77',
+      }],
+    }));
+
+    fixture.detectChanges();
+
+    const reveal = fixture.nativeElement.querySelector('.reveal-card') as HTMLAnchorElement;
+    expect(reveal.textContent).toContain('A recent rapid game is ready');
+    expect(reveal.textContent).toContain('Opening evidence is available now.');
+    expect(reveal.getAttribute('href')).toBe('/games/77');
   });
 
   it('renders explicit additional-account expansion instead of the Settings destination', () => {
