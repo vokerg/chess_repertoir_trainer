@@ -196,6 +196,11 @@
                   <a [routerLink]="reveal.destination" class="reveal-card">
                     <span>{{ reveal.kind.replaceAll('_', ' ').toLowerCase() }}</span>
                     <strong>{{ reveal.title }}</strong>
+                    <small class="reveal-evidence">
+                      {{ reveal.sampleCount }} {{ reveal.sampleCount === 1 ? 'game' : 'games' }} ·
+                      {{ reveal.evidenceState.replaceAll('-', ' ') }} ·
+                      {{ providerLabel(reveal.scope.provider) }} · {{ reveal.scope.username }}
+                    </small>
                     @if (reveal.detail) { <small>{{ reveal.detail }}</small> }
                   </a>
                 }
