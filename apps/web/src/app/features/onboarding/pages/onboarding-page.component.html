@@ -56,7 +56,7 @@
               </div>
             } @else if (store.hasConnectedAccount()) {
               <label class="account-field">
-                <span>Account</span>
+                <span>Account to prepare</span>
                 <select
                   [value]="store.selectedAccountId() ?? ''"
                   (change)="store.selectAccount(+$any($event.target).value)"
@@ -69,11 +69,42 @@
                 </select>
               </label>
             } @else {
-              <div class="empty-account">
-                <p>Connect a chess account before starting preparation.</p>
-                <a routerLink="/settings/accounts" class="primary-link">Connect account</a>
-              </div>
+              <p class="empty-account">Add a public Lichess or Chess.com username to continue.</p>
             }
+
+            <div class="account-handoff" aria-labelledby="account-handoff-title">
+              <div>
+                <h4 id="account-handoff-title">Add a public chess account</h4>
+                <p>No password is needed. This uses the same account connection contract as Settings.</p>
+              </div>
+              <div class="account-handoff-fields">
+                <label class="account-field">
+                  <span>Provider</span>
+                  <select
+                    [value]="store.accountProvider()"
+                    (change)="store.setAccountProvider($any($event.target).value)"
+                  >
+                    <option value="LICHESS">Lichess</option>
+                    <option value="CHESS_COM">Chess.com</option>
+                  </select>
+                </label>
+                <label class="account-field">
+                  <span>Public username</span>
+                  <input
+                    type="text"
+                    autocomplete="off"
+                    [value]="store.accountUsername()"
+                    (input)="store.setAccountUsername($any($event.target).value)"
+                  />
+                </label>
+                <button type="button" class="secondary" [disabled]="store.savingAccount()" (click)="store.createAccount()">
+                  {{ store.savingAccount() ? 'Adding…' : 'Add account' }}
+                </button>
+              </div>
+              @if (store.accountFormError(); as formError) {
+                <p class="inline-error" role="alert">{{ formError }}</p>
+              }
+            </div>
 
             <div class="primary-actions">
               @if (store.hasConnectedAccount() && !store.accountsError()) {
@@ -98,6 +129,18 @@
               <small>No overall percentage while provider discovery can still change the denominator.</small>
             </article>
             <article>
+              <span>Provider windows checked</span>
+              <strong>{{ preparation.providerWindows.completed }}</strong>
+              @if (preparation.providerWindows.total !== null) {
+                <small>
+                  {{ progressLabel(preparation.providerWindows.completed, preparation.providerWindows.total) }} checked
+                  @if (preparation.providerWindows.percentage !== null) { · {{ preparation.providerWindows.percentage }}% }
+                </small>
+              } @else {
+                <small>Total provider windows are still being discovered.</small>
+              }
+            </article>
+            <article>
               <span>Indexed</span>
               <strong>{{ preparation.games.indexed }}</strong>
               @if (preparation.fixedCoverage.index; as indexCoverage) {
@@ -115,6 +158,16 @@
                 <small>Analysis expands only from server-selected evidence.</small>
               }
             </article>
+          </div>
+
+          <div class="technical-progress" aria-label="Exact preparation task counts">
+            @let tasks = preparation.technicalBatches;
+            <article><span>Selected</span><strong>{{ tasks.selectedTasks }}</strong></article>
+            <article><span>Queued</span><strong>{{ tasks.queuedTasks }}</strong></article>
+            <article><span>Running</span><strong>{{ tasks.runningTasks }}</strong></article>
+            <article><span>Failed</span><strong>{{ tasks.failedTasks }}</strong></article>
+            <article><span>Skipped</span><strong>{{ tasks.skippedTasks }}</strong></article>
+            <article><span>Remaining</span><strong>{{ tasks.remainingTasks }}</strong></article>
           </div>
 
           <div class="targets">
@@ -148,6 +201,70 @@
           }
         }
 
+        @if (store.hasAction('ADD_ACCOUNT')) {
+          <section class="expansion-card" aria-labelledby="add-account-title">
+            <div>
+              <p class="eyebrow">OPTIONAL EXPANSION</p>
+              <h3 id="add-account-title">Try another account without replacing the first run.</h3>
+              <p>Select an existing account that is not already part of this preparation, or add a public account first.</p>
+            </div>
+
+            @if (store.expansionAccounts().length > 0) {
+              <label class="account-field">
+                <span>Additional account</span>
+                <select
+                  [value]="store.expansionAccountId() ?? ''"
+                  (change)="store.selectExpansionAccount(+$any($event.target).value)"
+                >
+                  @for (account of store.expansionAccounts(); track account.id) {
+                    <option [value]="account.id">{{ providerLabel(account.provider) }} · {{ account.username }}</option>
+                  }
+                </select>
+              </label>
+              <button
+                type="button"
+                class="primary"
+                [disabled]="store.mutating() || !store.selectedExpansionAccount()"
+                (click)="store.addSelectedAccountToPreparation()"
+              >
+                Add account to preparation
+              </button>
+            } @else {
+              <p>No other connected account is available yet.</p>
+            }
+
+            <div class="account-handoff compact-handoff">
+              <div class="account-handoff-fields">
+                <label class="account-field">
+                  <span>Provider</span>
+                  <select
+                    [value]="store.accountProvider()"
+                    (change)="store.setAccountProvider($any($event.target).value)"
+                  >
+                    <option value="LICHESS">Lichess</option>
+                    <option value="CHESS_COM">Chess.com</option>
+                  </select>
+                </label>
+                <label class="account-field">
+                  <span>Public username</span>
+                  <input
+                    type="text"
+                    autocomplete="off"
+                    [value]="store.accountUsername()"
+                    (input)="store.setAccountUsername($any($event.target).value)"
+                  />
+                </label>
+                <button type="button" class="secondary" [disabled]="store.savingAccount()" (click)="store.createAccount()">
+                  {{ store.savingAccount() ? 'Adding…' : 'Add public account' }}
+                </button>
+              </div>
+              @if (store.accountFormError(); as formError) {
+                <p class="inline-error" role="alert">{{ formError }}</p>
+              }
+            </div>
+          </section>
+        }
+
         <div class="server-actions" aria-label="Available onboarding actions">
           @for (action of readiness.actions; track action.code) {
             @if (isMutatingAction(action.code)) {
@@ -166,6 +283,7 @@
               action.code !== 'START_ONBOARDING'
               && action.code !== 'SKIP_ONBOARDING'
               && action.code !== 'VIEW_ONBOARDING'
+              && action.code !== 'ADD_ACCOUNT'
             ) {
               <a [routerLink]="action.destination">{{ action.code.replaceAll('_', ' ') }}</a>
             }
