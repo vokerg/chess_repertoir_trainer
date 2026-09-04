@@ -159,6 +159,14 @@ button:disabled { cursor: default; opacity: 0.55; }
 .target-row span,
 .reveal-card small,
 .technical-progress span { color: var(--ui-text-muted); }
+.technical-details { margin-top: 18px; }
+.technical-details summary {
+  width: fit-content;
+  color: var(--ui-text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
 .technical-progress { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .technical-progress strong { font-size: 1.2rem; }
 
@@ -180,6 +188,7 @@ button:disabled { cursor: default; opacity: 0.55; }
   select,
   input,
   button,
+  summary,
   .primary-link,
   .leave-link,
   .server-actions a,
