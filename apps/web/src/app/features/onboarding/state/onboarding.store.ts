@@ -5,7 +5,7 @@ import type {
 } from '@chess-trainer/contracts/onboarding';
 import { firstValueFrom } from 'rxjs';
 import { AccountsApiService } from '../../accounts/data-access/accounts-api.service';
-import type { ExternalAccount } from '../../accounts/data-access/accounts.models';
+import type { AccountProvider, ExternalAccount } from '../../accounts/data-access/accounts.models';
 import { OnboardingApiService } from '../data-access/onboarding-api.service';
 
 const POLL_MS = 3_000;
@@ -29,16 +29,31 @@ export class OnboardingStore {
   readonly readiness = signal<OnboardingReadinessResponse | null>(null);
   readonly accounts = signal<ExternalAccount[]>([]);
   readonly selectedAccountId = signal<number | null>(null);
+  readonly expansionAccountId = signal<number | null>(null);
+  readonly accountProvider = signal<AccountProvider>('LICHESS');
+  readonly accountUsername = signal('');
   readonly loading = signal(false);
   readonly mutating = signal(false);
+  readonly savingAccount = signal(false);
   readonly error = signal<string | null>(null);
   readonly accountsError = signal<string | null>(null);
+  readonly accountFormError = signal<string | null>(null);
   readonly notice = signal<string | null>(null);
 
   readonly selectedAccount = computed(() =>
     this.accounts().find((account) => account.id === this.selectedAccountId()) ?? null,
   );
-
+  readonly expansionAccounts = computed(() => {
+    const targetIds = new Set(
+      this.readiness()?.preparation?.targets
+        .map((target) => target.accountId)
+        .filter((accountId): accountId is number => accountId !== null) ?? [],
+    );
+    return this.accounts().filter((account) => !targetIds.has(account.id));
+  });
+  readonly selectedExpansionAccount = computed(() =>
+    this.expansionAccounts().find((account) => account.id === this.expansionAccountId()) ?? null,
+  );
   readonly activeRunId = computed(() => this.readiness()?.preparation?.runId ?? null);
   readonly presentationState = computed(() => this.readiness()?.presentationState ?? 'NOT_STARTED');
   readonly canStart = computed(() => this.hasAction('START_ONBOARDING'));
@@ -69,9 +84,11 @@ export class OnboardingStore {
       if (accountsResult.status === 'fulfilled') {
         this.accounts.set(accountsResult.value);
         this.selectDefaultAccount(accountsResult.value, readiness);
+        this.syncExpansionAccountSelection();
       } else {
         this.accounts.set([]);
         this.selectedAccountId.set(null);
+        this.expansionAccountId.set(null);
         this.accountsError.set(readApiError(accountsResult.reason, 'Could not load connected accounts.'));
       }
 
@@ -91,6 +108,7 @@ export class OnboardingStore {
       if (requestId !== this.refreshRequestId) return;
       this.readiness.set(readiness);
       this.error.set(null);
+      this.syncExpansionAccountSelection();
       this.syncPolling();
     } catch (error) {
       if (requestId !== this.refreshRequestId) return;
@@ -104,12 +122,61 @@ export class OnboardingStore {
     }
   }
 
+  selectExpansionAccount(accountId: number): void {
+    if (this.expansionAccounts().some((account) => account.id === accountId)) {
+      this.expansionAccountId.set(accountId);
+    }
+  }
+
+  setAccountProvider(provider: AccountProvider): void {
+    this.accountProvider.set(provider);
+  }
+
+  setAccountUsername(username: string): void {
+    this.accountUsername.set(username);
+  }
+
   hasAction(code: OnboardingActionCode): boolean {
     return this.readiness()?.actions.some((action) => action.code === code) ?? false;
   }
 
   actionDestination(code: OnboardingActionCode): string | null {
     return this.readiness()?.actions.find((action) => action.code === code)?.destination ?? null;
+  }
+
+  async createAccount(): Promise<void> {
+    const username = this.accountUsername().trim();
+    if (!username) {
+      this.accountFormError.set('Enter a public username before adding the account.');
+      return;
+    }
+
+    this.savingAccount.set(true);
+    this.accountFormError.set(null);
+    this.notice.set(null);
+    try {
+      const account = await firstValueFrom(this.accountsApi.createAccount({
+        provider: this.accountProvider(),
+        username,
+      }));
+      this.accounts.update((accounts) => [
+        account,
+        ...accounts.filter((item) => item.id !== account.id),
+      ]);
+      this.accountsError.set(null);
+      this.accountUsername.set('');
+      if (this.hasAction('ADD_ACCOUNT')) {
+        this.expansionAccountId.set(account.id);
+        this.notice.set(`Account ${account.username} added. Confirm it below to expand preparation.`);
+      } else {
+        this.selectedAccountId.set(account.id);
+        this.notice.set(`Account ${account.username} added. Review it below, then start preparation.`);
+      }
+    } catch (error) {
+      this.accountFormError.set(readApiError(error, 'Could not add account.'));
+    } finally {
+      this.savingAccount.set(false);
+    }
   }
 
   async start(): Promise<void> {
@@ -137,6 +204,21 @@ export class OnboardingStore {
     await this.runMutation(
       () => firstValueFrom(this.api.expand(runId, { kind: 'OLDER_HISTORY', accountId })),
       'Older game history expansion started.',
+    );
+  }
+
+  async addSelectedAccountToPreparation(): Promise<void> {
+    const runId = this.activeRunId();
+    const accountId = this.expansionAccountId();
+    if (
+      runId === null
+      || accountId === null
+      || !this.expansionAccounts().some((account) => account.id === accountId)
+    ) return;
+
+    await this.runMutation(
+      () => firstValueFrom(this.api.expand(runId, { kind: 'ADD_ACCOUNT', accountId })),
+      'Additional account preparation started.',
     );
   }
 
@@ -199,6 +281,12 @@ export class OnboardingStore {
       ?? accounts.find((account) => account.isActive)
       ?? accounts[0];
     this.selectedAccountId.set(preferred?.id ?? null);
+  }
+
+  private syncExpansionAccountSelection(): void {
+    const available = this.expansionAccounts();
+    if (available.some((account) => account.id === this.expansionAccountId())) return;
+    this.expansionAccountId.set(available[0]?.id ?? null);
   }
 
   private syncPolling(): void {
