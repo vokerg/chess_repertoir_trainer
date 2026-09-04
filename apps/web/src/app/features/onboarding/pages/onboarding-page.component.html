@@ -29,15 +29,15 @@
       <section class="state-card" aria-labelledby="state-title">
         <div class="state-heading">
           <div>
-            <p class="eyebrow">CURRENT STATE</p>
-            <h2 id="state-title">{{ readiness.presentationState.replaceAll('_', ' ') }}</h2>
+            <p class="eyebrow">CURRENT STAGE</p>
+            <h2 id="state-title">{{ stateLabel(readiness) }}</h2>
           </div>
-          <span class="state-badge">{{ readiness.disposition.value }}</span>
+          <span class="state-badge">{{ readiness.disposition.value.toLowerCase() }}</span>
         </div>
 
         @if (readiness.attention; as attention) {
           <div class="attention" role="status">
-            <strong>{{ attention.code.replaceAll('_', ' ') }}</strong>
+            <strong>{{ attentionLabel(attention.code) }}</strong>
             @if (attention.detail) { <span>{{ attention.detail }}</span> }
           </div>
         }
@@ -124,12 +124,12 @@
         @if (readiness.preparation; as preparation) {
           <div class="progress-grid">
             <article>
-              <span>Games committed</span>
+              <span>Games found</span>
               <strong>{{ preparation.games.committed }}</strong>
-              <small>No overall percentage while provider discovery can still change the denominator.</small>
+              <small>No overall percentage while more provider history can still be discovered.</small>
             </article>
             <article>
-              <span>Provider windows checked</span>
+              <span>History windows checked</span>
               <strong>{{ preparation.providerWindows.completed }}</strong>
               @if (preparation.providerWindows.total !== null) {
                 <small>
@@ -137,20 +137,20 @@
                   @if (preparation.providerWindows.percentage !== null) { · {{ preparation.providerWindows.percentage }}% }
                 </small>
               } @else {
-                <small>Total provider windows are still being discovered.</small>
+                <small>The total history window is still being discovered.</small>
               }
             </article>
             <article>
-              <span>Indexed</span>
+              <span>Openings prepared</span>
               <strong>{{ preparation.games.indexed }}</strong>
               @if (preparation.fixedCoverage.index; as indexCoverage) {
                 <small>{{ progressLabel(indexCoverage.settled, indexCoverage.total) }} settled · {{ indexCoverage.percentage }}%</small>
               } @else {
-                <small>Waiting for a fixed indexing scope.</small>
+                <small>Waiting for a fixed opening-preparation scope.</small>
               }
             </article>
             <article>
-              <span>Analysed</span>
+              <span>Games analysed</span>
               <strong>{{ preparation.games.analysed }}</strong>
               @if (preparation.fixedCoverage.analysis; as analysisCoverage) {
                 <small>{{ progressLabel(analysisCoverage.settled, analysisCoverage.total) }} settled · {{ analysisCoverage.percentage }}%</small>
@@ -160,24 +160,27 @@
             </article>
           </div>
 
-          <div class="technical-progress" aria-label="Exact preparation task counts">
-            @let tasks = preparation.technicalBatches;
-            <article><span>Selected</span><strong>{{ tasks.selectedTasks }}</strong></article>
-            <article><span>Queued</span><strong>{{ tasks.queuedTasks }}</strong></article>
-            <article><span>Running</span><strong>{{ tasks.runningTasks }}</strong></article>
-            <article><span>Failed</span><strong>{{ tasks.failedTasks }}</strong></article>
-            <article><span>Skipped</span><strong>{{ tasks.skippedTasks }}</strong></article>
-            <article><span>Remaining</span><strong>{{ tasks.remainingTasks }}</strong></article>
-          </div>
+          <details class="technical-details">
+            <summary>Preparation details</summary>
+            <div class="technical-progress" aria-label="Exact preparation work counts">
+              @let tasks = preparation.technicalBatches;
+              <article><span>Selected</span><strong>{{ tasks.selectedTasks }}</strong></article>
+              <article><span>Queued</span><strong>{{ tasks.queuedTasks }}</strong></article>
+              <article><span>Running</span><strong>{{ tasks.runningTasks }}</strong></article>
+              <article><span>Failed</span><strong>{{ tasks.failedTasks }}</strong></article>
+              <article><span>Skipped</span><strong>{{ tasks.skippedTasks }}</strong></article>
+              <article><span>Remaining</span><strong>{{ tasks.remainingTasks }}</strong></article>
+            </div>
+          </details>
 
           <div class="targets">
             @for (target of preparation.targets; track target.id) {
               <article class="target-row">
                 <div>
                   <strong>{{ providerLabel(target.provider) }} · {{ target.username }}</strong>
-                  <span>{{ target.games.committed }} committed · {{ target.games.indexed }} indexed · {{ target.games.analysed }} analysed</span>
+                  <span>{{ target.games.committed }} found · {{ target.games.indexed }} openings prepared · {{ target.games.analysed }} analysed</span>
                 </div>
-                <span>{{ target.importStatus || 'Waiting' }}</span>
+                <span>{{ target.importStatus ? target.importStatus.replaceAll('_', ' ').toLowerCase() : 'waiting' }}</span>
               </article>
             }
           </div>
@@ -186,12 +189,12 @@
             <section class="reveal-section" aria-labelledby="reveal-title">
               <div>
                 <p class="eyebrow">READY TO USE</p>
-                <h3 id="reveal-title">Useful evidence is available before the tail finishes.</h3>
+                <h3 id="reveal-title">Useful evidence is available before the deeper work finishes.</h3>
               </div>
               <div class="reveal-grid">
                 @for (reveal of readiness.reveals; track reveal.kind + '-' + reveal.importedGameId) {
                   <a [routerLink]="reveal.destination" class="reveal-card">
-                    <span>{{ reveal.kind.replaceAll('_', ' ') }}</span>
+                    <span>{{ reveal.kind.replaceAll('_', ' ').toLowerCase() }}</span>
                     <strong>{{ reveal.title }}</strong>
                     @if (reveal.detail) { <small>{{ reveal.detail }}</small> }
                   </a>
@@ -269,7 +272,7 @@
           @for (action of readiness.actions; track action.code) {
             @if (isMutatingAction(action.code)) {
               <button type="button" [disabled]="store.mutating()" (click)="handleAction(action)">
-                {{ action.code.replaceAll('_', ' ') }}
+                {{ actionLabel(action.code) }}
               </button>
             } @else if (action.code === 'SKIP_ONBOARDING' && readiness.preparation) {
               <button type="button" class="secondary" [disabled]="store.mutating()" (click)="store.skip()">
@@ -285,7 +288,7 @@
               && action.code !== 'VIEW_ONBOARDING'
               && action.code !== 'ADD_ACCOUNT'
             ) {
-              <a [routerLink]="action.destination">{{ action.code.replaceAll('_', ' ') }}</a>
+              <a [routerLink]="action.destination">{{ actionLabel(action.code) }}</a>
             }
           }
         </div>
