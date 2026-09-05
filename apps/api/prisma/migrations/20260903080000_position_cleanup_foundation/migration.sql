@@ -45,6 +45,7 @@ CREATE TABLE "PositionCleanupRun" (
     "graceDays" INTEGER NOT NULL,
     "graceCutoff" TIMESTAMP(3) NOT NULL,
     "inputPageSize" INTEGER NOT NULL,
+    "initialDeleteBatchSize" INTEGER NOT NULL,
     "deleteBatchSize" INTEGER NOT NULL,
     "lockTimeoutMs" INTEGER NOT NULL,
     "requestedBy" VARCHAR(80) NOT NULL,
@@ -64,6 +65,7 @@ CREATE TABLE "PositionCleanupRun" (
     "cacheRowsDeleted" INTEGER NOT NULL DEFAULT 0,
     "skippedReferenced" INTEGER NOT NULL DEFAULT 0,
     "retryCount" INTEGER NOT NULL DEFAULT 0,
+    "lockTimeoutStreak" INTEGER NOT NULL DEFAULT 0,
     "staleRecoveryCount" INTEGER NOT NULL DEFAULT 0,
     "workKey" VARCHAR(80),
     "claimedAt" TIMESTAMP(3),
@@ -91,7 +93,11 @@ CREATE TABLE "PositionCleanupRun" (
     CONSTRAINT "PositionCleanupRun_inputPageSize_check"
         CHECK ("inputPageSize" BETWEEN 1 AND 500),
     CONSTRAINT "PositionCleanupRun_deleteBatchSize_check"
-        CHECK ("deleteBatchSize" BETWEEN 1 AND 500 AND "deleteBatchSize" <= "inputPageSize"),
+        CHECK (
+            "initialDeleteBatchSize" BETWEEN 1 AND 500
+            AND "initialDeleteBatchSize" <= "inputPageSize"
+            AND "deleteBatchSize" BETWEEN 1 AND "initialDeleteBatchSize"
+        ),
     CONSTRAINT "PositionCleanupRun_lockTimeoutMs_check"
         CHECK ("lockTimeoutMs" BETWEEN 1 AND 5000),
     CONSTRAINT "PositionCleanupRun_bounds_check"
@@ -118,6 +124,7 @@ CREATE TABLE "PositionCleanupRun" (
             AND "cacheRowsDeleted" >= 0
             AND "skippedReferenced" >= 0
             AND "retryCount" >= 0
+            AND "lockTimeoutStreak" >= 0
             AND "staleRecoveryCount" >= 0
         ),
     CONSTRAINT "PositionCleanupRun_terminal_shape_check" CHECK (
