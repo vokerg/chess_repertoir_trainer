@@ -19,6 +19,7 @@ export class GameTacticalFindingsComponent {
   readonly moveSelected = output<number>();
   readonly missedShotCount = computed(() => this.findings().filter((item) => item.kind === 'MISSED_SHOT').length);
   readonly blunderCount = computed(() => this.findings().filter((item) => item.kind === 'USER_BLUNDER').length);
+  readonly trainableCount = computed(() => this.missedShotCount() + this.blunderCount());
 
   protected kindLabel(item: GameTacticalFinding): string {
     if (item.kind === 'MISSED_SHOT') return 'Missed shot';
@@ -30,9 +31,7 @@ export class GameTacticalFindingsComponent {
     return `${Math.ceil(item.triggerPlyNumber / 2)} · ${item.moveUci}`;
   }
 
-  protected trainingRoute(item: GameTacticalFinding): string | null {
-    if (item.kind === 'MISSED_SHOT') return '/scenario-training/tactical-missed-shot';
-    if (item.kind === 'USER_BLUNDER') return '/scenario-training/tactical-blunder';
-    return null;
+  protected isTrainable(item: GameTacticalFinding): boolean {
+    return item.kind === 'MISSED_SHOT' || item.kind === 'USER_BLUNDER';
   }
 }

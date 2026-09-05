@@ -21,6 +21,7 @@ import {
 import {
   TacticalScenarioTrainerConfig,
   tacticalScenarioTrainerConfig,
+  tacticalScenarioTrainerConfigForSession,
 } from '../helpers/tactical-scenario-trainer.config';
 
 function lastMoveFromUci(moveUci: string | null | undefined): { from: string; to: string } | null {
@@ -189,16 +190,23 @@ export class TacticalScenarioTrainerStore implements OnDestroy {
     await this.start({ detectionId, random: false });
   }
 
-  async loadSession(sessionId: number): Promise<void> {
+  async loadSession(sessionId: number, options: { syncConfig?: boolean } = {}): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
     try {
-      this.setSession(await firstValueFrom(this.api.getSession(sessionId)), { animateIntro: true });
+      const session = await firstValueFrom(this.api.getSession(sessionId));
+      if (options.syncConfig) this.configure(tacticalScenarioTrainerConfigForSession(session));
+      this.setSession(session, { animateIntro: true });
     } catch (error) {
       this.error.set(this.errorMessage(error, 'Could not load scenario.'));
     } finally {
       this.loading.set(false);
     }
+  }
+
+  adoptSession(session: ScenarioTrainingSession, options: { syncConfig?: boolean } = {}): void {
+    if (options.syncConfig) this.configure(tacticalScenarioTrainerConfigForSession(session));
+    this.setSession(session, { animateIntro: true });
   }
 
   goStart(): void {
@@ -336,7 +344,7 @@ export class TacticalScenarioTrainerStore implements OnDestroy {
     }
   }
 
-  async dislikeCurrentScenario(): Promise<void> {
+  async dislikeCurrentScenario(advance = true): Promise<boolean> {
     const session = this.session();
     if (
       !session ||
@@ -345,14 +353,16 @@ export class TacticalScenarioTrainerStore implements OnDestroy {
       this.evaluating() ||
       this.disliking()
     )
-      return;
+      return false;
     this.disliking.set(true);
     this.error.set(null);
     try {
       await firstValueFrom(this.api.dislike(session.sessionId));
-      await this.nextScenario();
+      if (advance) await this.nextScenario();
+      return true;
     } catch (error) {
       this.error.set(this.errorMessage(error, this.config().excludeError));
+      return false;
     } finally {
       this.disliking.set(false);
     }

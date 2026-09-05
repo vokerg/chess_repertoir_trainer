@@ -138,13 +138,17 @@ export async function findTacticalScenarioDetection(
     importedGame: {
       endedAt: dateRangeWhere(input),
     },
-    ...(input.excludePassedRecently
+    ...(input.excludePassedRecently || input.excludePassedSince
       ? {
           scenarioTrainingSessions: {
             none: {
               userId,
               scenarioType: options.scenarioType,
-              startedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+              startedAt: {
+                gte:
+                  input.excludePassedSince ??
+                  new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+              },
               attempts: { some: { passed: true } },
             },
           },

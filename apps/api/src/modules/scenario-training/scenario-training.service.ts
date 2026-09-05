@@ -7,8 +7,10 @@ import { evaluateScenarioAttempt } from './scenario-training-evaluation';
 import {
   ScenarioTrainingAttemptInput,
   ScenarioTrainingDislikeInput,
+  TacticalGameStartInput,
   TacticalScenarioStartInput,
 } from './scenario-training.schema';
+import { findGameScopedTacticalScenarioDetection } from './scenario-training-game-scope.repository.prisma';
 import {
   completeScenarioTrainingSession,
   createScenarioTrainingAttempt,
@@ -275,6 +277,35 @@ export async function startTacticalBlunderScenario(
   input: TacticalScenarioStartInput,
 ) {
   return startTacticalScenario(userId, input, BLUNDER_SCENARIO);
+}
+
+export async function startTacticalGameScenario(
+  userId: number,
+  input: TacticalGameStartInput,
+) {
+  const scope = {
+    thresholdsHash: currentTacticalDetectionThresholdsHash(),
+    detectionVersion: currentTacticalDetectionVersion(),
+  };
+  const options = {
+    detectionKinds: ['MISSED_SHOT', 'USER_BLUNDER'],
+    scenarioTypes: ['MISSED_OPPORTUNITY', 'BLUNDER_AVOIDANCE'],
+  } as const;
+  let detection = await findGameScopedTacticalScenarioDetection(userId, input, scope, options);
+  if (!detection && input.excludeDetectionId) {
+    detection = await findGameScopedTacticalScenarioDetection(
+      userId,
+      { ...input, excludeDetectionId: undefined },
+      scope,
+      options,
+    );
+  }
+  if (!detection) throw new Error('No more tactical findings in this game');
+  return startTacticalScenario(
+    userId,
+    { detectionId: detection.id, random: false },
+    detection.kind === 'USER_BLUNDER' ? BLUNDER_SCENARIO : MISSED_SHOT_SCENARIO,
+  );
 }
 
 export async function getScenarioTrainingSession(userId: number, sessionId: number) {

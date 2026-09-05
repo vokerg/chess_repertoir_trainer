@@ -1,16 +1,9 @@
 <section class="tactical-findings">
-  @if (missedShotCount() > 0 || blunderCount() > 0) {
+  @if (trainableCount() > 0) {
     <div class="collection-actions">
-      @if (missedShotCount() > 0) {
-        <a [routerLink]="['/scenario-training/tactical-missed-shot']" [queryParams]="{ gameId: gameId() }">
-          Train missed shots ({{ missedShotCount() }})
-        </a>
-      }
-      @if (blunderCount() > 0) {
-        <a [routerLink]="['/scenario-training/tactical-blunder']" [queryParams]="{ gameId: gameId() }">
-          Train blunders ({{ blunderCount() }})
-        </a>
-      }
+      <a [routerLink]="['/scenario-training/tactical-game']" [queryParams]="{ gameId: gameId() }">
+        Train game findings ({{ trainableCount() }})
+      </a>
     </div>
   }
 
@@ -33,8 +26,11 @@
           </div>
           <div class="collection-actions">
             <button type="button" class="secondary" (click)="moveSelected.emit(item.triggerPlyNumber)">Show</button>
-            @if (trainingRoute(item); as route) {
-              <a [routerLink]="[route]" [queryParams]="{ detectionId: item.id }">Train</a>
+            @if (isTrainable(item)) {
+              <a
+                [routerLink]="['/scenario-training/tactical-game']"
+                [queryParams]="{ gameId: gameId(), detectionId: item.id }"
+              >Train</a>
             }
           </div>
         </article>

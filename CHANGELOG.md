@@ -1,5 +1,7 @@
 # Changelog
 
+- Added mixed game-scoped tactical training from game review, with missed shots and user blunders in one cycle plus a completion and repeat state.
+
 This changelog was reconstructed retrospectively from the repository commit history.
 
 Versions `0.0.x` are daily development snapshots: each version represents a calendar day on which project work was committed, not a separately published package release. Snapshot numbering continues independently of package versions; the current repository version remains `1.0.0`.
