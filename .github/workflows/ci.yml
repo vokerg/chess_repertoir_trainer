@@ -114,18 +114,7 @@ jobs:
       - name: Test
         env:
           TRAP_PILOT_REPORT_PATH: trap-pilot-validation.txt
-        shell: bash
-        run: |
-          set -o pipefail
-          npm test 2>&1 | tee test-output.log
-
-      - name: Upload test output
-        if: always() && hashFiles('test-output.log') != ''
-        uses: actions/upload-artifact@v6
-        with:
-          name: test-output
-          path: test-output.log
-          if-no-files-found: error
+        run: npm test
 
       - name: Upload trap validation report
         if: always() && hashFiles('apps/api/trap-pilot-validation.txt') != ''
