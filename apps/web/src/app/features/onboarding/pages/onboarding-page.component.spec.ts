@@ -160,9 +160,11 @@ describe('OnboardingPageComponent', () => {
     expect(content).toContain('2 of 8 settled · 25%');
     const details = fixture.nativeElement.querySelector('.technical-details') as HTMLDetailsElement;
     expect(details.open).toBeFalse();
-    const counters = Array.from(
-      fixture.nativeElement.querySelectorAll('.technical-progress article'),
-      (element: Element) => element.textContent?.replace(/\s+/g, ' ').trim(),
+    const counterElements = fixture.nativeElement.querySelectorAll(
+      '.technical-progress article',
+    ) as NodeListOf<HTMLElement>;
+    const counters = Array.from(counterElements).map(
+      (element) => element.textContent?.replace(/\s+/g, ' ').trim(),
     );
     expect(counters).toEqual([
       'Selected 20',
