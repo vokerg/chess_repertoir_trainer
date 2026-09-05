@@ -380,8 +380,67 @@ model Position {
   plies                 ImportedGamePly[]
   analysis              PositionAnalysis?
   mastersExplorerCaches MastersExplorerCache[]
+  cleanupCandidate      PositionCleanupCandidate?
 
   @@map("ImportedGamePosition")
+}
+
+model PositionCleanupCandidate {
+  positionId            Int      @id
+  position              Position @relation(fields: [positionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  firstObservedOrphanAt DateTime @default(now())
+  lastObservedOrphanAt  DateTime @default(now())
+
+  @@index([firstObservedOrphanAt, positionId])
+}
+
+model PositionCleanupRun {
+  id                     Int       @id @default(autoincrement())
+  mode                   String    @db.VarChar(16)
+  status                 String    @default("QUEUED") @db.VarChar(24)
+  phase                  String    @default("RECONCILE") @db.VarChar(24)
+  policyVersion          String    @db.VarChar(24)
+  graceDays              Int
+  graceCutoff            DateTime
+  inputPageSize          Int
+  deleteBatchSize        Int
+  lockTimeoutMs          Int
+  requestedBy            String    @db.VarChar(80)
+  reconcileUpperBound    Int       @default(0)
+  positionUpperBound     Int       @default(0)
+  evaluationUpperBound   Int?
+  reconcileAfterPositionId Int     @default(0)
+  observeAfterPositionId Int       @default(0)
+  evaluateAfterPositionId Int      @default(0)
+  candidatesInspected    Int       @default(0)
+  candidatesReconciled   Int       @default(0)
+  positionsInspected     Int       @default(0)
+  orphansObserved        Int       @default(0)
+  eligibleObserved       Int       @default(0)
+  positionsDeleted       Int       @default(0)
+  analysisRowsDeleted    Int       @default(0)
+  cacheRowsDeleted       Int       @default(0)
+  skippedReferenced      Int       @default(0)
+  retryCount             Int       @default(0)
+  staleRecoveryCount     Int       @default(0)
+  workKey                String?   @db.VarChar(80)
+  claimedAt              DateTime?
+  heartbeatAt            DateTime?
+  cancelRequestedAt      DateTime?
+  observationStartedAt   DateTime?
+  observationCompletedAt DateTime?
+  lastBatchAt            DateTime?
+  terminalResult         String?   @db.VarChar(40)
+  errorCode              String?   @db.VarChar(120)
+  startedAt              DateTime?
+  completedAt            DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  // Check constraints plus the work-key and one-non-terminal-run partial unique
+  // indexes are PostgreSQL-owned in the ONB-026 migration.
+  @@index([status, updatedAt, id])
+  @@index([completedAt])
 }
 
 model MastersExplorerCache {
