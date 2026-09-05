@@ -93,11 +93,11 @@ export function createPositionCleanupRepository(
         const rows = await transaction.$queryRaw<PositionCleanupRun[]>(Prisma.sql`
           INSERT INTO "PositionCleanupRun" (
             "mode", "policyVersion", "graceDays", "graceCutoff",
-            "inputPageSize", "deleteBatchSize", "lockTimeoutMs", "requestedBy",
+            "inputPageSize", "initialDeleteBatchSize", "deleteBatchSize", "lockTimeoutMs", "requestedBy",
             "reconcileUpperBound", "positionUpperBound", "updatedAt"
           ) VALUES (
             ${input.mode}, ${input.policyVersion}, ${input.graceDays}, ${input.graceCutoff},
-            ${input.inputPageSize}, ${input.deleteBatchSize}, ${input.lockTimeoutMs}, ${input.requestedBy},
+            ${input.inputPageSize}, ${input.deleteBatchSize}, ${input.deleteBatchSize}, ${input.lockTimeoutMs}, ${input.requestedBy},
             ${reconcileUpperBound}, ${positionUpperBound}, NOW()
           )
           RETURNING *
@@ -474,6 +474,7 @@ export function createPositionCleanupRepository(
           "analysisRowsDeleted" = "analysisRowsDeleted" + ${summary.analysisRowsDeleted},
           "cacheRowsDeleted" = "cacheRowsDeleted" + ${summary.cacheRowsDeleted},
           "skippedReferenced" = "skippedReferenced" + ${summary.skippedReferenced},
+          "lockTimeoutStreak" = 0,
           "lastBatchAt" = NOW(),
           "errorCode" = NULL
         `);
@@ -488,11 +489,18 @@ export function createPositionCleanupRepository(
       const updated = await database.$executeRaw(Prisma.sql`
         UPDATE "PositionCleanupRun"
         SET "retryCount" = "retryCount" + 1,
+            "lockTimeoutStreak" = "lockTimeoutStreak" + 1,
+            "deleteBatchSize" = CASE
+              WHEN "lockTimeoutStreak" + 1 >= 2
+                AND "lockTimeoutStreak" + 1 < ${maxRetries}
+              THEN GREATEST(1, "deleteBatchSize" / 2)
+              ELSE "deleteBatchSize"
+            END,
             "errorCode" = 'POSITION_CLEANUP_LOCK_TIMEOUT',
-            "status" = CASE WHEN "retryCount" + 1 >= ${maxRetries} THEN 'NEEDS_ATTENTION' ELSE "status" END,
-            "phase" = CASE WHEN "retryCount" + 1 >= ${maxRetries} THEN 'DONE' ELSE "phase" END,
-            "terminalResult" = CASE WHEN "retryCount" + 1 >= ${maxRetries} THEN 'NEEDS_ATTENTION' ELSE NULL END,
-            "completedAt" = CASE WHEN "retryCount" + 1 >= ${maxRetries} THEN NOW() ELSE NULL END,
+            "status" = CASE WHEN "lockTimeoutStreak" + 1 >= ${maxRetries} THEN 'NEEDS_ATTENTION' ELSE "status" END,
+            "phase" = CASE WHEN "lockTimeoutStreak" + 1 >= ${maxRetries} THEN 'DONE' ELSE "phase" END,
+            "terminalResult" = CASE WHEN "lockTimeoutStreak" + 1 >= ${maxRetries} THEN 'NEEDS_ATTENTION' ELSE NULL END,
+            "completedAt" = CASE WHEN "lockTimeoutStreak" + 1 >= ${maxRetries} THEN NOW() ELSE NULL END,
             "workKey" = NULL,
             "claimedAt" = NULL,
             "heartbeatAt" = NULL,
