@@ -30,6 +30,7 @@ export interface PositionCleanupRun {
   graceDays: number;
   graceCutoff: Date;
   inputPageSize: number;
+  initialDeleteBatchSize: number;
   deleteBatchSize: number;
   lockTimeoutMs: number;
   requestedBy: string;
@@ -49,6 +50,7 @@ export interface PositionCleanupRun {
   cacheRowsDeleted: number;
   skippedReferenced: number;
   retryCount: number;
+  lockTimeoutStreak: number;
   staleRecoveryCount: number;
   workKey: string | null;
   claimedAt: Date | null;
