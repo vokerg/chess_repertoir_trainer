@@ -163,16 +163,17 @@ describe('OnboardingPageComponent', () => {
     const counterElements = fixture.nativeElement.querySelectorAll(
       '.technical-progress article',
     ) as NodeListOf<HTMLElement>;
-    const counters = Array.from(counterElements).map(
-      (element) => element.textContent?.replace(/\s+/g, ' ').trim(),
-    );
+    const counters = Array.from(counterElements).map((element) => ({
+      label: element.querySelector('span')?.textContent?.trim(),
+      value: element.querySelector('strong')?.textContent?.trim(),
+    }));
     expect(counters).toEqual([
-      'Selected 20',
-      'Queued 3',
-      'Running 1',
-      'Failed 2',
-      'Skipped 4',
-      'Remaining 10',
+      { label: 'Selected', value: '20' },
+      { label: 'Queued', value: '3' },
+      { label: 'Running', value: '1' },
+      { label: 'Failed', value: '2' },
+      { label: 'Skipped', value: '4' },
+      { label: 'Remaining', value: '10' },
     ]);
   });
 
