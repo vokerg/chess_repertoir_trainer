@@ -13,6 +13,18 @@ describe('application routes', () => {
     expect(account?.loadComponent).toBeDefined();
   });
 
+  it('keeps onboarding as a lazy authenticated route without trapping other protected routes', () => {
+    const onboarding = routes.find((route) => route.path === 'onboarding');
+    const home = routes.find((route) => route.path === 'home');
+    const games = routes.find((route) => route.path === 'games');
+
+    expect(onboarding?.title).toBe('Get started | Chess Repertoire Trainer');
+    expect(onboarding?.loadComponent).toBeDefined();
+    expect(onboarding?.canActivate).toEqual([authGuard]);
+    expect(home?.canActivate).toEqual([authGuard]);
+    expect(games?.canActivate).toEqual([authGuard]);
+  });
+
   it('keeps administrator diagnostics lazy and uses only the normal sign-in guard', () => {
     const admin = routes.find((route) => route.path === 'admin');
 
