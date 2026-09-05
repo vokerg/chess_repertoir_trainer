@@ -1,6 +1,6 @@
 # ONB-010 — Build functional onboarding and Home re-entry
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 100
 
 Delivery class: Implementation
 
-Planning maturity: Backend lifecycle dependencies are delivered; Angular implementation is in progress on draft PR #413
+Planning maturity: Functional implementation and interaction handoff are complete on draft PR #413; final exact-head CI and PR acceptance are pending
 
 GitHub issue: [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195)
 
@@ -152,8 +152,10 @@ The current account Settings surface intentionally exposes many operational cont
 
 ## Completion
 
-Report: none
+Implementation report: `north-star/onboarding/reports/ONB-010-2026-09-05-functional-onboarding-home.md`
 
-Pull request: #413 (draft; implementation and validation in progress)
+Pull request: #413 (draft; implementation complete, final exact-head CI/review validation pending)
+
+Runtime validation: pending final exact-head CI before review handoff.
 
 Completed at: none
