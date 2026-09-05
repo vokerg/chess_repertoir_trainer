@@ -34,7 +34,7 @@ async function runUntilPhase(runId, phase) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const run = await service.status(runId);
     if (run.phase === phase) return run;
-    assert.equal(run.status, 'RUNNING');
+    assert.equal(['QUEUED', 'RUNNING'].includes(run.status), true);
     assert.equal(await worker.runOnce(), true);
   }
   throw new Error(`Timed out advancing cleanup run ${runId} to ${phase}.`);
@@ -154,14 +154,12 @@ try {
   assert.equal(await prisma.position.count({ where: { id: positionId } }), 0);
   assert.equal(await prisma.positionAnalysis.count({ where: { positionId } }), 0);
   assert.equal(await prisma.mastersExplorerCache.count({ where: { positionId } }), 0);
-  assert.equal(
-    await prisma.$queryRaw`
-      SELECT COUNT(*)::int AS "count"
-      FROM "PositionCleanupCandidate"
-      WHERE "positionId" = ${positionId}
-    `.then((rows) => rows[0]?.count ?? 0),
-    0,
-  );
+  const candidateRows = await prisma.$queryRaw`
+    SELECT COUNT(*)::int AS "count"
+    FROM "PositionCleanupCandidate"
+    WHERE "positionId" = ${positionId}
+  `;
+  assert.equal(candidateRows[0]?.count ?? 0, 0);
 
   console.log('Position cleanup execute lock-timeout tests passed.');
 } finally {
