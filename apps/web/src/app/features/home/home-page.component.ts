@@ -34,6 +34,7 @@ interface HomeShortcut {
 export class HomePageComponent implements OnInit {
   protected readonly store = inject(HomeDashboardStore);
   private readonly onboardingApi = inject(OnboardingApiService);
+  private onboardingRequestId = 0;
   protected readonly onboarding = signal<OnboardingReadinessResponse | null>(null);
   protected readonly shortcuts: readonly HomeShortcut[] = [
     { label: 'Study', description: 'Train repertoire lines', link: '/library', marker: '01' },
@@ -83,9 +84,13 @@ export class HomePageComponent implements OnInit {
   }
 
   private async loadOnboarding(): Promise<void> {
+    const requestId = ++this.onboardingRequestId;
     try {
-      this.onboarding.set(await firstValueFrom(this.onboardingApi.getReadiness()));
+      const readiness = await firstValueFrom(this.onboardingApi.getReadiness());
+      if (requestId !== this.onboardingRequestId) return;
+      this.onboarding.set(readiness);
     } catch {
+      if (requestId !== this.onboardingRequestId) return;
       // Home remains usable if the supplemental onboarding projection is temporarily unavailable.
       this.onboarding.set(null);
     }
