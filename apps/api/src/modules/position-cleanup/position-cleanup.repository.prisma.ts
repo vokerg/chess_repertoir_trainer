@@ -19,6 +19,10 @@ interface ServerVersionRow {
   serverVersionNum: number;
 }
 
+interface LockedPositionRow {
+  id: number;
+}
+
 interface BatchSummaryRow {
   inspected: number;
   matched: number;
@@ -263,14 +267,55 @@ export function createPositionCleanupRepository(
     async observeBatch(runId, workKey) {
       return database.$transaction(async (transaction) => {
         const run = await lockClaimedRun(transaction, runId, workKey, 'OBSERVE');
+        const lockedInput = await transaction.$queryRaw<LockedPositionRow[]>(Prisma.sql`
+          SELECT "id"
+          FROM "ImportedGamePosition"
+          WHERE "id" > ${run.observeAfterPositionId}
+            AND "id" <= ${run.positionUpperBound}
+          ORDER BY "id" ASC
+          LIMIT ${run.inputPageSize}
+          FOR UPDATE
+        `);
+        if (lockedInput.length === 0) {
+          const evaluationUpperBound = await maxId(
+            transaction,
+            Prisma.sql`SELECT COALESCE(MAX("positionId"), 0)::int AS "maxId" FROM "PositionCleanupCandidate"`,
+          );
+          await updateClaimedRun(transaction, runId, workKey, Prisma.sql`
+            "phase" = 'EVALUATE',
+            "evaluationUpperBound" = ${evaluationUpperBound},
+            "observationStartedAt" = CASE WHEN "mode" = 'DRY_RUN' THEN NOW() ELSE "observationStartedAt" END,
+            "lastBatchAt" = NOW()
+          `);
+          return { inspected: 0, matched: 0, checkpoint: run.observeAfterPositionId, completedPhase: true };
+        }
+
+        // Locking the bounded Position page first serializes observation against new
+        // ImportedGamePly foreign-key references to those exact positions. The next
+        // statement gets a fresh READ COMMITTED snapshot, so writers that committed
+        // before the row locks were acquired are visible, while later writers wait for
+        // this transaction and their reference-reset trigger removes any committed
+        // candidate after the lock is released.
+        const inputIds = lockedInput.map((position) => position.id);
+        const checkpoint = inputIds[inputIds.length - 1];
+        if (checkpoint === undefined) throw new Error('Position cleanup observation checkpoint was not returned.');
         const rows = await transaction.$queryRaw<ObservationSummaryRow[]>(Prisma.sql`
           WITH input AS MATERIALIZED (
             SELECT "id"
             FROM "ImportedGamePosition"
-            WHERE "id" > ${run.observeAfterPositionId}
-              AND "id" <= ${run.positionUpperBound}
-            ORDER BY "id" ASC
-            LIMIT ${run.inputPageSize}
+            WHERE "id" IN (${Prisma.join(inputIds)})
+          ), referenced AS MATERIALIZED (
+            SELECT input."id"
+            FROM input
+            WHERE EXISTS (
+              SELECT 1 FROM "ImportedGamePly" AS ply
+              WHERE ply."positionId" = input."id"
+            )
+          ), reset_referenced AS (
+            DELETE FROM "PositionCleanupCandidate" AS candidate
+            USING referenced
+            WHERE candidate."positionId" = referenced."id"
+            RETURNING candidate."positionId"
           ), eligible AS MATERIALIZED (
             SELECT input."id"
             FROM input
@@ -295,26 +340,13 @@ export function createPositionCleanupRepository(
           SELECT
             COUNT(input."id")::int AS "inspected",
             (SELECT COUNT(*)::int FROM eligible) AS "matched",
-            COALESCE(MAX(input."id"), ${run.observeAfterPositionId})::int AS "checkpoint",
+            ${checkpoint}::int AS "checkpoint",
             ((SELECT COUNT(*) FROM eligible) - (SELECT COUNT(*) FROM existing))::int AS "firstObserved",
             (SELECT COUNT(*)::int FROM existing) AS "refreshed"
           FROM input
         `);
         const summary = rows[0];
         if (!summary) throw new Error('Position cleanup observation summary was not returned.');
-        if (summary.inspected === 0) {
-          const evaluationUpperBound = await maxId(
-            transaction,
-            Prisma.sql`SELECT COALESCE(MAX("positionId"), 0)::int AS "maxId" FROM "PositionCleanupCandidate"`,
-          );
-          await updateClaimedRun(transaction, runId, workKey, Prisma.sql`
-            "phase" = 'EVALUATE',
-            "evaluationUpperBound" = ${evaluationUpperBound},
-            "observationStartedAt" = CASE WHEN "mode" = 'DRY_RUN' THEN NOW() ELSE "observationStartedAt" END,
-            "lastBatchAt" = NOW()
-          `);
-          return { inspected: 0, matched: 0, checkpoint: run.observeAfterPositionId, completedPhase: true };
-        }
         await updateClaimedRun(transaction, runId, workKey, Prisma.sql`
           "observeAfterPositionId" = ${summary.checkpoint},
           "positionsInspected" = "positionsInspected" + ${summary.inspected},
