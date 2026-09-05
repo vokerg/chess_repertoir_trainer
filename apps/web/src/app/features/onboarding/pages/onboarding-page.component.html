@@ -4,7 +4,7 @@
       <p class="eyebrow">GET STARTED</p>
       <h1 id="onboarding-title">Prepare your recent chess without blocking the rest of the app.</h1>
       <p>
-        Start with one connected account. Import, indexing, and analysis continue in the background and this page resumes from server state on every visit.
+        Start with one connected account. We keep finding games, preparing openings, and analysing your first useful sample in the background. Return here any time to see the latest saved state.
       </p>
     </div>
     <a routerLink="/home" class="leave-link">Leave for Home</a>
@@ -46,7 +46,7 @@
           <div class="start-layout">
             <div>
               <h3>Use the default recent-first recipe</h3>
-              <p>Standard blitz and rapid games are prepared first. The server owns the exact scope and workflow.</p>
+              <p>Recent three months · standard chess · blitz and rapid · rated and unrated.</p>
             </div>
 
             @if (store.accountsError(); as accountsError) {
@@ -155,7 +155,7 @@
               @if (preparation.fixedCoverage.analysis; as analysisCoverage) {
                 <small>{{ progressLabel(analysisCoverage.settled, analysisCoverage.total) }} settled · {{ analysisCoverage.percentage }}%</small>
               } @else {
-                <small>Analysis expands only from server-selected evidence.</small>
+                <small>Analysis expands only from selected game evidence.</small>
               }
             </article>
           </div>
