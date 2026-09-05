@@ -13,6 +13,8 @@ import type {
   SublineTrainingStatusDto,
   TrainingMarathonModeDto,
   TrainingMarathonNextResponseDto,
+  TrainingMarathonRequestDto,
+  TrainingMarathonRunResponseDto,
   TrainingMarathonScopeDto,
   TrainingMoveResponseDto,
   TrainingReviewItemDto,
@@ -125,14 +127,8 @@ export type MarathonMode = TrainingMarathonModeDto;
 
 export type LineTrainingStatusValue = TrainingStatusValue;
 
-export interface MarathonNextRequest {
-  scope?: { type: MarathonScopeType; id: number };
-  mode?: MarathonMode;
-  lineIds?: number[];
-  sublineHashes?: string[];
-  recentSublineHashes?: string[];
-}
-export interface MarathonRunResponse { runId: string }
+export type MarathonNextRequest = Partial<TrainingMarathonRequestDto>;
+export type MarathonRunResponse = TrainingMarathonRunResponseDto;
 
 export type SublineTrainingStatus = SublineTrainingStatusDto;
 export type MarathonNextResponse = TrainingMarathonNextResponseDto;

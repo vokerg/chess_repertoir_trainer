@@ -11,6 +11,8 @@ import {
 
 const sublineHash = 'a'.repeat(64);
 const response = {
+  state: 'ITEM',
+  itemKind: 'STANDARD',
   scope: { type: 'COURSE', id: 7 },
   mode: 'MIXED_WEAK_UNTRAINED',
   line: {
@@ -46,7 +48,7 @@ const response = {
 assert.deepEqual(trainingMarathonNextResponseSchema.parse(response), response);
 assert.deepEqual(lineTrainingStartResponseSchema.parse(response.session), response.session);
 
-const completedResponse = {
+const initiallyCompletedItemResponse = {
   ...response,
   scope: null,
   session: {
@@ -57,7 +59,15 @@ const completedResponse = {
     sublineMoveText: 'e4',
   },
 };
-assert.deepEqual(trainingMarathonNextResponseSchema.parse(completedResponse), completedResponse);
+assert.deepEqual(trainingMarathonNextResponseSchema.parse(initiallyCompletedItemResponse), initiallyCompletedItemResponse);
+
+const dailyReviewCompletedResponse = {
+  state: 'COMPLETED',
+  mode: 'DAILY_REVIEW',
+  scope: { type: 'CHAPTER', id: 3 },
+  completedCount: 4,
+};
+assert.deepEqual(trainingMarathonNextResponseSchema.parse(dailyReviewCompletedResponse), dailyReviewCompletedResponse);
 
 assert.throws(() => trainingMarathonNextResponseSchema.parse({ ...response, mode: 'UNKNOWN' }));
 assert.throws(() => trainingMarathonNextResponseSchema.parse({

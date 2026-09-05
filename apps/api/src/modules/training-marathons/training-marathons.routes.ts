@@ -1,6 +1,6 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { trainingMarathonNextResponseSchema } from '@chess-trainer/contracts/training';
+import { trainingMarathonNextResponseSchema, trainingMarathonRequestSchema, trainingMarathonRunResponseSchema } from '@chess-trainer/contracts/training';
 import { requireAuth } from '../../auth/request-auth';
 import {
   buildMarathonNextResponse,
@@ -12,29 +12,12 @@ import {
 import { apiErrorResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 import { performanceDebug } from '../../utils/performance-debug';
-import { MarathonRunStaleError, TrainingMarathonRunService } from './training-marathon-runs.service';
-
-const marathonScopeSchema = z.object({
-  type: z.enum(['CHAPTER', 'COURSE']),
-  id: z.coerce.number().int().positive(),
-});
-
-const nextLineSchema = z.object({
-  scope: marathonScopeSchema.optional(),
-  mode: z
-    .enum(['ALL', 'WEAK_SUBLINES', 'UNTRAINED_SUBLINES', 'MIXED_WEAK_UNTRAINED'])
-    .optional()
-    .default('ALL'),
-  lineIds: z.array(z.coerce.number().int().positive()).optional().default([]),
-  sublineHashes: z.array(z.string().length(64)).optional().default([]),
-  recentSublineHashes: z.array(z.string().length(64)).optional().default([]),
-  recentLineIds: z.array(z.coerce.number().int().positive()).optional().default([]),
-});
+import { MarathonRunActiveSessionError, MarathonRunStaleError, TrainingMarathonRunService } from './training-marathon-runs.service';
 
 const trainingMarathonsModule: FastifyPluginAsyncZod = async (app) => {
   app.post('/api/training-marathons', {
-    schema: { operationId: 'createTrainingMarathonRun', tags: ['Training'], summary: 'Prepare a short-lived training marathon run', body: nextLineSchema,
-      response: { 201: z.object({ runId: z.string().uuid() }), 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema } },
+    schema: { operationId: 'createTrainingMarathonRun', tags: ['Training'], summary: 'Prepare a short-lived training marathon run', body: trainingMarathonRequestSchema,
+      response: { 201: trainingMarathonRunResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema } },
   }, async (request, reply) => {
     const auth = requireAuth(request, reply); if (!auth) return;
     try {
@@ -50,7 +33,7 @@ const trainingMarathonsModule: FastifyPluginAsyncZod = async (app) => {
   app.post('/api/training-marathons/:runId/next', {
     schema: { operationId: 'getNextTrainingMarathonRunLine', tags: ['Training'], summary: 'Start the next prepared candidate in a marathon run',
       description: 'The run id selects the prepared marathon state.',
-      params: z.object({ runId: z.string().uuid() }), response: { 200: trainingMarathonNextResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema } },
+      params: z.object({ runId: z.string().uuid() }), response: { 200: trainingMarathonNextResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema, 409: apiErrorResponseSchema } },
   }, async (request, reply) => {
     const auth = requireAuth(request, reply); if (!auth) return;
     try {
@@ -59,6 +42,7 @@ const trainingMarathonsModule: FastifyPluginAsyncZod = async (app) => {
       return response;
     } catch (error) {
       if (error instanceof MarathonRunStaleError) return reply.status(404).send({ error: error.message });
+      if (error instanceof MarathonRunActiveSessionError) return reply.status(409).send({ error: error.message });
       throw error;
     }
   });
@@ -68,7 +52,7 @@ const trainingMarathonsModule: FastifyPluginAsyncZod = async (app) => {
       operationId: 'getNextTrainingMarathonLine',
       tags: ['Training'],
       summary: 'Select the next line for a training marathon',
-      body: nextLineSchema,
+      body: trainingMarathonRequestSchema,
       response: {
         200: trainingMarathonNextResponseSchema,
         400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]),
@@ -83,6 +67,9 @@ const trainingMarathonsModule: FastifyPluginAsyncZod = async (app) => {
     const requestBody = request.body;
 
     try {
+      if (requestBody.mode === 'DAILY_REVIEW') {
+        return reply.status(400).send({ error: 'Daily Review requires a short-lived marathon run.' });
+      }
       const { scope, scopeLabel, sublines, preparedLines } = await resolveMarathonCandidates(auth.userId, requestBody);
       const pool = await filterCandidatesByMode(auth.userId, sublines, requestBody.mode);
       if (pool.length === 0) {

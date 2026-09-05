@@ -62,6 +62,12 @@ export class TrainingBasketPanelComponent {
   protected readonly modeOptions = computed<readonly SessionOption<LibraryMarathonMode>[]>(
     () => [
       {
+        id: 'DAILY_REVIEW',
+        label: 'Daily Review',
+        caption: 'Scheduled for today',
+        disabled: !this.canStart() || this.activeSublineCount() === 0,
+      },
+      {
         id: 'ALL',
         label: 'All',
         caption: 'Everything in scope',
@@ -95,6 +101,7 @@ export class TrainingBasketPanelComponent {
     () => this.canStart() && this.startCount() > 0,
   );
   protected readonly startLabel = computed(() => {
+    if (this.mode() === 'DAILY_REVIEW') return 'Start Daily Review';
     const count = this.startCount();
     return `Start ${count} ${count === 1 ? 'subline' : 'sublines'}`;
   });
