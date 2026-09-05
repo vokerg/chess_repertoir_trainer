@@ -45,7 +45,7 @@
           <strong>{{ onboardingHeadline(readiness) }}</strong>
           @if (readiness.preparation; as preparation) {
             <span>
-              {{ preparation.games.committed }} games found · {{ preparation.games.indexed }} indexed · {{ preparation.games.analysed }} analysed
+              {{ preparation.games.committed }} games found · {{ preparation.games.indexed }} openings prepared · {{ preparation.games.analysed }} analysed
             </span>
           } @else {
             <span>Start with one connected account and keep using the app while preparation runs.</span>
@@ -61,7 +61,7 @@
             <strong>Onboarding guidance skipped</strong>
             <span>
               Preparation {{ preparation.status.replaceAll('_', ' ').toLowerCase() }} ·
-              {{ preparation.games.indexed }} indexed · {{ preparation.games.analysed }} analysed
+              {{ preparation.games.indexed }} openings prepared · {{ preparation.games.analysed }} analysed
             </span>
           </div>
           <span aria-hidden="true">→</span>
@@ -73,7 +73,7 @@
           <span class="action-kicker">PREPARATION</span>
           <strong>Recent chess ready to use</strong>
           <span>
-            {{ preparation.games.indexed }} indexed · {{ preparation.games.analysed }} analysed
+            {{ preparation.games.indexed }} openings prepared · {{ preparation.games.analysed }} analysed
             @if (readiness.presentationState === 'CORE_READY') { · deeper analysis continues }
           </span>
         </div>
