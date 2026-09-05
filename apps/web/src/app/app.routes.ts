@@ -198,6 +198,16 @@ export const routes: Routes = [
     loadComponent: () => import('./features/lab/pages/lab-page.component').then((m) => m.LabPageComponent),
   },
   {
+    path: 'scenario-training/tactical-game',
+    title: 'Game tactical training | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    data: { scenarioKind: 'game' },
+    loadComponent: () =>
+      import('./features/scenario-training/tactical-missed-shot/pages/tactical-missed-shot-trainer-page.component').then(
+        (m) => m.TacticalScenarioTrainerPageComponent,
+      ),
+  },
+  {
     path: 'scenario-training/tactical-missed-shot',
     title: 'Tactical missed shot | Chess Repertoire Trainer',
     canActivate: [authGuard],

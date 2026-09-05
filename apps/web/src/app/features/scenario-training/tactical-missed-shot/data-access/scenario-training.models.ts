@@ -27,6 +27,7 @@ export interface StartScenarioRequest {
   excludeDetectionId?: number;
   random?: boolean;
   excludePassedRecently?: boolean;
+  excludePassedSince?: string;
 }
 
 export interface SubmitScenarioAttemptRequest {

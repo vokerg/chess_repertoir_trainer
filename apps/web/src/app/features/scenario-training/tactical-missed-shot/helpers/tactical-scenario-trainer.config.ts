@@ -79,3 +79,11 @@ const BLUNDER_CONFIG: TacticalScenarioTrainerConfig = {
 export function tacticalScenarioTrainerConfig(kind: unknown): TacticalScenarioTrainerConfig {
   return kind === 'blunder' ? BLUNDER_CONFIG : MISSED_SHOT_CONFIG;
 }
+
+export function tacticalScenarioTrainerConfigForSession(
+  session: Pick<ScenarioTrainingSession, 'scenarioType'>,
+): TacticalScenarioTrainerConfig {
+  return tacticalScenarioTrainerConfig(
+    session.scenarioType === 'BLUNDER_AVOIDANCE' ? 'blunder' : 'missed-shot',
+  );
+}

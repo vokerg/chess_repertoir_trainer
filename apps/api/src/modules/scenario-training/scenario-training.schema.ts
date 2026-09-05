@@ -8,9 +8,13 @@ export const tacticalScenarioStartSchema = z.object({
   excludeDetectionId: z.coerce.number().int().positive().optional(),
   random: z.boolean().optional(),
   excludePassedRecently: z.boolean().optional(),
+  excludePassedSince: z.coerce.date().optional(),
 });
 
 export const tacticalMissedShotStartSchema = tacticalScenarioStartSchema;
+export const tacticalGameStartSchema = tacticalScenarioStartSchema.extend({
+  gameId: z.coerce.number().int().positive(),
+});
 
 export const scenarioTrainingAttemptSchema = z.object({
   moveUci: z.string().regex(/^[a-h][1-8][a-h][1-8][qrbn]?$/),
@@ -31,6 +35,7 @@ export const scenarioTrainingDislikeSchema = z.object({
 });
 
 export type TacticalScenarioStartInput = z.infer<typeof tacticalScenarioStartSchema>;
+export type TacticalGameStartInput = z.infer<typeof tacticalGameStartSchema>;
 export type TacticalMissedShotStartInput = TacticalScenarioStartInput;
 export type ScenarioTrainingAttemptInput = z.infer<typeof scenarioTrainingAttemptSchema>;
 export type ScenarioTrainingDislikeInput = z.infer<typeof scenarioTrainingDislikeSchema>;

@@ -1,6 +1,6 @@
 <main class="scenario-page">
   <app-page-header
-    [title]="store.config().title"
+    [title]="pageTitle()"
     [subtitle]="pageSubtitle()"
     [subtitleLink]="store.session()?.providerUrl ?? null"
     [actions]="headerActions()"
@@ -10,7 +10,18 @@
     <p class="scenario-error" role="alert">{{ error }}</p>
   }
 
-  @if (store.loading()) {
+  @if (gameTrainingComplete()) {
+    <app-panel
+      title="You're done"
+      subtitle="You have trained every missed shot and blunder found in this game."
+    >
+      <p class="scenario-copy">Would you like to repeat the game findings?</p>
+      <div class="result-actions">
+        <button type="button" class="primary" (click)="restartGameTraining()">Repeat</button>
+        <button type="button" class="secondary" (click)="openGame()">Back to game</button>
+      </div>
+    </app-panel>
+  } @else if (store.loading()) {
     <app-panel [title]="store.loadingMessage()" subtitle="Preparing the board and game context.">
       <div class="scenario-loading" aria-live="polite" aria-busy="true">
         <div class="scenario-loading-spinner" aria-hidden="true"></div>
@@ -70,14 +81,14 @@
               </div>
             </dl>
             <div class="result-actions">
-              <button type="button" class="primary" (click)="store.nextScenario()">
+              <button type="button" class="primary" (click)="nextScenario()">
                 Next scenario
               </button>
               <button type="button" class="secondary" (click)="store.tryAgain()">Try again</button>
               <button
                 type="button"
                 class="secondary danger-text"
-                (click)="store.dislikeCurrentScenario()"
+                (click)="dislikeCurrentScenario()"
                 [disabled]="
                   !store.canDislikeScenario() ||
                   store.disliking() ||
@@ -187,7 +198,7 @@
               }
               <div class="result-actions">
                 <button type="button" class="primary" (click)="store.tryAgain()">Try again</button>
-                <button type="button" class="secondary" (click)="store.nextScenario()">
+                <button type="button" class="secondary" (click)="nextScenario()">
                   Next scenario
                 </button>
                 <button
@@ -201,7 +212,7 @@
                 <button
                   type="button"
                   class="secondary danger-text"
-                  (click)="store.dislikeCurrentScenario()"
+                  (click)="dislikeCurrentScenario()"
                   [disabled]="
                     !store.canDislikeScenario() ||
                     store.disliking() ||
