@@ -45,7 +45,7 @@ describe('HomePageComponent onboarding re-entry', () => {
 
     const content = normalizedText(fixture);
     expect(content).toContain('Your chess is being prepared');
-    expect(content).toContain('12 games found · 8 indexed · 3 analysed');
+    expect(content).toContain('12 games found · 8 openings prepared · 3 analysed');
     expect(fixture.nativeElement.querySelector('.onboarding-reentry-primary')).not.toBeNull();
     expect(content).toContain('Pick up where your chess needs you most.');
   });
