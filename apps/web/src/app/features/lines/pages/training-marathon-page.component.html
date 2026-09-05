@@ -1,7 +1,19 @@
-@if (store.loaded()) {
+@if (store.dailyReviewCompleted()) {
+  <app-panel
+    title="You're done for today."
+    [subtitle]="store.completedThisRun() + ' scheduled reviews completed in this run.'"
+  >
+    <button class="compact-action primary" type="button" (click)="store.switchMode('ALL')">
+      Continue training
+    </button>
+    <a class="compact-action secondary" [routerLink]="store.backLink()">Back</a>
+  </app-panel>
+} @else if (store.loaded()) {
   <section class="marathon-training-page">
     <div class="marathon-header-shell">
-      <a [routerLink]="store.backLink()" class="training-back-link">&larr; {{ store.backLabel() }}</a>
+      <a [routerLink]="store.backLink()" class="training-back-link"
+        >&larr; {{ store.backLabel() }}</a
+      >
       <app-page-header
         [title]="store.marathonTitle()"
         [subtitle]="store.sourceSummary()"
@@ -29,7 +41,11 @@
       [lastMove]="store.lastMove()"
       [boardPositionVersion]="store.boardPositionVersion()"
       [goalTitle]="store.lineName()"
-      goalSubtitle="Play the current line from memory. Keep the expected move hidden unless you are stuck."
+      [goalSubtitle]="
+        store.itemKind() === 'REINFORCEMENT_RETRY'
+          ? 'Reinforcement retry. This will not change tomorrow\'s scheduled review.'
+          : 'Play the current line from memory. Keep the expected move hidden unless you are stuck.'
+      "
       progressTitle="Current line progress"
       finishButtonLabel="Finish current line"
       primaryActionLabel="Next line"
@@ -48,10 +64,7 @@
     }
   </section>
 } @else if (store.error(); as error) {
-  <app-panel
-    title="Marathon unavailable"
-    subtitle="The next training line could not be prepared."
-  >
+  <app-panel title="Marathon unavailable" subtitle="The next training line could not be prepared.">
     <app-state-message tone="error" [message]="error" />
     <a class="compact-action secondary" [routerLink]="store.backLink()">Back</a>
   </app-panel>

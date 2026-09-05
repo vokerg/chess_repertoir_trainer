@@ -21,6 +21,7 @@ import {
   TrainingSessionResult,
   UpdateLineNodePayload,
   MarathonNextResponse,
+  MarathonRunResponse,
   ActiveTrainingStats,
   SublineTrainingStatus,
 } from './lines.models';
@@ -120,8 +121,8 @@ export class LinesApiService {
     return this.api.get<SublineTrainingStatus[]>(`/lines/${lineId}/sublines/status`);
   }
 
-  createMarathonRun(request: MarathonNextRequest): Observable<{ runId: string }> {
-    return this.api.post<{ runId: string }>('/training-marathons', {
+  createMarathonRun(request: MarathonNextRequest): Observable<MarathonRunResponse> {
+    return this.api.post<MarathonRunResponse>('/training-marathons', {
       scope: request.scope, mode: request.mode, lineIds: request.lineIds ?? [], sublineHashes: request.sublineHashes ?? [],
       recentSublineHashes: [], recentLineIds: [],
     });

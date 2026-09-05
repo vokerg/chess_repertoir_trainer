@@ -60,7 +60,7 @@ The canonical current state and residual evidence gate are documented in [Repert
 - Browse the repertoire hierarchy from `/library`.
 - Select individual lines into a training basket.
 - Train one line, a course, a chapter, selected lines, or selected active sublines.
-- Run All, Weak, Untrained, or Mixed weak/untrained marathon modes.
+- Run All, Weak, Untrained, Mixed weak/untrained, or finite Daily Review training for scheduled repertoire sublines.
 - Resume active sessions, review attempts, and inspect line/subline health, coverage, mastery, weak counts, and recent results.
 - Preserve historical attempts while calculating current statistics from active subline hashes and the latest five scored attempts per subline.
 

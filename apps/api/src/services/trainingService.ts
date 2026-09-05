@@ -14,6 +14,7 @@ import {
 } from '../modules/courses/sublines.service';
 import { ActivityFeedService } from '../modules/activity-feed/activity-feed.service';
 import { TRAINING_MODE_LINE } from '../modules/training/training.constants';
+import { DailyReviewService } from '../modules/training-marathons/daily-review.service';
 import prisma from '../prisma';
 
 /**
@@ -112,6 +113,7 @@ async function finalizeSession(
         completedAt,
       },
     });
+    await DailyReviewService.applyCompletedTrainingSession(transaction, userId, sessionId, resultStatus, completedAt);
     await ActivityFeedService.recordIncrement({
       userId,
       type: 'REPERTOIRE_LINES_TRAINED',
