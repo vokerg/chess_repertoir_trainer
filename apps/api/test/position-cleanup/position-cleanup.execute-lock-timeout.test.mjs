@@ -40,6 +40,16 @@ async function runUntilPhase(runId, phase) {
   throw new Error(`Timed out advancing cleanup run ${runId} to ${phase}.`);
 }
 
+async function insertOldCandidate(id) {
+  await prisma.$executeRaw`
+    INSERT INTO "PositionCleanupCandidate" (
+      "positionId", "firstObservedOrphanAt", "lastObservedOrphanAt"
+    ) VALUES (
+      ${id}, NOW() - INTERVAL '31 days', NOW() - INTERVAL '31 days'
+    )
+  `;
+}
+
 try {
   await prisma.$executeRaw`DELETE FROM "PositionCleanupRun"`;
   await prisma.$executeRaw`DELETE FROM "PositionCleanupCandidate"`;
@@ -73,13 +83,7 @@ try {
       expiresAt: new Date(Date.now() + 60_000),
     },
   });
-  await prisma.$executeRaw`
-    INSERT INTO "PositionCleanupCandidate" (
-      "positionId", "firstObservedOrphanAt", "lastObservedOrphanAt"
-    ) VALUES (
-      ${positionId}, NOW() - INTERVAL '31 days', NOW() - INTERVAL '31 days'
-    )
-  `;
+  await insertOldCandidate(positionId);
 
   const created = await service.create({
     mode: 'EXECUTE',
@@ -90,8 +94,16 @@ try {
   assert.equal(created.deleteBatchSize, 4);
 
   await runUntilPhase(created.id, 'EVALUATE');
+
+  // The API test suite shares one PostgreSQL database, so observation can discover
+  // unrelated orphan positions created by earlier fixtures. Preserve the accepted
+  // evaluation upper bound but isolate the execute candidate page to this fixture.
+  await prisma.$executeRaw`DELETE FROM "PositionCleanupCandidate"`;
+  await insertOldCandidate(positionId);
+
   const beforeTimeout = await service.status(created.id);
   assert.equal(beforeTimeout.evaluateAfterPositionId, 0);
+  assert.equal(beforeTimeout.evaluationUpperBound >= positionId, true);
 
   let blockerReadyResolve;
   const blockerReady = new Promise((resolve) => { blockerReadyResolve = resolve; });
