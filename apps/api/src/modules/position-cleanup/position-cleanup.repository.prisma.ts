@@ -19,7 +19,7 @@ interface ServerVersionRow {
   serverVersionNum: number;
 }
 
-interface LockedPositionRow {
+interface PositionInputRow {
   id: number;
 }
 
@@ -267,16 +267,15 @@ export function createPositionCleanupRepository(
     async observeBatch(runId, workKey) {
       return database.$transaction(async (transaction) => {
         const run = await lockClaimedRun(transaction, runId, workKey, 'OBSERVE');
-        const lockedInput = await transaction.$queryRaw<LockedPositionRow[]>(Prisma.sql`
+        const input = await transaction.$queryRaw<PositionInputRow[]>(Prisma.sql`
           SELECT "id"
           FROM "ImportedGamePosition"
           WHERE "id" > ${run.observeAfterPositionId}
             AND "id" <= ${run.positionUpperBound}
           ORDER BY "id" ASC
           LIMIT ${run.inputPageSize}
-          FOR UPDATE
         `);
-        if (lockedInput.length === 0) {
+        if (input.length === 0) {
           const evaluationUpperBound = await maxId(
             transaction,
             Prisma.sql`SELECT COALESCE(MAX("positionId"), 0)::int AS "maxId" FROM "PositionCleanupCandidate"`,
@@ -290,15 +289,21 @@ export function createPositionCleanupRepository(
           return { inspected: 0, matched: 0, checkpoint: run.observeAfterPositionId, completedPhase: true };
         }
 
-        // Locking the bounded Position page first serializes observation against new
-        // ImportedGamePly foreign-key references to those exact positions. The next
-        // statement gets a fresh READ COMMITTED snapshot, so writers that committed
-        // before the row locks were acquired are visible, while later writers wait for
-        // this transaction and their reference-reset trigger removes any committed
-        // candidate after the lock is released.
-        const inputIds = lockedInput.map((position) => position.id);
+        const inputIds = input.map((position) => position.id);
         const checkpoint = inputIds[inputIds.length - 1];
         if (checkpoint === undefined) throw new Error('Position cleanup observation checkpoint was not returned.');
+
+        // Both observation and ImportedGamePly transition triggers acquire the same
+        // database-owned per-position advisory fence in ascending id order. This avoids
+        // a multi-row FK/Position row-lock inversion while still closing the race where
+        // a reference commits around candidate insertion. No application writer opts in:
+        // every SQL reference writer reaches the fence through the migration trigger.
+        await transaction.$queryRaw(Prisma.sql`
+          SELECT "position_cleanup_lock_reference_ids"(
+            ARRAY[${Prisma.join(inputIds)}]::integer[]
+          )
+        `);
+
         const rows = await transaction.$queryRaw<ObservationSummaryRow[]>(Prisma.sql`
           WITH input AS MATERIALIZED (
             SELECT "id"
