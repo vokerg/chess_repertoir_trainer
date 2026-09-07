@@ -23,6 +23,7 @@ import prisma from '../prisma';
  * which is acceptable for v1 as sessions are short-lived.
  */
 const activeSessions: Map<number, { state: TrainingState; subline: HashedAvailableSublineDto }> = new Map();
+const FINALIZE_SESSION_TRANSACTION_TIMEOUT_MS = 15_000;
 
 export class PreparedLineStaleError extends Error {}
 
@@ -120,7 +121,7 @@ async function finalizeSession(
       occurredAt: completedAt,
     }, transaction);
     return terminal;
-  });
+  }, { timeout: FINALIZE_SESSION_TRANSACTION_TIMEOUT_MS });
 
   activeSessions.delete(sessionId);
   return updated;
