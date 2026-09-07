@@ -16,6 +16,7 @@ const fixtureSize = 5000;
 const pageSize = 500;
 const profileSizes = [10, 500, 5000];
 const positionIds = [];
+const workerEvents = [];
 let userId;
 
 const config = loadPositionCleanupConfig({
@@ -27,7 +28,14 @@ const config = loadPositionCleanupConfig({
   POSITION_CLEANUP_STALE_AFTER_MS: '5000',
 });
 const service = createPositionCleanupService({ config });
-const worker = createPositionCleanupWorker({ config, logger: { info() {}, warn() {}, error() {} } });
+const worker = createPositionCleanupWorker({
+  config,
+  logger: {
+    info(context, message) { workerEvents.push({ level: 'info', context, message }); },
+    warn(context, message) { workerEvents.push({ level: 'warn', context, message }); },
+    error(context, message) { workerEvents.push({ level: 'error', context, message }); },
+  },
+});
 
 function percentile(values, percentileValue) {
   assert.ok(values.length > 0);
@@ -39,9 +47,38 @@ function percentile(values, percentileValue) {
   return ordered[index];
 }
 
+function assertCompletedProfile(completed, totalRows) {
+  if (completed.status !== 'COMPLETED') {
+    const diagnostic = {
+      totalRows,
+      run: {
+        id: completed.id,
+        mode: completed.mode,
+        status: completed.status,
+        phase: completed.phase,
+        terminalResult: completed.terminalResult,
+        errorCode: completed.errorCode,
+        positionsInspected: completed.positionsInspected,
+        candidatesInspected: completed.candidatesInspected,
+        eligibleObserved: completed.eligibleObserved,
+        observeAfterPositionId: completed.observeAfterPositionId,
+        evaluateAfterPositionId: completed.evaluateAfterPositionId,
+      },
+      workerEvents,
+    };
+    console.error('POSITION_CLEANUP_BENCHMARK_FAILURE', JSON.stringify(diagnostic));
+  }
+  assert.equal(
+    completed.status,
+    'COMPLETED',
+    `bounded profile ${totalRows} did not complete; status=${completed.status}, phase=${completed.phase}, errorCode=${completed.errorCode ?? 'none'}`,
+  );
+}
+
 async function runProfile(firstPositionId, lastPositionId, totalRows) {
   await prisma.$executeRaw`DELETE FROM "PositionCleanupRun"`;
   await prisma.$executeRaw`DELETE FROM "PositionCleanupCandidate"`;
+  workerEvents.length = 0;
 
   const run = await service.create({
     mode: 'DRY_RUN',
@@ -102,7 +139,7 @@ async function runProfile(firstPositionId, lastPositionId, totalRows) {
   }
 
   const completed = await service.status(run.id);
-  assert.equal(completed.status, 'COMPLETED');
+  assertCompletedProfile(completed, totalRows);
   assert.equal(completed.terminalResult, 'OBSERVATIONAL');
   assert.equal(completed.positionsInspected, totalRows);
   assert.equal(
