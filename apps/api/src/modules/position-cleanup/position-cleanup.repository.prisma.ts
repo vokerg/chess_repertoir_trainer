@@ -23,6 +23,10 @@ interface PositionInputRow {
   id: number;
 }
 
+interface LockFenceRow {
+  lockedCount: number;
+}
+
 interface BatchSummaryRow {
   inspected: number;
   matched: number;
@@ -298,11 +302,14 @@ export function createPositionCleanupRepository(
         // a multi-row FK/Position row-lock inversion while still closing the race where
         // a reference commits around candidate insertion. No application writer opts in:
         // every SQL reference writer reaches the fence through the migration trigger.
-        await transaction.$queryRaw(Prisma.sql`
+        const fenceRows = await transaction.$queryRaw<LockFenceRow[]>(Prisma.sql`
           SELECT "position_cleanup_lock_reference_ids"(
             ARRAY[${Prisma.join(inputIds)}]::integer[]
-          )
+          )::int AS "lockedCount"
         `);
+        if (fenceRows[0]?.lockedCount !== inputIds.length) {
+          throw new Error('Position cleanup observation did not acquire every reference fence.');
+        }
 
         const rows = await transaction.$queryRaw<ObservationSummaryRow[]>(Prisma.sql`
           WITH input AS MATERIALIZED (
@@ -343,15 +350,21 @@ export function createPositionCleanupRepository(
             RETURNING "positionId"
           )
           SELECT
-            COUNT(input."id")::int AS "inspected",
+            ${inputIds.length}::int AS "inspected",
             (SELECT COUNT(*)::int FROM eligible) AS "matched",
             ${checkpoint}::int AS "checkpoint",
             ((SELECT COUNT(*) FROM eligible) - (SELECT COUNT(*) FROM existing))::int AS "firstObserved",
             (SELECT COUNT(*)::int FROM existing) AS "refreshed"
           FROM input
+          LIMIT 1
         `);
-        const summary = rows[0];
-        if (!summary) throw new Error('Position cleanup observation summary was not returned.');
+        const summary = rows[0] ?? {
+          inspected: inputIds.length,
+          matched: 0,
+          checkpoint,
+          firstObserved: 0,
+          refreshed: 0,
+        };
         await updateClaimedRun(transaction, runId, workKey, Prisma.sql`
           "observeAfterPositionId" = ${summary.checkpoint},
           "positionsInspected" = "positionsInspected" + ${summary.inspected},
@@ -382,11 +395,11 @@ export function createPositionCleanupRepository(
           ), eligible AS MATERIALIZED (
             SELECT input."positionId"
             FROM input
-            WHERE input."firstObservedOrphanAt" <= ${run.graceCutoff}
-              AND NOT EXISTS (
-                SELECT 1 FROM "ImportedGamePly" AS ply
-                WHERE ply."positionId" = input."positionId"
-              )
+            WHERE ${positionCleanupEligibilityPredicate(
+              Prisma.sql`input."firstObservedOrphanAt"`,
+              Prisma.sql`input."positionId"`,
+              run.graceCutoff,
+            )}
           )
           SELECT
             COUNT(input."positionId")::int AS "inspected",
@@ -397,7 +410,8 @@ export function createPositionCleanupRepository(
         const summary = requiredSummary(rows[0]);
         if (summary.inspected === 0) {
           await completeClaimedRun(transaction, runId, workKey, 'OBSERVATIONAL', Prisma.sql`
-            "observationCompletedAt" = NOW()
+            "observationCompletedAt" = NOW(),
+            "lastBatchAt" = NOW()
           `);
           return { ...summary, completedPhase: true };
         }
@@ -436,12 +450,13 @@ export function createPositionCleanupRepository(
             FROM input
             WHERE input."firstObservedOrphanAt" <= ${run.graceCutoff}
           ), eligible AS MATERIALIZED (
-            SELECT graced."positionId"
-            FROM graced
-            WHERE NOT EXISTS (
-              SELECT 1 FROM "ImportedGamePly" AS ply
-              WHERE ply."positionId" = graced."positionId"
-            )
+            SELECT input."positionId"
+            FROM input
+            WHERE ${positionCleanupEligibilityPredicate(
+              Prisma.sql`input."firstObservedOrphanAt"`,
+              Prisma.sql`input."positionId"`,
+              run.graceCutoff,
+            )}
           ), dependent AS MATERIALIZED (
             SELECT
               (SELECT COUNT(*) FROM "PositionAnalysis" AS analysis JOIN eligible ON eligible."positionId" = analysis."positionId")::int AS "analysisRowsDeleted",
@@ -544,6 +559,21 @@ export function createPositionCleanupRepository(
 async function maxId(transaction: Prisma.TransactionClient, query: Prisma.Sql): Promise<number> {
   const rows = await transaction.$queryRaw<MaxIdRow[]>(query);
   return rows[0]?.maxId ?? 0;
+}
+
+function positionCleanupEligibilityPredicate(
+  firstObservedOrphanAt: Prisma.Sql,
+  positionId: Prisma.Sql,
+  graceCutoff: Date,
+): Prisma.Sql {
+  return Prisma.sql`
+    ${firstObservedOrphanAt} <= ${graceCutoff}
+    AND NOT EXISTS (
+      SELECT 1
+      FROM "ImportedGamePly" AS ply
+      WHERE ply."positionId" = ${positionId}
+    )
+  `;
 }
 
 async function readClaimedRun(
