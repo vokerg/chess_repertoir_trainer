@@ -6,7 +6,11 @@ import {
   PositionCleanupRepository,
   type PositionCleanupRepository as PositionCleanupRepositoryBoundary,
 } from './position-cleanup.repository.prisma';
-import type { PositionCleanupMode, PositionCleanupRun } from './position-cleanup.types';
+import {
+  isPositionCleanupActorReference,
+  type PositionCleanupMode,
+  type PositionCleanupRun,
+} from './position-cleanup.types';
 
 const DAY_MS = 24 * 60 * 60_000;
 export const POSITION_CLEANUP_EXECUTE_CONFIRMATION = 'DELETE_ORPHAN_POSITIONS';
@@ -108,7 +112,9 @@ function validateMode(mode: PositionCleanupMode): void {
 }
 
 function validateRequestedBy(requestedBy: string): void {
-  if (!requestedBy.trim() || requestedBy.length > 80) {
-    throw new Error('Position cleanup requestedBy must contain 1-80 characters.');
+  if (!isPositionCleanupActorReference(requestedBy)) {
+    throw new Error(
+      'Position cleanup requestedBy must be the fixed server-command actor or a versioned pseudonymous admin actor reference.',
+    );
   }
 }
