@@ -152,11 +152,43 @@ ON "PositionCleanupRun"("status", "updatedAt", "id");
 CREATE INDEX "PositionCleanupRun_completedAt_idx"
 ON "PositionCleanupRun"("completedAt");
 
+-- Observation and reference writers use the same database-owned per-position fence.
+-- Lock ids in ascending order so multi-position writes cannot invert the fence order.
+-- The namespace is private to ONB-026 and does not require application-writer opt-in:
+-- every ImportedGamePly INSERT/UPDATE reaches it through the statement trigger below.
+CREATE FUNCTION "position_cleanup_lock_reference_ids"(position_ids INTEGER[])
+RETURNS VOID
+LANGUAGE plpgsql
+VOLATILE
+AS $$
+DECLARE
+    referenced_position_id INTEGER;
+BEGIN
+    FOR referenced_position_id IN
+        SELECT DISTINCT ids."positionId"
+        FROM unnest(position_ids) AS ids("positionId")
+        WHERE ids."positionId" IS NOT NULL
+        ORDER BY ids."positionId" ASC
+    LOOP
+        PERFORM pg_advisory_xact_lock(280026, referenced_position_id);
+    END LOOP;
+END;
+$$;
+
 CREATE FUNCTION "position_cleanup_reset_candidates_from_new_plies"()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
+    PERFORM "position_cleanup_lock_reference_ids"(
+        ARRAY(
+            SELECT DISTINCT "positionId"
+            FROM position_cleanup_new_plies
+            WHERE "positionId" IS NOT NULL
+            ORDER BY "positionId" ASC
+        )
+    );
+
     DELETE FROM "PositionCleanupCandidate" AS candidate
     USING (
         SELECT DISTINCT "positionId"
