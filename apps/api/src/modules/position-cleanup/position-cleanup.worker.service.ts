@@ -169,7 +169,6 @@ export function createPositionCleanupWorker(input: {
         if (wakePoll === wake) wakePoll = null;
         resolve();
       }, delayMs);
-      timer.unref();
       wake = () => {
         clearTimeout(timer);
         if (wakePoll === wake) wakePoll = null;
