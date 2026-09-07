@@ -156,13 +156,16 @@ ON "PositionCleanupRun"("completedAt");
 -- Lock ids in ascending order so multi-position writes cannot invert the fence order.
 -- The namespace is private to ONB-026 and does not require application-writer opt-in:
 -- every ImportedGamePly INSERT/UPDATE reaches it through the statement trigger below.
+-- Return a normal PostgreSQL integer rather than VOID because the observer invokes the
+-- function through Prisma $queryRaw, which must deserialize every selected result column.
 CREATE FUNCTION "position_cleanup_lock_reference_ids"(position_ids INTEGER[])
-RETURNS VOID
+RETURNS INTEGER
 LANGUAGE plpgsql
 VOLATILE
 AS $$
 DECLARE
     referenced_position_id INTEGER;
+    locked_count INTEGER := 0;
 BEGIN
     FOR referenced_position_id IN
         SELECT DISTINCT ids."positionId"
@@ -171,7 +174,9 @@ BEGIN
         ORDER BY ids."positionId" ASC
     LOOP
         PERFORM pg_advisory_xact_lock(280026, referenced_position_id);
+        locked_count := locked_count + 1;
     END LOOP;
+    RETURN locked_count;
 END;
 $$;
 
