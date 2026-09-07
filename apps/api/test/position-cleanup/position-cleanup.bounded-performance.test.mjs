@@ -1,0 +1,257 @@
+import assert from 'node:assert/strict';
+import { performance } from 'node:perf_hooks';
+import { randomUUID } from 'node:crypto';
+import { PrismaClient } from '@prisma/client';
+import prismaModule from '../../dist/prisma.js';
+import { loadPositionCleanupConfig } from '../../dist/modules/position-cleanup/position-cleanup.config.js';
+import { createPositionCleanupService } from '../../dist/modules/position-cleanup/position-cleanup.service.js';
+import { createPositionCleanupWorker } from '../../dist/modules/position-cleanup/position-cleanup.worker.service.js';
+import { POSITION_CLEANUP_TABLE_LOCK_ORDER, isPositionCleanupTerminal } from '../../dist/modules/position-cleanup/position-cleanup.types.js';
+
+const prisma = prismaModule.default;
+const lockClient = new PrismaClient();
+const suffix = randomUUID();
+const prefix = `position-cleanup-benchmark-${suffix}-`;
+const fixtureSize = 5000;
+const pageSize = 500;
+const profileSizes = [10, 500, 5000];
+const positionIds = [];
+let userId;
+
+const config = loadPositionCleanupConfig({
+  POSITION_CLEANUP_ENABLED: 'true',
+  POSITION_CLEANUP_GRACE_DAYS: '30',
+  POSITION_CLEANUP_INPUT_PAGE_SIZE: String(pageSize),
+  POSITION_CLEANUP_DELETE_BATCH_SIZE: '100',
+  POSITION_CLEANUP_HEARTBEAT_INTERVAL_MS: '1000',
+  POSITION_CLEANUP_STALE_AFTER_MS: '5000',
+});
+const service = createPositionCleanupService({ config });
+const worker = createPositionCleanupWorker({ config, logger: { info() {}, warn() {}, error() {} } });
+
+function percentile(values, percentileValue) {
+  assert.ok(values.length > 0);
+  const ordered = [...values].sort((left, right) => left - right);
+  const index = Math.min(
+    ordered.length - 1,
+    Math.max(0, Math.ceil((percentileValue / 100) * ordered.length) - 1),
+  );
+  return ordered[index];
+}
+
+async function runProfile(firstPositionId, lastPositionId, totalRows) {
+  await prisma.$executeRaw`DELETE FROM "PositionCleanupRun"`;
+  await prisma.$executeRaw`DELETE FROM "PositionCleanupCandidate"`;
+
+  const run = await service.create({
+    mode: 'DRY_RUN',
+    requestedBy: `test:bounded-performance:${totalRows}`,
+  });
+  await prisma.$executeRaw`
+    UPDATE "PositionCleanupRun"
+    SET "reconcileUpperBound" = 0,
+        "positionUpperBound" = ${lastPositionId},
+        "observeAfterPositionId" = ${firstPositionId - 1}
+    WHERE "id" = ${run.id}
+  `;
+
+  let previous = await service.status(run.id);
+  const transactionDurationsMs = [];
+  const observationPageSizes = [];
+  const evaluationPageSizes = [];
+  let agedCandidates = null;
+
+  for (let step = 0; step < 80; step += 1) {
+    if (isPositionCleanupTerminal(previous.status)) break;
+
+    if (previous.phase === 'EVALUATE' && agedCandidates === null) {
+      agedCandidates = await prisma.$executeRaw`
+        UPDATE "PositionCleanupCandidate"
+        SET "firstObservedOrphanAt" = ${new Date(Date.now() - 31 * 24 * 60 * 60_000)},
+            "lastObservedOrphanAt" = GREATEST(
+              "lastObservedOrphanAt",
+              ${new Date(Date.now() - 31 * 24 * 60 * 60_000)}
+            )
+        WHERE "positionId" BETWEEN ${firstPositionId} AND ${lastPositionId}
+          AND MOD("positionId" - ${firstPositionId}, 101) = 1
+      `;
+    }
+
+    const startedAt = performance.now();
+    assert.equal(await worker.runOnce(), true);
+    const elapsedMs = performance.now() - startedAt;
+    const current = await service.status(run.id);
+
+    if (previous.phase === 'OBSERVE') {
+      const inspected = current.positionsInspected - previous.positionsInspected;
+      if (inspected > 0) {
+        observationPageSizes.push(inspected);
+        transactionDurationsMs.push(elapsedMs);
+        assert.equal(inspected <= pageSize, true, 'observation must never inspect beyond the accepted input page');
+      }
+    }
+    if (previous.phase === 'EVALUATE') {
+      const inspected = current.candidatesInspected - previous.candidatesInspected;
+      if (inspected > 0) {
+        evaluationPageSizes.push(inspected);
+        transactionDurationsMs.push(elapsedMs);
+        assert.equal(inspected <= pageSize, true, 'evaluation must never inspect beyond the accepted input page');
+      }
+    }
+    previous = current;
+  }
+
+  const completed = await service.status(run.id);
+  assert.equal(completed.status, 'COMPLETED');
+  assert.equal(completed.terminalResult, 'OBSERVATIONAL');
+  assert.equal(completed.positionsInspected, totalRows);
+  assert.equal(
+    observationPageSizes.length,
+    Math.ceil(totalRows / pageSize),
+    'observation page count must derive from bounded input rows rather than matching-orphan count',
+  );
+  assert.equal(evaluationPageSizes.every((size) => size <= pageSize), true);
+  assert.equal(completed.eligibleObserved, agedCandidates ?? 0);
+
+  return {
+    totalRows,
+    observationPages: observationPageSizes.length,
+    evaluationPages: evaluationPageSizes.length,
+    eligibleObserved: completed.eligibleObserved,
+    transactionP50Ms: Number(percentile(transactionDurationsMs, 50).toFixed(2)),
+    transactionP90Ms: Number(percentile(transactionDurationsMs, 90).toFixed(2)),
+  };
+}
+
+try {
+  await prisma.$executeRaw`DELETE FROM "PositionCleanupRun"`;
+  await prisma.$executeRaw`DELETE FROM "PositionCleanupCandidate"`;
+
+  const user = await prisma.appUser.create({
+    data: {
+      displayName: `Position cleanup benchmark ${suffix}`,
+      authProvider: 'position-cleanup-benchmark-test',
+      authSubject: suffix,
+    },
+  });
+  userId = user.id;
+  const account = await prisma.externalAccount.create({
+    data: {
+      userId,
+      provider: 'TEST',
+      username: `position-cleanup-benchmark-${suffix}`,
+    },
+  });
+  const game = await prisma.importedGame.create({
+    data: {
+      userId,
+      accountId: account.id,
+      provider: 'TEST',
+      providerGameId: `position-cleanup-benchmark-${suffix}`,
+      pgn: '1. e4 e5',
+    },
+  });
+
+  await prisma.$executeRaw`
+    INSERT INTO "ImportedGamePosition" ("positionKey", "normalizedFen")
+    SELECT
+      decode(md5(${prefix} || series::text), 'hex'),
+      ${prefix} || series::text
+    FROM generate_series(1, ${fixtureSize}) AS series
+  `;
+  const positions = await prisma.position.findMany({
+    where: { normalizedFen: { startsWith: prefix } },
+    orderBy: { id: 'asc' },
+    select: { id: true },
+  });
+  assert.equal(positions.length, fixtureSize);
+  positionIds.push(...positions.map((position) => position.id));
+
+  const referencedPositions = positions.filter((_, index) => (index + 1) % 10 === 0);
+  await prisma.importedGamePly.createMany({
+    data: referencedPositions.map((position, index) => ({
+      importedGameId: game.id,
+      positionId: position.id,
+      plyNumber: index + 1,
+      moveUci: 'e2e4',
+    })),
+  });
+  assert.equal(referencedPositions.length, 500);
+
+  const plans = await prisma.$queryRaw`
+    EXPLAIN (FORMAT JSON)
+    WITH input AS MATERIALIZED (
+      SELECT "id"
+      FROM "ImportedGamePosition"
+      WHERE "id" > ${positionIds[0] - 1}
+        AND "id" <= ${positionIds[positionIds.length - 1]}
+      ORDER BY "id" ASC
+      LIMIT ${pageSize}
+    )
+    SELECT COUNT(*)
+    FROM input
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM "ImportedGamePly" AS ply
+      WHERE ply."positionId" = input."id"
+    )
+  `;
+  const planText = JSON.stringify(plans);
+  assert.match(planText, /"Node Type":"Limit"/, 'query plan must retain a Limit node before orphan filtering');
+
+  const profileResults = [];
+  for (const totalRows of profileSizes) {
+    profileResults.push(await runProfile(
+      positionIds[0],
+      positionIds[totalRows - 1],
+      totalRows,
+    ));
+  }
+
+  const transactionP90Ms = Math.max(...profileResults.map((profile) => profile.transactionP90Ms));
+  assert.equal(
+    transactionP90Ms < 1000,
+    true,
+    `representative bounded transaction p90 must remain below 1000ms; observed ${transactionP90Ms}ms`,
+  );
+
+  const lockDurationsMs = [];
+  for (let iteration = 0; iteration < 10; iteration += 1) {
+    const startedAt = performance.now();
+    await lockClient.$transaction(async (transaction) => {
+      for (const table of POSITION_CLEANUP_TABLE_LOCK_ORDER) {
+        await transaction.$executeRawUnsafe(
+          `LOCK TABLE "${table}" IN SHARE ROW EXCLUSIVE MODE`,
+        );
+      }
+    });
+    lockDurationsMs.push(performance.now() - startedAt);
+  }
+  const lockP50Ms = Number(percentile(lockDurationsMs, 50).toFixed(2));
+  const lockP90Ms = Number(percentile(lockDurationsMs, 90).toFixed(2));
+  assert.equal(
+    lockP90Ms < 250,
+    true,
+    `uncontended canonical lock acquisition p90 must remain below 250ms; observed ${lockP90Ms}ms`,
+  );
+
+  console.log('POSITION_CLEANUP_BENCHMARK', JSON.stringify({
+    fixtureRows: fixtureSize,
+    referencedRows: referencedPositions.length,
+    pageSize,
+    profiles: profileResults,
+    transactionP90Ms,
+    lockP50Ms,
+    lockP90Ms,
+    queryPlanContainsPreFilterLimit: true,
+  }));
+  console.log('Position cleanup bounded performance tests passed.');
+} finally {
+  await prisma.$executeRaw`DELETE FROM "PositionCleanupRun"`.catch(() => {});
+  await prisma.$executeRaw`DELETE FROM "PositionCleanupCandidate"`.catch(() => {});
+  if (userId) await prisma.appUser.delete({ where: { id: userId } }).catch(() => {});
+  if (positionIds.length > 0) {
+    await prisma.position.deleteMany({ where: { id: { in: positionIds } } }).catch(() => {});
+  }
+  await lockClient.$disconnect();
+}
