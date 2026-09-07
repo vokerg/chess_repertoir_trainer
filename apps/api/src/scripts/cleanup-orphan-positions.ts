@@ -61,6 +61,9 @@ async function main(): Promise<void> {
         phase: current.phase,
         terminalResult: current.terminalResult,
         errorCode: current.errorCode,
+        inputPageSize: current.inputPageSize,
+        initialDeleteBatchSize: current.initialDeleteBatchSize,
+        deleteBatchSize: current.deleteBatchSize,
         candidatesInspected: current.candidatesInspected,
         candidatesReconciled: current.candidatesReconciled,
         positionsInspected: current.positionsInspected,
@@ -71,6 +74,7 @@ async function main(): Promise<void> {
         cacheRowsDeleted: current.cacheRowsDeleted,
         skippedReferenced: current.skippedReferenced,
         retryCount: current.retryCount,
+        lockTimeoutStreak: current.lockTimeoutStreak,
         staleRecoveryCount: current.staleRecoveryCount,
         observationStartedAt: current.observationStartedAt,
         observationCompletedAt: current.observationCompletedAt,
@@ -82,9 +86,16 @@ async function main(): Promise<void> {
 
     const didWork = await worker.runOnce();
     if (!didWork) {
-      throw new Error(`Position cleanup run ${run.id} is non-terminal but no worker claim was available.`);
+      // A separately running persistent worker may own the same durable run. Do not
+      // turn a healthy exact-work-key claim into a false CLI failure; poll status and
+      // opportunistically claim again after the normal cleanup poll interval.
+      await wait(config.pollIntervalMs);
     }
   }
+}
+
+function wait(delayMs: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
 }
 
 main()
