@@ -119,7 +119,7 @@ try {
   let gateReadyResolve;
   const gateReady = new Promise((resolve) => { gateReadyResolve = resolve; });
   const gatePromise = prisma.$transaction(async (transaction) => {
-    await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${advisoryKey})`;
+    await transaction.$executeRaw`SELECT pg_advisory_xact_lock(${advisoryKey})`;
     gateReadyResolve();
     await gateRelease;
   });
