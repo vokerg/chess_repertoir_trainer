@@ -31,7 +31,9 @@ describe('TrainingBasketPanelComponent', () => {
     const selectedScope = buttons.find((button) =>
       button.textContent?.includes('Selected lines'),
     );
-    const selectedMode = buttons.find((button) => button.textContent?.trim() === 'Weak');
+    const selectedMode = buttons.find(
+      (button) => button.querySelector('strong')?.textContent?.trim() === 'Weak',
+    );
     const startButton = buttons.find((button) =>
       button.textContent?.includes('Start 2 sublines'),
     );
@@ -69,11 +71,32 @@ describe('TrainingBasketPanelComponent', () => {
       fixture.nativeElement.querySelectorAll('button'),
     ) as HTMLButtonElement[];
     buttons.find((button) => button.textContent?.includes('This section'))?.click();
-    buttons.find((button) => button.textContent?.trim() === 'All')?.click();
+    buttons
+      .find((button) => button.querySelector('strong')?.textContent?.trim() === 'All')
+      ?.click();
     buttons.find((button) => button.textContent?.includes('Start 2 sublines'))?.click();
 
     expect(scopes).toEqual(['CHAPTER']);
     expect(modes).toEqual(['ALL']);
     expect(starts).toEqual([{ mode: 'WEAK_SUBLINES', scope: 'SELECTED_LINES' }]);
+  });
+
+  it('presents Daily Review as a descriptive choice with a truthful recap', () => {
+    fixture.componentRef.setInput('mode', 'DAILY_REVIEW');
+    fixture.detectChanges();
+
+    const dailyReview = Array.from(
+      fixture.nativeElement.querySelectorAll('.mode-option') as NodeListOf<HTMLButtonElement>,
+    ).find((button) => button.querySelector('strong')?.textContent?.trim() === 'Daily Review');
+    const material = fixture.nativeElement.querySelector(
+      '.session-recap div:last-child dd',
+    )?.textContent;
+
+    expect(dailyReview?.textContent).toContain('Scheduled for today');
+    expect(dailyReview?.getAttribute('aria-pressed')).toBe('true');
+    expect(material?.trim()).toBe('Due today');
+    expect(fixture.nativeElement.querySelector('.mode-caption')?.textContent).toContain(
+      'missed items return once',
+    );
   });
 });

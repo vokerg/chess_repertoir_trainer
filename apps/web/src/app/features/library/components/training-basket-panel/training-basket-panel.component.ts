@@ -112,6 +112,7 @@ export class TrainingBasketPanelComponent {
     () => this.modeOptions().find((option) => option.id === this.mode())?.label ?? 'Not set',
   );
   protected readonly materialLabel = computed(() => {
+    if (this.mode() === 'DAILY_REVIEW') return 'Due today';
     const count = this.startCount();
     return `${count} ${count === 1 ? 'subline' : 'sublines'}`;
   });

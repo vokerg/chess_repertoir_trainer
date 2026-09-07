@@ -114,9 +114,15 @@ try {
     sideToTrain: 'WHITE',
     startingFen: 'startpos',
   });
+  const marathonSeedLine = await LineService.create(userId, chapter.id, {
+    name: 'Marathon seed',
+    sideToTrain: 'WHITE',
+    startingFen: 'startpos',
+  });
   await MoveNodeService.create(userId, lineOne.id, { moveUci: 'e2e4' });
   await MoveNodeService.create(userId, lineTwo.id, { moveUci: 'd2d4' });
   await MoveNodeService.create(userId, seedLine.id, { moveUci: 'g1f3' });
+  await MoveNodeService.create(userId, marathonSeedLine.id, { moveUci: 'c2c4' });
 
   const request = {
     mode: 'DAILY_REVIEW',
@@ -211,11 +217,32 @@ try {
   assert.equal(
     state.updatedAt.toISOString(),
     failedState.updatedAt.toISOString(),
-    'random marathon must not mutate review state',
+    'ordinary training must not overwrite an existing review schedule',
   );
 
   const seedResolved = await resolveMarathonCandidates(userId, { ...request, lineIds: [seedLine.id] });
   const seedSubline = seedResolved.sublines[0];
+  for (const trainingMode of [
+    'MARATHON',
+    'WEAK_SUBLINES',
+    'UNTRAINED_SUBLINES',
+    'MIXED_WEAK_UNTRAINED',
+  ]) {
+    const marathonModeSeed = await applyRecordedSession(
+      userId,
+      seedSubline,
+      trainingMode,
+      'PASSED',
+    );
+    assert.equal(
+      marathonModeSeed.dueAt.toISOString(),
+      addReviewDays(fixedNow, 1).toISOString(),
+      `${trainingMode} training must seed a review for tomorrow`,
+    );
+    await prisma.repertoireSublineReviewState.delete({
+      where: stateWhere(userId, seedSubline),
+    });
+  }
   const focusedSession = await TrainingService.start(userId, seedLine.id);
   const focusedResult = await TrainingService.playMove(userId, focusedSession.sessionId, 'g1f3');
   assert.equal(focusedResult.result, 'PASSED');
@@ -305,14 +332,26 @@ try {
     'changed canonical sublines must not inherit stale review state',
   );
 
-  const randomRun = await TrainingMarathonRunService.create(userId, { ...request, mode: 'ALL' });
+  const randomRun = await TrainingMarathonRunService.create(userId, {
+    ...request,
+    mode: 'ALL',
+    lineIds: [marathonSeedLine.id],
+  });
   assert.ok(randomRun);
-  const statesBeforeRandom = await prisma.repertoireSublineReviewState.findMany({ where: { userId }, orderBy: [{ lineId: 'asc' }, { sublineHash: 'asc' }] });
   const randomItem = await TrainingMarathonRunService.next(userId, randomRun.runId);
   assert.equal(randomItem.state, 'ITEM', 'normal random marathon remains non-finite');
-  await finishRunItem(randomItem, true);
-  const statesAfterRandom = await prisma.repertoireSublineReviewState.findMany({ where: { userId }, orderBy: [{ lineId: 'asc' }, { sublineHash: 'asc' }] });
-  assert.deepEqual(statesAfterRandom, statesBeforeRandom, 'completed random training must not create or update review scheduling');
+  await finishRunItem(randomItem, false);
+  const marathonSeeded = await prisma.repertoireSublineReviewState.findUniqueOrThrow({
+    where: stateWhere(userId, { lineId: randomItem.line.id, ...randomItem.subline }),
+  });
+  const marathonSession = await prisma.trainingSession.findUniqueOrThrow({
+    where: { id: randomItem.session.sessionId },
+  });
+  assert.equal(
+    marathonSeeded.dueAt.toISOString(),
+    marathonSession.completedAt.toISOString(),
+    'a failed marathon item must be available to Daily Review immediately',
+  );
 
   await LineService.delete(userId, seedLine.id);
   assert.equal(
