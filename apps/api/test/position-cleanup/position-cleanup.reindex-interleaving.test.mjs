@@ -234,7 +234,7 @@ try {
   const cleanupFirst = await createFixture('cleanup-first');
   const cleanupFirstRun = await prepareExecuteRun(cleanupFirst.position.id, 'cleanup-first');
 
-  analysisHoldPromise = blockerClient.$queryRawUnsafe(
+  analysisHoldPromise = blockerClient.$executeRawUnsafe(
     'SELECT position_cleanup_test_hold_analysis_lock()',
   );
   await waitFor(
