@@ -28,6 +28,15 @@ export const routes: Routes = [
       import('./features/home/home-page.component').then((m) => m.HomePageComponent),
   },
   {
+    path: 'onboarding',
+    title: 'Get started | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/onboarding/pages/onboarding-page.component').then(
+        (m) => m.OnboardingPageComponent,
+      ),
+  },
+  {
     path: 'library',
     title: 'Study | Chess Repertoire Trainer',
     canActivate: [authGuard],
@@ -187,6 +196,16 @@ export const routes: Routes = [
     title: 'Lab | Chess Repertoire Trainer',
     canActivate: [authGuard],
     loadComponent: () => import('./features/lab/pages/lab-page.component').then((m) => m.LabPageComponent),
+  },
+  {
+    path: 'scenario-training/tactical-game',
+    title: 'Game tactical training | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    data: { scenarioKind: 'game' },
+    loadComponent: () =>
+      import('./features/scenario-training/tactical-missed-shot/pages/tactical-missed-shot-trainer-page.component').then(
+        (m) => m.TacticalScenarioTrainerPageComponent,
+      ),
   },
   {
     path: 'scenario-training/tactical-missed-shot',

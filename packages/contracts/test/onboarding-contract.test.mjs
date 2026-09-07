@@ -10,6 +10,7 @@ import {
   onboardingFeatureStateSchema,
   onboardingPreparationPurposeSchema,
   onboardingReadinessResponseSchema,
+  onboardingRevealSchema,
   onboardingRunCommandResponseSchema,
   onboardingRunParamsSchema,
   onboardingStartBodySchema,
@@ -121,6 +122,22 @@ assert.equal(onboardingReadinessResponseSchema.safeParse({
   ...response,
   etaSeconds: 120,
 }).success, false);
+
+const reveal = {
+  kind: 'OPENING',
+  importedGameId: 31,
+  accountId: 17,
+  sampleCount: 12,
+  evidenceState: 'ready',
+  scope: { provider: 'LICHESS', username: 'public-player' },
+  title: 'Opening identified',
+  detail: 'B10 · Caro-Kann Defense',
+  destination: '/opening-analysis',
+};
+assert.deepEqual(onboardingRevealSchema.parse(reveal), reveal);
+assert.equal(onboardingRevealSchema.safeParse({ ...reveal, sampleCount: -1 }).success, false);
+assert.equal(onboardingRevealSchema.safeParse({ ...reveal, evidenceState: 'unknown' }).success, false);
+assert.equal(onboardingRevealSchema.safeParse({ ...reveal, scope: { provider: '', username: 'x' } }).success, false);
 
 const startBody = { accountId: 17 };
 assert.deepEqual(onboardingStartBodySchema.parse(startBody), startBody);

@@ -67,7 +67,15 @@ The trainer shows context from the original imported game. The user can review e
 Scenario training API endpoints live under `apps/api/src/modules/scenario-training`:
 
 - `POST /api/scenario-training/tactical-missed-shot/start`
+- `POST /api/scenario-training/tactical-blunder/start`
+- `POST /api/scenario-training/tactical-game/start`
 - `GET /api/scenario-training/:sessionId`
 - `POST /api/scenario-training/:sessionId/attempt`
 - `POST /api/scenario-training/:sessionId/complete`
 - `GET /api/scenario-training/history`
+
+Game review launches the mixed game-scoped trainer at
+`/scenario-training/tactical-game?gameId=:gameId`. The trainer selects only `MISSED_SHOT` and
+`USER_BLUNDER` detections from that owned game, can select either scenario type, and
+stops when every finding in the current cycle has been passed. Starting a repeat creates a new
+cycle so the same game findings become eligible again.

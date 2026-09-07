@@ -40,7 +40,10 @@ export async function findGameScopedTacticalScenarioDetection(
   userId: number,
   input: TacticalScenarioStartInput,
   scope: { thresholdsHash: string; detectionVersion: number },
-  options: { detectionKind: TacticalDetectionKind; scenarioType: TacticalScenarioType },
+  options: {
+    detectionKinds: readonly TacticalDetectionKind[];
+    scenarioTypes: readonly TacticalScenarioType[];
+  },
 ) {
   if (!input.gameId) return null;
 
@@ -48,18 +51,22 @@ export async function findGameScopedTacticalScenarioDetection(
     where: {
       userId,
       importedGameId: input.gameId,
-      kind: options.detectionKind,
+      kind: { in: [...options.detectionKinds] },
       thresholdsHash: scope.thresholdsHash,
       detectionVersion: scope.detectionVersion,
       ...(input.detectionId ? { id: input.detectionId } : {}),
       ...(!input.detectionId && input.excludeDetectionId ? { id: { not: input.excludeDetectionId } } : {}),
-      ...(input.excludePassedRecently
+      ...(input.excludePassedRecently || input.excludePassedSince
         ? {
             scenarioTrainingSessions: {
               none: {
                 userId,
-                scenarioType: options.scenarioType,
-                startedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+                scenarioType: { in: [...options.scenarioTypes] },
+                startedAt: {
+                  gte:
+                    input.excludePassedSince ??
+                    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+                },
                 attempts: { some: { passed: true } },
               },
             },
@@ -82,7 +89,7 @@ export async function findGameScopedTacticalScenarioDetection(
       userId,
       status: 'DISLIKED',
       importedGameId: input.gameId,
-      kind: options.detectionKind,
+      kind: { in: [...options.detectionKinds] },
     },
     select: { importedGameId: true, kind: true, triggerPlyNumber: true },
   });

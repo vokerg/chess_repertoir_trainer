@@ -19,12 +19,14 @@ import {
   getScenarioTrainingHistory,
   getScenarioTrainingSession,
   startTacticalBlunderScenario,
+  startTacticalGameScenario,
   startTacticalMissedShotScenario,
   submitScenarioTrainingAttempt,
 } from './scenario-training.service';
 import {
   scenarioTrainingDislikeSchema,
   scenarioTrainingAttemptSchema,
+  tacticalGameStartSchema,
   tacticalScenarioStartSchema,
 } from './scenario-training.schema';
 import { apiErrorResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
@@ -53,13 +55,22 @@ async function gameScopedInput(
     thresholdsHash: currentTacticalDetectionThresholdsHash(),
     detectionVersion: currentTacticalDetectionVersion(),
   };
-  let detection = await findGameScopedTacticalScenarioDetection(userId, input, scope, options);
+  const repositoryOptions = {
+    detectionKinds: [options.detectionKind],
+    scenarioTypes: [options.scenarioType],
+  } as const;
+  let detection = await findGameScopedTacticalScenarioDetection(
+    userId,
+    input,
+    scope,
+    repositoryOptions,
+  );
   if (!detection && input.excludePassedRecently) {
     detection = await findGameScopedTacticalScenarioDetection(
       userId,
       { ...input, excludePassedRecently: false },
       scope,
-      options,
+      repositoryOptions,
     );
   }
   if (!detection) throw new Error(options.emptyMessage);
@@ -92,6 +103,24 @@ const scenarioTrainingModule: FastifyPluginAsyncZod = async (app) => {
       return { error: error instanceof Error ? error.message : 'Could not start scenario training' };
     }
     return scenarioTrainingSessionResponseSchema.parse(session);
+  });
+
+  app.post('/api/scenario-training/tactical-game/start', {
+    schema: scenarioSchema('startGameScenarioTraining', 'Start game-scoped tactical scenario training', {
+      body: tacticalGameStartSchema,
+      response: { 200: scenarioTrainingSessionResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+    }),
+  }, async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    try {
+      return scenarioTrainingSessionResponseSchema.parse(
+        await startTacticalGameScenario(auth.userId, request.body),
+      );
+    } catch (error) {
+      reply.code(statusFor(error));
+      return { error: error instanceof Error ? error.message : 'Could not start game training' };
+    }
   });
 
   app.get('/api/scenario-training/history', {

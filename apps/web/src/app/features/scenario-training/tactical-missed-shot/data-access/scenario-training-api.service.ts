@@ -28,6 +28,13 @@ export class ScenarioTrainingApiService {
     );
   }
 
+  startTacticalGame(request: StartScenarioRequest): Observable<ScenarioTrainingSession> {
+    return this.api.post<ScenarioTrainingSession>(
+      '/scenario-training/tactical-game/start',
+      request,
+    );
+  }
+
   getSession(sessionId: number): Observable<ScenarioTrainingSession> {
     return this.api.get<ScenarioTrainingSession>(`/scenario-training/${sessionId}`);
   }

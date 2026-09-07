@@ -3,6 +3,7 @@ import { buildApp } from '../../dist/app.js';
 
 const expectedOperations = new Map([
   ['POST /api/scenario-training/tactical-missed-shot/start', 'startMissedShotScenarioTraining'],
+  ['POST /api/scenario-training/tactical-game/start', 'startGameScenarioTraining'],
   ['GET /api/scenario-training/history', 'listScenarioTrainingHistory'],
   ['GET /api/scenario-training/{sessionId}', 'getScenarioTrainingSession'],
   ['POST /api/scenario-training/{sessionId}/attempt', 'submitScenarioTrainingAttempt'],
@@ -83,6 +84,7 @@ assert.ok(dislikeSchema.properties?.disliked);
 
 for (const path of [
   '/api/scenario-training/tactical-missed-shot/start',
+  '/api/scenario-training/tactical-game/start',
   '/api/scenario-training/tactical-blunder/start',
 ]) {
   assert.ok(successSchema(first, path, 'post').properties?.sessionId);
