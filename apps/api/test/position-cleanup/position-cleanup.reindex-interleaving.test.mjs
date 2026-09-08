@@ -5,10 +5,12 @@ import prismaModule from '../../dist/prisma.js';
 import { replacePlyRowsForGame } from '../../dist/modules/imported-games/ply-index.repository.prisma.js';
 import { positionKeyForNormalizedFen } from '../../dist/modules/positions/position-key.js';
 import { loadPositionCleanupConfig } from '../../dist/modules/position-cleanup/position-cleanup.config.js';
+import { createPositionCleanupRepository } from '../../dist/modules/position-cleanup/position-cleanup.repository.prisma.js';
 import { createPositionCleanupService, POSITION_CLEANUP_EXECUTE_CONFIRMATION } from '../../dist/modules/position-cleanup/position-cleanup.service.js';
 import { createPositionCleanupWorker } from '../../dist/modules/position-cleanup/position-cleanup.worker.service.js';
 
 const prisma = prismaModule.default;
+const cleanupClient = new PrismaClient();
 const blockerClient = new PrismaClient();
 const config = loadPositionCleanupConfig({
   POSITION_CLEANUP_ENABLED: 'true',
@@ -19,7 +21,12 @@ const config = loadPositionCleanupConfig({
   POSITION_CLEANUP_STALE_AFTER_MS: '10000',
 });
 const service = createPositionCleanupService({ config });
-const worker = createPositionCleanupWorker({ config, logger: { info() {}, warn() {}, error() {} } });
+const cleanupRepository = createPositionCleanupRepository(cleanupClient);
+const worker = createPositionCleanupWorker({
+  config,
+  repository: cleanupRepository,
+  logger: { info() {}, warn() {}, error() {} },
+});
 const suffix = randomUUID();
 const normalizedFens = [];
 let userId;
@@ -315,5 +322,6 @@ try {
   for (const normalizedFen of normalizedFens) {
     await prisma.position.deleteMany({ where: { normalizedFen } }).catch(() => {});
   }
+  await cleanupClient.$disconnect();
   await blockerClient.$disconnect();
 }
