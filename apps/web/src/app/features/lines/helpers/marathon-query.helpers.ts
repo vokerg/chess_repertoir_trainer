@@ -6,6 +6,7 @@ const marathonModes = new Set<MarathonMode>([
   'WEAK_SUBLINES',
   'UNTRAINED_SUBLINES',
   'MIXED_WEAK_UNTRAINED',
+  'DAILY_REVIEW',
 ]);
 
 export interface MarathonInitializeOptions {

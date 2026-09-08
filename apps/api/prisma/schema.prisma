@@ -42,6 +42,7 @@ model AppUser {
   courses                         Course[]
   trainingSessions                TrainingSession[]
   trainingSublineAttempts         TrainingSublineAttempt[]
+  repertoireSublineReviewStates   RepertoireSublineReviewState[]
   activityDailyAggregates         UserActivityDailyAggregate[]
   createdAt                       DateTime                         @default(now())
   updatedAt                       DateTime                         @updatedAt
@@ -820,6 +821,7 @@ model Line {
   moves           MoveNode[]
   sessions        TrainingSession[]
   sublineAttempts TrainingSublineAttempt[]
+  reviewStates    RepertoireSublineReviewState[]
 
   @@index([chapterId])
 }
@@ -876,6 +878,7 @@ model TrainingSession {
   correctMoves          Int                     @default(0)
   accuracy              Float?
   sublineAttempt        TrainingSublineAttempt?
+  lastReviewStates      RepertoireSublineReviewState[] @relation("LastRepertoireReviewSession")
 
   @@unique([userId, clientAttemptId])
   @@index([userId, startedAt])
@@ -917,6 +920,30 @@ model TrainingSublineAttempt {
   @@index([userId, sublineHash, startedAt])
   @@index([userId, lineId, sublineHash, startedAt])
   @@index([userId, result])
+}
+
+model RepertoireSublineReviewState {
+  userId Int
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  lineId Int
+  line   Line @relation(fields: [lineId], references: [id], onDelete: Cascade)
+
+  sublineHash       String @db.VarChar(64)
+  sublineKeyVersion Int
+
+  dueAt                  DateTime
+  intervalStage          Int              @default(0)
+  consecutiveSuccesses   Int              @default(0)
+  failureCount           Int              @default(0)
+  lastTrainingSessionId  Int?
+  lastTrainingSession    TrainingSession? @relation("LastRepertoireReviewSession", fields: [lastTrainingSessionId], references: [id], onDelete: SetNull)
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+
+  @@id([userId, lineId, sublineHash, sublineKeyVersion])
+  @@index([userId, dueAt, lineId])
+  @@index([userId, lineId, dueAt])
 }
 
 model TrainingAttemptMove {

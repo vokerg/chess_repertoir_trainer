@@ -77,6 +77,11 @@ export function buildHomeRecommendations(
     });
   }
 
+  const reviewCourse = rankedReviewCourse(data.catalog);
+  if (reviewCourse) {
+    candidates.push(dailyReviewAction(reviewCourse));
+  }
+
   const analysisBacklog = data.facets?.analysisStatuses.find((status) => status.value === 'NOT_ANALYZED')?.count ?? 0;
   if (analysisBacklog > 0) {
     candidates.push({
@@ -179,6 +184,35 @@ function rankedCourse(
         left.id - right.id,
       )[0] ?? null
   );
+}
+
+function rankedReviewCourse(
+  catalog: LibraryCatalogResponse,
+): LibraryCatalogResponse['courses'][number] | null {
+  return (
+    [...catalog.courses]
+      .filter((course) => course.stats.trainedSublineCount > 0)
+      .sort(
+        (left, right) =>
+          right.stats.totalAttempts - left.stats.totalAttempts ||
+          right.stats.trainedSublineCount - left.stats.trainedSublineCount ||
+          left.id - right.id,
+      )[0] ?? null
+  );
+}
+
+function dailyReviewAction(course: LibraryCatalogResponse['courses'][number]): HomeAction {
+  return {
+    id: `daily-review-course-${course.id}`,
+    eyebrow: 'Daily Review',
+    title: `Review ${course.name}`,
+    description:
+      'Revisit what is scheduled for today, then reinforce any misses once more before you finish.',
+    link: ['/courses', course.id, 'marathon'],
+    queryParams: { mode: 'DAILY_REVIEW' },
+    meta: 'Today’s review',
+    tone: 'standard',
+  };
 }
 
 function courseTrainingAction(

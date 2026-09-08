@@ -61,6 +61,42 @@ describe('home dashboard rules', () => {
     expect(recommendations.some((action) => action.id === continueAction.id)).toBe(false);
   });
 
+  it('suggests Daily Review for the course with the strongest training history', () => {
+    const data: HomeDashboardData = {
+      ...EMPTY_DATA,
+      accounts: [account(1, { lastSyncAt: '2026-07-25T12:00:00.000Z' })],
+      catalog: catalog([
+        course(1, 'Starter course', { trainedSublineCount: 3, totalAttempts: 4 }),
+        course(2, 'Main course', { trainedSublineCount: 2, totalAttempts: 12 }),
+      ]),
+    };
+
+    const recommendations = buildHomeRecommendations(data, buildHomeContinueAction(data));
+
+    expect(recommendations[0]).toEqual(
+      jasmine.objectContaining({
+        id: 'daily-review-course-2',
+        title: 'Review Main course',
+        link: ['/courses', 2, 'marathon'],
+        queryParams: { mode: 'DAILY_REVIEW' },
+        meta: 'Today’s review',
+      }),
+    );
+  });
+
+  it('does not suggest Daily Review before any course material has been trained', () => {
+    const data: HomeDashboardData = {
+      ...EMPTY_DATA,
+      catalog: catalog([course(1, 'New course', { activeSublineCount: 5 })]),
+    };
+
+    const recommendations = buildHomeRecommendations(data, buildHomeContinueAction(data));
+
+    expect(recommendations.some((action) => action.id.startsWith('daily-review-course-'))).toBe(
+      false,
+    );
+  });
+
   it('keeps the stale-sync threshold explicit and inclusive', () => {
     const now = new Date('2026-07-26T12:00:00.000Z');
     const exactThreshold = new Date(now.getTime() - HOME_SYNC_STALE_DAYS * 24 * 60 * 60 * 1000).toISOString();

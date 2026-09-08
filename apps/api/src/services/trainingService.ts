@@ -14,6 +14,7 @@ import {
 } from '../modules/courses/sublines.service';
 import { ActivityFeedService } from '../modules/activity-feed/activity-feed.service';
 import { TRAINING_MODE_LINE } from '../modules/training/training.constants';
+import { DailyReviewService } from '../modules/training-marathons/daily-review.service';
 import prisma from '../prisma';
 
 /**
@@ -22,6 +23,10 @@ import prisma from '../prisma';
  * which is acceptable for v1 as sessions are short-lived.
  */
 const activeSessions: Map<number, { state: TrainingState; subline: HashedAvailableSublineDto }> = new Map();
+// Keep the session/review transition bounded. The activity aggregate is a projection
+// and is recorded after this transaction commits, so its user-row lock cannot hold
+// the training-session lock open.
+const FINALIZE_SESSION_TRANSACTION_TIMEOUT_MS = 15_000;
 
 export class PreparedLineStaleError extends Error {}
 
@@ -47,7 +52,7 @@ async function finalizeSession(
   missedState?: TrainingState,
 ) {
   const completedAt = new Date();
-  const updated = await prisma.$transaction(async (transaction) => {
+  const finalized = await prisma.$transaction(async (transaction) => {
     const locked = await transaction.$queryRaw<Array<{ id: number }>>`
       SELECT "id"
       FROM "TrainingSession"
@@ -64,7 +69,7 @@ async function finalizeSession(
       },
     });
     if (!sessionRow) throw new Error('Training session not found');
-    if (sessionRow.result !== 'IN_PROGRESS') return sessionRow;
+    if (sessionRow.result !== 'IN_PROGRESS') return { session: sessionRow, transitioned: false };
 
     let mistakesCount = sessionRow.mistakesCount;
     let totalExpectedMoves = sessionRow.totalExpectedMoves;
@@ -112,16 +117,19 @@ async function finalizeSession(
         completedAt,
       },
     });
+    await DailyReviewService.applyCompletedTrainingSession(transaction, userId, sessionId, resultStatus, completedAt);
+    return { session: terminal, transitioned: true };
+  }, { timeout: FINALIZE_SESSION_TRANSACTION_TIMEOUT_MS });
+
+  activeSessions.delete(sessionId);
+  if (finalized.transitioned) {
     await ActivityFeedService.recordIncrement({
       userId,
       type: 'REPERTOIRE_LINES_TRAINED',
       occurredAt: completedAt,
-    }, transaction);
-    return terminal;
-  });
-
-  activeSessions.delete(sessionId);
-  return updated;
+    });
+  }
+  return finalized.session;
 }
 
 async function startForSubline(

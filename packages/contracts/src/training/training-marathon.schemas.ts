@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const trainingMarathonScopeSchema = z.object({
   type: z.enum(['CHAPTER', 'COURSE']),
-  id: z.number().int().positive(),
+  id: z.coerce.number().int().positive(),
 });
 
 export const trainingMarathonModeSchema = z.enum([
@@ -10,7 +10,21 @@ export const trainingMarathonModeSchema = z.enum([
   'WEAK_SUBLINES',
   'UNTRAINED_SUBLINES',
   'MIXED_WEAK_UNTRAINED',
+  'DAILY_REVIEW',
 ]);
+
+export const trainingMarathonRequestSchema = z.object({
+  scope: trainingMarathonScopeSchema.optional(),
+  mode: trainingMarathonModeSchema.optional().default('ALL'),
+  lineIds: z.array(z.coerce.number().int().positive()).optional().default([]),
+  sublineHashes: z.array(z.string().length(64)).optional().default([]),
+  recentSublineHashes: z.array(z.string().length(64)).optional().default([]),
+  recentLineIds: z.array(z.coerce.number().int().positive()).optional().default([]),
+});
+
+export const trainingMarathonRunResponseSchema = z.object({
+  runId: z.string().uuid(),
+});
 
 export const trainingMarathonMoveSchema = z.object({
   nodeId: z.number().int().positive(),
@@ -29,7 +43,9 @@ export const trainingMarathonSessionSchema = z.object({
   sublineMoveText: z.string(),
 });
 
-export const trainingMarathonNextResponseSchema = z.object({
+export const trainingMarathonItemResponseSchema = z.object({
+  state: z.literal('ITEM'),
+  itemKind: z.enum(['STANDARD', 'SCHEDULED_REVIEW', 'REINFORCEMENT_RETRY']),
   scope: trainingMarathonScopeSchema.nullable(),
   mode: trainingMarathonModeSchema,
   line: z.object({
@@ -51,8 +67,26 @@ export const trainingMarathonNextResponseSchema = z.object({
   session: trainingMarathonSessionSchema,
 });
 
+export const trainingMarathonCompletedResponseSchema = z.object({
+  state: z.literal('COMPLETED'),
+  mode: z.literal('DAILY_REVIEW'),
+  scope: trainingMarathonScopeSchema.nullable(),
+  completedCount: z.number().int().nonnegative(),
+});
+
+export const trainingMarathonNextResponseSchema = z.discriminatedUnion('state', [
+  trainingMarathonItemResponseSchema,
+  trainingMarathonCompletedResponseSchema,
+]);
+
 export type TrainingMarathonScopeDto = z.infer<typeof trainingMarathonScopeSchema>;
 export type TrainingMarathonModeDto = z.infer<typeof trainingMarathonModeSchema>;
+export type TrainingMarathonRequestDto = z.infer<typeof trainingMarathonRequestSchema>;
+export type TrainingMarathonRunResponseDto = z.infer<typeof trainingMarathonRunResponseSchema>;
 export type TrainingMarathonMoveDto = z.infer<typeof trainingMarathonMoveSchema>;
 export type TrainingMarathonSessionDto = z.infer<typeof trainingMarathonSessionSchema>;
+export type TrainingMarathonItemResponseDto = z.infer<typeof trainingMarathonItemResponseSchema>;
+export type TrainingMarathonCompletedResponseDto = z.infer<
+  typeof trainingMarathonCompletedResponseSchema
+>;
 export type TrainingMarathonNextResponseDto = z.infer<typeof trainingMarathonNextResponseSchema>;

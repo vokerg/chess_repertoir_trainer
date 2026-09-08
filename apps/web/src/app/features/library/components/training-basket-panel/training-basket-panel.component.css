@@ -85,35 +85,58 @@
 
 .mode-options {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.2rem;
-  border-radius: var(--ui-radius-control);
-  padding: 0.2rem;
-  background: var(--ui-surface-quiet);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.42rem;
 }
 
-.mode-options button {
+.mode-option {
+  display: grid;
+  align-content: center;
+  gap: 0.18rem;
   min-width: 0;
-  min-height: 2.35rem;
-  border: 0;
-  border-radius: 8px;
-  padding: 0.45rem 0.35rem;
-  background: transparent;
-  color: var(--ui-text-muted);
+  min-height: 4rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  padding: 0.65rem 0.72rem;
+  background: var(--ui-surface);
+  color: var(--ui-text);
   box-shadow: none;
-  font-size: 0.78rem;
-  font-weight: 800;
+  text-align: left;
 }
 
-.mode-options button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--ui-surface) 72%, transparent);
+.mode-option:hover:not(:disabled) {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface-muted);
   transform: none;
 }
 
-.mode-options button.active {
-  background: var(--ui-surface);
-  color: var(--ui-text);
-  box-shadow: var(--ui-shadow-soft);
+.mode-option.active,
+.mode-option.active:hover:not(:disabled) {
+  border-color: var(--ui-action);
+  background: var(--ui-action-soft);
+}
+
+.mode-option strong,
+.mode-option small {
+  display: block;
+}
+
+.mode-option strong {
+  font-size: 0.82rem;
+}
+
+.mode-option small {
+  overflow: hidden;
+  color: var(--ui-text-muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mode-option:disabled {
+  opacity: 0.52;
 }
 
 .mode-caption {

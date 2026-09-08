@@ -8,6 +8,15 @@
     [actions]="headerActions()"
   />
 
+  @if (loadedChapter(); as chapter) {
+    <a
+      class="compact-action secondary"
+      [routerLink]="['/chapters', chapter.id, 'marathon']"
+      [queryParams]="{ mode: 'DAILY_REVIEW' }"
+      >Daily Review</a
+    >
+  }
+
   @if (store.error() && !loadedChapter()) {
     <app-panel
       title="Chapter unavailable"

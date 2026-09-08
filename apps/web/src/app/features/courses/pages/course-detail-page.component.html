@@ -56,6 +56,12 @@
       <div class="hero-actions">
         <a
           [routerLink]="['/courses', course.id, 'marathon']"
+          [queryParams]="{ mode: 'DAILY_REVIEW' }"
+          class="hero-action hero-action-review"
+          >Daily Review</a
+        >
+        <a
+          [routerLink]="['/courses', course.id, 'marathon']"
           class="hero-action hero-action-primary"
           >▶ Train course</a
         >

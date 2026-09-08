@@ -25,20 +25,31 @@
         @for (option of modeOptions(); track option.id) {
           <button
             type="button"
+            class="mode-option"
             [class.active]="mode() === option.id"
             [attr.aria-pressed]="mode() === option.id"
             [disabled]="option.disabled"
             (click)="selectMode(option.id)"
           >
-            {{ option.label }}
+            <strong>{{ option.label }}</strong>
+            <small>{{ option.caption }}</small>
           </button>
         }
       </div>
       <p class="mode-caption">
         @switch (mode()) {
-          @case ('WEAK_SUBLINES') { Only sublines that need reinforcement right now. }
-          @case ('UNTRAINED_SUBLINES') { Only material you have not attempted yet. }
-          @default { A complete pass through the current scope. }
+          @case ('DAILY_REVIEW') {
+            Review what is scheduled for today; missed items return once before you finish.
+          }
+          @case ('WEAK_SUBLINES') {
+            Only sublines that need reinforcement right now.
+          }
+          @case ('UNTRAINED_SUBLINES') {
+            Only material you have not attempted yet.
+          }
+          @default {
+            A complete pass through the current scope.
+          }
         }
       </p>
     </section>

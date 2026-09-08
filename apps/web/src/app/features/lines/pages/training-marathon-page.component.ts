@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  inject,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { combineLatest, distinctUntilChanged, map } from 'rxjs';
@@ -16,7 +23,13 @@ import { TrainingMarathonStore } from '../state/training-marathon.store';
 @Component({
   selector: 'app-training-marathon-page',
   standalone: true,
-  imports: [RouterLink, PageHeaderComponent, PanelComponent, StateMessageComponent, LineTrainingSessionComponent],
+  imports: [
+    RouterLink,
+    PageHeaderComponent,
+    PanelComponent,
+    StateMessageComponent,
+    LineTrainingSessionComponent,
+  ],
   providers: [TrainingMarathonStore],
   templateUrl: './training-marathon-page.component.html',
   styleUrl: './training-marathon-page.component.css',
@@ -52,6 +65,13 @@ export class TrainingMarathonPageComponent implements OnInit {
 
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
     const actions: PageHeaderAction[] = [
+      {
+        id: 'mode-daily-review',
+        label: 'Daily Review',
+        kind: 'toggle',
+        pressed: this.store.mode() === 'DAILY_REVIEW',
+        run: () => this.store.switchMode('DAILY_REVIEW'),
+      },
       {
         id: 'mode-all',
         label: 'All',
@@ -98,7 +118,9 @@ export class TrainingMarathonPageComponent implements OnInit {
     combineLatest([this.route.paramMap, this.route.queryParamMap])
       .pipe(
         map(([params, query]) => parseMarathonOptions(params, query)),
-        distinctUntilChanged((previous, current) => JSON.stringify(previous) === JSON.stringify(current)),
+        distinctUntilChanged(
+          (previous, current) => JSON.stringify(previous) === JSON.stringify(current),
+        ),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((options) => this.store.initialize(options));

@@ -117,6 +117,12 @@ assert.ok(backfillOperation?.responses?.['202'], 'account backfill must document
 const fullHistoryOperation = first.paths['/api/me/accounts/{id}/import-all-history']?.post;
 assert.ok(fullHistoryOperation?.responses?.['202'], 'full-history import must document durable 202 acceptance');
 
+const marathonCreateSchema = first.paths['/api/training-marathons']?.post?.requestBody?.content?.['application/json']?.schema;
+assert.ok(marathonCreateSchema?.properties?.mode?.enum?.includes('DAILY_REVIEW'), 'marathon mode must document Daily Review');
+const marathonNextSchema = first.paths['/api/training-marathons/{runId}/next']?.post?.responses?.['200']?.content?.['application/json']?.schema;
+assert.ok(marathonNextSchema?.oneOf?.some((variant) => variant.properties?.state?.enum?.includes('COMPLETED')), 'marathon next must document explicit Daily Review completion');
+assert.ok(first.paths['/api/training-marathons/{runId}/next']?.post?.responses?.['409'], 'marathon next must document an unfinished active item');
+
 const operationIds = operations.map(({ operation }) => operation.operationId);
 assert.equal(new Set(operationIds).size, operationIds.length, 'Operation IDs must be unique');
 assert.equal(first.paths['/mcp'], undefined, 'MCP transport is not a product REST operation');
