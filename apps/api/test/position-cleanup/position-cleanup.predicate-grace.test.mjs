@@ -89,8 +89,12 @@ async function snapshotActiveQueries() {
   const rows = await monitorClient.$queryRaw`
     SELECT pid,
            state,
+           "backend_start" AS "backendStart",
+           "xact_start" AS "xactStart",
+           "query_start" AS "queryStart",
            "wait_event_type" AS "waitEventType",
            "wait_event" AS "waitEvent",
+           pg_blocking_pids(pid) AS "blockingPids",
            LEFT(query, 1200) AS query
     FROM pg_stat_activity
     WHERE datname = current_database()
