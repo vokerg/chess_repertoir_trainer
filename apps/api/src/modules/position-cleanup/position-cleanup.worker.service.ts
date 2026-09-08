@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { Prisma } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import type { PositionCleanupConfig } from './position-cleanup.config';
 import {
   PositionCleanupInvalidStateError,
   PositionCleanupRepository,
+  createPositionCleanupRepository,
   type PositionCleanupRepository as PositionCleanupRepositoryBoundary,
 } from './position-cleanup.repository.prisma';
 import type { PositionCleanupRun } from './position-cleanup.types';
@@ -142,11 +143,28 @@ export function createPositionCleanupWorker(input: {
         return;
       case 'EVALUATE':
         if (run.mode === 'DRY_RUN') await repository.evaluateDryRunBatch(run.id, workKey);
-        else await repository.executeDeleteBatch(run.id, workKey);
+        else await executeDeleteBatch(run.id, workKey);
         return;
       case 'DONE':
         await repository.releaseClaim(run.id, workKey);
         return;
+    }
+  }
+
+  async function executeDeleteBatch(runId: number, workKey: string): Promise<void> {
+    if (input.repository) {
+      await repository.executeDeleteBatch(runId, workKey);
+      return;
+    }
+
+    // Destructive cleanup takes explicit relation locks. Keep that transaction on a
+    // short-lived client so normal worker traffic and heartbeat queries on the shared
+    // application client cannot contend with the same cleanup transaction/pool state.
+    const executeClient = new PrismaClient();
+    try {
+      await createPositionCleanupRepository(executeClient).executeDeleteBatch(runId, workKey);
+    } finally {
+      await executeClient.$disconnect();
     }
   }
 
