@@ -122,7 +122,11 @@ try {
   await targetRun(executeRun.id, firstPositionId, lastPositionId);
   const executeCompleted = await runToTerminal(executeRun.id);
 
-  assert.equal(executeCompleted.status, 'COMPLETED');
+  assert.equal(
+    executeCompleted.status,
+    'COMPLETED',
+    `execute failed with errorCode=${executeCompleted.errorCode ?? 'none'}`,
+  );
   assert.equal(executeCompleted.terminalResult, 'EXECUTED');
   assert.equal(executeCompleted.positionsDeleted, dryCompleted.eligibleObserved, 'execute must apply the same accepted grace/reference predicate as dry-run');
   assert.equal(executeCompleted.positionsDeleted, 3);
