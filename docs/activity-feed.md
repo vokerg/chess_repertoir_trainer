@@ -110,6 +110,8 @@ Authoritative producers must write only on the first qualifying terminal transit
 
 The source workflow and activity write should share a transaction where the existing architecture permits it. Angular and mobile must not emit a second “success” event.
 
+Online repertoire training finalization is the exception: the terminal session/review transition commits first, then the winning transition records `REPERTOIRE_LINES_TRAINED`. This keeps the user-row activity lock from extending the training-session transaction while preserving the one-count terminal-transition rule.
+
 ## Validation
 
 Focused coverage lives under:
