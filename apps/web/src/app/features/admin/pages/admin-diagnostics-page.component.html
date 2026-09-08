@@ -1,7 +1,7 @@
 <section class="admin-diagnostics-page stack">
   <app-page-header
     title="Administrator diagnostics"
-    subtitle="Read-only operational diagnostics. Server authorization remains authoritative for every request."
+    subtitle="Operational diagnostics and guarded lifecycle controls. Server authorization remains authoritative for every request."
     [stats]="headerStats()"
     [actions]="headerActions()"
   />
@@ -14,15 +14,22 @@
     }
     @case ('loading') {
       <app-panel title="Administrator access">
-        <p class="admin-state" role="status" aria-live="polite">Checking administrator diagnostics access…</p>
+        <p class="admin-state" role="status" aria-live="polite">
+          Checking administrator diagnostics access…
+        </p>
       </app-panel>
     }
     @case ('forbidden') {
       <app-panel title="Administrator diagnostics unavailable">
         <div class="admin-access-state" role="alert">
           <p>This signed-in account cannot access administrator diagnostics.</p>
-          <p>Access is decided by the server; route and client state are not authorization boundaries.</p>
-          <button type="button" class="secondary" (click)="store.refresh()">Retry access check</button>
+          <p>
+            Access is decided by the server; route and client state are not authorization
+            boundaries.
+          </p>
+          <button type="button" class="secondary" (click)="store.refresh()">
+            Retry access check
+          </button>
         </div>
       </app-panel>
     }
@@ -68,6 +75,110 @@
         [workError]="store.workError()"
         (retry)="store.retrySelectedUser()"
       />
+
+      @if (store.selectedUserId()) {
+        <app-panel
+          title="Lifecycle controls"
+          subtitle="Preview exact impact before any destructive operation is accepted."
+        >
+          <div class="admin-lifecycle-form">
+            <label
+              >Action
+              <select
+                [ngModel]="store.lifecycleAction()"
+                (ngModelChange)="store.lifecycleAction.set($event)"
+              >
+                <option value="PURGE_ACCOUNT_DATA">Purge account data</option>
+                <option value="DELETE_EXTERNAL_ACCOUNT">Delete external account</option>
+                <option value="UNANALYSE_GAMES">Un-analyse games</option>
+                <option value="UNINDEX_GAMES">Un-index games</option>
+              </select>
+            </label>
+            <label
+              >Account ID
+              <input
+                type="number"
+                min="1"
+                [ngModel]="store.lifecycleAccountId()"
+                (ngModelChange)="store.lifecycleAccountId.set($event)"
+            /></label>
+            @if (
+              store.lifecycleAction() === 'UNANALYSE_GAMES' ||
+              store.lifecycleAction() === 'UNINDEX_GAMES'
+            ) {
+              <label
+                >Game IDs
+                <input
+                  type="text"
+                  placeholder="12, 15, 19"
+                  [ngModel]="store.lifecycleGameIds()"
+                  (ngModelChange)="store.lifecycleGameIds.set($event)"
+              /></label>
+            }
+            <button
+              type="button"
+              class="secondary"
+              [disabled]="store.lifecycleBusy()"
+              (click)="store.previewLifecycle()"
+            >
+              Preview impact
+            </button>
+          </div>
+          @if (store.lifecycleError()) {
+            <p class="admin-lifecycle-error" role="alert">{{ store.lifecycleError() }}</p>
+          }
+          @if (store.lifecyclePreview(); as preview) {
+            <div class="admin-lifecycle-preview">
+              <p>
+                <strong>{{ preview.action }}</strong> affects
+                {{ preview.previewCounts.games }} games and {{ preview.previewCounts.plies }} plies.
+              </p>
+              <p>
+                Type <code>{{ preview.confirmationPhrase }}</code> and reverify with Clerk to
+                execute.
+              </p>
+              <label
+                >Confirmation
+                <input
+                  type="text"
+                  [ngModel]="store.lifecycleConfirmation()"
+                  (ngModelChange)="store.lifecycleConfirmation.set($event)"
+              /></label>
+              <button
+                type="button"
+                class="danger"
+                [disabled]="
+                  store.lifecycleBusy() ||
+                  store.lifecycleConfirmation() !== preview.confirmationPhrase
+                "
+                (click)="store.executeLifecycle()"
+              >
+                Reverify and execute
+              </button>
+            </div>
+          }
+          @if (store.lifecycleOperation(); as operation) {
+            <div class="admin-lifecycle-status" role="status">
+              <p>
+                Operation {{ operation.operationId }}: <strong>{{ operation.status }}</strong>
+              </p>
+              <button type="button" class="secondary" (click)="store.refreshLifecycle()">
+                Refresh status
+              </button>
+              @if (
+                operation.status !== 'COMPLETED' &&
+                operation.status !== 'FAILED' &&
+                operation.status !== 'CANCELLED' &&
+                operation.status !== 'EXPIRED'
+              ) {
+                <button type="button" class="secondary" (click)="store.stopLifecycle()">
+                  Request stop
+                </button>
+              }
+            </div>
+          }
+        </app-panel>
+      }
     }
   }
 </section>

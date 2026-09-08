@@ -2,6 +2,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import prisma from '../../prisma';
 import { lockDataLifecycleUserScope } from './data-lifecycle.guard';
 import {
+  bindAdminReverificationUse,
   DataLifecycleInvalidStateError,
   createDataLifecycleRepository,
   type StoredDataLifecycleOperation,
@@ -32,7 +33,12 @@ export interface AccountGameDataLifecycleOperationRepository {
   releaseClaim(operationId: number, workKey: string): Promise<boolean>;
   recoverStaleClaims(staleBefore: Date): Promise<number>;
   hasAuditEvent(operationId: number, eventType: string): Promise<boolean>;
-  resumeNeedsAttention(targetUserId: number, operationId: number): Promise<StoredDataLifecycleOperation>;
+  resumeNeedsAttention(
+    targetUserId: number,
+    operationId: number,
+    idempotencyKeyHash: string,
+    verification?: Record<string, unknown>,
+  ): Promise<StoredDataLifecycleOperation>;
 }
 
 export function createAccountGameDataLifecycleOperationRepository(
@@ -105,16 +111,32 @@ export function createAccountGameDataLifecycleOperationRepository(
     async hasAuditEvent(operationId, eventType) {
       validatePositiveInteger(operationId, 'operationId');
       validateAuditEventType(eventType);
-      return (await database.dataLifecycleAuditEvent.count({
-        where: { operationId, eventType },
-      })) > 0;
+      return (
+        (await database.dataLifecycleAuditEvent.count({
+          where: { operationId, eventType },
+        })) > 0
+      );
     },
 
-    async resumeNeedsAttention(targetUserId, operationId) {
+    async resumeNeedsAttention(targetUserId, operationId, idempotencyKeyHash, verification) {
       validatePositiveInteger(targetUserId, 'targetUserId');
       validatePositiveInteger(operationId, 'operationId');
+      validateSha256(idempotencyKeyHash, 'idempotencyKeyHash');
       await database.$transaction(async (transaction) => {
         await lockDataLifecycleUserScope(transaction, targetUserId);
+        const operation = await transaction.dataLifecycleOperation.findFirst({
+          where: {
+            id: operationId,
+            targetUserId,
+            status: 'NEEDS_ATTENTION',
+            firstDestructiveCommitAt: { not: null },
+          },
+        });
+        if (!operation) {
+          throw new DataLifecycleInvalidStateError(
+            'Only a partially executed lifecycle operation in NEEDS_ATTENTION can resume.',
+          );
+        }
         const activeFence = await transaction.dataLifecycleResourceFence.findFirst({
           where: { operationId, ownerUserId: targetUserId, releasedAt: null },
           select: { id: true },
@@ -124,6 +146,17 @@ export function createAccountGameDataLifecycleOperationRepository(
             'A lifecycle operation without an active fence cannot resume destructive execution.',
           );
         }
+        await bindAdminReverificationUse(transaction, {
+          operationId: operation.id,
+          actorKeyVersion: operation.actorKeyVersion,
+          actorKeyHash: operation.actorKeyHash,
+          targetKeyVersion: operation.targetKeyVersion,
+          targetKeyHash: operation.targetKeyHash,
+          action: operation.action,
+          previewHash: operation.previewHash,
+          idempotencyKeyHash,
+          verification,
+        });
 
         const updated = await transaction.$executeRaw(Prisma.sql`
           UPDATE "DataLifecycleOperation"
@@ -150,22 +183,31 @@ export function createAccountGameDataLifecycleOperationRepository(
       });
 
       const operation = await lifecycleRepository.getForTargetUser(targetUserId, operationId);
-      if (!operation) throw new DataLifecycleInvalidStateError('Lifecycle operation disappeared after resume.');
+      if (!operation)
+        throw new DataLifecycleInvalidStateError('Lifecycle operation disappeared after resume.');
       return operation;
     },
   };
 }
 
 function validatePositiveInteger(value: number, label: string): void {
-  if (!Number.isSafeInteger(value) || value <= 0) throw new Error(`${label} must be a positive integer.`);
+  if (!Number.isSafeInteger(value) || value <= 0)
+    throw new Error(`${label} must be a positive integer.`);
 }
 
 function validateWorkKey(value: string): void {
-  if (!value.trim() || value.length > 80) throw new Error('Lifecycle workKey must contain 1-80 characters.');
+  if (!value.trim() || value.length > 80)
+    throw new Error('Lifecycle workKey must contain 1-80 characters.');
+}
+
+function validateSha256(value: string, label: string): void {
+  if (!/^[a-f0-9]{64}$/.test(value))
+    throw new Error(`${label} must be a lowercase SHA-256 hex digest.`);
 }
 
 function validateAuditEventType(value: string): void {
-  if (!value.trim() || value.length > 80) throw new Error('Lifecycle audit event type must contain 1-80 characters.');
+  if (!value.trim() || value.length > 80)
+    throw new Error('Lifecycle audit event type must contain 1-80 characters.');
 }
 
 export const AccountGameDataLifecycleOperationRepository =

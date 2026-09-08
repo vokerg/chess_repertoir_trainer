@@ -6,6 +6,13 @@ import type {
   AdminUserWorkResponse,
 } from '@chess-trainer/contracts/admin';
 import { firstValueFrom } from 'rxjs';
+import type {
+  AccountGameDataLifecycleAction,
+  AccountGameDataLifecyclePreviewRequest,
+  DataLifecycleOperationResponse,
+  DataLifecyclePreviewResponse,
+} from '@chess-trainer/contracts/data-lifecycle';
+import { AuthService } from '../../../core/auth/auth.service';
 import { AdminApiService } from '../data-access/admin-api.service';
 
 export type AdminAccessState = 'idle' | 'loading' | 'ready' | 'forbidden' | 'unavailable';
@@ -17,6 +24,7 @@ const WORK_ITEM_LIMIT = 20;
 @Injectable()
 export class AdminDiagnosticsStore {
   private readonly api = inject(AdminApiService);
+  private readonly auth = inject(AuthService);
   private capabilityRequestSequence = 0;
   private userListRequestSequence = 0;
   private selectionRequestSequence = 0;
@@ -40,6 +48,15 @@ export class AdminDiagnosticsStore {
   readonly work = signal<AdminUserWorkResponse | null>(null);
   readonly workState = signal<AdminLoadState>('idle');
   readonly workError = signal<string | null>(null);
+  readonly lifecycleAction = signal<AccountGameDataLifecycleAction>('PURGE_ACCOUNT_DATA');
+  readonly lifecycleAccountId = signal('');
+  readonly lifecycleGameIds = signal('');
+  readonly lifecycleConfirmation = signal('');
+  readonly lifecyclePreview = signal<DataLifecyclePreviewResponse | null>(null);
+  readonly lifecycleOperation = signal<DataLifecycleOperationResponse | null>(null);
+  readonly lifecycleBusy = signal(false);
+  readonly lifecycleError = signal<string | null>(null);
+  private lifecycleIdempotencyKey: string | null = null;
 
   readonly hasNextPage = computed(() => this.nextCursor() !== null);
   readonly selectionHasPartialFailure = computed(() => {
@@ -109,6 +126,85 @@ export class AdminDiagnosticsStore {
     const userId = this.selectedUserId();
     if (userId === null) return;
     await this.selectUser(userId);
+  }
+
+  async previewLifecycle(): Promise<void> {
+    const userId = this.selectedUserId();
+    const accountId = Number(this.lifecycleAccountId());
+    if (!userId || !Number.isSafeInteger(accountId) || accountId < 1) {
+      this.lifecycleError.set('Enter a valid account ID.');
+      return;
+    }
+    const action = this.lifecycleAction();
+    const gameIds = this.lifecycleGameIds()
+      .split(',')
+      .map((value) => Number(value.trim()))
+      .filter(Number.isSafeInteger);
+    if ((action === 'UNANALYSE_GAMES' || action === 'UNINDEX_GAMES') && gameIds.length === 0) {
+      this.lifecycleError.set('Enter at least one game ID for this action.');
+      return;
+    }
+    const request =
+      action === 'UNANALYSE_GAMES' || action === 'UNINDEX_GAMES'
+        ? { action, accountId, gameIds }
+        : ({ action, accountId } as AccountGameDataLifecyclePreviewRequest);
+    this.lifecycleBusy.set(true);
+    this.lifecycleError.set(null);
+    try {
+      const preview = await firstValueFrom(this.api.previewLifecycle(userId, request));
+      this.lifecyclePreview.set(preview);
+      this.lifecycleOperation.set(preview);
+      this.lifecycleConfirmation.set('');
+      this.lifecycleIdempotencyKey = crypto.randomUUID();
+    } catch (error) {
+      this.lifecycleError.set(readAdminError(error, 'Could not create lifecycle preview.'));
+    } finally {
+      this.lifecycleBusy.set(false);
+    }
+  }
+
+  async executeLifecycle(): Promise<void> {
+    const userId = this.selectedUserId();
+    const preview = this.lifecyclePreview();
+    if (!userId || !preview) return;
+    this.lifecycleBusy.set(true);
+    this.lifecycleError.set(null);
+    try {
+      if (!(await this.auth.reverify())) {
+        this.lifecycleError.set('Reverification was cancelled or is unavailable.');
+        return;
+      }
+      const operation = await firstValueFrom(
+        this.api.executeLifecycle(userId, preview.operationId, {
+          previewToken: preview.previewToken,
+          confirmationPhrase: this.lifecycleConfirmation(),
+          idempotencyKey: this.lifecycleIdempotencyKey ?? crypto.randomUUID(),
+        }),
+      );
+      this.lifecycleOperation.set(operation);
+    } catch (error) {
+      this.lifecycleError.set(readAdminError(error, 'Could not execute lifecycle operation.'));
+    } finally {
+      this.lifecycleBusy.set(false);
+    }
+  }
+
+  async refreshLifecycle(): Promise<void> {
+    const userId = this.selectedUserId();
+    const operation = this.lifecycleOperation();
+    if (!userId || !operation) return;
+    this.lifecycleOperation.set(
+      await firstValueFrom(this.api.getLifecycle(userId, operation.operationId)),
+    );
+  }
+
+  async stopLifecycle(): Promise<void> {
+    const userId = this.selectedUserId();
+    const operation = this.lifecycleOperation();
+    if (!userId || !operation) return;
+    this.lifecycleOperation.set(
+      await firstValueFrom(this.api.stopLifecycle(userId, operation.operationId)),
+    );
   }
 
   private async loadUsers(cursor: string | null, pageNumber: number): Promise<void> {
@@ -211,6 +307,10 @@ export class AdminDiagnosticsStore {
     this.work.set(null);
     this.workState.set('idle');
     this.workError.set(null);
+    this.lifecyclePreview.set(null);
+    this.lifecycleOperation.set(null);
+    this.lifecycleError.set(null);
+    this.lifecycleIdempotencyKey = null;
   }
 }
 

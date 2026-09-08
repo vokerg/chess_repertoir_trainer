@@ -66,26 +66,30 @@ function jobWarnings(job: AdminJobRow, now: Date): AdminWarning[] {
   const age = secondsBetween(now, job.createdAt);
   const warnings: AdminWarning[] = [];
   if (job.source === 'USER_ACTION' && age > DIRECT_USER_QUEUE_AGE_WARNING_SECONDS) {
-    warnings.push(warning(
-      'DIRECT_USER_QUEUE_AGE_HIGH',
-      'queueAgeSeconds',
-      age,
-      DIRECT_USER_QUEUE_AGE_WARNING_SECONDS,
-      'SECONDS',
-    ));
+    warnings.push(
+      warning(
+        'DIRECT_USER_QUEUE_AGE_HIGH',
+        'queueAgeSeconds',
+        age,
+        DIRECT_USER_QUEUE_AGE_WARNING_SECONDS,
+        'SECONDS',
+      ),
+    );
   }
   if (
-    job.source === 'ONBOARDING'
-    && job.kind === 'ANALYSE_GAMES'
-    && age > ONBOARDING_ANALYSIS_QUEUE_AGE_WARNING_SECONDS
+    job.source === 'ONBOARDING' &&
+    job.kind === 'ANALYSE_GAMES' &&
+    age > ONBOARDING_ANALYSIS_QUEUE_AGE_WARNING_SECONDS
   ) {
-    warnings.push(warning(
-      'ONBOARDING_ANALYSIS_QUEUE_AGE_HIGH',
-      'queueAgeSeconds',
-      age,
-      ONBOARDING_ANALYSIS_QUEUE_AGE_WARNING_SECONDS,
-      'SECONDS',
-    ));
+    warnings.push(
+      warning(
+        'ONBOARDING_ANALYSIS_QUEUE_AGE_HIGH',
+        'queueAgeSeconds',
+        age,
+        ONBOARDING_ANALYSIS_QUEUE_AGE_WARNING_SECONDS,
+        'SECONDS',
+      ),
+    );
   }
   return warnings;
 }
@@ -94,13 +98,15 @@ function importWarnings(run: AdminImportRow, now: Date): AdminWarning[] {
   if (run.status !== 'QUEUED') return [];
   const age = secondsBetween(now, run.startedAt);
   return age > IMPORT_QUEUE_AGE_WARNING_SECONDS
-    ? [warning(
-      'IMPORT_QUEUE_AGE_HIGH',
-      'queueAgeSeconds',
-      age,
-      IMPORT_QUEUE_AGE_WARNING_SECONDS,
-      'SECONDS',
-    )]
+    ? [
+        warning(
+          'IMPORT_QUEUE_AGE_HIGH',
+          'queueAgeSeconds',
+          age,
+          IMPORT_QUEUE_AGE_WARNING_SECONDS,
+          'SECONDS',
+        ),
+      ]
     : [];
 }
 
@@ -108,13 +114,15 @@ function preparationWarnings(run: AdminPreparationRow, now: Date): AdminWarning[
   if (!run.reconcileAfter || TERMINAL_PREPARATION_STATUSES.has(run.status)) return [];
   const lag = secondsBetween(now, run.reconcileAfter);
   return lag > PREPARATION_RECONCILE_LAG_WARNING_SECONDS
-    ? [warning(
-      'PREPARATION_RECONCILE_LAG',
-      'reconcileLagSeconds',
-      lag,
-      PREPARATION_RECONCILE_LAG_WARNING_SECONDS,
-      'SECONDS',
-    )]
+    ? [
+        warning(
+          'PREPARATION_RECONCILE_LAG',
+          'reconcileLagSeconds',
+          lag,
+          PREPARATION_RECONCILE_LAG_WARNING_SECONDS,
+          'SECONDS',
+        ),
+      ]
     : [];
 }
 
@@ -147,14 +155,16 @@ export function createAdminDiagnosticsService(dependencies: Dependencies = {}) {
       const user = await repository.getUser(userId);
       if (!user) throw new AdminUserNotFoundError();
 
-      const [accounts, games, courses, training, preparation, footprint] = await Promise.allSettled([
-        repository.loadAccounts(userId),
-        repository.loadGames(userId),
-        repository.loadCourses(userId),
-        repository.loadTraining(userId),
-        repository.loadPreparationSummary(userId),
-        repository.loadFootprint(userId),
-      ]);
+      const [accounts, games, courses, training, preparation, footprint] = await Promise.allSettled(
+        [
+          repository.loadAccounts(userId),
+          repository.loadGames(userId),
+          repository.loadCourses(userId),
+          repository.loadTraining(userId),
+          repository.loadPreparationSummary(userId),
+          repository.loadFootprint(userId),
+        ],
+      );
 
       return {
         user: {
@@ -163,63 +173,72 @@ export function createAdminDiagnosticsService(dependencies: Dependencies = {}) {
           updatedAt: user.updatedAt.toISOString(),
         },
         sections: {
-          accounts: accounts.status === 'fulfilled'
-            ? {
-              available: true,
-              total: accounts.value.reduce((total, row) => total + row.count, 0),
-              active: accounts.value.filter((row) => row.isActive).reduce((total, row) => total + row.count, 0),
-              groups: accounts.value.map((row) => ({
-                provider: row.provider,
-                active: row.isActive,
-                count: row.count,
-              })),
-            }
-            : unavailable('QUERY_FAILED'),
-          games: games.status === 'fulfilled'
-            ? {
-              available: true,
-              total: games.value.total,
-              indexed: games.value.indexed,
-              analysed: games.value.analysed,
-              bySpeed: games.value.bySpeed.map((row) => ({
-                speed: row.speedCategory,
-                count: row.count,
-              })),
-              byIndexState: [
-                { state: 'INDEXED' as const, count: games.value.indexed },
-                { state: 'INDEX_FAILED' as const, count: games.value.indexFailed },
-                { state: 'NOT_INDEXED' as const, count: games.value.notIndexed },
-              ],
-              byAnalysisState: games.value.byAnalysisState.map((row) => ({
-                state: row.latestAnalysisStatus,
-                count: row.count,
-              })),
-            }
-            : unavailable('QUERY_FAILED'),
-          courses: courses.status === 'fulfilled'
-            ? { available: true, ...courses.value }
-            : unavailable('QUERY_FAILED'),
-          training: training.status === 'fulfilled'
-            ? {
-              available: true,
-              sessions: training.value.sessions,
-              sublineAttempts: training.value.sublineAttempts,
-              latestSessionAt: training.value.latestSessionAt?.toISOString() ?? null,
-              latestSublineAttemptAt: training.value.latestSublineAttemptAt?.toISOString() ?? null,
-            }
-            : unavailable('QUERY_FAILED'),
-          preparation: preparation.status === 'fulfilled'
-            ? {
-              available: true,
-              totalRuns: preparation.value.totalRuns,
-              activeRuns: preparation.value.activeRuns,
-              latestUpdatedAt: preparation.value.latestUpdatedAt?.toISOString() ?? null,
-              warnings: [],
-            }
-            : unavailable('QUERY_FAILED'),
-          footprint: footprint.status === 'fulfilled'
-            ? { available: true, rowCounts: footprint.value }
-            : unavailable('QUERY_FAILED'),
+          accounts:
+            accounts.status === 'fulfilled'
+              ? {
+                  available: true,
+                  total: accounts.value.reduce((total, row) => total + row.count, 0),
+                  active: accounts.value
+                    .filter((row) => row.isActive)
+                    .reduce((total, row) => total + row.count, 0),
+                  groups: accounts.value.map((row) => ({
+                    provider: row.provider,
+                    active: row.isActive,
+                    count: row.count,
+                  })),
+                }
+              : unavailable('QUERY_FAILED'),
+          games:
+            games.status === 'fulfilled'
+              ? {
+                  available: true,
+                  total: games.value.total,
+                  indexed: games.value.indexed,
+                  analysed: games.value.analysed,
+                  bySpeed: games.value.bySpeed.map((row) => ({
+                    speed: row.speedCategory,
+                    count: row.count,
+                  })),
+                  byIndexState: [
+                    { state: 'INDEXED' as const, count: games.value.indexed },
+                    { state: 'INDEX_FAILED' as const, count: games.value.indexFailed },
+                    { state: 'NOT_INDEXED' as const, count: games.value.notIndexed },
+                  ],
+                  byAnalysisState: games.value.byAnalysisState.map((row) => ({
+                    state: row.latestAnalysisStatus,
+                    count: row.count,
+                  })),
+                }
+              : unavailable('QUERY_FAILED'),
+          courses:
+            courses.status === 'fulfilled'
+              ? { available: true, ...courses.value }
+              : unavailable('QUERY_FAILED'),
+          training:
+            training.status === 'fulfilled'
+              ? {
+                  available: true,
+                  sessions: training.value.sessions,
+                  sublineAttempts: training.value.sublineAttempts,
+                  latestSessionAt: training.value.latestSessionAt?.toISOString() ?? null,
+                  latestSublineAttemptAt:
+                    training.value.latestSublineAttemptAt?.toISOString() ?? null,
+                }
+              : unavailable('QUERY_FAILED'),
+          preparation:
+            preparation.status === 'fulfilled'
+              ? {
+                  available: true,
+                  totalRuns: preparation.value.totalRuns,
+                  activeRuns: preparation.value.activeRuns,
+                  latestUpdatedAt: preparation.value.latestUpdatedAt?.toISOString() ?? null,
+                  warnings: [],
+                }
+              : unavailable('QUERY_FAILED'),
+          footprint:
+            footprint.status === 'fulfilled'
+              ? { available: true, rowCounts: footprint.value }
+              : unavailable('QUERY_FAILED'),
           lifecycle: unavailable('MODEL_NOT_AVAILABLE'),
         },
       };
@@ -230,105 +249,129 @@ export function createAdminDiagnosticsService(dependencies: Dependencies = {}) {
       if (!user) throw new AdminUserNotFoundError();
       const now = clock();
 
-      const [jobs, imports, preparation] = await Promise.allSettled([
+      const [jobs, imports, preparation, lifecycle] = await Promise.allSettled([
         repository.loadJobs(userId, limit),
         repository.loadImports(userId, limit),
         repository.loadPreparationRuns(userId, limit),
+        repository.loadLifecycle(userId, limit),
       ]);
 
-      const importSection = imports.status === 'fulfilled'
-        ? (() => {
-          const items = imports.value.rows.map((run) => {
-            const warnings = importWarnings(run, now);
-            return {
-              id: run.id,
-              accountId: run.accountId,
-              provider: run.provider,
-              status: run.status,
-              gamesSeen: run.gamesSeen,
-              gamesImported: run.gamesImported,
-              gamesFailed: run.gamesFailed,
-              startedAt: run.startedAt.toISOString(),
-              completedAt: run.completedAt?.toISOString() ?? null,
-              queueAgeSeconds: run.status === 'QUEUED' ? secondsBetween(now, run.startedAt) : null,
-              warnings,
-            };
-          });
-          const oldestQueuedAge = imports.value.oldestQueuedStartedAt
-            ? secondsBetween(now, imports.value.oldestQueuedStartedAt)
-            : 0;
-          const warnings: AdminWarning[] = [];
-          if (oldestQueuedAge > IMPORT_QUEUE_AGE_WARNING_SECONDS) {
-            warnings.push(warning(
-              'IMPORT_QUEUE_AGE_HIGH',
-              'queueAgeSeconds',
-              oldestQueuedAge,
-              IMPORT_QUEUE_AGE_WARNING_SECONDS,
-              'SECONDS',
-            ));
-          }
-          if (
-            imports.value.queuedCount > IMPORT_QUEUE_BACKLOG_COUNT_WARNING
-            && oldestQueuedAge > IMPORT_QUEUE_AGE_WARNING_SECONDS
-          ) {
-            warnings.push(warning(
-              'IMPORT_QUEUE_BACKLOG_HIGH',
-              'queuedRuns',
-              imports.value.queuedCount,
-              IMPORT_QUEUE_BACKLOG_COUNT_WARNING,
-              'COUNT',
-            ));
-          }
-          return {
-            available: true as const,
-            queuedCount: imports.value.queuedCount,
-            items,
-            warnings,
-          };
-        })()
-        : unavailable('QUERY_FAILED');
+      const importSection =
+        imports.status === 'fulfilled'
+          ? (() => {
+              const items = imports.value.rows.map((run) => {
+                const warnings = importWarnings(run, now);
+                return {
+                  id: run.id,
+                  accountId: run.accountId,
+                  provider: run.provider,
+                  status: run.status,
+                  gamesSeen: run.gamesSeen,
+                  gamesImported: run.gamesImported,
+                  gamesFailed: run.gamesFailed,
+                  startedAt: run.startedAt.toISOString(),
+                  completedAt: run.completedAt?.toISOString() ?? null,
+                  queueAgeSeconds:
+                    run.status === 'QUEUED' ? secondsBetween(now, run.startedAt) : null,
+                  warnings,
+                };
+              });
+              const oldestQueuedAge = imports.value.oldestQueuedStartedAt
+                ? secondsBetween(now, imports.value.oldestQueuedStartedAt)
+                : 0;
+              const warnings: AdminWarning[] = [];
+              if (oldestQueuedAge > IMPORT_QUEUE_AGE_WARNING_SECONDS) {
+                warnings.push(
+                  warning(
+                    'IMPORT_QUEUE_AGE_HIGH',
+                    'queueAgeSeconds',
+                    oldestQueuedAge,
+                    IMPORT_QUEUE_AGE_WARNING_SECONDS,
+                    'SECONDS',
+                  ),
+                );
+              }
+              if (
+                imports.value.queuedCount > IMPORT_QUEUE_BACKLOG_COUNT_WARNING &&
+                oldestQueuedAge > IMPORT_QUEUE_AGE_WARNING_SECONDS
+              ) {
+                warnings.push(
+                  warning(
+                    'IMPORT_QUEUE_BACKLOG_HIGH',
+                    'queuedRuns',
+                    imports.value.queuedCount,
+                    IMPORT_QUEUE_BACKLOG_COUNT_WARNING,
+                    'COUNT',
+                  ),
+                );
+              }
+              return {
+                available: true as const,
+                queuedCount: imports.value.queuedCount,
+                items,
+                warnings,
+              };
+            })()
+          : unavailable('QUERY_FAILED');
 
       return {
         userId,
         sections: {
-          jobs: jobs.status === 'fulfilled'
-            ? {
-              available: true,
-              items: jobs.value.map((job) => ({
-                id: job.id,
-                kind: job.kind,
-                source: job.source,
-                status: job.status,
-                totalTasks: job.totalTasks,
-                activeWorkKeys: job.activeWorkKeys,
-                taskCounts: taskCounts(job.taskCounts),
-                createdAt: job.createdAt.toISOString(),
-                updatedAt: job.updatedAt.toISOString(),
-                startedAt: job.startedAt?.toISOString() ?? null,
-                completedAt: job.completedAt?.toISOString() ?? null,
-                queueAgeSeconds: job.status === 'QUEUED' ? secondsBetween(now, job.createdAt) : null,
-                warnings: jobWarnings(job, now),
-              })),
-            }
-            : unavailable('QUERY_FAILED'),
+          jobs:
+            jobs.status === 'fulfilled'
+              ? {
+                  available: true,
+                  items: jobs.value.map((job) => ({
+                    id: job.id,
+                    kind: job.kind,
+                    source: job.source,
+                    status: job.status,
+                    totalTasks: job.totalTasks,
+                    activeWorkKeys: job.activeWorkKeys,
+                    taskCounts: taskCounts(job.taskCounts),
+                    createdAt: job.createdAt.toISOString(),
+                    updatedAt: job.updatedAt.toISOString(),
+                    startedAt: job.startedAt?.toISOString() ?? null,
+                    completedAt: job.completedAt?.toISOString() ?? null,
+                    queueAgeSeconds:
+                      job.status === 'QUEUED' ? secondsBetween(now, job.createdAt) : null,
+                    warnings: jobWarnings(job, now),
+                  })),
+                }
+              : unavailable('QUERY_FAILED'),
           imports: importSection,
-          preparation: preparation.status === 'fulfilled'
-            ? {
-              available: true,
-              items: preparation.value.map((run) => ({
-                id: run.id,
-                purpose: run.purpose,
-                status: run.status,
-                attentionCode: run.attentionCode,
-                reconcileAfter: run.reconcileAfter?.toISOString() ?? null,
-                createdAt: run.createdAt.toISOString(),
-                updatedAt: run.updatedAt.toISOString(),
-                completedAt: run.completedAt?.toISOString() ?? null,
-                warnings: preparationWarnings(run, now),
-              })),
-            }
-            : unavailable('QUERY_FAILED'),
-          lifecycle: unavailable('MODEL_NOT_AVAILABLE'),
+          preparation:
+            preparation.status === 'fulfilled'
+              ? {
+                  available: true,
+                  items: preparation.value.map((run) => ({
+                    id: run.id,
+                    purpose: run.purpose,
+                    status: run.status,
+                    attentionCode: run.attentionCode,
+                    reconcileAfter: run.reconcileAfter?.toISOString() ?? null,
+                    createdAt: run.createdAt.toISOString(),
+                    updatedAt: run.updatedAt.toISOString(),
+                    completedAt: run.completedAt?.toISOString() ?? null,
+                    warnings: preparationWarnings(run, now),
+                  })),
+                }
+              : unavailable('QUERY_FAILED'),
+          lifecycle:
+            lifecycle.status === 'fulfilled'
+              ? {
+                  available: true,
+                  operations: lifecycle.value.operations.map((operation) => ({
+                    ...operation,
+                    createdAt: operation.createdAt.toISOString(),
+                    updatedAt: operation.updatedAt.toISOString(),
+                  })),
+                  auditEvents: lifecycle.value.auditEvents.map((event) => ({
+                    ...event,
+                    createdAt: event.createdAt.toISOString(),
+                  })),
+                }
+              : unavailable('QUERY_FAILED'),
         },
       };
     },

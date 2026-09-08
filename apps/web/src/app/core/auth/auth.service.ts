@@ -27,7 +27,9 @@ type ClerkUser = NonNullable<Clerk['user']>;
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = new HttpClient(inject(HttpBackend));
-  private readonly clerk = appConfig.clerkPublishableKey ? new Clerk(appConfig.clerkPublishableKey) : null;
+  private readonly clerk = appConfig.clerkPublishableKey
+    ? new Clerk(appConfig.clerkPublishableKey)
+    : null;
   private readonly initializedState = signal(false);
   private readonly initializingState = signal<Promise<void> | null>(null);
   private readonly clerkUserState = signal<ClerkUser | null>(null);
@@ -74,6 +76,20 @@ export class AuthService {
   async getToken(): Promise<string | null> {
     await this.initialize();
     return (await this.clerk?.session?.getToken()) ?? null;
+  }
+
+  async reverify(): Promise<boolean> {
+    await this.initialize();
+    if (!this.clerk?.session) return false;
+    return new Promise<boolean>((resolve) => {
+      this.clerk?.__internal_openReverification({
+        level: 'first_factor',
+        afterVerification: () => {
+          void this.clerk?.session?.getToken({ skipCache: true }).finally(() => resolve(true));
+        },
+        afterVerificationCancelled: () => resolve(false),
+      });
+    });
   }
 
   async signOut(): Promise<void> {
@@ -145,8 +161,8 @@ export class AuthService {
     this.clerkUserState.set(this.clerk?.user ?? null);
     const activeSessionId = this.clerk?.session?.id ?? null;
     if (
-      activeSessionId === null
-      || (this.resolvedSessionId !== null && this.resolvedSessionId !== activeSessionId)
+      activeSessionId === null ||
+      (this.resolvedSessionId !== null && this.resolvedSessionId !== activeSessionId)
     ) {
       this.clearResolvedAppSession();
     }
