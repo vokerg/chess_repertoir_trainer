@@ -23,7 +23,9 @@ import prisma from '../prisma';
  * which is acceptable for v1 as sessions are short-lived.
  */
 const activeSessions: Map<number, { state: TrainingState; subline: HashedAvailableSublineDto }> = new Map();
-const FINALIZE_SESSION_TRANSACTION_TIMEOUT_MS = 15_000;
+// Finalization updates the session, attempt, review schedule, and activity aggregate
+// atomically. Allow enough time for the activity aggregate lock under CI/load.
+const FINALIZE_SESSION_TRANSACTION_TIMEOUT_MS = 60_000;
 
 export class PreparedLineStaleError extends Error {}
 
