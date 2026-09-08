@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import prismaModule from '../../dist/prisma.js';
 import { loadPositionCleanupConfig } from '../../dist/modules/position-cleanup/position-cleanup.config.js';
+import { PositionCleanupRepository } from '../../dist/modules/position-cleanup/position-cleanup.repository.prisma.js';
 import { createPositionCleanupService, POSITION_CLEANUP_EXECUTE_CONFIRMATION } from '../../dist/modules/position-cleanup/position-cleanup.service.js';
 import { createPositionCleanupWorker } from '../../dist/modules/position-cleanup/position-cleanup.worker.service.js';
 import { isPositionCleanupTerminal } from '../../dist/modules/position-cleanup/position-cleanup.types.js';
@@ -18,7 +19,27 @@ const config = loadPositionCleanupConfig({
   POSITION_CLEANUP_STALE_AFTER_MS: '5000',
 });
 const service = createPositionCleanupService({ config, now: () => nowMs });
-const worker = createPositionCleanupWorker({ config, now: () => nowMs, logger: { info() {}, warn() {}, error() {} } });
+const diagnosticRepository = {
+  ...PositionCleanupRepository,
+  async executeDeleteBatch(...args) {
+    try {
+      return await PositionCleanupRepository.executeDeleteBatch(...args);
+    } catch (error) {
+      console.error('Position cleanup execute diagnostic', {
+        code: error?.code,
+        message: error instanceof Error ? error.message : String(error),
+        meta: error?.meta,
+      });
+      throw error;
+    }
+  },
+};
+const worker = createPositionCleanupWorker({
+  config,
+  repository: diagnosticRepository,
+  now: () => nowMs,
+  logger: { info() {}, warn() {}, error() {} },
+});
 const suffix = randomUUID();
 const positionIds = [];
 
