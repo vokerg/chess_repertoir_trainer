@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { PrismaClient } from '@prisma/client';
 import prismaModule from '../../dist/prisma.js';
 import { loadPositionCleanupConfig } from '../../dist/modules/position-cleanup/position-cleanup.config.js';
 import { PositionCleanupRepository } from '../../dist/modules/position-cleanup/position-cleanup.repository.prisma.js';
@@ -8,6 +9,7 @@ import { createPositionCleanupWorker } from '../../dist/modules/position-cleanup
 import { isPositionCleanupTerminal } from '../../dist/modules/position-cleanup/position-cleanup.types.js';
 
 const prisma = prismaModule.default;
+const monitorClient = new PrismaClient();
 const nowMs = Date.parse('2026-09-07T04:00:00.000Z');
 const cutoff = new Date(nowMs - 30 * 24 * 60 * 60_000);
 const config = loadPositionCleanupConfig({
@@ -42,6 +44,7 @@ const worker = createPositionCleanupWorker({
 });
 const suffix = randomUUID();
 const positionIds = [];
+let activitySnapshotPromise = Promise.resolve();
 
 async function createPosition(label) {
   const position = await prisma.position.create({
@@ -80,6 +83,22 @@ async function runToTerminal(runId) {
     assert.equal(await worker.runOnce(), true);
   }
   throw new Error(`Cleanup run ${runId} did not become terminal.`);
+}
+
+async function snapshotActiveQueries() {
+  const rows = await monitorClient.$queryRaw`
+    SELECT pid,
+           state,
+           "wait_event_type" AS "waitEventType",
+           "wait_event" AS "waitEvent",
+           LEFT(query, 1200) AS query
+    FROM pg_stat_activity
+    WHERE datname = current_database()
+      AND pid <> pg_backend_pid()
+      AND state <> 'idle'
+    ORDER BY pid
+  `;
+  console.error('Position cleanup pg_stat_activity diagnostic', rows);
 }
 
 try {
@@ -141,7 +160,15 @@ try {
   });
   assert.equal(executeRun.graceCutoff.getTime(), cutoff.getTime());
   await targetRun(executeRun.id, firstPositionId, lastPositionId);
+  const activityTimer = setTimeout(() => {
+    activitySnapshotPromise = snapshotActiveQueries().catch((error) => {
+      console.error('Position cleanup pg_stat_activity diagnostic failed', error);
+    });
+  }, 1500);
+  activityTimer.unref();
   const executeCompleted = await runToTerminal(executeRun.id);
+  clearTimeout(activityTimer);
+  await activitySnapshotPromise;
 
   assert.equal(
     executeCompleted.status,
@@ -176,4 +203,5 @@ try {
   if (positionIds.length > 0) {
     await prisma.position.deleteMany({ where: { id: { in: positionIds } } }).catch(() => {});
   }
+  await monitorClient.$disconnect();
 }
