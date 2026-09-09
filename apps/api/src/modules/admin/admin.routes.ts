@@ -482,50 +482,78 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
     },
   });
 
-  for (const [method, suffix, operationId] of [
-    ['GET', '', 'getAdminAccountGameDataLifecycle'],
-    ['POST', '/stop', 'stopAdminAccountGameDataLifecycle'],
-  ] as const) {
-    app.route({
-      method,
-      url: `/api/admin/users/:userId/data-lifecycle/:operationId${suffix}`,
-      schema: {
-        operationId,
-        tags: ['Administrator lifecycle'],
-        summary:
-          method === 'GET'
-            ? 'Get an administrator lifecycle operation'
-            : 'Request an administrator lifecycle operation stop',
-        params: adminLifecycleParamsSchema,
-        response: {
-          200: dataLifecycleOperationResponseSchema,
-          400: validationErrorResponseSchema,
-          401: unauthorizedResponseSchema,
-          403: adminErrorResponseSchema,
-          404: dataLifecycleErrorResponseSchema,
-          409: dataLifecycleErrorResponseSchema,
-          500: adminLifecycleUnavailableResponseSchema,
-        },
+  app.route({
+    method: 'GET',
+    url: '/api/admin/users/:userId/data-lifecycle/:operationId',
+    schema: {
+      operationId: 'getAdminAccountGameDataLifecycle',
+      tags: ['Administrator lifecycle'],
+      summary: 'Get an administrator lifecycle operation',
+      description: 'Reads the current canonical lifecycle state without mutating it.',
+      params: adminLifecycleParamsSchema,
+      response: {
+        200: dataLifecycleOperationResponseSchema,
+        400: validationErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        403: adminErrorResponseSchema,
+        404: dataLifecycleErrorResponseSchema,
+        409: dataLifecycleErrorResponseSchema,
+        500: adminLifecycleUnavailableResponseSchema,
       },
-      handler: async (request, reply) => {
-        const principal = await requirePrincipal(
-          request,
-          reply,
-          operationId,
-          Date.now(),
-          'ADMIN_LIFECYCLE_PREVIEW',
-        );
-        if (!principal) return;
-        try {
-          return method === 'GET'
-            ? await lifecycleService.get(request.params.userId, request.params.operationId)
-            : await lifecycleService.requestStop(request.params.userId, request.params.operationId);
-        } catch (error) {
-          return mapAdminLifecycleError(error, reply);
-        }
+    },
+    handler: async (request, reply) => {
+      const principal = await requirePrincipal(
+        request,
+        reply,
+        'getAdminAccountGameDataLifecycle',
+        Date.now(),
+        'ADMIN_LIFECYCLE_PREVIEW',
+      );
+      if (!principal) return;
+      try {
+        return await lifecycleService.get(request.params.userId, request.params.operationId);
+      } catch (error) {
+        return mapAdminLifecycleError(error, reply);
+      }
+    },
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/api/admin/users/:userId/data-lifecycle/:operationId/stop',
+    schema: {
+      operationId: 'stopAdminAccountGameDataLifecycle',
+      tags: ['Administrator lifecycle'],
+      summary: 'Request an administrator lifecycle operation stop',
+      description:
+        'Before the first destructive commit this requests terminal cancellation. After mutation begins it requests a stop at the next transaction boundary and the operation remains fenced in NEEDS_ATTENTION until explicitly resumed.',
+      params: adminLifecycleParamsSchema,
+      response: {
+        200: dataLifecycleOperationResponseSchema,
+        400: validationErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        403: adminErrorResponseSchema,
+        404: dataLifecycleErrorResponseSchema,
+        409: dataLifecycleErrorResponseSchema,
+        500: adminLifecycleUnavailableResponseSchema,
       },
-    });
-  }
+    },
+    handler: async (request, reply) => {
+      const principal = await requirePrincipal(
+        request,
+        reply,
+        'stopAdminAccountGameDataLifecycle',
+        Date.now(),
+        'ADMIN_LIFECYCLE_EXECUTE',
+      );
+      if (!principal) return;
+      try {
+        return await lifecycleService.requestStop(request.params.userId, request.params.operationId);
+      } catch (error) {
+        return mapAdminLifecycleError(error, reply);
+      }
+    },
+  });
 };
 
 function mapAdminLifecycleError(error: unknown, reply: FastifyReply): any {
