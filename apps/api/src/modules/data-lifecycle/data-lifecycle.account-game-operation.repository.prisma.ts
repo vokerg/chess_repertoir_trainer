@@ -28,6 +28,8 @@ interface ClaimedOperationRow {
   targetUserId: number;
 }
 
+type AdminReverificationBinding = Parameters<typeof bindAdminReverificationUse>[1];
+
 export interface AccountGameDataLifecycleOperationRepository {
   claimNext(workKey: string): Promise<StoredDataLifecycleOperation | null>;
   releaseClaim(operationId: number, workKey: string): Promise<boolean>;
@@ -146,7 +148,7 @@ export function createAccountGameDataLifecycleOperationRepository(
             'A lifecycle operation without an active fence cannot resume destructive execution.',
           );
         }
-        await bindAdminReverificationUse(transaction, {
+        await bindUnusedAdminReverificationUse(transaction, {
           operationId: operation.id,
           actorKeyVersion: operation.actorKeyVersion,
           actorKeyHash: operation.actorKeyHash,
@@ -188,6 +190,36 @@ export function createAccountGameDataLifecycleOperationRepository(
       return operation;
     },
   };
+}
+
+async function bindUnusedAdminReverificationUse(
+  transaction: Prisma.TransactionClient,
+  binding: AdminReverificationBinding,
+): Promise<void> {
+  const reverificationIdHash = binding.verification?.['reverificationIdHash'];
+  if (reverificationIdHash == null) {
+    await bindAdminReverificationUse(transaction, binding);
+    return;
+  }
+  if (typeof reverificationIdHash !== 'string') {
+    throw new Error('reverificationIdHash must be a string.');
+  }
+  validateSha256(reverificationIdHash, 'reverificationIdHash');
+
+  await transaction.$executeRaw(Prisma.sql`
+    SELECT pg_advisory_xact_lock(hashtext(${`admin-reverification:${reverificationIdHash}`}))
+  `);
+  const existing = await transaction.adminReverificationUse.findUnique({
+    where: { reverificationIdHash },
+    select: { id: true },
+  });
+  if (existing) {
+    throw new DataLifecycleInvalidStateError(
+      'Administrator reverification evidence was already used.',
+    );
+  }
+
+  await bindAdminReverificationUse(transaction, binding);
 }
 
 function validatePositiveInteger(value: number, label: string): void {
