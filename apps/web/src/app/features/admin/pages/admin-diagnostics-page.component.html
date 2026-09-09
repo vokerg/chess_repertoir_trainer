@@ -86,7 +86,7 @@
               >Action
               <select
                 [ngModel]="store.lifecycleAction()"
-                (ngModelChange)="store.lifecycleAction.set($event)"
+                (ngModelChange)="store.setLifecycleAction($event)"
               >
                 <option value="PURGE_ACCOUNT_DATA">Purge account data</option>
                 <option value="DELETE_EXTERNAL_ACCOUNT">Delete external account</option>
@@ -100,7 +100,7 @@
                 type="number"
                 min="1"
                 [ngModel]="store.lifecycleAccountId()"
-                (ngModelChange)="store.lifecycleAccountId.set($event)"
+                (ngModelChange)="store.setLifecycleAccountId($event)"
             /></label>
             @if (
               store.lifecycleAction() === 'UNANALYSE_GAMES' ||
@@ -112,7 +112,7 @@
                   type="text"
                   placeholder="12, 15, 19"
                   [ngModel]="store.lifecycleGameIds()"
-                  (ngModelChange)="store.lifecycleGameIds.set($event)"
+                  (ngModelChange)="store.setLifecycleGameIds($event)"
               /></label>
             }
             <button
@@ -181,4 +181,6 @@
       }
     }
   }
+
+  <app-reverification-dialog />
 </section>
