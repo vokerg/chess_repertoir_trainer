@@ -115,6 +115,8 @@ export class AdminDiagnosticsStore {
     this.workError.set(null);
     this.detailState.set('loading');
     this.workState.set('loading');
+    this.invalidateLifecyclePreview();
+    this.lifecycleOperation.set(null);
 
     await Promise.all([
       this.loadDetail(userId, requestSequence),
@@ -128,7 +130,28 @@ export class AdminDiagnosticsStore {
     await this.selectUser(userId);
   }
 
+  setLifecycleAction(value: AccountGameDataLifecycleAction): void {
+    if (this.lifecycleAction() === value) return;
+    this.lifecycleAction.set(value);
+    this.invalidateLifecyclePreview();
+  }
+
+  setLifecycleAccountId(value: string | number | null): void {
+    const nextValue = value == null ? '' : String(value);
+    if (this.lifecycleAccountId() === nextValue) return;
+    this.lifecycleAccountId.set(nextValue);
+    this.invalidateLifecyclePreview();
+  }
+
+  setLifecycleGameIds(value: string | null): void {
+    const nextValue = value ?? '';
+    if (this.lifecycleGameIds() === nextValue) return;
+    this.lifecycleGameIds.set(nextValue);
+    this.invalidateLifecyclePreview();
+  }
+
   async previewLifecycle(): Promise<void> {
+    this.invalidateLifecyclePreview();
     const userId = this.selectedUserId();
     const accountId = Number(this.lifecycleAccountId());
     if (!userId || !Number.isSafeInteger(accountId) || accountId < 1) {
@@ -299,6 +322,16 @@ export class AdminDiagnosticsStore {
     this.clearSelection();
   }
 
+  private invalidateLifecyclePreview(): void {
+    this.lifecyclePreview.set(null);
+    this.lifecycleConfirmation.set('');
+    this.lifecycleIdempotencyKey = null;
+    if (this.lifecycleOperation()?.status === 'PREVIEWED') {
+      this.lifecycleOperation.set(null);
+    }
+    this.lifecycleError.set(null);
+  }
+
   private clearSelection(): void {
     this.selectedUserId.set(null);
     this.detail.set(null);
@@ -309,6 +342,7 @@ export class AdminDiagnosticsStore {
     this.workError.set(null);
     this.lifecyclePreview.set(null);
     this.lifecycleOperation.set(null);
+    this.lifecycleConfirmation.set('');
     this.lifecycleError.set(null);
     this.lifecycleIdempotencyKey = null;
   }
