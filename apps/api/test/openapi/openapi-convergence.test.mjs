@@ -91,6 +91,7 @@ const bodylessActions = new Map([
   ['POST /api/me/onboarding/runs/{runId}/retry', 'run id selects persisted failed preparation evidence eligible for a retry generation'],
   ['POST /api/me/onboarding/runs/{runId}/restart', 'run id supplies the persisted immutable preparation scope and recovery lineage'],
   ['POST /api/me/data-lifecycle/{operationId}/stop', 'Before the first destructive commit this requests terminal cancellation'],
+  ['POST /api/admin/users/{userId}/data-lifecycle/{operationId}/stop', 'Before the first destructive commit this requests terminal cancellation'],
 ]);
 
 for (const { method, path, operation } of operations.filter(({ method }) => ['post', 'patch', 'put'].includes(method))) {
