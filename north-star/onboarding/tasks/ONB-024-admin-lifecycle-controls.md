@@ -10,6 +10,8 @@ Delivery class: Implementation
 
 GitHub issue: [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274)
 
+Pull request: [#417](https://github.com/vokerg/chess_repertoir_trainer/pull/417)
+
 Target branch: `main`
 
 Suggested branch: `admin/onb-024-lifecycle-controls`

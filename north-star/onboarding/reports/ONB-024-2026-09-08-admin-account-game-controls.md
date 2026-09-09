@@ -1,5 +1,7 @@
 # ONB-024 account/game administrator lifecycle controls
 
+Pull request: [#417](https://github.com/vokerg/chess_repertoir_trainer/pull/417)
+
 ## Outcome
 
 The administrator page now previews and controls the four canonical ONB-020 account/game lifecycle actions without duplicating destructive orchestration. The API resolves administrator authority and target identity, then delegates to the existing coordinator.
