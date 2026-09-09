@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ReverificationDialogComponent } from '../../../core/auth/reverification-dialog.component';
 import { AdminUserDiagnosticsComponent } from '../components/admin-user-diagnostics.component';
 import { AdminUserListComponent } from '../components/admin-user-list.component';
 import { AdminApiService } from '../data-access/admin-api.service';
@@ -25,6 +26,7 @@ import { PanelComponent } from '../../../shared/ui/panel/panel.component';
     PageHeaderComponent,
     PanelComponent,
     FormsModule,
+    ReverificationDialogComponent,
   ],
   providers: [AdminApiService, AdminDiagnosticsStore],
   templateUrl: './admin-diagnostics-page.component.html',
