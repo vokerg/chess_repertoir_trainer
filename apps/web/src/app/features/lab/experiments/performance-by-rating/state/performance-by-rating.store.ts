@@ -199,7 +199,7 @@ export class PerformanceByRatingStore {
     try {
       this.normalizationProfile.set(await firstValueFrom(this.api.getRatingNormalizationProfile()));
     } catch {
-      this.normalizationError.set('Could not load the rating grade reference.');
+      this.normalizationError.set('Could not load the rating comparison guide.');
     } finally {
       this.normalizationLoading.set(false);
     }
