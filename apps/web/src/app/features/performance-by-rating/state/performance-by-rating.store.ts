@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import type { PerformanceByRatingRow, PerformanceReportType } from '@chess-trainer/contracts/lab';
+import type { PerformanceByRatingRow, PerformanceReportType } from '@chess-trainer/contracts/performance-by-rating';
 import type { RatingNormalizationProfile } from '@chess-trainer/contracts/rating-normalization';
 import { PerformanceByRatingApiService } from '../data-access/performance-by-rating-api.service';
 
