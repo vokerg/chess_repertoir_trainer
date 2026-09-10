@@ -38,6 +38,11 @@ describe('MainNavigationComponent', () => {
           { path: 'builder', component: TestRouteComponent },
           { path: 'progress', component: TestRouteComponent },
           { path: 'progress/performance-by-rating', component: TestRouteComponent },
+          {
+            path: 'lab/performance-by-rating',
+            redirectTo: '/progress/performance-by-rating',
+            pathMatch: 'full',
+          },
         ]),
       ],
     }).compileComponents();
@@ -148,7 +153,7 @@ describe('MainNavigationComponent', () => {
     expect(fixture.nativeElement.querySelector('.rail-flyout-backdrop')).toBeNull();
   });
 
-  it('exposes performance by rating under Progress and marks Progress active on the report route', async () => {
+  it('exposes performance by rating under Progress with exact child activity', async () => {
     const disclosure = fixture.nativeElement.querySelector(
       '[aria-label="Show Progress submenu"]',
     ) as HTMLButtonElement;
@@ -168,6 +173,36 @@ describe('MainNavigationComponent', () => {
       fixture.nativeElement.querySelectorAll('.rail-nav-link') as NodeListOf<HTMLAnchorElement>,
     ).find((link) => link.textContent?.includes('Progress'));
     expect(progressLink?.closest('.rail-nav-node')?.classList).toContain('rail-nav-node-active');
+
+    disclosure.click();
+    fixture.detectChanges();
+
+    const activeReportLink = fixture.nativeElement.querySelector(
+      '.rail-inline-item[href="/progress/performance-by-rating"]',
+    ) as HTMLAnchorElement;
+    const accountPerformanceLink = fixture.nativeElement.querySelector(
+      '.rail-inline-item[href="/progress"]',
+    ) as HTMLAnchorElement;
+    expect(activeReportLink.classList).toContain('rail-inline-item-active');
+    expect(activeReportLink.getAttribute('aria-current')).toBe('page');
+    expect(accountPerformanceLink.classList).not.toContain('rail-inline-item-active');
+  });
+
+  it('redirects the former Lab report URL into Progress navigation', async () => {
+    await router.navigateByUrl('/lab/performance-by-rating');
+    fixture.detectChanges();
+
+    expect(router.url).toBe('/progress/performance-by-rating');
+
+    const progressLink = Array.from(
+      fixture.nativeElement.querySelectorAll('.rail-nav-link') as NodeListOf<HTMLAnchorElement>,
+    ).find((link) => link.textContent?.includes('Progress'));
+    const toolsLink = Array.from(
+      fixture.nativeElement.querySelectorAll('.rail-nav-link') as NodeListOf<HTMLAnchorElement>,
+    ).find((link) => link.textContent?.includes('Tools'));
+
+    expect(progressLink?.closest('.rail-nav-node')?.classList).toContain('rail-nav-node-active');
+    expect(toolsLink?.closest('.rail-nav-node')?.classList).not.toContain('rail-nav-node-active');
   });
 
   it('allows only one expanded-rail parent to be open at a time', () => {
