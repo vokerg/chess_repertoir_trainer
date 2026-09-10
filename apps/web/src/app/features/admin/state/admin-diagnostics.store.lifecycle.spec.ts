@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AdminApiService } from '../data-access/admin-api.service';
 import { AdminDiagnosticsStore } from './admin-diagnostics.store';
@@ -59,6 +59,51 @@ describe('AdminDiagnosticsStore lifecycle preview safety', () => {
     await store.executeLifecycle();
     expect(auth.reverify).not.toHaveBeenCalled();
     expect(api.executeLifecycle).not.toHaveBeenCalled();
+  });
+
+  it('does not install a preview response after its lifecycle inputs changed in flight', async () => {
+    const preview = lifecyclePreview();
+    const response = new Subject<ReturnType<typeof lifecyclePreview>>();
+    store.lifecycleAccountId.set('5');
+    api.previewLifecycle.and.returnValue(response.asObservable());
+
+    const previewRequest = store.previewLifecycle();
+    await Promise.resolve();
+    store.setLifecycleAccountId('6');
+    response.next(preview);
+    response.complete();
+    await previewRequest;
+
+    expect(store.lifecyclePreview()).toBeNull();
+    expect(store.lifecycleOperation()).toBeNull();
+    expect(store.lifecycleConfirmation()).toBe('');
+  });
+
+  it('does not submit an old preview when inputs change during reverification', async () => {
+    const preview = lifecyclePreview();
+    store.lifecycleAccountId.set('5');
+    api.previewLifecycle.and.returnValue(of(preview));
+    await store.previewLifecycle();
+    store.lifecycleConfirmation.set(preview.confirmationPhrase);
+
+    let finishReverification!: (result: boolean) => void;
+    auth.reverify.and.returnValue(
+      new Promise<boolean>((resolve) => {
+        finishReverification = resolve;
+      }),
+    );
+
+    const execution = store.executeLifecycle();
+    await Promise.resolve();
+    store.setLifecycleAccountId('6');
+    finishReverification(true);
+    await execution;
+
+    expect(api.executeLifecycle).not.toHaveBeenCalled();
+    expect(store.lifecyclePreview()).toBeNull();
+    expect(store.lifecycleError()).toBe(
+      'Lifecycle inputs changed during reverification. Preview and confirm again.',
+    );
   });
 });
 
