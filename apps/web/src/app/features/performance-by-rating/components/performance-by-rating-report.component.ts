@@ -7,12 +7,12 @@ import type {
 import type { RatingPool, RatingRange } from '@chess-trainer/contracts/rating-normalization';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { type UiShellAction } from '../../../shared/ui/ui-shell.model';
-import { PerformanceByRatingApiService } from './data-access/performance-by-rating-api.service';
+import { PerformanceByRatingApiService } from '../data-access/performance-by-rating-api.service';
 import {
   PerformanceByRatingStore,
   PerformanceColumnId,
   PERFORMANCE_REPORT_TYPES,
-} from './state/performance-by-rating.store';
+} from '../state/performance-by-rating.store';
 
 interface ColumnDefinition {
   id: PerformanceColumnId;
