@@ -275,10 +275,10 @@ describe('PerformanceByRatingExperimentComponent', () => {
     expect(reference.querySelector('.reference-state')?.textContent).toContain('Loading');
 
     normalizationLoading.set(false);
-    normalizationError.set('Could not load the rating grade reference.');
+    normalizationError.set('Could not load the rating comparison guide.');
     fixture.detectChanges();
     expect(reference.querySelector('[role="alert"]')?.textContent?.trim()).toBe(
-      'Could not load the rating grade reference.',
+      'Could not load the rating comparison guide.',
     );
 
     normalizationError.set(null);
