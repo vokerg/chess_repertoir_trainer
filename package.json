@@ -70,6 +70,7 @@
     "@babel/core": "7.29.7",
     "@hono/node-server": "1.19.15",
     "esbuild": "0.28.1",
+    "fastify": "5.12.3",
     "hono": "4.12.34",
     "jayson": {
       "uuid": "11.1.1",
