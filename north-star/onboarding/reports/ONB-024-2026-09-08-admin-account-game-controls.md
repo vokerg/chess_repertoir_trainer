@@ -15,6 +15,7 @@ The administrator page now previews and controls the four canonical ONB-020 acco
 - A uniquely persisted one-use record for every consumed reverification identifier, bound to actor, target, action, preview, operation, and idempotency key, including partial-operation resume.
 - Bounded lifecycle operation and pseudonymous audit summaries in recent-work diagnostics.
 - Angular action selection, exact impact preview, typed confirmation, Clerk reverification, durable state refresh, and stop request.
+- Client-side invalidation guards that discard stale preview responses and re-check the bound preview after reverification before execution.
 - OpenAPI route schemas, shared capability/error contracts, focused route/store/data-access tests, and operator documentation.
 
 ## Boundaries
@@ -27,19 +28,14 @@ Apply migration `20260908213000_add_admin_reverification_use`. Configure Clerk's
 
 ## Validation
 
-Passed:
+Pull-request CI is the authoritative final validation for the current head and runs the repository's dependency audit, lint, build, architecture and hygiene guardrails, database migrations, and full test suites.
 
-- `npm run build`;
-- `npm run lint`;
-- `npm run check:architecture`;
-- `npm run check:hygiene`;
-- `npm run test:contracts`;
-- full web suite: 529 tests;
-- full mobile suite: 22 tests;
-- focused administrator web suite: 17 tests;
-- isolated administrator reverification binding test;
-- Prisma format, client generation, and schema validation.
+Focused regression coverage includes:
 
-`npm test` passed the dependency audit, domain suite (59 tests), contracts, API build, trap validation, and initial API integration tests, then stopped at the pre-existing shared-database `AppUser(authProvider, authSubject)` collision for `dev-single-user`. It expected HTTP 410 and received Prisma `P2002`/HTTP 500 in `account-import.compatibility-routes.test.mjs`; no project migration was applied to that shared remote database.
+- administrator capability and target-authorization boundaries;
+- one-use reverification binding for initial execution and partial resume;
+- supported Clerk session reverification plus fail-closed token refresh;
+- OpenAPI bodyless stop-action convergence;
+- stale-preview invalidation, including input changes while preview or reverification work is in flight.
 
 Browser validation against a real configured Clerk instance remains a deployment-environment check.
