@@ -28,6 +28,7 @@ export class AdminDiagnosticsStore {
   private capabilityRequestSequence = 0;
   private userListRequestSequence = 0;
   private selectionRequestSequence = 0;
+  private lifecyclePreviewGeneration = 0;
   private userListRetryCursor: string | null = null;
   private userListRetryPageNumber = 1;
 
@@ -152,6 +153,7 @@ export class AdminDiagnosticsStore {
 
   async previewLifecycle(): Promise<void> {
     this.invalidateLifecyclePreview();
+    const previewGeneration = this.lifecyclePreviewGeneration;
     const userId = this.selectedUserId();
     const accountId = Number(this.lifecycleAccountId());
     if (!userId || !Number.isSafeInteger(accountId) || accountId < 1) {
@@ -175,11 +177,13 @@ export class AdminDiagnosticsStore {
     this.lifecycleError.set(null);
     try {
       const preview = await firstValueFrom(this.api.previewLifecycle(userId, request));
+      if (previewGeneration !== this.lifecyclePreviewGeneration) return;
       this.lifecyclePreview.set(preview);
       this.lifecycleOperation.set(preview);
       this.lifecycleConfirmation.set('');
       this.lifecycleIdempotencyKey = crypto.randomUUID();
     } catch (error) {
+      if (previewGeneration !== this.lifecyclePreviewGeneration) return;
       this.lifecycleError.set(readAdminError(error, 'Could not create lifecycle preview.'));
     } finally {
       this.lifecycleBusy.set(false);
@@ -189,7 +193,13 @@ export class AdminDiagnosticsStore {
   async executeLifecycle(): Promise<void> {
     const userId = this.selectedUserId();
     const preview = this.lifecyclePreview();
-    if (!userId || !preview) return;
+    const confirmationPhrase = this.lifecycleConfirmation();
+    const idempotencyKey = this.lifecycleIdempotencyKey;
+    if (!userId || !preview || !idempotencyKey) return;
+    if (confirmationPhrase !== preview.confirmationPhrase) {
+      this.lifecycleError.set('Enter the exact lifecycle confirmation phrase.');
+      return;
+    }
     this.lifecycleBusy.set(true);
     this.lifecycleError.set(null);
     try {
@@ -197,11 +207,22 @@ export class AdminDiagnosticsStore {
         this.lifecycleError.set('Reverification was cancelled or is unavailable.');
         return;
       }
+      if (
+        this.selectedUserId() !== userId ||
+        this.lifecyclePreview() !== preview ||
+        this.lifecycleConfirmation() !== confirmationPhrase ||
+        this.lifecycleIdempotencyKey !== idempotencyKey
+      ) {
+        this.lifecycleError.set(
+          'Lifecycle inputs changed during reverification. Preview and confirm again.',
+        );
+        return;
+      }
       const operation = await firstValueFrom(
         this.api.executeLifecycle(userId, preview.operationId, {
           previewToken: preview.previewToken,
-          confirmationPhrase: this.lifecycleConfirmation(),
-          idempotencyKey: this.lifecycleIdempotencyKey ?? crypto.randomUUID(),
+          confirmationPhrase,
+          idempotencyKey,
         }),
       );
       this.lifecycleOperation.set(operation);
@@ -323,6 +344,7 @@ export class AdminDiagnosticsStore {
   }
 
   private invalidateLifecyclePreview(): void {
+    this.lifecyclePreviewGeneration += 1;
     this.lifecyclePreview.set(null);
     this.lifecycleConfirmation.set('');
     this.lifecycleIdempotencyKey = null;
@@ -340,11 +362,8 @@ export class AdminDiagnosticsStore {
     this.work.set(null);
     this.workState.set('idle');
     this.workError.set(null);
-    this.lifecyclePreview.set(null);
+    this.invalidateLifecyclePreview();
     this.lifecycleOperation.set(null);
-    this.lifecycleConfirmation.set('');
-    this.lifecycleError.set(null);
-    this.lifecycleIdempotencyKey = null;
   }
 }
 
