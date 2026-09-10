@@ -74,5 +74,5 @@ export function accuracyLabel(value?: number | null): string {
 export function gameStatusLabel(game: ImportedGameSearchItem): string {
   if (game.analysis?.status === 'COMPLETED') return 'Analysed';
   if (game.plyIndex?.status === 'INDEXED') return 'Indexed';
-  return 'Not indexed';
+  return 'New';
 }
