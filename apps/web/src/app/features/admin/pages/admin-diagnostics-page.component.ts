@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ReverificationDialogComponent } from '../../../core/auth/reverification-dialog.component';
 import { AdminUserDiagnosticsComponent } from '../components/admin-user-diagnostics.component';
 import { AdminUserListComponent } from '../components/admin-user-list.component';
 import { AdminApiService } from '../data-access/admin-api.service';
@@ -8,7 +10,10 @@ import {
   type PageHeaderAction,
   type PageHeaderStat,
 } from '../../../shared/ui/page-header/page-header.component';
-import { FactGridComponent, type UiFactItem } from '../../../shared/ui/fact-grid/fact-grid.component';
+import {
+  FactGridComponent,
+  type UiFactItem,
+} from '../../../shared/ui/fact-grid/fact-grid.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 
 @Component({
@@ -20,6 +25,8 @@ import { PanelComponent } from '../../../shared/ui/panel/panel.component';
     FactGridComponent,
     PageHeaderComponent,
     PanelComponent,
+    FormsModule,
+    ReverificationDialogComponent,
   ],
   providers: [AdminApiService, AdminDiagnosticsStore],
   templateUrl: './admin-diagnostics-page.component.html',
@@ -53,7 +60,12 @@ export class AdminDiagnosticsPageComponent implements OnInit {
     const capability = this.store.capability();
     if (!capability) return [];
     return [
-      { id: 'actor-key-version', label: 'Actor key version', value: capability.actorKeyVersion, mono: true },
+      {
+        id: 'actor-key-version',
+        label: 'Actor key version',
+        value: capability.actorKeyVersion,
+        mono: true,
+      },
       { id: 'budget', label: 'Request budget', value: capability.requestBudget.enforcement },
       {
         id: 'verified-session',

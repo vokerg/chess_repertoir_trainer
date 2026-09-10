@@ -1,4 +1,16 @@
 import prisma from '../../prisma';
+import {
+  dataLifecycleActionSchema,
+  dataLifecycleOperationStatusSchema,
+  dataLifecyclePreviewCountsSchema,
+  dataLifecycleResourceTypeSchema,
+  dataLifecycleTerminalResultSchema,
+  type DataLifecycleAction,
+  type DataLifecycleOperationStatus,
+  type DataLifecyclePreviewCounts,
+  type DataLifecycleResourceType,
+  type DataLifecycleTerminalResult,
+} from '@chess-trainer/contracts/data-lifecycle';
 
 const TERMINAL_JOB_STATUSES = ['COMPLETED', 'PARTIALLY_FAILED', 'FAILED', 'CANCELLED'];
 const TERMINAL_PREPARATION_STATUSES = ['COMPLETED', 'FAILED', 'CANCELLED'];
@@ -105,8 +117,38 @@ export interface AdminPreparationRow {
   completedAt: Date | null;
 }
 
+export interface AdminLifecycleOperationRow {
+  id: number;
+  action: DataLifecycleAction;
+  status: DataLifecycleOperationStatus;
+  resourceType: DataLifecycleResourceType;
+  aggregateCounts: DataLifecyclePreviewCounts;
+  terminalResult: DataLifecycleTerminalResult | null;
+  errorCode: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AdminLifecycleAuditRow {
+  id: number;
+  operationId: number;
+  eventType: string;
+  action: DataLifecycleAction;
+  status: DataLifecycleOperationStatus | null;
+  resourceType: DataLifecycleResourceType | null;
+  aggregateCounts: DataLifecyclePreviewCounts | null;
+  reasonCode: string | null;
+  errorCode: string | null;
+  confirmationMethod: string | null;
+  terminalResult: DataLifecycleTerminalResult | null;
+  createdAt: Date;
+}
+
 export interface AdminDiagnosticsRepositoryBoundary {
-  listUsers(input: { cursorId?: number; limit: number }): Promise<{ rows: AdminUserListRow[]; hasMore: boolean }>;
+  listUsers(input: {
+    cursorId?: number;
+    limit: number;
+  }): Promise<{ rows: AdminUserListRow[]; hasMore: boolean }>;
   getUser(userId: number): Promise<AdminUserRow | null>;
   loadAccounts(userId: number): Promise<AdminAccountSectionRow[]>;
   loadGames(userId: number): Promise<AdminGamesSectionRows>;
@@ -115,12 +157,22 @@ export interface AdminDiagnosticsRepositoryBoundary {
   loadPreparationSummary(userId: number): Promise<AdminPreparationSectionRows>;
   loadFootprint(userId: number): Promise<AdminFootprintSectionRows>;
   loadJobs(userId: number, limit: number): Promise<AdminJobRow[]>;
-  loadImports(userId: number, limit: number): Promise<{
+  loadImports(
+    userId: number,
+    limit: number,
+  ): Promise<{
     rows: AdminImportRow[];
     queuedCount: number;
     oldestQueuedStartedAt: Date | null;
   }>;
   loadPreparationRuns(userId: number, limit: number): Promise<AdminPreparationRow[]>;
+  loadLifecycle(
+    userId: number,
+    limit: number,
+  ): Promise<{
+    operations: AdminLifecycleOperationRow[];
+    auditEvents: AdminLifecycleAuditRow[];
+  }>;
 }
 
 function countMap(rows: Array<{ userId: number; _count: { _all: number } }>): Map<number, number> {
@@ -152,28 +204,29 @@ export const AdminDiagnosticsRepository: AdminDiagnosticsRepositoryBoundary = {
     const userIds = page.map((user) => user.id);
     if (userIds.length === 0) return { rows: [], hasMore };
 
-    const [activeAccountsRows, activeImportRows, activeJobRows, activePreparationRows] = await Promise.all([
-      prisma.externalAccount.groupBy({
-        by: ['userId'],
-        where: { userId: { in: userIds }, isActive: true },
-        _count: { _all: true },
-      }),
-      prisma.importRun.groupBy({
-        by: ['userId'],
-        where: { userId: { in: userIds }, completedAt: null },
-        _count: { _all: true },
-      }),
-      prisma.jobRun.groupBy({
-        by: ['userId'],
-        where: { userId: { in: userIds }, status: { notIn: TERMINAL_JOB_STATUSES } },
-        _count: { _all: true },
-      }),
-      prisma.dataPreparationRun.groupBy({
-        by: ['userId'],
-        where: { userId: { in: userIds }, status: { notIn: TERMINAL_PREPARATION_STATUSES } },
-        _count: { _all: true },
-      }),
-    ]);
+    const [activeAccountsRows, activeImportRows, activeJobRows, activePreparationRows] =
+      await Promise.all([
+        prisma.externalAccount.groupBy({
+          by: ['userId'],
+          where: { userId: { in: userIds }, isActive: true },
+          _count: { _all: true },
+        }),
+        prisma.importRun.groupBy({
+          by: ['userId'],
+          where: { userId: { in: userIds }, completedAt: null },
+          _count: { _all: true },
+        }),
+        prisma.jobRun.groupBy({
+          by: ['userId'],
+          where: { userId: { in: userIds }, status: { notIn: TERMINAL_JOB_STATUSES } },
+          _count: { _all: true },
+        }),
+        prisma.dataPreparationRun.groupBy({
+          by: ['userId'],
+          where: { userId: { in: userIds }, status: { notIn: TERMINAL_PREPARATION_STATUSES } },
+          _count: { _all: true },
+        }),
+      ]);
 
     const activeAccounts = countMap(activeAccountsRows);
     const activeImports = countMap(activeImportRows);
@@ -190,18 +243,19 @@ export const AdminDiagnosticsRepository: AdminDiagnosticsRepositoryBoundary = {
         importedGameCount: user._count.importedGames,
         courseCount: user._count.courses,
         activeWorkCount:
-          (activeImports.get(user.id) ?? 0)
-          + (activeJobs.get(user.id) ?? 0)
-          + (activePreparation.get(user.id) ?? 0),
+          (activeImports.get(user.id) ?? 0) +
+          (activeJobs.get(user.id) ?? 0) +
+          (activePreparation.get(user.id) ?? 0),
       })),
       hasMore,
     };
   },
 
-  getUser: (userId) => prisma.appUser.findUnique({
-    where: { id: userId },
-    select: { id: true, createdAt: true, updatedAt: true },
-  }),
+  getUser: (userId) =>
+    prisma.appUser.findUnique({
+      where: { id: userId },
+      select: { id: true, createdAt: true, updatedAt: true },
+    }),
 
   async loadAccounts(userId) {
     const rows = await prisma.externalAccount.groupBy({
@@ -218,25 +272,28 @@ export const AdminDiagnosticsRepository: AdminDiagnosticsRepositoryBoundary = {
   },
 
   async loadGames(userId) {
-    const [total, indexed, analysed, indexFailed, notIndexed, speedRows, analysisRows] = await Promise.all([
-      prisma.importedGame.count({ where: { userId } }),
-      prisma.importedGame.count({ where: { userId, plyIndexedAt: { not: null } } }),
-      prisma.importedGame.count({ where: { userId, latestAnalysisCompletedAt: { not: null } } }),
-      prisma.importedGame.count({ where: { userId, plyIndexedAt: null, plyIndexError: { not: null } } }),
-      prisma.importedGame.count({ where: { userId, plyIndexedAt: null, plyIndexError: null } }),
-      prisma.importedGame.groupBy({
-        by: ['speedCategory'],
-        where: { userId },
-        _count: { _all: true },
-        orderBy: { speedCategory: 'asc' },
-      }),
-      prisma.importedGame.groupBy({
-        by: ['latestAnalysisStatus'],
-        where: { userId },
-        _count: { _all: true },
-        orderBy: { latestAnalysisStatus: 'asc' },
-      }),
-    ]);
+    const [total, indexed, analysed, indexFailed, notIndexed, speedRows, analysisRows] =
+      await Promise.all([
+        prisma.importedGame.count({ where: { userId } }),
+        prisma.importedGame.count({ where: { userId, plyIndexedAt: { not: null } } }),
+        prisma.importedGame.count({ where: { userId, latestAnalysisCompletedAt: { not: null } } }),
+        prisma.importedGame.count({
+          where: { userId, plyIndexedAt: null, plyIndexError: { not: null } },
+        }),
+        prisma.importedGame.count({ where: { userId, plyIndexedAt: null, plyIndexError: null } }),
+        prisma.importedGame.groupBy({
+          by: ['speedCategory'],
+          where: { userId },
+          _count: { _all: true },
+          orderBy: { speedCategory: 'asc' },
+        }),
+        prisma.importedGame.groupBy({
+          by: ['latestAnalysisStatus'],
+          where: { userId },
+          _count: { _all: true },
+          orderBy: { latestAnalysisStatus: 'asc' },
+        }),
+      ]);
 
     return {
       total,
@@ -244,7 +301,10 @@ export const AdminDiagnosticsRepository: AdminDiagnosticsRepositoryBoundary = {
       analysed,
       indexFailed,
       notIndexed,
-      bySpeed: speedRows.map((row) => ({ speedCategory: row.speedCategory, count: row._count._all })),
+      bySpeed: speedRows.map((row) => ({
+        speedCategory: row.speedCategory,
+        count: row._count._all,
+      })),
       byAnalysisState: analysisRows.map((row) => ({
         latestAnalysisStatus: row.latestAnalysisStatus,
         count: row._count._all,
@@ -413,19 +473,102 @@ export const AdminDiagnosticsRepository: AdminDiagnosticsRepositoryBoundary = {
     };
   },
 
-  loadPreparationRuns: (userId, limit) => prisma.dataPreparationRun.findMany({
-    where: { userId },
-    orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
-    take: limit,
-    select: {
-      id: true,
-      purpose: true,
-      status: true,
-      attentionCode: true,
-      reconcileAfter: true,
-      createdAt: true,
-      updatedAt: true,
-      completedAt: true,
-    },
-  }),
+  loadPreparationRuns: (userId, limit) =>
+    prisma.dataPreparationRun.findMany({
+      where: { userId },
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+      select: {
+        id: true,
+        purpose: true,
+        status: true,
+        attentionCode: true,
+        reconcileAfter: true,
+        createdAt: true,
+        updatedAt: true,
+        completedAt: true,
+      },
+    }),
+
+  async loadLifecycle(userId, limit) {
+    const operations = await prisma.dataLifecycleOperation.findMany({
+      where: { targetUserId: userId },
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+      select: {
+        id: true,
+        action: true,
+        status: true,
+        scopeResourceType: true,
+        previewCountsJson: true,
+        terminalResult: true,
+        errorCode: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    const operationIds = operations.map((operation) => operation.id);
+    const auditEvents = operationIds.length
+      ? await prisma.dataLifecycleAuditEvent.findMany({
+          where: { operationId: { in: operationIds } },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take: limit,
+          select: {
+            id: true,
+            operationId: true,
+            eventType: true,
+            action: true,
+            status: true,
+            resourceType: true,
+            aggregateCountsJson: true,
+            reasonCode: true,
+            errorCode: true,
+            confirmationMethod: true,
+            terminalResult: true,
+            createdAt: true,
+          },
+        })
+      : [];
+
+    return {
+      operations: operations.map((operation) => ({
+        id: operation.id,
+        action: dataLifecycleActionSchema.parse(operation.action),
+        status: dataLifecycleOperationStatusSchema.parse(operation.status),
+        resourceType: dataLifecycleResourceTypeSchema.parse(operation.scopeResourceType),
+        aggregateCounts: dataLifecyclePreviewCountsSchema.parse(operation.previewCountsJson),
+        terminalResult:
+          operation.terminalResult === null
+            ? null
+            : dataLifecycleTerminalResultSchema.parse(operation.terminalResult),
+        errorCode: operation.errorCode,
+        createdAt: operation.createdAt,
+        updatedAt: operation.updatedAt,
+      })),
+      auditEvents: auditEvents.map((event) => ({
+        id: event.id,
+        operationId: event.operationId,
+        eventType: event.eventType,
+        action: dataLifecycleActionSchema.parse(event.action),
+        status:
+          event.status === null ? null : dataLifecycleOperationStatusSchema.parse(event.status),
+        resourceType:
+          event.resourceType === null
+            ? null
+            : dataLifecycleResourceTypeSchema.parse(event.resourceType),
+        aggregateCounts:
+          event.aggregateCountsJson === null
+            ? null
+            : dataLifecyclePreviewCountsSchema.parse(event.aggregateCountsJson),
+        reasonCode: event.reasonCode,
+        errorCode: event.errorCode,
+        confirmationMethod: event.confirmationMethod,
+        terminalResult:
+          event.terminalResult === null
+            ? null
+            : dataLifecycleTerminalResultSchema.parse(event.terminalResult),
+        createdAt: event.createdAt,
+      })),
+    };
+  },
 };

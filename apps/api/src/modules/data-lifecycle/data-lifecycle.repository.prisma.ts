@@ -29,7 +29,7 @@ const TERMINAL_STATUSES = [
   'EXPIRED',
 ] as const;
 
-type ClaimableStatus = typeof CLAIMABLE_STATUSES[number];
+type ClaimableStatus = (typeof CLAIMABLE_STATUSES)[number];
 
 const ALLOWED_CURRENT_STATUSES_BY_TARGET: Record<ClaimableStatus, readonly ClaimableStatus[]> = {
   FENCING: ['FENCING'],
@@ -45,6 +45,10 @@ interface OperationRow {
   status: string;
   actorUserId: number | null;
   targetUserId: number;
+  actorKeyVersion: number;
+  actorKeyHash: string;
+  targetKeyVersion: number;
+  targetKeyHash: string;
   scopeResourceType: string;
   scopeJson: unknown;
   previewCountsJson: unknown;
@@ -78,6 +82,10 @@ export interface StoredDataLifecycleOperation {
   status: DataLifecycleOperationStatus;
   actorUserId: number | null;
   targetUserId: number;
+  actorKeyVersion: number;
+  actorKeyHash: string;
+  targetKeyVersion: number;
+  targetKeyHash: string;
   scope: DataLifecycleScope;
   previewCounts: DataLifecyclePreviewCounts;
   previewHash: string;
@@ -129,10 +137,23 @@ export interface StartDataLifecycleExecutionInput {
   idempotencyKeyHash: string;
   receiptTokenHash?: string | null;
   receiptExpiresAt?: Date | null;
+  verification?: Record<string, unknown> | null;
   validateBeforeFence?: (
     transaction: Prisma.TransactionClient,
     operation: StoredDataLifecycleOperation,
   ) => Promise<void>;
+}
+
+export interface AdminReverificationBinding {
+  operationId: number;
+  actorKeyVersion: number;
+  actorKeyHash: string;
+  targetKeyVersion: number;
+  targetKeyHash: string;
+  action: string;
+  previewHash: string;
+  idempotencyKeyHash: string;
+  verification?: Record<string, unknown> | null;
 }
 
 export interface DataLifecycleDestructiveTransactionInput {
@@ -211,13 +232,19 @@ export class DataLifecycleClaimLostError extends Error {
 export interface DataLifecycleRepository {
   createPreview(input: CreateDataLifecyclePreviewInput): Promise<StoredDataLifecycleOperation>;
   startExecution(input: StartDataLifecycleExecutionInput): Promise<StoredDataLifecycleOperation>;
-  getForTargetUser(targetUserId: number, operationId: number): Promise<StoredDataLifecycleOperation | null>;
+  getForTargetUser(
+    targetUserId: number,
+    operationId: number,
+  ): Promise<StoredDataLifecycleOperation | null>;
   claimNext(workKey: string): Promise<StoredDataLifecycleOperation | null>;
   heartbeat(operationId: number, workKey: string): Promise<boolean>;
   advanceClaimed(
     operationId: number,
     workKey: string,
-    status: Extract<DataLifecycleOperationStatus, 'FENCING' | 'CANCEL_REQUESTED' | 'WAITING_FOR_DRAIN' | 'EXECUTING' | 'VERIFYING'>,
+    status: Extract<
+      DataLifecycleOperationStatus,
+      'FENCING' | 'CANCEL_REQUESTED' | 'WAITING_FOR_DRAIN' | 'EXECUTING' | 'VERIFYING'
+    >,
   ): Promise<StoredDataLifecycleOperation>;
   updateCheckpoint(operationId: number, workKey: string, checkpoint: unknown): Promise<void>;
   runDestructiveTransaction<T>(
@@ -243,6 +270,7 @@ export function createDataLifecycleRepository(
       validateCreatePreview(input);
       return database.$transaction(async (transaction) => {
         await lockDataLifecycleUserScope(transaction, input.targetUserId);
+
         await assertScopeStillOwned(transaction, input.scope);
 
         const row = await transaction.dataLifecycleOperation.create({
@@ -288,11 +316,22 @@ export function createDataLifecycleRepository(
             );
           }
           if (
-            duplicate.previewTokenHash !== input.previewTokenHash
-            || duplicate.previewHash !== input.previewHash
+            duplicate.previewTokenHash !== input.previewTokenHash ||
+            duplicate.previewHash !== input.previewHash
           ) {
             throw new DataLifecyclePreviewInvalidError();
           }
+          await bindAdminReverificationUse(transaction, {
+            operationId: duplicate.id,
+            actorKeyVersion: duplicate.actorKeyVersion,
+            actorKeyHash: duplicate.actorKeyHash,
+            targetKeyVersion: duplicate.targetKeyVersion,
+            targetKeyHash: duplicate.targetKeyHash,
+            action: duplicate.action,
+            previewHash: duplicate.previewHash,
+            idempotencyKeyHash: input.idempotencyKeyHash,
+            verification: input.verification,
+          });
           return toStoredOperation(duplicate);
         }
 
@@ -307,8 +346,8 @@ export function createDataLifecycleRepository(
         }
         if (operation.previewExpiresAt <= new Date()) throw new DataLifecyclePreviewExpiredError();
         if (
-          operation.previewTokenHash !== input.previewTokenHash
-          || operation.previewHash !== input.previewHash
+          operation.previewTokenHash !== input.previewTokenHash ||
+          operation.previewHash !== input.previewHash
         ) {
           throw new DataLifecyclePreviewInvalidError();
         }
@@ -329,6 +368,17 @@ export function createDataLifecycleRepository(
         });
         if (conflict) throw new DataLifecycleConflictError();
 
+        await bindAdminReverificationUse(transaction, {
+          operationId: operation.id,
+          actorKeyVersion: operation.actorKeyVersion,
+          actorKeyHash: operation.actorKeyHash,
+          targetKeyVersion: operation.targetKeyVersion,
+          targetKeyHash: operation.targetKeyHash,
+          action: operation.action,
+          previewHash: operation.previewHash,
+          idempotencyKeyHash: input.idempotencyKeyHash,
+          verification: input.verification,
+        });
         await createScopeFences(transaction, operation.id, scope);
         const updatedCount = await transaction.$executeRaw(Prisma.sql`
           UPDATE "DataLifecycleOperation"
@@ -336,6 +386,7 @@ export function createDataLifecycleRepository(
               "idempotencyKeyHash" = ${input.idempotencyKeyHash},
               "receiptTokenHash" = ${input.receiptTokenHash ?? null},
               "receiptExpiresAt" = ${input.receiptExpiresAt ?? null},
+              "verificationJson" = ${input.verification ? JSON.stringify(input.verification) : null}::jsonb,
               "startedAt" = COALESCE("startedAt", NOW()),
               "updatedAt" = NOW()
           WHERE "id" = ${operation.id}
@@ -354,7 +405,9 @@ export function createDataLifecycleRepository(
           if (current?.status === 'PREVIEWED' && current.previewExpiresAt <= new Date()) {
             throw new DataLifecyclePreviewExpiredError();
           }
-          throw new DataLifecycleInvalidStateError('Lifecycle preview changed before execution could start.');
+          throw new DataLifecycleInvalidStateError(
+            'Lifecycle preview changed before execution could start.',
+          );
         }
         return toStoredOperation(await readOperationById(transaction, operation.id));
       });
@@ -434,7 +487,9 @@ export function createDataLifecycleRepository(
             select: { status: true, workKey: true },
           });
           if (!current || current.workKey !== workKey) throw new DataLifecycleClaimLostError();
-          throw new DataLifecycleInvalidStateError('Lifecycle execution state transitions are forward-only.');
+          throw new DataLifecycleInvalidStateError(
+            'Lifecycle execution state transitions are forward-only.',
+          );
         }
         return toStoredOperation(await readOperationById(transaction, operationId));
       });
@@ -461,14 +516,16 @@ export function createDataLifecycleRepository(
       if (input.beforeUserLock != null && typeof input.beforeUserLock !== 'function') {
         throw new Error('Lifecycle beforeUserLock callback must be a function.');
       }
-      if (typeof work !== 'function') throw new Error('Lifecycle destructive work callback is required.');
+      if (typeof work !== 'function')
+        throw new Error('Lifecycle destructive work callback is required.');
 
       return database.$transaction(async (transaction) => {
         if (input.beforeUserLock) await input.beforeUserLock(transaction);
         await lockDataLifecycleUserScope(transaction, input.targetUserId);
-        const checkpointSql = input.checkpoint === undefined
-          ? Prisma.sql`"checkpointJson"`
-          : Prisma.sql`${JSON.stringify(input.checkpoint)}::jsonb`;
+        const checkpointSql =
+          input.checkpoint === undefined
+            ? Prisma.sql`"checkpointJson"`
+            : Prisma.sql`${JSON.stringify(input.checkpoint)}::jsonb`;
         const updated = await transaction.$executeRaw(Prisma.sql`
           UPDATE "DataLifecycleOperation"
           SET "firstDestructiveCommitAt" = COALESCE("firstDestructiveCommitAt", NOW()),
@@ -500,7 +557,7 @@ export function createDataLifecycleRepository(
             throw new DataLifecycleInvalidStateError('Data lifecycle operation was not found.');
           }
           const status = dataLifecycleOperationStatusSchema.parse(operation.status);
-          if (TERMINAL_STATUSES.includes(status as typeof TERMINAL_STATUSES[number])) {
+          if (TERMINAL_STATUSES.includes(status as (typeof TERMINAL_STATUSES)[number])) {
             return toStoredOperation(operation);
           }
 
@@ -793,7 +850,14 @@ async function createScopeFences(
     return;
   }
   if (scope.resourceType === 'ACCOUNT') {
-    await insertFence(transaction, operationId, scope.userId, scope.accountId, 'ACCOUNT', scope.accountId);
+    await insertFence(
+      transaction,
+      operationId,
+      scope.userId,
+      scope.accountId,
+      'ACCOUNT',
+      scope.accountId,
+    );
     return;
   }
   for (const gameId of Array.from(new Set(scope.gameIds)).sort((left, right) => left - right)) {
@@ -866,6 +930,10 @@ function toStoredOperation(row: OperationRow): StoredDataLifecycleOperation {
     status: dataLifecycleOperationStatusSchema.parse(row.status),
     actorUserId: row.actorUserId,
     targetUserId: row.targetUserId,
+    actorKeyVersion: row.actorKeyVersion,
+    actorKeyHash: row.actorKeyHash,
+    targetKeyVersion: row.targetKeyVersion,
+    targetKeyHash: row.targetKeyHash,
     scope: dataLifecycleScopeSchema.parse(row.scopeJson),
     previewCounts: dataLifecyclePreviewCountsSchema.parse(row.previewCountsJson),
     previewHash: row.previewHash,
@@ -882,9 +950,10 @@ function toStoredOperation(row: OperationRow): StoredDataLifecycleOperation {
     heartbeatAt: row.heartbeatAt,
     firstDestructiveCommitAt: row.firstDestructiveCommitAt,
     verification: row.verificationJson,
-    terminalResult: row.terminalResult === null
-      ? null
-      : dataLifecycleTerminalResultSchema.parse(row.terminalResult),
+    terminalResult:
+      row.terminalResult === null
+        ? null
+        : dataLifecycleTerminalResultSchema.parse(row.terminalResult),
     errorCode: row.errorCode,
     receiptTokenHash: row.receiptTokenHash,
     receiptExpiresAt: row.receiptExpiresAt,
@@ -911,7 +980,8 @@ function validateCreatePreview(input: CreateDataLifecyclePreviewInput): void {
   validateSha256(input.previewHash, 'previewHash');
   validateSha256(input.previewTokenHash, 'previewTokenHash');
   validateDate(input.previewExpiresAt, 'previewExpiresAt');
-  if (input.previewExpiresAt <= new Date()) throw new Error('Lifecycle preview must expire in the future.');
+  if (input.previewExpiresAt <= new Date())
+    throw new Error('Lifecycle preview must expire in the future.');
   if (!input.confirmationPhrase.trim() || input.confirmationPhrase.length > 120) {
     throw new Error('Lifecycle confirmation phrase must contain 1-120 characters.');
   }
@@ -924,6 +994,12 @@ function validateStartExecution(input: StartDataLifecycleExecutionInput): void {
   validateSha256(input.previewTokenHash, 'previewTokenHash');
   validateSha256(input.previewHash, 'previewHash');
   validateSha256(input.idempotencyKeyHash, 'idempotencyKeyHash');
+  const reverificationIdHash = input.verification?.['reverificationIdHash'];
+  if (reverificationIdHash != null) {
+    if (typeof reverificationIdHash !== 'string')
+      throw new Error('reverificationIdHash must be a string.');
+    validateSha256(reverificationIdHash, 'reverificationIdHash');
+  }
   if (input.receiptTokenHash != null) validateSha256(input.receiptTokenHash, 'receiptTokenHash');
   if (input.receiptExpiresAt != null) validateDate(input.receiptExpiresAt, 'receiptExpiresAt');
   if (input.validateBeforeFence != null && typeof input.validateBeforeFence !== 'function') {
@@ -946,11 +1022,63 @@ function validateAudit(input: AppendLifecycleAuditInput): void {
   if (input.aggregateCounts != null) dataLifecyclePreviewCountsSchema.parse(input.aggregateCounts);
   if (input.reasonCode != null) validateCode(input.reasonCode, 'reasonCode');
   if (input.errorCode != null) validateCode(input.errorCode, 'errorCode');
-  if (input.confirmationMethod != null) validateCode(input.confirmationMethod, 'confirmationMethod');
+  if (input.confirmationMethod != null)
+    validateCode(input.confirmationMethod, 'confirmationMethod');
+}
+
+export async function bindAdminReverificationUse(
+  transaction: Prisma.TransactionClient,
+  binding: AdminReverificationBinding,
+): Promise<void> {
+  const reverificationIdHash = binding.verification?.['reverificationIdHash'];
+  if (reverificationIdHash == null) return;
+  if (typeof reverificationIdHash !== 'string') {
+    throw new Error('reverificationIdHash must be a string.');
+  }
+  validateSha256(reverificationIdHash, 'reverificationIdHash');
+
+  await transaction.$executeRaw(Prisma.sql`
+    SELECT pg_advisory_xact_lock(hashtext(${`admin-reverification:${reverificationIdHash}`}))
+  `);
+  const existing = await transaction.adminReverificationUse.findUnique({
+    where: { reverificationIdHash },
+  });
+  if (existing) {
+    const matches =
+      existing.operationId === binding.operationId &&
+      existing.actorKeyVersion === binding.actorKeyVersion &&
+      existing.actorKeyHash === binding.actorKeyHash &&
+      existing.targetKeyVersion === binding.targetKeyVersion &&
+      existing.targetKeyHash === binding.targetKeyHash &&
+      existing.action === binding.action &&
+      existing.previewHash === binding.previewHash &&
+      existing.idempotencyKeyHash === binding.idempotencyKeyHash;
+    if (!matches) {
+      throw new DataLifecycleInvalidStateError(
+        'Administrator reverification evidence was already used.',
+      );
+    }
+    return;
+  }
+
+  await transaction.adminReverificationUse.create({
+    data: {
+      reverificationIdHash,
+      operationId: binding.operationId,
+      actorKeyVersion: binding.actorKeyVersion,
+      actorKeyHash: binding.actorKeyHash,
+      targetKeyVersion: binding.targetKeyVersion,
+      targetKeyHash: binding.targetKeyHash,
+      action: binding.action,
+      previewHash: binding.previewHash,
+      idempotencyKeyHash: binding.idempotencyKeyHash,
+    },
+  });
 }
 
 function validatePositiveInteger(value: number, label: string): void {
-  if (!Number.isInteger(value) || value <= 0) throw new Error(`${label} must be a positive integer.`);
+  if (!Number.isInteger(value) || value <= 0)
+    throw new Error(`${label} must be a positive integer.`);
 }
 
 function validateSha256(value: string, label: string): void {
@@ -958,7 +1086,8 @@ function validateSha256(value: string, label: string): void {
 }
 
 function validateWorkKey(value: string): void {
-  if (!value.trim() || value.length > 80) throw new Error('Lifecycle workKey must contain 1-80 characters.');
+  if (!value.trim() || value.length > 80)
+    throw new Error('Lifecycle workKey must contain 1-80 characters.');
 }
 
 function validateCode(value: string, label: string): void {

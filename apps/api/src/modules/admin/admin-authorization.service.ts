@@ -6,7 +6,11 @@ import type { AdminAuthConfig } from './admin-auth.config';
 
 const ACTOR_KEY_DOMAIN = 'chess-trainer:admin-read-actor:v1';
 const TARGET_KEY_DOMAIN = 'chess-trainer:admin-read-target:v1';
-const DIAGNOSTICS_CAPABILITIES = ['ADMIN_DIAGNOSTICS_READ'] as const satisfies readonly AdminCapability[];
+const DIAGNOSTICS_CAPABILITIES = [
+  'ADMIN_DIAGNOSTICS_READ',
+  'ADMIN_LIFECYCLE_PREVIEW',
+  'ADMIN_LIFECYCLE_EXECUTE',
+] as const satisfies readonly AdminCapability[];
 
 export interface AdminPrincipal {
   actorKey: string;
@@ -82,12 +86,13 @@ export function createAdminAuthorizationPolicy(config: AdminAuthConfig): AdminAu
           verifiedSession,
         );
       },
-      targetKey: (userId) => hmac(
-        config.actorKeySecret,
-        config.actorKeyVersion,
-        TARGET_KEY_DOMAIN,
-        `app-user:${userId}`,
-      ),
+      targetKey: (userId) =>
+        hmac(
+          config.actorKeySecret,
+          config.actorKeyVersion,
+          TARGET_KEY_DOMAIN,
+          `app-user:${userId}`,
+        ),
     };
   }
 
@@ -104,11 +109,7 @@ export function createAdminAuthorizationPolicy(config: AdminAuthConfig): AdminAu
         verifiedSession,
       );
     },
-    targetKey: (userId) => hmac(
-      config.actorKeySecret,
-      config.actorKeyVersion,
-      TARGET_KEY_DOMAIN,
-      `app-user:${userId}`,
-    ),
+    targetKey: (userId) =>
+      hmac(config.actorKeySecret, config.actorKeyVersion, TARGET_KEY_DOMAIN, `app-user:${userId}`),
   };
 }

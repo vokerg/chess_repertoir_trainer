@@ -1,18 +1,24 @@
 import { z } from 'zod';
+import {
+  dataLifecycleActionSchema,
+  dataLifecycleOperationStatusSchema,
+  dataLifecyclePreviewCountsSchema,
+  dataLifecycleResourceTypeSchema,
+  dataLifecycleTerminalResultSchema,
+} from '../data-lifecycle/data-lifecycle.schemas';
 
-const lastQueryParam = (value: unknown) => Array.isArray(value) ? value.at(-1) : value;
+const lastQueryParam = (value: unknown) => (Array.isArray(value) ? value.at(-1) : value);
 const dateTimeSchema = z.iso.datetime({ offset: true });
 const nullableDateTimeSchema = dateTimeSchema.nullable();
 
 export const adminCapabilitySchema = z.enum([
   'ADMIN_DIAGNOSTICS_READ',
+  'ADMIN_LIFECYCLE_PREVIEW',
+  'ADMIN_LIFECYCLE_EXECUTE',
 ]);
 export type AdminCapability = z.infer<typeof adminCapabilitySchema>;
 
-export const adminRequestBudgetEnforcementSchema = z.enum([
-  'UNENFORCED',
-  'ENFORCED',
-]);
+export const adminRequestBudgetEnforcementSchema = z.enum(['UNENFORCED', 'ENFORCED']);
 export type AdminRequestBudgetEnforcement = z.infer<typeof adminRequestBudgetEnforcementSchema>;
 
 export const adminWarningCodeSchema = z.enum([
@@ -98,11 +104,13 @@ const accountSectionSchema = z.discriminatedUnion('available', [
     available: z.literal(true),
     total: z.number().int().nonnegative(),
     active: z.number().int().nonnegative(),
-    groups: z.array(z.object({
-      provider: z.string().min(1),
-      active: z.boolean(),
-      count: z.number().int().nonnegative(),
-    })),
+    groups: z.array(
+      z.object({
+        provider: z.string().min(1),
+        active: z.boolean(),
+        count: z.number().int().nonnegative(),
+      }),
+    ),
   }),
   unavailableSectionSchema,
 ]);
@@ -113,18 +121,24 @@ const gamesSectionSchema = z.discriminatedUnion('available', [
     total: z.number().int().nonnegative(),
     indexed: z.number().int().nonnegative(),
     analysed: z.number().int().nonnegative(),
-    bySpeed: z.array(z.object({
-      speed: z.string().nullable(),
-      count: z.number().int().nonnegative(),
-    })),
-    byIndexState: z.array(z.object({
-      state: z.enum(['INDEXED', 'NOT_INDEXED', 'INDEX_FAILED']),
-      count: z.number().int().nonnegative(),
-    })),
-    byAnalysisState: z.array(z.object({
-      state: z.string().nullable(),
-      count: z.number().int().nonnegative(),
-    })),
+    bySpeed: z.array(
+      z.object({
+        speed: z.string().nullable(),
+        count: z.number().int().nonnegative(),
+      }),
+    ),
+    byIndexState: z.array(
+      z.object({
+        state: z.enum(['INDEXED', 'NOT_INDEXED', 'INDEX_FAILED']),
+        count: z.number().int().nonnegative(),
+      }),
+    ),
+    byAnalysisState: z.array(
+      z.object({
+        state: z.string().nullable(),
+        count: z.number().int().nonnegative(),
+      }),
+    ),
   }),
   unavailableSectionSchema,
 ]);
@@ -215,21 +229,23 @@ const taskCountsSchema = z.object({
 const jobsWorkSectionSchema = z.discriminatedUnion('available', [
   z.object({
     available: z.literal(true),
-    items: z.array(z.object({
-      id: z.number().int().positive(),
-      kind: z.string().min(1),
-      source: z.string().min(1),
-      status: z.string().min(1),
-      totalTasks: z.number().int().nonnegative(),
-      activeWorkKeys: z.number().int().nonnegative(),
-      taskCounts: taskCountsSchema,
-      createdAt: dateTimeSchema,
-      updatedAt: dateTimeSchema,
-      startedAt: nullableDateTimeSchema,
-      completedAt: nullableDateTimeSchema,
-      queueAgeSeconds: z.number().nonnegative().nullable(),
-      warnings: z.array(adminWarningSchema),
-    })),
+    items: z.array(
+      z.object({
+        id: z.number().int().positive(),
+        kind: z.string().min(1),
+        source: z.string().min(1),
+        status: z.string().min(1),
+        totalTasks: z.number().int().nonnegative(),
+        activeWorkKeys: z.number().int().nonnegative(),
+        taskCounts: taskCountsSchema,
+        createdAt: dateTimeSchema,
+        updatedAt: dateTimeSchema,
+        startedAt: nullableDateTimeSchema,
+        completedAt: nullableDateTimeSchema,
+        queueAgeSeconds: z.number().nonnegative().nullable(),
+        warnings: z.array(adminWarningSchema),
+      }),
+    ),
   }),
   unavailableSectionSchema,
 ]);
@@ -238,19 +254,21 @@ const importsWorkSectionSchema = z.discriminatedUnion('available', [
   z.object({
     available: z.literal(true),
     queuedCount: z.number().int().nonnegative(),
-    items: z.array(z.object({
-      id: z.number().int().positive(),
-      accountId: z.number().int().positive(),
-      provider: z.string().min(1),
-      status: z.string().min(1),
-      gamesSeen: z.number().int().nonnegative(),
-      gamesImported: z.number().int().nonnegative(),
-      gamesFailed: z.number().int().nonnegative(),
-      startedAt: dateTimeSchema,
-      completedAt: nullableDateTimeSchema,
-      queueAgeSeconds: z.number().nonnegative().nullable(),
-      warnings: z.array(adminWarningSchema),
-    })),
+    items: z.array(
+      z.object({
+        id: z.number().int().positive(),
+        accountId: z.number().int().positive(),
+        provider: z.string().min(1),
+        status: z.string().min(1),
+        gamesSeen: z.number().int().nonnegative(),
+        gamesImported: z.number().int().nonnegative(),
+        gamesFailed: z.number().int().nonnegative(),
+        startedAt: dateTimeSchema,
+        completedAt: nullableDateTimeSchema,
+        queueAgeSeconds: z.number().nonnegative().nullable(),
+        warnings: z.array(adminWarningSchema),
+      }),
+    ),
     warnings: z.array(adminWarningSchema),
   }),
   unavailableSectionSchema,
@@ -259,17 +277,55 @@ const importsWorkSectionSchema = z.discriminatedUnion('available', [
 const preparationWorkSectionSchema = z.discriminatedUnion('available', [
   z.object({
     available: z.literal(true),
-    items: z.array(z.object({
-      id: z.number().int().positive(),
-      purpose: z.string().min(1),
-      status: z.string().min(1),
-      attentionCode: z.string().nullable(),
-      reconcileAfter: nullableDateTimeSchema,
-      createdAt: dateTimeSchema,
-      updatedAt: dateTimeSchema,
-      completedAt: nullableDateTimeSchema,
-      warnings: z.array(adminWarningSchema),
-    })),
+    items: z.array(
+      z.object({
+        id: z.number().int().positive(),
+        purpose: z.string().min(1),
+        status: z.string().min(1),
+        attentionCode: z.string().nullable(),
+        reconcileAfter: nullableDateTimeSchema,
+        createdAt: dateTimeSchema,
+        updatedAt: dateTimeSchema,
+        completedAt: nullableDateTimeSchema,
+        warnings: z.array(adminWarningSchema),
+      }),
+    ),
+  }),
+  unavailableSectionSchema,
+]);
+
+const lifecycleWorkSectionSchema = z.discriminatedUnion('available', [
+  z.object({
+    available: z.literal(true),
+    operations: z.array(
+      z.object({
+        id: z.number().int().positive(),
+        action: dataLifecycleActionSchema,
+        status: dataLifecycleOperationStatusSchema,
+        resourceType: dataLifecycleResourceTypeSchema,
+        aggregateCounts: dataLifecyclePreviewCountsSchema,
+        terminalResult: dataLifecycleTerminalResultSchema.nullable(),
+        errorCode: z.string().nullable(),
+        createdAt: dateTimeSchema,
+        updatedAt: dateTimeSchema,
+      }),
+    ),
+    auditEvents: z.array(
+      z.object({
+        id: z.number().int().positive(),
+        operationId: z.number().int().positive(),
+        eventType: z.string().min(1),
+        action: dataLifecycleActionSchema,
+        status: dataLifecycleOperationStatusSchema.nullable(),
+        resourceType: dataLifecycleResourceTypeSchema.nullable(),
+        aggregateCounts: dataLifecyclePreviewCountsSchema.nullable(),
+        reasonCode: z.string().nullable(),
+        errorCode: z.string().nullable(),
+        confirmationMethod: z.string().nullable(),
+        terminalResult: dataLifecycleTerminalResultSchema.nullable(),
+        createdAt: dateTimeSchema,
+      }),
+    ),
   }),
   unavailableSectionSchema,
 ]);
@@ -280,7 +336,7 @@ export const adminUserWorkResponseSchema = z.object({
     jobs: jobsWorkSectionSchema,
     imports: importsWorkSectionSchema,
     preparation: preparationWorkSectionSchema,
-    lifecycle: unavailableSectionSchema,
+    lifecycle: lifecycleWorkSectionSchema,
   }),
 });
 export type AdminUserWorkResponse = z.infer<typeof adminUserWorkResponseSchema>;
@@ -292,6 +348,8 @@ export const adminErrorResponseSchema = z.object({
     'ADMIN_USER_NOT_FOUND',
     'ADMIN_CURSOR_INVALID',
     'ADMIN_REQUEST_BUDGET_EXCEEDED',
+    'ADMIN_REVERIFICATION_REQUIRED',
+    'ADMIN_REVERIFICATION_REUSED',
   ]),
 });
 export type AdminErrorResponse = z.infer<typeof adminErrorResponseSchema>;

@@ -5,6 +5,12 @@ import type {
   AdminUserListResponse,
   AdminUserWorkResponse,
 } from '@chess-trainer/contracts/admin';
+import type {
+  AccountGameDataLifecyclePreviewRequest,
+  DataLifecycleExecuteRequest,
+  DataLifecycleOperationResponse,
+  DataLifecyclePreviewResponse,
+} from '@chess-trainer/contracts/data-lifecycle';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 
@@ -30,5 +36,39 @@ export class AdminApiService {
   getUserWork(userId: number, limit: number): Observable<AdminUserWorkResponse> {
     const params = new URLSearchParams({ limit: String(limit) });
     return this.api.get<AdminUserWorkResponse>(`/admin/users/${userId}/work?${params.toString()}`);
+  }
+
+  previewLifecycle(
+    userId: number,
+    request: AccountGameDataLifecyclePreviewRequest,
+  ): Observable<DataLifecyclePreviewResponse> {
+    return this.api.post<DataLifecyclePreviewResponse>(
+      `/admin/users/${userId}/data-lifecycle/preview`,
+      request,
+    );
+  }
+
+  executeLifecycle(
+    userId: number,
+    operationId: number,
+    request: DataLifecycleExecuteRequest,
+  ): Observable<DataLifecycleOperationResponse> {
+    return this.api.post<DataLifecycleOperationResponse>(
+      `/admin/users/${userId}/data-lifecycle/${operationId}/execute`,
+      request,
+    );
+  }
+
+  getLifecycle(userId: number, operationId: number): Observable<DataLifecycleOperationResponse> {
+    return this.api.get<DataLifecycleOperationResponse>(
+      `/admin/users/${userId}/data-lifecycle/${operationId}`,
+    );
+  }
+
+  stopLifecycle(userId: number, operationId: number): Observable<DataLifecycleOperationResponse> {
+    return this.api.post<DataLifecycleOperationResponse>(
+      `/admin/users/${userId}/data-lifecycle/${operationId}/stop`,
+      {},
+    );
   }
 }

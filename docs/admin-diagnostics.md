@@ -1,6 +1,6 @@
-# Administrator diagnostics foundation
+# Administrator diagnostics and account lifecycle controls
 
-The initial administrator capability is a server-only, read-only diagnostics API. It uses the existing Clerk session as the only production authentication boundary and does not add an administrator login, client role, impersonation, or product-data role column.
+The administrator capability provides bounded diagnostics plus account/game lifecycle controls. It uses the existing Clerk session as the only production authentication boundary and does not add an administrator login, client role, impersonation, or product-data role column.
 
 ## Configuration
 
@@ -33,9 +33,17 @@ GET /api/admin/me
 GET /api/admin/users
 GET /api/admin/users/:userId
 GET /api/admin/users/:userId/work
+POST /api/admin/users/:userId/data-lifecycle/preview
+POST /api/admin/users/:userId/data-lifecycle/:operationId/execute
+GET /api/admin/users/:userId/data-lifecycle/:operationId
+POST /api/admin/users/:userId/data-lifecycle/:operationId/stop
 ```
 
-Every route first requires normal authentication and the `ADMIN_DIAGNOSTICS_READ` capability. Target lookup happens only after authorization, so a normal authenticated user receives `403` without learning whether a target user exists.
+Every route first requires normal authentication and its server-issued administrator capability. Target lookup happens only after authorization, so a normal authenticated user receives `403` without learning whether a target user exists.
+
+Lifecycle routes additionally require the server-issued `ADMIN_LIFECYCLE_PREVIEW` or `ADMIN_LIFECYCLE_EXECUTE` capability. Preview and status reads use the preview capability; execution and stop/cancel mutations require the execute capability. They adapt the canonical account/game lifecycle coordinator and support `UNANALYSE_GAMES`, `UNINDEX_GAMES`, `PURGE_ACCOUNT_DATA`, and `DELETE_EXTERNAL_ACCOUNT`. Whole-user deletion and orphan shared-position cleanup are not exposed until their owning canonical services are delivered.
+
+Execution requires the preview token, exact typed confirmation, a stable idempotency key, a signed Clerk `fva` no older than ten minutes, and a signed `reverification_id`. Configure `{{session.reverification_id}}` as a Clerk session-token custom claim. The Angular control uses Clerk's supported session reverification API to start a first-factor challenge, prepare/attempt supported password or code factors, and force-refresh the session token only after successful verification. The API hashes each reverification identifier into a one-use record bound to the administrator actor, target, action, preview digest, operation, and idempotency key. A partial-operation resume is a new destructive transition and therefore requires a new, previously unused reverification identifier.
 
 User listing uses opaque versioned keyset cursors over `AppUser.id DESC`, defaults to 25 rows, and accepts at most 100. Work lists default to 20 and accept at most 50.
 
@@ -47,11 +55,11 @@ The API returns bounded aggregates only:
 - imported-game counts grouped by speed, index state, and analysis state;
 - course, chapter, and line counts without move trees;
 - training counts and latest timestamps;
-- bounded import, job, and preparation summaries;
+- bounded import, job, preparation, lifecycle-operation, and lifecycle-audit summaries;
 - exact approved row counts;
 - ONB-007 warning codes with measured evidence and policy version.
 
-Lifecycle diagnostics are explicitly unavailable until their models exist. Optional section query failures are represented as unavailable sections rather than invented zeroes.
+Lifecycle work and its pseudonymous audit summaries use the same bounded work limit as the other recent-work sections. Optional section query failures are represented as unavailable sections rather than invented zeroes.
 
 The response contracts exclude email, raw auth subject, provider usernames and URLs, PGN, tokens, FEN/position content, tactical/scenario payloads, AI reviews, raw job errors, full course lines, and per-user byte estimates.
 
@@ -74,4 +82,4 @@ They do not include response bodies, raw subjects, emails, usernames, chess payl
 
 ## Explicit exclusions
 
-This foundation provides no mutation route, lifecycle preview or execution, destructive behavior, persisted audit model, Prisma schema change, Angular UI, Clerk Organizations rollout, shared administrator secret, email allow-list, impersonation, raw-content browser, bulk export, new queue, broker, or deployment service.
+The administrator feature provides no direct SQL/table mutation, whole-user deletion, shared-position cleanup, Clerk Organizations rollout, shared administrator secret, email allow-list, impersonation, raw-content browser, bulk export, new queue, broker, or deployment service.
