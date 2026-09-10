@@ -82,6 +82,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'progress/performance-by-rating',
+    title: 'Performance by rating | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/performance-by-rating').then(
+        (m) => m.PerformanceByRatingPageComponent,
+      ),
+  },
+  {
     path: 'progress/accounts/:accountId',
     title: 'Account | Chess Repertoire Trainer',
     canActivate: [authGuard],
@@ -168,12 +177,8 @@ export const routes: Routes = [
   },
   {
     path: 'lab/performance-by-rating',
-    title: 'Performance by rating | Chess Repertoire Trainer',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/lab/pages/performance-by-rating-page.component').then(
-        (m) => m.PerformanceByRatingPageComponent,
-      ),
+    redirectTo: '/progress/performance-by-rating',
+    pathMatch: 'full',
   },
   {
     path: 'lab/tactical-detections',
