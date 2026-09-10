@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import type { PerformanceByRatingRow } from '@chess-trainer/contracts/lab';
+import type { PerformanceByRatingRow } from '@chess-trainer/contracts/performance-by-rating';
 import type { RatingNormalizationProfile } from '@chess-trainer/contracts/rating-normalization';
 import { PerformanceByRatingReportComponent } from './performance-by-rating-report.component';
 import {
