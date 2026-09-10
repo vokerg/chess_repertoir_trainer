@@ -29,6 +29,7 @@ apps/api/src/modules/
   lab/                   exploratory game reports
   mobile-sync/           offline course bundles and mobile attempt ingestion
   opening-struggles/     recurring opening problems and course coverage
+  performance-by-rating/  opponent-rating performance aggregation
   repertoire-coverage/   course review against imported games
   stats/                 summary, line, and course statistics
   training/              line training sessions
@@ -56,6 +57,8 @@ The jobs module owns `JobRun`/`JobTask` persistence, current-user job creation/r
 A PostgreSQL freshness guard prevents an older `GameAnalysisRun` from replacing a newer denormalized latest-analysis snapshot on `ImportedGame`, including when a client-computed analysis write and worker execution overlap.
 
 Opening struggles is a standalone Openings feature. It counts candidate games before loading early plies, rejects scopes above its documented safety limit, builds prefix aggregates in memory, and annotates returned prefixes with side-specific course coverage. It reuses the repertoire sequence matcher shared with course review and exposes a verified contract from `packages/contracts`. See [Opening struggles](opening-struggles.md).
+
+Performance by rating is a standalone Progress report backed by `/api/performance-by-rating`. Its API module performs bounded SQL aggregation over imported games by provider, speed, and 100-point opponent-rating bands and exposes its wire contract from `@chess-trainer/contracts/performance-by-rating`.
 
 Lab tactical detections are persisted reports over analysed imported games. They reuse cached position evals to identify missed shots, punished opponent blunders, and user blunders without running an engine. See [Tactical Detections](tactical-detections.md) for detection semantics, persistence, and Lab UI behavior.
 
@@ -104,7 +107,7 @@ Frontend conventions and accepted debt are documented under `docs/frontend`.
 - Openings groups Opening analysis (`/opening-analysis`) and the standalone Opening struggles feature (`/opening-struggles`), backed by `/api/opening-struggles`.
 - Tools groups Analysis (`/analysis`) and Lab (`/lab`). These routes are not Settings.
 - Settings groups import accounts (`/settings/accounts`), Lichess OAuth integration (`/settings/lichess`), and Appearance (`/settings/appearance`). Legacy `/accounts` URLs redirect into Settings or Progress routes.
-- Progress uses `/progress` as the entry point and `/progress/accounts/:accountId` for the account dashboard. The entry route opens the default progress account first, then an active account, then the first available account.
+- Progress uses `/progress` as the entry point, `/progress/accounts/:accountId` for account dashboards, `/progress/profile` for the Player Chess Profile, and `/progress/performance-by-rating` for the cross-provider opponent-rating report. The entry route opens the default progress account first, then an active account, then the first available account.
 - Games Explorer and single-game review submit persisted imported-game jobs through the root job store. The global panel supports cancellation and retry-by-new-job. Single-game review keeps interactive selected-position analysis local to the browser.
 - `/chapters/:chapterId/lines` is the line/subline training-health diagnosis page. It owns line selection, expandable per-line subline status, and selected-subline drill launch.
 - `/courses/:courseId` is the course workspace: it owns course identity, chapter organization, course-level training summary, and launches into marathon or imported-game review. Detailed line/subline diagnosis remains under `/chapters/:chapterId/lines`; the course page's available-sublines disclosure stays a structural repertoire dump.
