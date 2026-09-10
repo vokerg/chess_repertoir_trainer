@@ -205,6 +205,14 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
           icon: 'profile',
           activePrefixes: ['/progress/profile'],
         },
+        {
+          id: 'performance-by-rating',
+          label: 'Performance by rating',
+          description: 'Compare results by opponent strength, provider, and speed',
+          link: '/progress/performance-by-rating',
+          icon: 'performance',
+          activePrefixes: ['/progress/performance-by-rating'],
+        },
       ],
     },
     {
