@@ -4,7 +4,7 @@ import { ApiService } from '../../../core/api/api.service';
 import type {
   PerformanceByRatingQuery,
   PerformanceByRatingResponse,
-} from '@chess-trainer/contracts/lab';
+} from '@chess-trainer/contracts/performance-by-rating';
 import type { RatingNormalizationProfile } from '@chess-trainer/contracts/rating-normalization';
 
 @Injectable()
