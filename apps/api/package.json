@@ -48,7 +48,7 @@
     "chess-domain": "file:../../packages/chess-domain",
     "chess.js": "^1.0.0",
     "dotenv": "^16.3.1",
-    "fastify": "^5.8.5",
+    "fastify": "^5.12.3",
     "fastify-plugin": "^5.1.0",
     "fastify-type-provider-zod": "^7.0.0",
     "jose": "^6.2.3",
