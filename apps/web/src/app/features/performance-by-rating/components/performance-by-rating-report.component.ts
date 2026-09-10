@@ -3,7 +3,7 @@ import type {
   PerformanceByRatingRow,
   PerformanceReportType,
   PerformanceWdl,
-} from '@chess-trainer/contracts/lab';
+} from '@chess-trainer/contracts/performance-by-rating';
 import type { RatingPool, RatingRange } from '@chess-trainer/contracts/rating-normalization';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { type UiShellAction } from '../../../shared/ui/ui-shell.model';
