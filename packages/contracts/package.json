@@ -64,6 +64,10 @@
       "types": "./dist/lab/index.d.ts",
       "default": "./dist/lab/index.js"
     },
+    "./performance-by-rating": {
+      "types": "./dist/performance-by-rating/index.d.ts",
+      "default": "./dist/performance-by-rating/index.js"
+    },
     "./scenario-training": {
       "types": "./dist/scenario-training/index.d.ts",
       "default": "./dist/scenario-training/index.js"
