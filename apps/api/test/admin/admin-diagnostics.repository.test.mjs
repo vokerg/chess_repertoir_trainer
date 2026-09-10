@@ -16,13 +16,14 @@ try {
       authProvider: 'admin-test',
       authSubject: `${subjectPrefix}-${index}`,
       displayName: `Admin test ${index}`,
+      email: `admin-${index}@example.test`,
     })),
   });
 
   const users = await prisma.appUser.findMany({
     where: { authProvider: 'admin-test', authSubject: { startsWith: subjectPrefix } },
     orderBy: { id: 'desc' },
-    select: { id: true },
+    select: { id: true, displayName: true, email: true },
   });
   assert.equal(users.length, 105);
 
@@ -70,10 +71,26 @@ try {
     assert.ok(first.rows[index - 1].id > first.rows[index].id, 'user list must be id DESC');
   }
   assert.equal(first.rows[0].id, users[0].id);
+  assert.equal(first.rows[0].displayName, users[0].displayName);
+  assert.equal(first.rows[0].email, users[0].email);
   assert.equal(first.rows[0].accountCount, 2);
   assert.equal(first.rows[0].activeAccountCount, 2);
   assert.equal(first.rows[0].activeWorkCount, 2, 'active import runs contribute to active work');
   assert.equal(first.hasMore, true);
+
+  const connectedAccounts = await AdminDiagnosticsRepository.loadAccounts(users[0].id);
+  assert.equal(connectedAccounts.hasMore, false);
+  assert.deepEqual(
+    connectedAccounts.accounts.map(({ provider, username, isActive }) => ({
+      provider,
+      username,
+      isActive,
+    })),
+    [
+      { provider: 'chess.com', username: `admin-query-second-${suffix}`, isActive: true },
+      { provider: 'lichess', username: `admin-query-${suffix}`, isActive: true },
+    ],
+  );
 
   const imports = await AdminDiagnosticsRepository.loadImports(users[0].id, 1);
   assert.equal(imports.rows.length, 1, 'the visible import list remains bounded');

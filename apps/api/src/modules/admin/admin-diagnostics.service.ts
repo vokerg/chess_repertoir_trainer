@@ -138,6 +138,8 @@ export function createAdminDiagnosticsService(dependencies: Dependencies = {}) {
       return {
         items: result.rows.map((row) => ({
           id: row.id,
+          displayName: row.displayName,
+          email: row.email,
           createdAt: row.createdAt.toISOString(),
           updatedAt: row.updatedAt.toISOString(),
           accountCount: row.accountCount,
@@ -169,6 +171,8 @@ export function createAdminDiagnosticsService(dependencies: Dependencies = {}) {
       return {
         user: {
           id: user.id,
+          displayName: user.displayName,
+          email: user.email,
           createdAt: user.createdAt.toISOString(),
           updatedAt: user.updatedAt.toISOString(),
         },
@@ -177,11 +181,19 @@ export function createAdminDiagnosticsService(dependencies: Dependencies = {}) {
             accounts.status === 'fulfilled'
               ? {
                   available: true,
-                  total: accounts.value.reduce((total, row) => total + row.count, 0),
-                  active: accounts.value
+                  total: accounts.value.groups.reduce((total, row) => total + row.count, 0),
+                  active: accounts.value.groups
                     .filter((row) => row.isActive)
                     .reduce((total, row) => total + row.count, 0),
-                  groups: accounts.value.map((row) => ({
+                  hasMore: accounts.value.hasMore,
+                  items: accounts.value.accounts.map((account) => ({
+                    id: account.id,
+                    provider: account.provider,
+                    username: account.username,
+                    displayName: account.displayName,
+                    active: account.isActive,
+                  })),
+                  groups: accounts.value.groups.map((row) => ({
                     provider: row.provider,
                     active: row.isActive,
                     count: row.count,

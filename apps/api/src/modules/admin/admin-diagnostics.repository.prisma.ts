@@ -14,9 +14,12 @@ import {
 
 const TERMINAL_JOB_STATUSES = ['COMPLETED', 'PARTIALLY_FAILED', 'FAILED', 'CANCELLED'];
 const TERMINAL_PREPARATION_STATUSES = ['COMPLETED', 'FAILED', 'CANCELLED'];
+export const ADMIN_CONNECTED_ACCOUNT_LIMIT = 100;
 
 export interface AdminUserListRow {
   id: number;
+  displayName: string | null;
+  email: string | null;
   createdAt: Date;
   updatedAt: Date;
   accountCount: number;
@@ -28,14 +31,30 @@ export interface AdminUserListRow {
 
 export interface AdminUserRow {
   id: number;
+  displayName: string | null;
+  email: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface AdminAccountSectionRow {
+export interface AdminAccountGroupRow {
   provider: string;
   isActive: boolean;
   count: number;
+}
+
+export interface AdminConnectedAccountRow {
+  id: number;
+  provider: string;
+  username: string;
+  displayName: string | null;
+  isActive: boolean;
+}
+
+export interface AdminAccountSectionRows {
+  groups: AdminAccountGroupRow[];
+  accounts: AdminConnectedAccountRow[];
+  hasMore: boolean;
 }
 
 export interface AdminGamesSectionRows {
@@ -150,7 +169,7 @@ export interface AdminDiagnosticsRepositoryBoundary {
     limit: number;
   }): Promise<{ rows: AdminUserListRow[]; hasMore: boolean }>;
   getUser(userId: number): Promise<AdminUserRow | null>;
-  loadAccounts(userId: number): Promise<AdminAccountSectionRow[]>;
+  loadAccounts(userId: number): Promise<AdminAccountSectionRows>;
   loadGames(userId: number): Promise<AdminGamesSectionRows>;
   loadCourses(userId: number): Promise<AdminCoursesSectionRows>;
   loadTraining(userId: number): Promise<AdminTrainingSectionRows>;
@@ -187,6 +206,8 @@ export const AdminDiagnosticsRepository: AdminDiagnosticsRepositoryBoundary = {
       take: input.limit + 1,
       select: {
         id: true,
+        displayName: true,
+        email: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -236,6 +257,8 @@ export const AdminDiagnosticsRepository: AdminDiagnosticsRepositoryBoundary = {
     return {
       rows: page.map((user) => ({
         id: user.id,
+        displayName: user.displayName,
+        email: user.email,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         accountCount: user._count.externalAccounts,
@@ -254,21 +277,39 @@ export const AdminDiagnosticsRepository: AdminDiagnosticsRepositoryBoundary = {
   getUser: (userId) =>
     prisma.appUser.findUnique({
       where: { id: userId },
-      select: { id: true, createdAt: true, updatedAt: true },
+      select: { id: true, displayName: true, email: true, createdAt: true, updatedAt: true },
     }),
 
   async loadAccounts(userId) {
-    const rows = await prisma.externalAccount.groupBy({
-      by: ['provider', 'isActive'],
-      where: { userId },
-      _count: { _all: true },
-      orderBy: [{ provider: 'asc' }, { isActive: 'desc' }],
-    });
-    return rows.map((row) => ({
-      provider: row.provider,
-      isActive: row.isActive,
-      count: row._count._all,
-    }));
+    const [groupRows, accountRows] = await Promise.all([
+      prisma.externalAccount.groupBy({
+        by: ['provider', 'isActive'],
+        where: { userId },
+        _count: { _all: true },
+        orderBy: [{ provider: 'asc' }, { isActive: 'desc' }],
+      }),
+      prisma.externalAccount.findMany({
+        where: { userId },
+        orderBy: [{ provider: 'asc' }, { username: 'asc' }, { id: 'asc' }],
+        take: ADMIN_CONNECTED_ACCOUNT_LIMIT + 1,
+        select: {
+          id: true,
+          provider: true,
+          username: true,
+          displayName: true,
+          isActive: true,
+        },
+      }),
+    ]);
+    return {
+      groups: groupRows.map((row) => ({
+        provider: row.provider,
+        isActive: row.isActive,
+        count: row._count._all,
+      })),
+      accounts: accountRows.slice(0, ADMIN_CONNECTED_ACCOUNT_LIMIT),
+      hasMore: accountRows.length > ADMIN_CONNECTED_ACCOUNT_LIMIT,
+    };
   },
 
   async loadGames(userId) {

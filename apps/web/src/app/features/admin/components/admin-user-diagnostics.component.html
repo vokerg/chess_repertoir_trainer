@@ -14,7 +14,9 @@
       </div>
     } @else if (detail(); as detailValue) {
       <div class="admin-identity">
-        <span>User {{ detailValue.user.id }}</span>
+        <span>{{ detailValue.user.displayName || 'User ' + detailValue.user.id }}</span>
+        <span>User ID {{ detailValue.user.id }}</span>
+        <span>{{ detailValue.user.email || 'No email available' }}</span>
         <span>Created {{ detailValue.user.createdAt | date: 'medium' }}</span>
         <span>Updated {{ detailValue.user.updatedAt | date: 'medium' }}</span>
       </div>
@@ -24,7 +26,31 @@
           <h4 id="admin-accounts-heading">Accounts</h4>
           @if (detailValue.sections.accounts.available) {
             <app-fact-grid ariaLabel="Account diagnostics" [items]="accountFacts()" />
+            @if (detailValue.sections.accounts.items.length) {
+              <ul class="admin-connected-accounts" aria-label="Connected chess accounts">
+                @for (account of detailValue.sections.accounts.items; track account.id) {
+                  <li>
+                    <div>
+                      <code>{{ account.provider }}</code>
+                      <strong>{{ account.username }}</strong>
+                      @if (account.displayName && account.displayName !== account.username) {
+                        <span>{{ account.displayName }}</span>
+                      }
+                    </div>
+                    <span>{{ account.active ? 'active' : 'inactive' }}</span>
+                  </li>
+                }
+              </ul>
+              @if (detailValue.sections.accounts.hasMore) {
+                <p class="admin-unavailable">
+                  Only the first 100 connected accounts are shown.
+                </p>
+              }
+            } @else {
+              <p class="admin-empty">No connected chess accounts.</p>
+            }
             @if (detailValue.sections.accounts.groups.length) {
+              <h5 class="admin-provider-summary-heading">Provider totals</h5>
               <ul class="admin-compact-list" aria-label="Account provider groups">
                 @for (
                   group of detailValue.sections.accounts.groups;
