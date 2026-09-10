@@ -39,7 +39,7 @@ describe('games table display helpers', () => {
       analysis: { ...indexed.analysis, status: 'COMPLETED' as const },
     };
 
-    expect(gameStatusLabel(notIndexed)).toBe('Not indexed');
+    expect(gameStatusLabel(notIndexed)).toBe('New');
     expect(gameStatusLabel(indexed)).toBe('Indexed');
     expect(gameStatusLabel(analysed)).toBe('Analysed');
   });
