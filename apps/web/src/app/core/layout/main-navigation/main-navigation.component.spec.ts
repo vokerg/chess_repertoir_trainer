@@ -37,6 +37,7 @@ describe('MainNavigationComponent', () => {
           { path: 'opening-analysis', component: TestRouteComponent },
           { path: 'builder', component: TestRouteComponent },
           { path: 'progress', component: TestRouteComponent },
+          { path: 'progress/performance-by-rating', component: TestRouteComponent },
         ]),
       ],
     }).compileComponents();
@@ -145,6 +146,28 @@ describe('MainNavigationComponent', () => {
     expect(childGroup.getAttribute('aria-label')).toBe('Study submenu');
     expect(fixture.nativeElement.querySelector('.rail-flyout')).toBeNull();
     expect(fixture.nativeElement.querySelector('.rail-flyout-backdrop')).toBeNull();
+  });
+
+  it('exposes performance by rating under Progress and marks Progress active on the report route', async () => {
+    const disclosure = fixture.nativeElement.querySelector(
+      '[aria-label="Show Progress submenu"]',
+    ) as HTMLButtonElement;
+
+    disclosure.click();
+    fixture.detectChanges();
+
+    const reportLink = fixture.nativeElement.querySelector(
+      '.rail-inline-item[href="/progress/performance-by-rating"]',
+    ) as HTMLAnchorElement;
+    expect(reportLink.textContent).toContain('Performance by rating');
+
+    await router.navigateByUrl('/progress/performance-by-rating');
+    fixture.detectChanges();
+
+    const progressLink = Array.from(
+      fixture.nativeElement.querySelectorAll('.rail-nav-link') as NodeListOf<HTMLAnchorElement>,
+    ).find((link) => link.textContent?.includes('Progress'));
+    expect(progressLink?.closest('.rail-nav-node')?.classList).toContain('rail-nav-node-active');
   });
 
   it('allows only one expanded-rail parent to be open at a time', () => {
