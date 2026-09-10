@@ -51,8 +51,10 @@ User listing uses opaque versioned keyset cursors over `AppUser.id DESC`, defaul
 
 ## Returned data
 
-The API returns bounded aggregates only:
+The API returns bounded diagnostics:
 
+- available application-user display names and email addresses;
+- up to 100 connected external-account identities per user, including provider, username, optional display name, and active state;
 - account counts grouped by provider and active state;
 - imported-game counts grouped by speed, index state, and analysis state;
 - course, chapter, and line counts without move trees;
@@ -63,7 +65,7 @@ The API returns bounded aggregates only:
 
 Lifecycle work and its pseudonymous audit summaries use the same bounded work limit as the other recent-work sections. Optional section query failures are represented as unavailable sections rather than invented zeroes.
 
-The response contracts exclude email, raw auth subject, provider usernames and URLs, PGN, tokens, FEN/position content, tactical/scenario payloads, AI reviews, raw job errors, full course lines, and per-user byte estimates.
+The response contracts exclude raw auth subjects, provider user IDs and URLs, PGN, tokens, FEN/position content, tactical/scenario payloads, AI reviews, raw job errors, full course lines, and per-user byte estimates. Email addresses and external-account usernames are returned only through the administrator-authorized diagnostics routes.
 
 ## Request-budget boundary
 

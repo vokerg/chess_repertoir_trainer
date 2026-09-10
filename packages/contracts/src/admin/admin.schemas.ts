@@ -72,6 +72,8 @@ export type AdminUserListQuery = z.infer<typeof adminUserListQuerySchema>;
 
 export const adminUserSummarySchema = z.object({
   id: z.number().int().positive(),
+  displayName: z.string().nullable(),
+  email: z.string().nullable(),
   createdAt: dateTimeSchema,
   updatedAt: dateTimeSchema,
   accountCount: z.number().int().nonnegative(),
@@ -104,6 +106,16 @@ const accountSectionSchema = z.discriminatedUnion('available', [
     available: z.literal(true),
     total: z.number().int().nonnegative(),
     active: z.number().int().nonnegative(),
+    hasMore: z.boolean(),
+    items: z.array(
+      z.object({
+        id: z.number().int().positive(),
+        provider: z.string().min(1),
+        username: z.string().min(1),
+        displayName: z.string().nullable(),
+        active: z.boolean(),
+      }),
+    ),
     groups: z.array(
       z.object({
         provider: z.string().min(1),
@@ -197,6 +209,8 @@ const footprintSectionSchema = z.discriminatedUnion('available', [
 export const adminUserDetailResponseSchema = z.object({
   user: z.object({
     id: z.number().int().positive(),
+    displayName: z.string().nullable(),
+    email: z.string().nullable(),
     createdAt: dateTimeSchema,
     updatedAt: dateTimeSchema,
   }),
