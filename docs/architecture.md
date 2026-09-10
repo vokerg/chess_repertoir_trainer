@@ -58,7 +58,7 @@ A PostgreSQL freshness guard prevents an older `GameAnalysisRun` from replacing 
 
 Opening struggles is a standalone Openings feature. It counts candidate games before loading early plies, rejects scopes above its documented safety limit, builds prefix aggregates in memory, and annotates returned prefixes with side-specific course coverage. It reuses the repertoire sequence matcher shared with course review and exposes a verified contract from `packages/contracts`. See [Opening struggles](opening-struggles.md).
 
-Performance by rating is a standalone Progress report backed by `/api/performance-by-rating`. Its API module performs bounded SQL aggregation over imported games by provider, speed, and 100-point opponent-rating bands and exposes its wire contract from `@chess-trainer/contracts/performance-by-rating`.
+Performance by rating is a standalone Progress report backed canonically by `/api/performance-by-rating`. Its API module performs bounded SQL aggregation over imported games by provider, speed, and 100-point opponent-rating bands and exposes its wire contract from `@chess-trainer/contracts/performance-by-rating`. The former `/api/lab/performance-by-rating` URL remains a deprecated compatibility alias in the same module.
 
 Lab tactical detections are persisted reports over analysed imported games. They reuse cached position evals to identify missed shots, punished opponent blunders, and user blunders without running an engine. See [Tactical Detections](tactical-detections.md) for detection semantics, persistence, and Lab UI behavior.
 
