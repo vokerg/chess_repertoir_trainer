@@ -6,7 +6,7 @@ import { PerformanceByRatingReportComponent } from './performance-by-rating-repo
 import {
   PerformanceByRatingStore,
   type PerformanceColumnPreset,
-} from './state/performance-by-rating.store';
+} from '../state/performance-by-rating.store';
 
 describe('PerformanceByRatingReportComponent', () => {
   let fixture: ComponentFixture<PerformanceByRatingReportComponent>;
