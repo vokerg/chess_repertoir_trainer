@@ -31,11 +31,11 @@ const suffix = randomUUID();
 const normalizedFens = [];
 let userId;
 let pauseTriggerInstalled = false;
-let analysisHoldFunctionInstalled = false;
 let writerFirstPromise;
 let cleanupFirstPromise;
 let cleanupFirstWriterPromise;
 let analysisHoldPromise;
+let releaseAnalysisGate;
 
 const sleep = (delayMs) => new Promise((resolve) => setTimeout(resolve, delayMs));
 
@@ -220,33 +220,35 @@ try {
   await prisma.$executeRawUnsafe('DROP FUNCTION IF EXISTS position_cleanup_test_pause_reindex()');
   pauseTriggerInstalled = false;
 
-  // Cleanup-first: a single database statement obtains an AccessExclusive analysis lock
-  // and sleeps. Cleanup acquires the first two canonical locks before waiting on analysis;
-  // production reindex then waits at its normal ply write boundary. When the database-side
-  // gate returns, cleanup deletes the old orphan and reindex resumes without a retry loop,
-  // recreating and referencing the shared Position.
-  await prisma.$executeRawUnsafe(`
-    CREATE OR REPLACE FUNCTION position_cleanup_test_hold_analysis_lock()
-    RETURNS VOID
-    LANGUAGE plpgsql
-    AS $$
-    BEGIN
-      LOCK TABLE "PositionAnalysis" IN ACCESS EXCLUSIVE MODE;
-      PERFORM pg_sleep(2.0);
-    END;
-    $$
-  `);
-  analysisHoldFunctionInstalled = true;
-
+  // Cleanup-first: a dedicated transaction holds an AccessExclusive analysis lock until
+  // the test explicitly releases it. Cleanup acquires the first two canonical locks before
+  // waiting on analysis; production reindex then waits at its normal ply write boundary.
+  // Releasing the gate lets cleanup delete the old orphan and reindex resume without a
+  // retry loop, recreating and referencing the shared Position.
   const cleanupFirst = await createFixture('cleanup-first');
   const cleanupFirstRun = await prepareExecuteRun(cleanupFirst.position.id, 'cleanup-first');
 
-  analysisHoldPromise = blockerClient.$executeRawUnsafe(
-    'SELECT position_cleanup_test_hold_analysis_lock()',
+  let markAnalysisGateReady;
+  const analysisGateReady = new Promise((resolve) => {
+    markAnalysisGateReady = resolve;
+  });
+  const analysisGateRelease = new Promise((resolve) => {
+    releaseAnalysisGate = resolve;
+  });
+  analysisHoldPromise = blockerClient.$transaction(
+    async (tx) => {
+      await tx.$executeRawUnsafe(
+        'LOCK TABLE "PositionAnalysis" IN ACCESS EXCLUSIVE MODE',
+      );
+      markAnalysisGateReady();
+      await analysisGateRelease;
+    },
+    { maxWait: 5000, timeout: 15000 },
   );
-  await waitFor(
-    async () => (await tableLockCount('PositionAnalysis', 'AccessExclusiveLock', true)) >= 1,
-    'analysis lock gate to become active',
+  await analysisGateReady;
+  assert.equal(
+    (await tableLockCount('PositionAnalysis', 'AccessExclusiveLock', true)) >= 1,
+    true,
   );
 
   cleanupFirstPromise = worker.runOnce();
@@ -265,6 +267,8 @@ try {
     'production reindex to wait behind cleanup',
   );
 
+  releaseAnalysisGate();
+  releaseAnalysisGate = undefined;
   await analysisHoldPromise;
   analysisHoldPromise = undefined;
 
@@ -294,11 +298,12 @@ try {
   assert.equal(cleanupFirstCompleted.status, 'COMPLETED');
   assert.equal(cleanupFirstCompleted.positionsDeleted, 1);
 
-  await prisma.$executeRawUnsafe('DROP FUNCTION IF EXISTS position_cleanup_test_hold_analysis_lock()');
-  analysisHoldFunctionInstalled = false;
-
   console.log('Position cleanup reindex interleaving tests passed.');
 } finally {
+  if (releaseAnalysisGate) {
+    releaseAnalysisGate();
+    releaseAnalysisGate = undefined;
+  }
   if (writerFirstPromise) await writerFirstPromise.catch(() => {});
   if (analysisHoldPromise) await analysisHoldPromise.catch(() => {});
   if (cleanupFirstPromise) await cleanupFirstPromise.catch(() => {});
@@ -309,11 +314,6 @@ try {
     ).catch(() => {});
     await prisma.$executeRawUnsafe(
       'DROP FUNCTION IF EXISTS position_cleanup_test_pause_reindex()',
-    ).catch(() => {});
-  }
-  if (analysisHoldFunctionInstalled) {
-    await prisma.$executeRawUnsafe(
-      'DROP FUNCTION IF EXISTS position_cleanup_test_hold_analysis_lock()',
     ).catch(() => {});
   }
   await prisma.$executeRaw`DELETE FROM "PositionCleanupRun"`.catch(() => {});
