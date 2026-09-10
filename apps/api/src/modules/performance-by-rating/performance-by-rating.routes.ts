@@ -8,6 +8,12 @@ import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 import { unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import { getPerformanceByRating } from './performance-by-rating.service';
 
+const response = {
+  200: performanceByRatingResponseSchema,
+  400: validationErrorResponseSchema,
+  401: unauthorizedResponseSchema,
+};
+
 const performanceByRatingModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/performance-by-rating', {
     schema: {
@@ -17,11 +23,24 @@ const performanceByRatingModule: FastifyPluginAsyncZod = async (app) => {
       description:
         'Groups scored Lichess and Chess.com bullet, blitz, and rapid games by 100-point opponent rating bands, optionally filtered by minimum opponent rating.',
       querystring: performanceByRatingQuerySchema,
-      response: {
-        200: performanceByRatingResponseSchema,
-        400: validationErrorResponseSchema,
-        401: unauthorizedResponseSchema,
-      },
+      response,
+    },
+  }, async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    return getPerformanceByRating(auth.userId, request.query);
+  });
+
+  app.get('/api/lab/performance-by-rating', {
+    schema: {
+      operationId: 'getLegacyLabPerformanceByRating',
+      tags: ['Progress'],
+      summary: 'Compatibility alias for performance by rating',
+      description:
+        'Deprecated compatibility route. Use GET /api/performance-by-rating for the Progress report.',
+      deprecated: true,
+      querystring: performanceByRatingQuerySchema,
+      response,
     },
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
