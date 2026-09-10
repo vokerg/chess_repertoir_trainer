@@ -179,9 +179,9 @@ try {
     const paths = app.swagger().paths;
     assert.ok(paths?.['/api/performance-by-rating']?.get, 'the standalone API route is registered');
     assert.equal(
-      paths?.['/api/lab/performance-by-rating'],
-      undefined,
-      'the former Lab API route is removed',
+      paths?.['/api/lab/performance-by-rating']?.get?.deprecated,
+      true,
+      'the former Lab API route remains only as a deprecated compatibility alias',
     );
     assert.equal(
       paths?.['/api/performance-by-rating']?.get?.tags?.[0],
@@ -196,6 +196,17 @@ try {
 
     assert.equal(response.statusCode, 200);
     const body = response.json();
+
+    const legacyResponse = await app.inject({
+      method: 'GET',
+      url: '/api/lab/performance-by-rating?from=2026-07-01&to=2026-07-14&minRating=600',
+    });
+    assert.equal(legacyResponse.statusCode, 200);
+    assert.deepEqual(
+      legacyResponse.json(),
+      body,
+      'the legacy Lab URL preserves the promoted report response',
+    );
     assert.deepEqual(body.range, { from: '2026-07-01', to: '2026-07-14' });
     assert.equal(body.items.length, 7);
     assert.deepEqual(
