@@ -22,6 +22,8 @@ ADMIN_ACTOR_KEY_VERSION=1
 
 Subjects are opaque Clerk user identifiers, not email addresses. Blank, duplicate, malformed, or unexpectedly large allow-lists fail startup. Enabled administrator authorization also fails startup unless normal authentication uses Clerk. The app-factory-only `test` policy is rejected in production.
 
+Administrator session evidence is derived only after the normal Clerk JWT signature, issuer, and authorized-party checks succeed. It requires the signed `sid`, `v`, and `iat` claims and preserves `jti` when Clerk supplies it, but does not require `jti`; Clerk development instances can issue otherwise-valid version 2 session tokens without that optional identifier. Administrator authority still comes exclusively from the exact server-side Clerk subject allow-list.
+
 The actor-key secret derives versioned HMAC identifiers for structured security logs. Actor and target keys use separate domains, and both remain separate from future deleted-identity tombstones owned by ONB-019.
 
 ## API
