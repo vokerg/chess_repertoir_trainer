@@ -6,15 +6,7 @@ import { PerformanceByRatingReportComponent } from '../components/performance-by
   selector: 'app-performance-by-rating-page',
   standalone: true,
   imports: [PageHeaderComponent, PerformanceByRatingReportComponent],
-  template: `
-    <section class="stack">
-      <app-page-header
-        title="Performance by rating"
-        subtitle="Compare results across opponent rating bands, providers, and speeds."
-      />
-      <app-performance-by-rating-report />
-    </section>
-  `,
+  templateUrl: './performance-by-rating-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PerformanceByRatingPageComponent {}
