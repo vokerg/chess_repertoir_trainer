@@ -92,10 +92,12 @@
                 <p class="games-muted">{{ displayTimeControl(game) }}</p>
               </td>
               <td data-label="Opening">
-                <p class="game-main">{{ game.opening?.eco || '—' }}</p>
-                <p class="games-muted opening-name">
-                  {{ game.opening?.name || 'Opening unavailable' }}
-                </p>
+                @if (game.opening?.eco; as eco) {
+                  <p class="game-main">{{ eco }}</p>
+                }
+                @if (game.opening?.name; as openingName) {
+                  <p class="games-muted opening-name">{{ openingName }}</p>
+                }
               </td>
               <td data-label="Accuracy">
                 <p class="game-main games-metric">
@@ -162,10 +164,16 @@
               {{ playerLabel(game.white) }} <span class="games-mobile-versus">vs</span>
               {{ playerLabel(game.black) }}
             </p>
-            <p class="games-mobile-opening">
-              <strong>{{ game.opening?.eco || '—' }}</strong>
-              <span>{{ game.opening?.name || 'Opening unavailable' }}</span>
-            </p>
+            @if (game.opening?.eco || game.opening?.name) {
+              <p class="games-mobile-opening">
+                @if (game.opening?.eco; as eco) {
+                  <strong>{{ eco }}</strong>
+                }
+                @if (game.opening?.name; as openingName) {
+                  <span>{{ openingName }}</span>
+                }
+              </p>
+            }
           </a>
 
           <app-fact-grid
