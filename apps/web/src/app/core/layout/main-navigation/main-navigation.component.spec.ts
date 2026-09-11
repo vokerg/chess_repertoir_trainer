@@ -308,6 +308,9 @@ describe('MainNavigationComponent', () => {
     expect(moreButton.getAttribute('aria-expanded')).toBe('true');
     expect(dialog.querySelectorAll('.mobile-nav-item').length).toBeGreaterThan(9);
     expect(dialog.querySelector('[href="/settings/accounts"]')).not.toBeNull();
+    expect(
+      dialog.querySelector('[href="/progress/performance-by-rating"]'),
+    ).not.toBeNull();
 
     await router.navigateByUrl('/games');
     fixture.detectChanges();
