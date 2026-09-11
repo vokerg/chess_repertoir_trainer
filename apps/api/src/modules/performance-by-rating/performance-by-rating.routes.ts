@@ -34,8 +34,8 @@ const performanceByRatingModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/lab/performance-by-rating', {
     schema: {
       operationId: 'getPerformanceByRating',
-      tags: ['Progress'],
-      summary: 'Compatibility alias for performance by rating',
+      tags: ['Lab'],
+      summary: 'Compare results across opponent rating bands',
       description:
         'Deprecated compatibility route. Use GET /api/performance-by-rating for the Progress report.',
       deprecated: true,
