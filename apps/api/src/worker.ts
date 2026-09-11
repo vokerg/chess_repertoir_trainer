@@ -23,6 +23,8 @@ import { createJobWorker } from './modules/jobs/job-worker.service';
 import { AccountImportPreparationHandoffRepository } from './modules/preparation/account-import-preparation-handoff.repository.prisma';
 import { readPreparationConfig } from './modules/preparation/preparation.config';
 import { createPreparationReconciler } from './modules/preparation/preparation-reconciler.service';
+import { loadPositionCleanupConfig } from './modules/position-cleanup/position-cleanup.config';
+import { createPositionCleanupWorker } from './modules/position-cleanup/position-cleanup.worker.service';
 
 const DAY_MS = 24 * 60 * 60_000;
 const TERMINAL_RETENTION_INTERVAL_MS = 60 * 60_000;
@@ -35,10 +37,12 @@ async function bootstrap() {
   const accountImportConfig = loadAccountImportWorkerConfig();
   const lifecycleConfig = loadAccountGameDataLifecycleWorkerConfig();
   const preparationConfig = readPreparationConfig();
+  const positionCleanupConfig = loadPositionCleanupConfig();
   const shutdownTimeoutMs = Math.max(
     config.shutdownTimeoutMs,
     accountImportConfig.shutdownTimeoutMs,
     lifecycleConfig.shutdownTimeoutMs,
+    positionCleanupConfig.shutdownTimeoutMs,
   );
   const worker = createJobWorker({
     repository: JobWorkerRepository,
@@ -58,6 +62,7 @@ async function bootstrap() {
   });
   const preparationWorker = createPreparationReconciler({ config: preparationConfig });
   const lifecycleWorker = createAccountGameDataLifecycleWorker({ config: lifecycleConfig });
+  const positionCleanupWorker = createPositionCleanupWorker({ config: positionCleanupConfig });
   let shuttingDown = false;
   let retentionTimer: NodeJS.Timeout | undefined;
   let retentionInFlight: Promise<void> | null = null;
@@ -98,11 +103,13 @@ async function bootstrap() {
   const accountImportWorkerPromise = accountImportWorker.run();
   const preparationWorkerPromise = preparationWorker.run();
   const lifecycleWorkerPromise = lifecycleWorker.run();
+  const positionCleanupWorkerPromise = positionCleanupWorker.run();
   const workerPromises = [
     jobWorkerPromise,
     accountImportWorkerPromise,
     preparationWorkerPromise,
     lifecycleWorkerPromise,
+    positionCleanupWorkerPromise,
   ];
   const runPromise = Promise.all(workerPromises);
 
@@ -118,6 +125,7 @@ async function bootstrap() {
     accountImportWorker.requestStop(`Worker received ${signal}.`);
     preparationWorker.requestStop();
     lifecycleWorker.requestStop();
+    positionCleanupWorker.requestStop();
 
     const stopped = await settlesWithin(cleanupCompleted, shutdownTimeoutMs);
     if (!stopped) {
@@ -143,6 +151,7 @@ async function bootstrap() {
     accountImportWorker.requestStop('Peer worker failed.');
     preparationWorker.requestStop();
     lifecycleWorker.requestStop();
+    positionCleanupWorker.requestStop();
     const peerStopped = await settlesWithin(
       Promise.allSettled(workerPromises),
       shutdownTimeoutMs,

@@ -1,6 +1,6 @@
 # ONB-026 — Implement bounded orphan shared-position cleanup
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -14,13 +14,13 @@ GitHub issue: [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/28
 
 Research owner: ONB-006 / [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT / ONB-026 implementation session
 
-Claim branch: none
+Claim branch: `onb-026/issue-280-orphan-position-cleanup`
 
-Claimed at: none
+Claimed at: 2026-09-03
 
-Claim scope: none
+Claim scope: Implement the canonical database-owned orphan-position candidate/run lifecycle, transition-relation reset triggers, bounded manual-first cleanup worker/service/command, and focused PostgreSQL validation without changing course trees, adding recurring scheduling, or broadening user/account destructive semantics.
 
 Promoted at: 2026-08-26 through merged-task completion reconciliation
 
