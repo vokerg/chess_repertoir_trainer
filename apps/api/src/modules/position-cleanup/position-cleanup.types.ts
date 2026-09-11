@@ -47,7 +47,6 @@ export interface PositionCleanupRun {
   candidatesInspected: number;
   candidatesReconciled: number;
   positionsInspected: number;
-  orphansObserved: number;
   orphansFirstObserved: number;
   orphansRefreshed: number;
   eligibleObserved: number;
@@ -77,7 +76,6 @@ export interface CreatePositionCleanupRunInput {
   mode: PositionCleanupMode;
   policyVersion: string;
   graceDays: number;
-  graceCutoff: Date;
   inputPageSize: number;
   deleteBatchSize: number;
   lockTimeoutMs: number;

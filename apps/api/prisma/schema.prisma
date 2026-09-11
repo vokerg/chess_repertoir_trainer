@@ -417,7 +417,6 @@ model PositionCleanupRun {
   candidatesInspected      Int       @default(0)
   candidatesReconciled     Int       @default(0)
   positionsInspected       Int       @default(0)
-  orphansObserved          Int       @default(0)
   orphansFirstObserved     Int       @default(0)
   orphansRefreshed         Int       @default(0)
   eligibleObserved         Int       @default(0)

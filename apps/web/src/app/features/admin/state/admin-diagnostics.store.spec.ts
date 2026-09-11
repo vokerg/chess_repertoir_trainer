@@ -246,6 +246,8 @@ function userPage(ids: number[], nextCursor: string | null): AdminUserListRespon
   return {
     items: ids.map((id) => ({
       id,
+      displayName: null,
+      email: null,
       createdAt: '2026-08-01T10:00:00.000Z',
       updatedAt: '2026-08-02T10:00:00.000Z',
       accountCount: 1,
@@ -263,11 +265,20 @@ function detail(userId: number): AdminUserDetailResponse {
   return {
     user: {
       id: userId,
+      displayName: null,
+      email: null,
       createdAt: '2026-08-01T10:00:00.000Z',
       updatedAt: '2026-08-02T10:00:00.000Z',
     },
     sections: {
-      accounts: { available: true, total: 1, active: 1, groups: [] },
+      accounts: {
+        available: true,
+        total: 1,
+        active: 1,
+        hasMore: false,
+        items: [],
+        groups: [],
+      },
       games: {
         available: true,
         total: 10,

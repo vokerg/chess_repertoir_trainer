@@ -4,6 +4,8 @@
 -- ImportedGamePly transition-table triggers, and the existing ply -> position
 -- foreign key remains the final deletion backstop.
 
+BEGIN;
+
 DO $$
 BEGIN
     IF current_setting('server_version_num')::INTEGER < 100000 THEN
@@ -58,7 +60,6 @@ CREATE TABLE "PositionCleanupRun" (
     "candidatesInspected" INTEGER NOT NULL DEFAULT 0,
     "candidatesReconciled" INTEGER NOT NULL DEFAULT 0,
     "positionsInspected" INTEGER NOT NULL DEFAULT 0,
-    "orphansObserved" INTEGER NOT NULL DEFAULT 0,
     "orphansFirstObserved" INTEGER NOT NULL DEFAULT 0,
     "orphansRefreshed" INTEGER NOT NULL DEFAULT 0,
     "eligibleObserved" INTEGER NOT NULL DEFAULT 0,
@@ -119,7 +120,6 @@ CREATE TABLE "PositionCleanupRun" (
             "candidatesInspected" >= 0
             AND "candidatesReconciled" >= 0
             AND "positionsInspected" >= 0
-            AND "orphansObserved" >= 0
             AND "orphansFirstObserved" >= 0
             AND "orphansRefreshed" >= 0
             AND "eligibleObserved" >= 0
@@ -216,48 +216,12 @@ REFERENCING NEW TABLE AS position_cleanup_new_plies
 FOR EACH STATEMENT
 EXECUTE FUNCTION "position_cleanup_reset_candidates_from_new_plies"();
 
-CREATE FUNCTION "position_cleanup_reset_candidates_from_updated_plies"()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    PERFORM "position_cleanup_lock_reference_ids"(
-        ARRAY(
-            SELECT DISTINCT new_ply."positionId"
-            FROM position_cleanup_new_plies AS new_ply
-            LEFT JOIN position_cleanup_old_plies AS old_ply
-              ON old_ply."importedGameId" = new_ply."importedGameId"
-             AND old_ply."plyNumber" = new_ply."plyNumber"
-            WHERE new_ply."positionId" IS NOT NULL
-              AND (
-                  old_ply."importedGameId" IS NULL
-                  OR old_ply."positionId" IS DISTINCT FROM new_ply."positionId"
-              )
-            ORDER BY new_ply."positionId" ASC
-        )
-    );
-
-    DELETE FROM "PositionCleanupCandidate" AS candidate
-    USING (
-        SELECT DISTINCT new_ply."positionId"
-        FROM position_cleanup_new_plies AS new_ply
-        LEFT JOIN position_cleanup_old_plies AS old_ply
-          ON old_ply."importedGameId" = new_ply."importedGameId"
-         AND old_ply."plyNumber" = new_ply."plyNumber"
-        WHERE new_ply."positionId" IS NOT NULL
-          AND (
-              old_ply."importedGameId" IS NULL
-              OR old_ply."positionId" IS DISTINCT FROM new_ply."positionId"
-          )
-    ) AS newly_referenced
-    WHERE candidate."positionId" = newly_referenced."positionId";
-
-    RETURN NULL;
-END;
-$$;
-
+-- PostgreSQL transition relations require an unqualified UPDATE event: an
+-- UPDATE OF column list cannot be combined with REFERENCING NEW TABLE.
 CREATE TRIGGER "ImportedGamePly_position_cleanup_reset_update"
 AFTER UPDATE ON "ImportedGamePly"
-REFERENCING OLD TABLE AS position_cleanup_old_plies NEW TABLE AS position_cleanup_new_plies
+REFERENCING NEW TABLE AS position_cleanup_new_plies
 FOR EACH STATEMENT
-EXECUTE FUNCTION "position_cleanup_reset_candidates_from_updated_plies"();
+EXECUTE FUNCTION "position_cleanup_reset_candidates_from_new_plies"();
+
+COMMIT;

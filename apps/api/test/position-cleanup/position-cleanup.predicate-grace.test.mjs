@@ -17,7 +17,7 @@ const config = loadPositionCleanupConfig({
   POSITION_CLEANUP_HEARTBEAT_INTERVAL_MS: '1000',
   POSITION_CLEANUP_STALE_AFTER_MS: '5000',
 });
-const service = createPositionCleanupService({ config, now: () => nowMs });
+const service = createPositionCleanupService({ config });
 const worker = createPositionCleanupWorker({
   config,
   now: () => nowMs,
@@ -48,7 +48,8 @@ async function insertCandidate(positionId, firstObservedOrphanAt) {
 async function targetRun(runId, firstPositionId, lastPositionId) {
   await prisma.$executeRaw`
     UPDATE "PositionCleanupRun"
-    SET "reconcileUpperBound" = ${lastPositionId},
+    SET "graceCutoff" = ${cutoff},
+        "reconcileUpperBound" = ${lastPositionId},
         "positionUpperBound" = ${lastPositionId},
         "reconcileAfterPositionId" = ${firstPositionId - 1},
         "observeAfterPositionId" = ${firstPositionId - 1}
@@ -105,8 +106,8 @@ try {
   await insertCandidate(cacheOnly.id, new Date(cutoff.getTime() - 1));
 
   const dryRun = await service.create({ mode: 'DRY_RUN', requestedBy: 'test:predicate-grace-dry' });
-  assert.equal(dryRun.graceCutoff.getTime(), cutoff.getTime());
   await targetRun(dryRun.id, firstPositionId, lastPositionId);
+  assert.equal((await service.status(dryRun.id)).graceCutoff.getTime(), cutoff.getTime());
   const dryCompleted = await runToTerminal(dryRun.id);
 
   assert.equal(dryCompleted.status, 'COMPLETED');
@@ -122,8 +123,8 @@ try {
     requestedBy: 'test:predicate-grace-execute',
     confirmation: POSITION_CLEANUP_EXECUTE_CONFIRMATION,
   });
-  assert.equal(executeRun.graceCutoff.getTime(), cutoff.getTime());
   await targetRun(executeRun.id, firstPositionId, lastPositionId);
+  assert.equal((await service.status(executeRun.id)).graceCutoff.getTime(), cutoff.getTime());
   const executeCompleted = await runToTerminal(executeRun.id);
 
   assert.equal(

@@ -93,16 +93,6 @@ try {
   assert.equal(created.initialDeleteBatchSize, 4);
   assert.equal(created.deleteBatchSize, 4);
 
-  // The shared test database contains a large pre-existing position corpus. Scope
-  // observation to this fixture before advancing the run to EVALUATE so this lock
-  // test remains a deterministic interleaving test instead of a full-corpus sweep.
-  await prisma.$executeRaw`
-    UPDATE "PositionCleanupRun"
-    SET "positionUpperBound" = ${positionId},
-        "observeAfterPositionId" = ${positionId - 1}
-    WHERE "id" = ${created.id}
-  `;
-
   await runUntilPhase(created.id, 'EVALUATE');
 
   // The API test suite shares one PostgreSQL database, so observation can discover

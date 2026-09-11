@@ -85,6 +85,20 @@
   border-radius: 2px;
 }
 
+.admin-user-identity {
+  display: grid;
+  justify-items: start;
+  gap: 0.2rem;
+  min-width: 12rem;
+}
+
+.admin-user-identity span {
+  color: var(--ui-text-muted);
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
 .admin-warning-row td {
   background: var(--ui-warning-soft);
   white-space: normal;

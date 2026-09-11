@@ -39,9 +39,14 @@ assert.throws(
 );
 
 const config = loadPositionCleanupConfig({ POSITION_CLEANUP_ENABLED: 'true' });
+const fixedGraceCutoff = new Date('2026-08-04T06:00:00.000Z');
 let createdInput;
 const repository = {
   assertDatabaseCapability: async () => 160000,
+  getGraceCutoff: async (graceDays) => {
+    assert.equal(graceDays, 30);
+    return fixedGraceCutoff;
+  },
   createRun: async (input) => {
     createdInput = input;
     return { id: 42, mode: input.mode, status: 'QUEUED', phase: 'RECONCILE' };
@@ -52,14 +57,13 @@ const repository = {
 const service = createPositionCleanupService({
   config,
   repository,
-  now: () => Date.parse('2026-09-03T06:00:00.000Z'),
 });
 
 const preview = await service.preview();
 assert.equal(preview.mode, 'DRY_RUN');
 assert.equal(preview.observational, true);
 assert.equal(preview.postgresServerVersionNum, 160000);
-assert.equal(preview.graceCutoff.toISOString(), '2026-08-04T06:00:00.000Z');
+assert.equal(preview.graceCutoff, fixedGraceCutoff);
 
 await assert.rejects(
   service.create({ mode: 'EXECUTE', requestedBy: 'test' }),

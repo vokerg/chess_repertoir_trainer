@@ -34,6 +34,8 @@ const list = {
   items: [
     {
       id: 7,
+      displayName: 'Ada Admin',
+      email: 'ada@example.test',
       createdAt: '2026-08-04T18:00:00.000Z',
       updatedAt: '2026-08-04T18:10:00.000Z',
       accountCount: 2,
@@ -51,6 +53,8 @@ assert.deepEqual(adminUserListResponseSchema.parse(list), list);
 const detail = {
   user: {
     id: 7,
+    displayName: 'Ada Admin',
+    email: 'ada@example.test',
     createdAt: '2026-08-04T18:00:00.000Z',
     updatedAt: '2026-08-04T18:10:00.000Z',
   },
@@ -59,6 +63,16 @@ const detail = {
       available: true,
       total: 1,
       active: 1,
+      hasMore: false,
+      items: [
+        {
+          id: 9,
+          provider: 'LICHESS',
+          username: 'ada-chess',
+          displayName: 'Ada Chess',
+          active: true,
+        },
+      ],
       groups: [{ provider: 'lichess', active: true, count: 1 }],
     },
     games: {
@@ -108,10 +122,11 @@ const detail = {
   },
 };
 assert.deepEqual(adminUserDetailResponseSchema.parse(detail), detail);
+assert.equal('email' in adminUserDetailResponseSchema.shape.user.shape, true);
 assert.equal(
-  adminUserDetailResponseSchema.safeParse({ ...detail, email: 'not-allowed@example.test' }).success,
+  adminUserDetailResponseSchema.safeParse({ ...detail, user: { ...detail.user, email: null } })
+    .success,
   true,
 );
-assert.equal('email' in adminUserDetailResponseSchema.shape.user.shape, false);
 
 console.log('Administrator diagnostics contract tests passed.');

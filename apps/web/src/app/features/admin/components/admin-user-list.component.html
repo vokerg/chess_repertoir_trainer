@@ -31,14 +31,20 @@
           @for (user of users(); track user.id) {
             <tr [class.admin-row-selected]="selectedUserId() === user.id">
               <th scope="row">
-                <button
-                  type="button"
-                  class="admin-user-button"
-                  [attr.aria-current]="selectedUserId() === user.id ? 'true' : null"
-                  (click)="selectUser.emit(user.id)"
-                >
-                  User {{ user.id }}
-                </button>
+                <div class="admin-user-identity">
+                  <button
+                    type="button"
+                    class="admin-user-button"
+                    [attr.aria-current]="selectedUserId() === user.id ? 'true' : null"
+                    (click)="selectUser.emit(user.id)"
+                  >
+                    {{ user.displayName || user.email || 'User ' + user.id }}
+                  </button>
+                  <span>User {{ user.id }}</span>
+                  @if (user.email && user.email !== user.displayName) {
+                    <span>{{ user.email }}</span>
+                  }
+                </div>
               </th>
               <td>{{ user.accountCount }}</td>
               <td>{{ user.activeAccountCount }}</td>

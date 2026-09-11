@@ -27,7 +27,7 @@ Detailed historical validation remains in task files and append-only reports.
 ## Under review
 
 - **ONB-009 / #194 — REVIEW.** Authenticated onboarding start/skip/finish/pause/resume/cancel/retry/restart/expansion commands are implemented on branch `onb-009/issue-194-lifecycle-commands`, runtime PR #406. The implementation remains open until review acceptance and squash merge.
-- **ONB-026 / #280 — REVIEW.** Bounded orphan shared-position cleanup is implemented on branch `onb-026/issue-280-orphan-position-cleanup`, PR #412. The implementation remains open until review acceptance and squash merge; the validated live PostgreSQL evidence and remaining target-scale command limitation are recorded in the task report.
+- **ONB-026 / #280 — REVIEW.** Bounded shared-position cleanup is implemented on `onb-026/issue-280-orphan-position-cleanup`, runtime PR #412. Exact-head CI/review validation remains before acceptance/merge.
 
 ## Ready implementation
 

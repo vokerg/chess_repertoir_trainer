@@ -35,12 +35,47 @@ describe('AdminUserDiagnosticsComponent', () => {
     expect(text).toContain('User diagnostics are unavailable.');
     expect(text).toContain('No recent jobs in the bounded result.');
   });
+
+  it('renders the available user identity and connected chess accounts', () => {
+    const fixture = TestBed.createComponent(AdminUserDiagnosticsComponent);
+    const detail = unavailableDetail(5);
+    detail.user.displayName = 'Ada Player';
+    detail.user.email = 'ada@example.test';
+    detail.sections.accounts = {
+      available: true,
+      total: 1,
+      active: 1,
+      hasMore: false,
+      items: [
+        {
+          id: 12,
+          provider: 'LICHESS',
+          username: 'ada-chess',
+          displayName: 'Ada Chess',
+          active: true,
+        },
+      ],
+      groups: [{ provider: 'LICHESS', active: true, count: 1 }],
+    };
+    fixture.componentRef.setInput('selectedUserId', 5);
+    fixture.componentRef.setInput('detailState', 'ready');
+    fixture.componentRef.setInput('detail', detail);
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Ada Player');
+    expect(text).toContain('ada@example.test');
+    expect(text).toContain('LICHESS');
+    expect(text).toContain('ada-chess');
+  });
 });
 
 function unavailableDetail(userId: number): AdminUserDetailResponse {
   return {
     user: {
       id: userId,
+      displayName: null,
+      email: null,
       createdAt: '2026-08-01T10:00:00.000Z',
       updatedAt: '2026-08-02T10:00:00.000Z',
     },

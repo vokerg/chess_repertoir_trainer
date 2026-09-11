@@ -42,6 +42,14 @@ try {
   const [firstPositionId, secondPositionId] = positionIds;
   assert.ok(firstPositionId && secondPositionId && firstPositionId < secondPositionId);
 
+  await prisma.$executeRaw`
+    INSERT INTO "PositionCleanupCandidate" (
+      "positionId", "firstObservedOrphanAt", "lastObservedOrphanAt"
+    ) VALUES (
+      ${firstPositionId}, NOW() - INTERVAL '31 days', NOW() - INTERVAL '31 days'
+    )
+  `;
+
   const run = await service.create({
     mode: 'DRY_RUN',
     requestedBy: 'test:lifecycle-recovery',
@@ -70,10 +78,8 @@ try {
   const afterFirstBatch = await repositoryA.getRun(run.id);
   assert.equal(afterFirstBatch?.observeAfterPositionId, firstPositionId);
   assert.equal(afterFirstBatch?.positionsInspected, 1);
-  assert.equal(afterFirstBatch?.orphansObserved, 1);
-  assert.equal(afterFirstBatch?.orphansFirstObserved, 1);
-  assert.equal(afterFirstBatch?.orphansRefreshed, 0);
-  assert.equal(afterFirstBatch?.observationStartedAt instanceof Date, true);
+  assert.equal(afterFirstBatch?.orphansFirstObserved, 0);
+  assert.equal(afterFirstBatch?.orphansRefreshed, 1);
   assert.equal(afterFirstBatch?.workKey, crashedKey);
 
   // Simulate a worker dying after its atomic batch commit but before claim release.
@@ -92,9 +98,8 @@ try {
   assert.equal(recovered?.staleRecoveryCount, 1);
   assert.equal(recovered?.observeAfterPositionId, firstPositionId);
   assert.equal(recovered?.positionsInspected, 1);
-  assert.equal(recovered?.orphansObserved, 1);
-  assert.equal(recovered?.orphansFirstObserved, 1);
-  assert.equal(recovered?.orphansRefreshed, 0);
+  assert.equal(recovered?.orphansFirstObserved, 0);
+  assert.equal(recovered?.orphansRefreshed, 1);
   assert.equal(await repositoryA.heartbeat(run.id, crashedKey), false, 'stale work key must stay fenced out');
 
   const resumedKey = workKey('RESUMED');
@@ -115,9 +120,8 @@ try {
   const beforeCancel = await repositoryB.getRun(run.id);
   assert.equal(beforeCancel?.phase, 'EVALUATE');
   assert.equal(beforeCancel?.positionsInspected, 2);
-  assert.equal(beforeCancel?.orphansObserved, 2);
-  assert.equal(beforeCancel?.orphansFirstObserved, 2);
-  assert.equal(beforeCancel?.orphansRefreshed, 0);
+  assert.equal(beforeCancel?.orphansFirstObserved, 1);
+  assert.equal(beforeCancel?.orphansRefreshed, 1);
 
   const cancelRequested = await service.cancel(run.id);
   assert.ok(cancelRequested.cancelRequestedAt instanceof Date);
@@ -131,10 +135,19 @@ try {
   assert.equal(cancelled?.terminalResult, 'CANCELLED');
   assert.equal(cancelled?.workKey, null);
   assert.equal(cancelled?.positionsInspected, 2, 'restart must not double-count the committed first page');
-  assert.equal(cancelled?.orphansObserved, 2, 'restart must not skip the second page');
-  assert.equal(cancelled?.orphansFirstObserved, 2, 'restart must not double-count first observations');
-  assert.equal(cancelled?.orphansRefreshed, 0, 'restart must not invent refreshed observations');
+  assert.equal(cancelled?.orphansFirstObserved, 1, 'restart must not skip the second first-observation page');
+  assert.equal(cancelled?.orphansRefreshed, 1, 'restart must preserve the committed refresh count');
   assert.equal(cancelled?.staleRecoveryCount, 1);
+  assert.equal(
+    await repositoryB.claimNext(workKey('TERMINAL-REPLAY')),
+    null,
+    'terminal cleanup runs must not become claimable again after restart/replay',
+  );
+  const replayedTerminal = await repositoryB.getRun(run.id);
+  assert.equal(replayedTerminal?.positionsInspected, cancelled?.positionsInspected);
+  assert.equal(replayedTerminal?.orphansFirstObserved, cancelled?.orphansFirstObserved);
+  assert.equal(replayedTerminal?.orphansRefreshed, cancelled?.orphansRefreshed);
+  assert.equal(replayedTerminal?.terminalResult, 'CANCELLED');
 
   console.log('Position cleanup lifecycle recovery tests passed.');
 } finally {

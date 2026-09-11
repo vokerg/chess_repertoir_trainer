@@ -19,6 +19,10 @@ interface ServerVersionRow {
   serverVersionNum: number;
 }
 
+interface GraceCutoffRow {
+  graceCutoff: Date;
+}
+
 interface PositionInputRow {
   id: number;
 }
@@ -50,6 +54,7 @@ export class PositionCleanupUnsupportedDatabaseError extends Error {}
 
 export interface PositionCleanupRepository {
   assertDatabaseCapability(): Promise<number>;
+  getGraceCutoff(graceDays: number): Promise<Date>;
   createRun(input: CreatePositionCleanupRunInput): Promise<PositionCleanupRun>;
   getRun(runId: number): Promise<PositionCleanupRun | null>;
   claimNext(workKey: string): Promise<PositionCleanupRun | null>;
@@ -83,6 +88,18 @@ export function createPositionCleanupRepository(
       return serverVersionNum;
     },
 
+    async getGraceCutoff(graceDays) {
+      validateGraceDays(graceDays);
+      const rows = await database.$queryRaw<GraceCutoffRow[]>(Prisma.sql`
+        SELECT (clock_timestamp() - make_interval(days => ${graceDays}::integer))::timestamp(3) AS "graceCutoff"
+      `);
+      const graceCutoff = rows[0]?.graceCutoff;
+      if (!(graceCutoff instanceof Date) || Number.isNaN(graceCutoff.getTime())) {
+        throw new Error('Position cleanup grace cutoff was not returned by PostgreSQL.');
+      }
+      return graceCutoff;
+    },
+
     async createRun(input) {
       validateCreateRunInput(input);
       return database.$transaction(async (transaction) => {
@@ -98,11 +115,12 @@ export function createPositionCleanupRepository(
           INSERT INTO "PositionCleanupRun" (
             "mode", "policyVersion", "graceDays", "graceCutoff",
             "inputPageSize", "initialDeleteBatchSize", "deleteBatchSize", "lockTimeoutMs", "requestedBy",
-            "reconcileUpperBound", "positionUpperBound", "updatedAt"
+            "reconcileUpperBound", "positionUpperBound", "evaluationUpperBound", "updatedAt"
           ) VALUES (
-            ${input.mode}, ${input.policyVersion}, ${input.graceDays}, ${input.graceCutoff},
+            ${input.mode}, ${input.policyVersion}, ${input.graceDays},
+            (clock_timestamp() - make_interval(days => ${input.graceDays}::integer))::timestamp(3),
             ${input.inputPageSize}, ${input.deleteBatchSize}, ${input.deleteBatchSize}, ${input.lockTimeoutMs}, ${input.requestedBy},
-            ${reconcileUpperBound}, ${positionUpperBound}, NOW()
+            ${reconcileUpperBound}, ${positionUpperBound}, ${positionUpperBound}, NOW()
           )
           RETURNING *
         `);
@@ -280,14 +298,10 @@ export function createPositionCleanupRepository(
           LIMIT ${run.inputPageSize}
         `);
         if (input.length === 0) {
-          const evaluationUpperBound = await maxId(
-            transaction,
-            Prisma.sql`SELECT COALESCE(MAX("positionId"), 0)::int AS "maxId" FROM "PositionCleanupCandidate"`,
-          );
           await updateClaimedRun(transaction, runId, workKey, Prisma.sql`
             "phase" = 'EVALUATE',
-            "evaluationUpperBound" = ${evaluationUpperBound},
-            "observationStartedAt" = CASE WHEN "mode" = 'DRY_RUN' THEN COALESCE("observationStartedAt", NOW()) ELSE "observationStartedAt" END,
+            "evaluationUpperBound" = COALESCE("evaluationUpperBound", "positionUpperBound"),
+            "observationStartedAt" = CASE WHEN "mode" = 'DRY_RUN' THEN NOW() ELSE "observationStartedAt" END,
             "lastBatchAt" = NOW()
           `);
           return { inspected: 0, matched: 0, checkpoint: run.observeAfterPositionId, completedPhase: true };
@@ -368,10 +382,8 @@ export function createPositionCleanupRepository(
         await updateClaimedRun(transaction, runId, workKey, Prisma.sql`
           "observeAfterPositionId" = ${summary.checkpoint},
           "positionsInspected" = "positionsInspected" + ${summary.inspected},
-          "orphansObserved" = "orphansObserved" + ${summary.matched},
           "orphansFirstObserved" = "orphansFirstObserved" + ${summary.firstObserved},
           "orphansRefreshed" = "orphansRefreshed" + ${summary.refreshed},
-          "observationStartedAt" = CASE WHEN "mode" = 'DRY_RUN' THEN COALESCE("observationStartedAt", NOW()) ELSE "observationStartedAt" END,
           "lastBatchAt" = NOW()
         `);
         return {
@@ -692,7 +704,7 @@ function requiredSummary(summary: BatchSummaryRow | undefined): BatchSummaryRow 
 function validateCreateRunInput(input: CreatePositionCleanupRunInput): void {
   if (input.mode !== 'DRY_RUN' && input.mode !== 'EXECUTE') throw new Error('Invalid position cleanup mode.');
   if (!input.policyVersion.trim() || input.policyVersion.length > 24) throw new Error('Invalid cleanup policyVersion.');
-  if (!Number.isSafeInteger(input.graceDays) || input.graceDays < 30) throw new Error('Cleanup graceDays must be at least 30.');
+  validateGraceDays(input.graceDays);
   if (!Number.isSafeInteger(input.inputPageSize) || input.inputPageSize < 1 || input.inputPageSize > 500) {
     throw new Error('Cleanup inputPageSize must be between 1 and 500.');
   }
@@ -707,7 +719,10 @@ function validateCreateRunInput(input: CreatePositionCleanupRunInput): void {
     throw new Error('Cleanup lockTimeoutMs must be between 1 and 5000.');
   }
   if (!input.requestedBy.trim() || input.requestedBy.length > 80) throw new Error('Invalid cleanup requestedBy value.');
-  validateDate(input.graceCutoff, 'graceCutoff');
+}
+
+function validateGraceDays(value: number): void {
+  if (!Number.isSafeInteger(value) || value < 30) throw new Error('Cleanup graceDays must be at least 30.');
 }
 
 function validateRunId(value: number): void {

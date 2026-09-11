@@ -4,7 +4,7 @@ export interface VerifiedSessionContext {
   sessionId: string;
   tokenVersion: number;
   issuedAt: Date;
-  jwtId: string;
+  jwtId?: string;
   authorizedParty?: string;
   factorVerificationAge?: readonly [number, number];
   reverificationId?: string;
@@ -40,7 +40,7 @@ export function normalizeVerifiedSessionContext(
   const issuedAtSeconds = integer(payload['iat']);
   const jwtId = nonEmptyString(payload['jti']);
 
-  if (!sessionId || tokenVersion === undefined || tokenVersion < 1 || issuedAtSeconds === undefined || issuedAtSeconds < 1 || !jwtId) {
+  if (!sessionId || tokenVersion === undefined || tokenVersion < 1 || issuedAtSeconds === undefined || issuedAtSeconds < 1) {
     return null;
   }
 
@@ -57,7 +57,7 @@ export function normalizeVerifiedSessionContext(
     sessionId,
     tokenVersion,
     issuedAt,
-    jwtId,
+    ...(jwtId ? { jwtId } : {}),
     ...(authorizedParty ? { authorizedParty } : {}),
     ...(fva ? { factorVerificationAge: fva } : {}),
     ...(reverificationId ? { reverificationId } : {}),

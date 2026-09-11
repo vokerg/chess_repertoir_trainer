@@ -8,7 +8,7 @@ Order: 185
 
 Delivery class: Implementation
 
-Planning maturity: Implementation-ready after ONB-006/007 acceptance and ONB-019 lifecycle-foundation delivery; claim-time schema/migration and deployed-PostgreSQL compatibility checks remain mandatory
+Planning maturity: Implementation complete on the claimed branch; PR #412 is under exact-head CI/review validation
 
 GitHub issue: [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280)
 
@@ -206,6 +206,8 @@ The append-only validation record is [`reports/ONB-026-2026-09-11-orphan-positio
 
 ## Completion
 
-Pull request: [#412](https://github.com/vokerg/chess_repertoir_trainer/pull/412)
+Runtime pull request: [#412](https://github.com/vokerg/chess_repertoir_trainer/pull/412)
+
+Runtime validation: pending final exact-head CI after takeover review corrections.
 
 Completed at: pending maintainer acceptance and squash merge

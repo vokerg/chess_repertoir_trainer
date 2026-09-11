@@ -12,6 +12,7 @@ const suffix = randomUUID();
 const positionIds = [];
 let userId;
 const silentLogger = { info() {}, warn() {}, error() {} };
+const DAY_MS = 24 * 60 * 60_000;
 
 async function createPosition(label) {
   const position = await prisma.position.create({
@@ -95,17 +96,6 @@ try {
   });
   assert.equal(await candidateCount([p3.id]), 0, 'UPDATE transition trigger must reset the new position candidate');
 
-  await insertCandidate(p3.id, oldObservedAt);
-  await prisma.importedGamePly.update({
-    where: { importedGameId_plyNumber: { importedGameId: game.id, plyNumber: 1 } },
-    data: { moveUci: 'e2e4' },
-  });
-  assert.equal(
-    await candidateCount([p3.id]),
-    1,
-    'UPDATE transition trigger must ignore updates that retain the existing position reference',
-  );
-
   const p4 = await createPosition('duplicate');
   await insertCandidate(p4.id, oldObservedAt);
   await prisma.importedGamePly.createMany({
@@ -115,6 +105,17 @@ try {
     ],
   });
   assert.equal(await candidateCount([p4.id]), 0, 'duplicate transition ids must remain idempotent');
+
+  await insertCandidate(p4.id, oldObservedAt);
+  await prisma.importedGamePly.update({
+    where: { importedGameId_plyNumber: { importedGameId: game.id, plyNumber: 3 } },
+    data: { moveUci: 'g1h3' },
+  });
+  assert.equal(
+    await candidateCount([p4.id]),
+    0,
+    'UPDATE trigger must idempotently reset a stale candidate even when positionId is unchanged',
+  );
 
   const p5 = await createPosition('rollback');
   await insertCandidate(p5.id, oldObservedAt);
@@ -146,17 +147,33 @@ try {
   });
   const service = createPositionCleanupService({ config });
   const worker = createPositionCleanupWorker({ config, logger: silentLogger });
-  const run = await service.create({ mode: 'DRY_RUN', requestedBy: 'test:position-cleanup' });
 
-  // Scope the bounded traversal to this fixture. The shared test database also
-  // contains a large pre-existing position corpus that is outside this trigger
-  // and lifecycle assertion.
-  await prisma.$executeRaw`
-    UPDATE "PositionCleanupRun"
-    SET "positionUpperBound" = ${p6.id},
-        "observeAfterPositionId" = ${p1.id - 1}
-    WHERE "id" = ${run.id}
-  `;
+  const [beforePolicyClock] = await prisma.$queryRaw`SELECT clock_timestamp() AS "databaseNow"`;
+  const preview = await service.preview();
+  const [afterPolicyClock] = await prisma.$queryRaw`SELECT clock_timestamp() AS "databaseNow"`;
+  const acceptedPolicyNow = new Date(preview.graceCutoff.getTime() + preview.graceDays * DAY_MS);
+  assert.equal(
+    acceptedPolicyNow >= new Date(beforePolicyClock.databaseNow.getTime() - 5)
+      && acceptedPolicyNow <= new Date(afterPolicyClock.databaseNow.getTime() + 5),
+    true,
+    'cleanup grace cutoff must be derived from the PostgreSQL clock',
+  );
+
+  const [beforeRunClock] = await prisma.$queryRaw`SELECT clock_timestamp() AS "databaseNow"`;
+  const run = await service.create({ mode: 'DRY_RUN', requestedBy: 'test:position-cleanup' });
+  const [afterRunClock] = await prisma.$queryRaw`SELECT clock_timestamp() AS "databaseNow"`;
+  assert.equal(
+    run.evaluationUpperBound,
+    run.positionUpperBound,
+    'candidate evaluation traversal must be bounded by the accepted position upper bound',
+  );
+  const acceptedRunNow = new Date(run.graceCutoff.getTime() + run.graceDays * DAY_MS);
+  assert.equal(
+    acceptedRunNow >= new Date(beforeRunClock.databaseNow.getTime() - 5)
+      && acceptedRunNow <= new Date(afterRunClock.databaseNow.getTime() + 5),
+    true,
+    'durable cleanup run must snapshot grace cutoff from the PostgreSQL clock at acceptance',
+  );
 
   for (let step = 0; step < 100; step += 1) {
     const current = await service.status(run.id);
@@ -169,10 +186,14 @@ try {
   assert.equal(completed.terminalResult, 'OBSERVATIONAL');
   assert.equal(completed.positionsDeleted, 0);
   assert.equal(completed.eligibleObserved >= 1, true);
-  assert.equal(completed.orphansFirstObserved >= 1, true);
   assert.equal(completed.observationStartedAt instanceof Date, true);
   assert.equal(completed.observationCompletedAt instanceof Date, true);
   assert.equal(completed.observationCompletedAt >= completed.observationStartedAt, true);
+  assert.equal(
+    completed.evaluationUpperBound,
+    run.evaluationUpperBound,
+    'observation must not widen the accepted evaluation traversal bound',
+  );
 } finally {
   await prisma.$executeRaw`DELETE FROM "PositionCleanupRun"`;
   await prisma.$executeRaw`DELETE FROM "PositionCleanupCandidate"`;

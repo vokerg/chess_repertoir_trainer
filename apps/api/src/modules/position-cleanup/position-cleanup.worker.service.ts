@@ -83,12 +83,12 @@ export function createPositionCleanupWorker(input: {
       await processClaim(run, workKey);
       await repository.releaseClaim(run.id, workKey);
     } catch (error) {
-      if (await settleCancellationRace(run.id, workKey)) {
-        logger.info({ runId: run.id }, 'Position cleanup cancellation settled between batches');
-      } else if (isLockTimeout(error)) {
+      if (isLockTimeout(error)) {
         logger.warn(safeContext(error, run), 'Position cleanup delete batch hit lock timeout');
         await repository.recordLockTimeout(run.id, workKey, MAX_LOCK_TIMEOUT_RETRIES);
         if (!stopRequested) await waitForPoll(input.config.pollIntervalMs);
+      } else if (await settleCancellationRace(run.id, workKey)) {
+        logger.info({ runId: run.id }, 'Position cleanup cancellation settled between batches');
       } else {
         logger.error(safeContext(error, run), 'Position cleanup iteration failed');
         try {

@@ -10,6 +10,7 @@ import { POSITION_CLEANUP_TABLE_LOCK_ORDER, isPositionCleanupTerminal } from '..
 
 const prisma = prismaModule.default;
 const lockClient = new PrismaClient();
+const lockBlockerClient = new PrismaClient();
 const suffix = randomUUID();
 const prefix = `position-cleanup-benchmark-${suffix}-`;
 const fixtureSize = 5000;
@@ -204,16 +205,20 @@ try {
   assert.equal(positions.length, fixtureSize);
   positionIds.push(...positions.map((position) => position.id));
 
-  const referencedPositions = positions.filter((_, index) => (index + 1) % 10 === 0);
-  await prisma.importedGamePly.createMany({
-    data: referencedPositions.map((position, index) => ({
-      importedGameId: game.id,
-      positionId: position.id,
-      plyNumber: index + 1,
-      moveUci: 'e2e4',
-    })),
-  });
-  assert.equal(referencedPositions.length, 500);
+  const referencedPositions = positions.filter((_, index) => (index + 1) % 10 !== 0);
+  const referenceWriteBatchSize = 500;
+  for (let offset = 0; offset < referencedPositions.length; offset += referenceWriteBatchSize) {
+    const batch = referencedPositions.slice(offset, offset + referenceWriteBatchSize);
+    await prisma.importedGamePly.createMany({
+      data: batch.map((position, index) => ({
+        importedGameId: game.id,
+        positionId: position.id,
+        plyNumber: offset + index + 1,
+        moveUci: 'e2e4',
+      })),
+    });
+  }
+  assert.equal(referencedPositions.length, 4500, 'benchmark fixture should leave only 10% of positions orphaned');
 
   const plans = await prisma.$queryRaw`
     EXPLAIN (FORMAT JSON)
@@ -252,6 +257,32 @@ try {
     `representative bounded transaction p90 must remain below 1000ms; observed ${transactionP90Ms}ms`,
   );
 
+  const candidatePlans = await prisma.$queryRaw`
+    EXPLAIN (FORMAT JSON)
+    WITH input AS MATERIALIZED (
+      SELECT "positionId", "firstObservedOrphanAt"
+      FROM "PositionCleanupCandidate"
+      WHERE "positionId" > ${positionIds[0] - 1}
+        AND "positionId" <= ${positionIds[positionIds.length - 1]}
+      ORDER BY "positionId" ASC
+      LIMIT ${pageSize}
+    )
+    SELECT COUNT(*)
+    FROM input
+    WHERE "firstObservedOrphanAt" <= ${new Date(Date.now() - 30 * 24 * 60 * 60_000)}
+      AND NOT EXISTS (
+        SELECT 1
+        FROM "ImportedGamePly" AS ply
+        WHERE ply."positionId" = input."positionId"
+      )
+  `;
+  const candidatePlanText = JSON.stringify(candidatePlans);
+  assert.match(
+    candidatePlanText,
+    /"Node Type":"Limit"/,
+    'candidate query plan must retain a Limit node before grace/reference filtering',
+  );
+
   const lockDurationsMs = [];
   for (let iteration = 0; iteration < 10; iteration += 1) {
     const startedAt = performance.now();
@@ -266,10 +297,58 @@ try {
   }
   const lockP50Ms = Number(percentile(lockDurationsMs, 50).toFixed(2));
   const lockP90Ms = Number(percentile(lockDurationsMs, 90).toFixed(2));
+
+  const lockWaitDurationsMs = [];
+  for (let iteration = 0; iteration < 10; iteration += 1) {
+    let releaseBlocker;
+    let markBlockerReady;
+    const blockerReady = new Promise((resolve) => { markBlockerReady = resolve; });
+    const blockerRelease = new Promise((resolve) => { releaseBlocker = resolve; });
+    const blocker = lockBlockerClient.$transaction(async (transaction) => {
+      await transaction.$executeRawUnsafe('LOCK TABLE "ImportedGamePly" IN ROW EXCLUSIVE MODE');
+      markBlockerReady();
+      await blockerRelease;
+    });
+    await blockerReady;
+
+    const startedAt = performance.now();
+    const waiter = lockClient.$transaction(async (transaction) => {
+      await transaction.$executeRawUnsafe(
+        "SET LOCAL application_name = 'position-cleanup-benchmark-waiter'",
+      );
+      for (const table of POSITION_CLEANUP_TABLE_LOCK_ORDER) {
+        await transaction.$executeRawUnsafe(
+          `LOCK TABLE "${table}" IN SHARE ROW EXCLUSIVE MODE`,
+        );
+      }
+    });
+    let waiterBlocked = false;
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const rows = await prisma.$queryRaw`
+        SELECT COUNT(*)::int AS "count"
+        FROM pg_stat_activity
+        WHERE "application_name" = 'position-cleanup-benchmark-waiter'
+          AND "wait_event_type" = 'Lock'
+      `;
+      if ((rows[0]?.count ?? 0) === 1) {
+        waiterBlocked = true;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    assert.equal(waiterBlocked, true, 'benchmark waiter must reach a real PostgreSQL lock wait');
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    releaseBlocker();
+    await blocker;
+    await waiter;
+    lockWaitDurationsMs.push(performance.now() - startedAt);
+  }
+  const lockWaitP50Ms = Number(percentile(lockWaitDurationsMs, 50).toFixed(2));
+  const lockWaitP90Ms = Number(percentile(lockWaitDurationsMs, 90).toFixed(2));
   assert.equal(
-    lockP90Ms < 250,
+    lockWaitP90Ms < 250,
     true,
-    `uncontended canonical lock acquisition p90 must remain below 250ms; observed ${lockP90Ms}ms`,
+    `representative canonical lock-wait p90 must remain below 250ms; observed ${lockWaitP90Ms}ms`,
   );
 
   console.log('POSITION_CLEANUP_BENCHMARK', JSON.stringify({
@@ -280,7 +359,10 @@ try {
     transactionP90Ms,
     lockP50Ms,
     lockP90Ms,
+    lockWaitP50Ms,
+    lockWaitP90Ms,
     queryPlanContainsPreFilterLimit: true,
+    candidateQueryPlanContainsPreFilterLimit: true,
   }));
   console.log('Position cleanup bounded performance tests passed.');
 } finally {
@@ -291,4 +373,5 @@ try {
     await prisma.position.deleteMany({ where: { id: { in: positionIds } } }).catch(() => {});
   }
   await lockClient.$disconnect();
+  await lockBlockerClient.$disconnect();
 }

@@ -98,6 +98,8 @@ const repository = {
     rows: [
       {
         id: cursorId ? cursorId - 1 : 10,
+        displayName: 'Admin target',
+        email: 'target@example.test',
         createdAt: new Date('2026-08-01T00:00:00.000Z'),
         updatedAt: new Date('2026-08-02T00:00:00.000Z'),
         accountCount: 2,
@@ -113,11 +115,25 @@ const repository = {
     userId === 10
       ? {
           id: 10,
+          displayName: 'Admin target',
+          email: 'target@example.test',
           createdAt: new Date('2026-08-01T00:00:00.000Z'),
           updatedAt: new Date('2026-08-02T00:00:00.000Z'),
         }
       : null,
-  loadAccounts: async () => [{ provider: 'lichess', isActive: true, count: 1 }],
+  loadAccounts: async () => ({
+    groups: [{ provider: 'LICHESS', isActive: true, count: 1 }],
+    accounts: [
+      {
+        id: 5,
+        provider: 'LICHESS',
+        username: 'admin-target',
+        displayName: 'Admin Target',
+        isActive: true,
+      },
+    ],
+    hasMore: false,
+  }),
   loadGames: async () => ({
     total: 3,
     indexed: 2,
@@ -246,7 +262,9 @@ assert.ok(list.nextCursor);
 const detail = await diagnostics.getUserDetail(10);
 assert.deepEqual(detail.sections.courses, { available: false, reason: 'QUERY_FAILED' });
 assert.equal(detail.sections.accounts.available, true);
-assert.equal('email' in detail.user, false);
+assert.equal(detail.user.displayName, 'Admin target');
+assert.equal(detail.user.email, 'target@example.test');
+assert.equal(detail.sections.accounts.items[0].username, 'admin-target');
 const work = await diagnostics.getUserWork(10, 20);
 assert.deepEqual(
   work.sections.jobs.items[0].warnings.map((item) => item.code),
@@ -282,9 +300,22 @@ function fakeDiagnosticsService(calls) {
     getUserDetail: async (userId) => {
       calls.push(['detail', userId]);
       return {
-        user: { id: userId, createdAt: now.toISOString(), updatedAt: now.toISOString() },
+        user: {
+          id: userId,
+          displayName: null,
+          email: null,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        },
         sections: {
-          accounts: { available: true, total: 0, active: 0, groups: [] },
+          accounts: {
+            available: true,
+            total: 0,
+            active: 0,
+            hasMore: false,
+            items: [],
+            groups: [],
+          },
           games: {
             available: true,
             total: 0,

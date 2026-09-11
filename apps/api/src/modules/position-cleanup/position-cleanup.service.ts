@@ -12,7 +12,6 @@ import {
   type PositionCleanupRun,
 } from './position-cleanup.types';
 
-const DAY_MS = 24 * 60 * 60_000;
 export const POSITION_CLEANUP_EXECUTE_CONFIRMATION = 'DELETE_ORPHAN_POSITIONS';
 
 export interface PositionCleanupPolicyPreview {
@@ -43,20 +42,18 @@ export interface PositionCleanupService {
 export function createPositionCleanupService(input: {
   config: PositionCleanupConfig;
   repository?: PositionCleanupRepositoryBoundary;
-  now?: () => number;
 }): PositionCleanupService {
   const repository = input.repository ?? PositionCleanupRepository;
-  const now = input.now ?? Date.now;
-
   const preview = async (mode: PositionCleanupMode = 'DRY_RUN'): Promise<PositionCleanupPolicyPreview> => {
     assertEnabled(input.config);
     validateMode(mode);
     const postgresServerVersionNum = await repository.assertDatabaseCapability();
+    const graceCutoff = await repository.getGraceCutoff(input.config.graceDays);
     return {
       mode,
       policyVersion: POSITION_CLEANUP_POLICY_VERSION,
       graceDays: input.config.graceDays,
-      graceCutoff: new Date(now() - input.config.graceDays * DAY_MS),
+      graceCutoff,
       inputPageSize: input.config.inputPageSize,
       deleteBatchSize: input.config.deleteBatchSize,
       lockTimeoutMs: input.config.lockTimeoutMs,
@@ -76,15 +73,15 @@ export function createPositionCleanupService(input: {
           `EXECUTE cleanup requires confirmation ${POSITION_CLEANUP_EXECUTE_CONFIRMATION}.`,
         );
       }
-      const policy = await preview(mode);
+      assertEnabled(input.config);
+      await repository.assertDatabaseCapability();
       return repository.createRun({
         mode,
-        policyVersion: policy.policyVersion,
-        graceDays: policy.graceDays,
-        graceCutoff: policy.graceCutoff,
-        inputPageSize: policy.inputPageSize,
-        deleteBatchSize: policy.deleteBatchSize,
-        lockTimeoutMs: policy.lockTimeoutMs,
+        policyVersion: POSITION_CLEANUP_POLICY_VERSION,
+        graceDays: input.config.graceDays,
+        inputPageSize: input.config.inputPageSize,
+        deleteBatchSize: input.config.deleteBatchSize,
+        lockTimeoutMs: input.config.lockTimeoutMs,
         requestedBy: createInput.requestedBy,
       });
     },
