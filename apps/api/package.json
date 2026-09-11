@@ -21,6 +21,7 @@
     "db:backfill-game-openings": "ts-node --transpile-only src/scripts/backfill-missing-game-openings.ts",
     "activity:backfill-played-games": "ts-node --transpile-only src/scripts/backfill-played-game-activity.ts",
     "db:cleanup-position-analysis-lines": "ts-node --transpile-only src/scripts/cleanup-position-analysis-lines.ts",
+    "db:cleanup-orphan-positions": "ts-node --transpile-only src/scripts/cleanup-orphan-positions.ts",
     "db:rewrite-position-keys-128": "ts-node --transpile-only src/scripts/rewrite-position-keys-to-128-bit.ts",
     "opening-book:update": "ts-node --transpile-only src/scripts/update-opening-book.ts",
     "opening-book:classification-audit": "ts-node --transpile-only src/scripts/audit-opening-classification.ts",
@@ -36,8 +37,7 @@
     "db:reset": "prisma migrate reset --force --schema prisma/schema.prisma && prisma generate --schema prisma/schema.prisma && npm run db:seed",
     "prisma:studio": "prisma studio",
     "canary:lichess-account-import": "npm run build && node test/account-imports/account-import.lichess-canary.mjs",
-    "test": "npm run build && npm run traps:validate && node test/run-all.mjs",
-    "db:cleanup-orphan-positions": "ts-node --transpile-only src/scripts/cleanup-orphan-positions.ts"
+    "test": "npm run build && npm run traps:validate && node test/run-all.mjs"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
