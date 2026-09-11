@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Task Queue
 
-Last updated: 2026-08-31
+Last updated: 2026-09-11
 
 This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, claim metadata, and completion evidence.
 
@@ -29,7 +29,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | DONE | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | Runtime PR #386, squash `d9175c5`; completion reconciled 2026-08-26 |
 | 170 | ONB-020 | [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260) | P0 | READY | Implement account and imported-game destructive lifecycle coordinator | Implementation | ONB-004/007/011/012/015/017/018/019 delivered; fresh collision check required |
 | 180 | ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) | P0 | PROPOSED | Implement whole-user deletion and mobile purge handshake | Implementation | Depends on ONB-020 plus delivered ONB-019 foundation and mobile contracts |
-| 185 | ONB-026 | [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280) | P1 | READY | Implement bounded orphan shared-position cleanup | Implementation | ONB-006/007/019 delivered; claim-time schema/migration and PostgreSQL capability checks mandatory |
+| 185 | ONB-026 | [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280) | P1 | REVIEW | Implement bounded orphan shared-position cleanup | Implementation | Runtime PR [#412](https://github.com/vokerg/chess_repertoir_trainer/pull/412) on `onb-026/issue-280-orphan-position-cleanup`; live evidence recorded, maintainer acceptance and controlled full-command sweep pending |
 | 190 | ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) | P1 | DONE | Build administrator authorization and read-only diagnostics foundation | Implementation | Runtime PR #284; completion PR #298 |
 | 200 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) | P2 | DONE | Build administrator diagnostics Angular feature | Implementation | Runtime PR #307; completion PR #312 |
 | 210 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) | P1 | REVIEW | Add administrator lifecycle previews and controls | Implementation | Account/game slice on `onb-024/issue-274-admin-lifecycle-controls`; ONB-021/026 actions remain deferred |
@@ -39,9 +39,8 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 Only `READY` tasks may be newly claimed unless the user explicitly authorizes otherwise.
 
 1. **ONB-020 / #260** — destructive account/game coordinator over the delivered ONB-019 foundation.
-2. **ONB-026 / #280** — shared-position cleanup implementation; claim-time PostgreSQL and migration checks are mandatory.
 
-ONB-025 is already claimed and under review in PR #276; it is not part of the unclaimed ready queue. ONB-009 remains recorded in review pending its separate completion reconciliation. `READY` does not waive each task file's claim-time collision, environment, migration, or provider/deployment checks.
+ONB-025 is already claimed and under review in PR #276; it is not part of the unclaimed ready queue. ONB-009 remains recorded in review pending its separate completion reconciliation. ONB-026 is implemented and under review in PR #412, with live validation recorded and acceptance still pending. `READY` does not waive each task file's claim-time collision, environment, migration, or provider/deployment checks.
 
 ## Recently reconciled runtime delivery
 

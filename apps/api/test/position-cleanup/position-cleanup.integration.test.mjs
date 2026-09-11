@@ -148,6 +148,16 @@ try {
   const worker = createPositionCleanupWorker({ config, logger: silentLogger });
   const run = await service.create({ mode: 'DRY_RUN', requestedBy: 'test:position-cleanup' });
 
+  // Scope the bounded traversal to this fixture. The shared test database also
+  // contains a large pre-existing position corpus that is outside this trigger
+  // and lifecycle assertion.
+  await prisma.$executeRaw`
+    UPDATE "PositionCleanupRun"
+    SET "positionUpperBound" = ${p6.id},
+        "observeAfterPositionId" = ${p1.id - 1}
+    WHERE "id" = ${run.id}
+  `;
+
   for (let step = 0; step < 100; step += 1) {
     const current = await service.status(run.id);
     if (isPositionCleanupTerminal(current.status)) break;

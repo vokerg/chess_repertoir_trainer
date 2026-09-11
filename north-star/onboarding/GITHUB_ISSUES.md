@@ -1,6 +1,6 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-08-28
+Last updated: 2026-09-11
 
 GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the product, architecture, acceptance, queue, and historical source of truth.
 
@@ -74,7 +74,7 @@ When repository metadata and issue state disagree, reconcile them before substan
 - ONB-019 / #259 — `DONE`; runtime PR #386 squash-merged as `d9175c5d60448399b7297393afc55db747717ce2`; issue closed completed.
 - **ONB-020 / #260 — `READY`; issue open; no runtime PR.**
 - ONB-021 / #261 — `PROPOSED` behind ONB-020.
-- **ONB-026 / #280 — `READY`; issue open; no runtime PR.** Claim-time schema/migration and deployed PostgreSQL capability checks remain mandatory.
+- **ONB-026 / #280 — `REVIEW`; issue open; runtime PR #412 on `onb-026/issue-280-orphan-position-cleanup`.** Live PostgreSQL migration/transition-relation, focused concurrency, and performance evidence is recorded in the task report; maintainer acceptance and any controlled full-command sweep remain mandatory.
 
 ### Administrator path
 
@@ -101,4 +101,4 @@ ONB-009 was subsequently claimed and implemented on PR #406. Its issue remains o
 
 ## Current next action
 
-Complete ONB-009 / #194 review and acceptance/merge. For a new independent claim, **ONB-025 / #276** is the lowest-order open `READY` issue; ONB-020 and ONB-026 are also ready subject to their task-specific checks.
+Complete ONB-009 / #194 and ONB-026 / #280 review and acceptance/merge. For a new independent claim, **ONB-025 / #276** is the lowest-order open `READY` issue; ONB-020 follows on its own lane.

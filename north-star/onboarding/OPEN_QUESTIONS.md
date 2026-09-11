@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Open Questions
 
-Last updated: 2026-08-28
+Last updated: 2026-09-11
 
 Every material question has one owning task. Completed-task design and review history remains in its task file and append-only reports; this file tracks only unresolved implementation/product questions that can still affect future work.
 
@@ -112,14 +112,11 @@ The 24-hour rolling cooldown is the accepted initial policy; browser-local times
 
 ## ONB-026 / #280 — orphan shared-position cleanup
 
-Still owned by ONB-026:
+The implementation is under review in [PR #412](https://github.com/vokerg/chess_repertoir_trainer/pull/412). Validation recorded in the task report confirms PostgreSQL `server_version_num=170011`, applies the migration, and passes the trigger, forced-concurrency, bounded-query-plan, and p50/p90 performance checks. The remaining release questions are:
 
-- deployed PostgreSQL major-version verification for statement-trigger transition relations;
-- current Prisma/schema/migration ownership immediately before claim;
-- exact migration SQL, constraints, indexes, and transition-relation trigger implementation;
-- measured scan/delete batch sizes at or below the accepted 500-input-row ceiling;
-- query plans and transaction/lock p50/p90 evidence;
-- exact worker/manual-command integration while preserving the accepted table-lock order and dry-run semantics.
+- target-environment rollback assessment and maintainer acceptance of the applied migration;
+- whether a complete manual command sweep is required on a controlled disposable database; the shared local target contains approximately 1.07 million positions, so the diagnostic sweep was stopped after bounded progress was confirmed;
+- resolution of the unrelated full-API account-import admission fixture, which depends on isolated database state rather than ONB-026.
 
 If deployed PostgreSQL cannot support the required transition-relation contract, ONB-026 returns to design review rather than weakening the database-owned reset invariant.
 

@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Roadmap
 
-Last updated: 2026-08-28
+Last updated: 2026-09-11
 
 Program: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
@@ -71,12 +71,12 @@ ONB-007 transaction/lock budgets — DONE
         +
 ONB-019 lifecycle conventions — DONE
         ↓
-ONB-026 bounded orphan shared-position cleanup — READY
+ONB-026 bounded orphan shared-position cleanup — REVIEW (PR #412)
 ```
 
 ONB-019 runtime PR #386 is merged as `d9175c5d60448399b7297393afc55db747717ce2`. It supplies durable operations/fences/audit and guarded commit primitives; ONB-020 still owns destructive row execution and final account DELETE/reset compatibility cutover.
 
-ONB-026 remains a separate shared-position maintenance service. Its `READY` state does not waive the required claim-time schema/migration collision check or deployed PostgreSQL transition-relation compatibility verification.
+ONB-026 remains a separate shared-position maintenance service. Its implementation is under review in PR #412; live PostgreSQL migration, transition-relation, focused concurrency, and performance evidence is recorded, while maintainer acceptance and any controlled full-command sweep remain release gates.
 
 ## Administrator lane
 
@@ -138,7 +138,7 @@ Current state:
 - ONB-019 / #259 — `DONE`.
 - **ONB-020 / #260 — `READY`.**
 - ONB-021 / #261 — `PROPOSED` behind ONB-020.
-- **ONB-026 / #280 — `READY`** with mandatory claim-time environment/migration checks.
+- **ONB-026 / #280 — `REVIEW`** on implementation PR #412; live evidence is recorded in the task report and maintainer acceptance remains mandatory.
 
 ### Phase 8 — Administrator lifecycle controls
 
@@ -159,4 +159,4 @@ Current state:
 
 ## Next deterministic action
 
-Complete ONB-009 / #194 review and acceptance/merge before ONB-010 can start. For independent new work, **ONB-025 / #276** is the lowest-order unclaimed `READY` task; ONB-020 and ONB-026 remain ready on their own lanes subject to their claim-time checks.
+Complete ONB-009 / #194 and ONB-026 / #280 review and acceptance/merge before marking those implementation tracks delivered. For independent new work, **ONB-025 / #276** is the lowest-order unclaimed `READY` task, followed by ONB-020.

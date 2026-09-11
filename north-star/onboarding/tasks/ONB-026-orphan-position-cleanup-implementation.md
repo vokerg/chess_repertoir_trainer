@@ -1,6 +1,6 @@
 # ONB-026 — Implement bounded orphan shared-position cleanup
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P1
 
@@ -196,8 +196,16 @@ Provide a server-side command following the existing `apps/api/src/scripts/` pat
 
 The canonical queue has promoted ONB-026 to `READY`. Before claiming, the claimant must still re-inspect current schema/migration ownership for ONB-011/017/019, check active ONB-020/021 work for writer/lock collisions, and verify the deployed PostgreSQL transition-relation capability. If any of those checks fails, return the task to `BLOCKED` or design review rather than improvising.
 
+## Review handoff
+
+Implementation and review fixes are delivered on [PR #412](https://github.com/vokerg/chess_repertoir_trainer/pull/412), branch `onb-026/issue-280-orphan-position-cleanup`.
+
+The handoff includes the bounded candidate/run lifecycle, database-owned reference reset, plies-first maintenance locks, manual command, worker lifecycle, first-observed/refreshed observation counters, and focused worker/trigger regression coverage. The implementation was refreshed from current `origin/main` before final review. Live PostgreSQL migration, transition-relation, focused concurrency, and benchmark evidence is recorded in the report; a full production-scale manual sweep was not run against the shared approximately 1.07M-position corpus.
+
+The append-only validation record is [`reports/ONB-026-2026-09-11-orphan-position-cleanup.md`](../reports/ONB-026-2026-09-11-orphan-position-cleanup.md). Maintainer acceptance, required live PostgreSQL evidence, squash merge, and issue closure remain pending.
+
 ## Completion
 
-Pull request: none
+Pull request: [#412](https://github.com/vokerg/chess_repertoir_trainer/pull/412)
 
-Completed at: none
+Completed at: pending maintainer acceptance and squash merge
