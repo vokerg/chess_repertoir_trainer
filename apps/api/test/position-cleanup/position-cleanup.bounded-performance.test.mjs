@@ -313,12 +313,30 @@ try {
 
     const startedAt = performance.now();
     const waiter = lockClient.$transaction(async (transaction) => {
+      await transaction.$executeRawUnsafe(
+        "SET LOCAL application_name = 'position-cleanup-benchmark-waiter'",
+      );
       for (const table of POSITION_CLEANUP_TABLE_LOCK_ORDER) {
         await transaction.$executeRawUnsafe(
           `LOCK TABLE "${table}" IN SHARE ROW EXCLUSIVE MODE`,
         );
       }
     });
+    let waiterBlocked = false;
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const rows = await prisma.$queryRaw`
+        SELECT COUNT(*)::int AS "count"
+        FROM pg_stat_activity
+        WHERE "application_name" = 'position-cleanup-benchmark-waiter'
+          AND "wait_event_type" = 'Lock'
+      `;
+      if ((rows[0]?.count ?? 0) === 1) {
+        waiterBlocked = true;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    assert.equal(waiterBlocked, true, 'benchmark waiter must reach a real PostgreSQL lock wait');
     await new Promise((resolve) => setTimeout(resolve, 25));
     releaseBlocker();
     await blocker;
