@@ -206,14 +206,18 @@ try {
   positionIds.push(...positions.map((position) => position.id));
 
   const referencedPositions = positions.filter((_, index) => (index + 1) % 10 !== 0);
-  await prisma.importedGamePly.createMany({
-    data: referencedPositions.map((position, index) => ({
-      importedGameId: game.id,
-      positionId: position.id,
-      plyNumber: index + 1,
-      moveUci: 'e2e4',
-    })),
-  });
+  const referenceWriteBatchSize = 500;
+  for (let offset = 0; offset < referencedPositions.length; offset += referenceWriteBatchSize) {
+    const batch = referencedPositions.slice(offset, offset + referenceWriteBatchSize);
+    await prisma.importedGamePly.createMany({
+      data: batch.map((position, index) => ({
+        importedGameId: game.id,
+        positionId: position.id,
+        plyNumber: offset + index + 1,
+        moveUci: 'e2e4',
+      })),
+    });
+  }
   assert.equal(referencedPositions.length, 4500, 'benchmark fixture should leave only 10% of positions orphaned');
 
   const plans = await prisma.$queryRaw`
