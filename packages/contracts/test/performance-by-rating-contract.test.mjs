@@ -3,6 +3,21 @@ import {
   performanceByRatingQuerySchema,
   performanceByRatingResponseSchema,
 } from '../dist/performance-by-rating/index.js';
+import {
+  performanceByRatingQuerySchema as legacyPerformanceByRatingQuerySchema,
+  performanceByRatingResponseSchema as legacyPerformanceByRatingResponseSchema,
+} from '../dist/lab/index.js';
+
+assert.equal(
+  legacyPerformanceByRatingQuerySchema,
+  performanceByRatingQuerySchema,
+  'the legacy Lab contract export remains a compatibility alias',
+);
+assert.equal(
+  legacyPerformanceByRatingResponseSchema,
+  performanceByRatingResponseSchema,
+  'the legacy Lab response export remains a compatibility alias',
+);
 
 assert.deepEqual(
   performanceByRatingQuerySchema.parse({
