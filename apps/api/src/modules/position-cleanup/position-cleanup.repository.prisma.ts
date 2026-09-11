@@ -300,6 +300,7 @@ export function createPositionCleanupRepository(
         if (input.length === 0) {
           await updateClaimedRun(transaction, runId, workKey, Prisma.sql`
             "phase" = 'EVALUATE',
+            "evaluationUpperBound" = COALESCE("evaluationUpperBound", "positionUpperBound"),
             "observationStartedAt" = CASE WHEN "mode" = 'DRY_RUN' THEN NOW() ELSE "observationStartedAt" END,
             "lastBatchAt" = NOW()
           `);
