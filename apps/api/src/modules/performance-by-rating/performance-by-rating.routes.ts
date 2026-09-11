@@ -17,7 +17,7 @@ const response = {
 const performanceByRatingModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/performance-by-rating', {
     schema: {
-      operationId: 'getPerformanceByRating',
+      operationId: 'getPerformanceByRatingReport',
       tags: ['Progress'],
       summary: 'Compare results across opponent rating bands',
       description:
@@ -33,7 +33,7 @@ const performanceByRatingModule: FastifyPluginAsyncZod = async (app) => {
 
   app.get('/api/lab/performance-by-rating', {
     schema: {
-      operationId: 'getLegacyLabPerformanceByRating',
+      operationId: 'getPerformanceByRating',
       tags: ['Progress'],
       summary: 'Compatibility alias for performance by rating',
       description:
