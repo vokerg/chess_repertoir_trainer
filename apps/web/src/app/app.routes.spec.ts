@@ -2,15 +2,26 @@ import { routes } from './app.routes';
 import { authGuard } from './core/auth/auth.guard';
 
 describe('application routes', () => {
-  it('keeps account Progress and Chess profile as separate authenticated routes', () => {
+  it('keeps Progress reports as separate authenticated routes and preserves the Lab redirect', () => {
     const progress = routes.find((route) => route.path === 'progress');
     const profile = routes.find((route) => route.path === 'progress/profile');
+    const performance = routes.find(
+      (route) => route.path === 'progress/performance-by-rating',
+    );
     const account = routes.find((route) => route.path === 'progress/accounts/:accountId');
+    const legacyPerformance = routes.find(
+      (route) => route.path === 'lab/performance-by-rating',
+    );
 
     expect(progress?.loadComponent).toBeDefined();
     expect(profile?.loadComponent).toBeDefined();
     expect(profile?.title).toBe('Chess profile | Chess Repertoire Trainer');
+    expect(performance?.title).toBe('Performance by rating | Chess Repertoire Trainer');
+    expect(performance?.loadComponent).toBeDefined();
+    expect(performance?.canActivate).toEqual([authGuard]);
     expect(account?.loadComponent).toBeDefined();
+    expect(legacyPerformance?.redirectTo).toBe('/progress/performance-by-rating');
+    expect(legacyPerformance?.pathMatch).toBe('full');
   });
 
   it('keeps onboarding as a lazy authenticated route without trapping other protected routes', () => {

@@ -127,14 +127,14 @@
 
   <details class="normalization-reference">
     <summary class="disclosure-summary">
-      <span>Rating grade reference</span>
+      <span>Rating comparison guide</span>
       @if (store.normalizationProfile(); as profile) {
         <small>{{ profile.version }}</small>
       }
     </summary>
 
     @if (store.normalizationLoading()) {
-      <p class="reference-state" aria-live="polite">Loading rating grade reference…</p>
+      <p class="reference-state" aria-live="polite">Loading rating comparison guide…</p>
     } @else if (store.normalizationError(); as error) {
       <p class="reference-state reference-state--error" role="alert">{{ error }}</p>
     } @else if (store.normalizationProfile(); as profile) {
@@ -148,7 +148,7 @@
       <div
         class="normalization-table-wrap"
         role="region"
-        aria-label="Scrollable rating grade reference"
+        aria-label="Scrollable rating comparison guide"
         tabindex="0"
       >
         <table class="normalization-table" aria-label="Rating grade ranges by rating pool">
@@ -183,10 +183,10 @@
   </details>
 
   @if (store.loading()) {
-    <p class="lab-state" aria-live="polite">Aggregating imported games…</p>
+    <p class="report-state" aria-live="polite">Aggregating imported games…</p>
   }
   @if (store.error(); as error) {
-    <p class="lab-state lab-state--error" role="alert">{{ error }}</p>
+    <p class="report-state report-state--error" role="alert">{{ error }}</p>
   }
   @if (store.loaded() && !store.loading() && !store.error()) {
     <p class="report-summary">
@@ -263,6 +263,6 @@
       </table>
     </div>
   } @else if (store.loaded() && !store.loading() && !store.error()) {
-    <div class="lab-empty">No scored games with opponent ratings match the selected dates and report types.</div>
+    <div class="report-empty">No scored games with opponent ratings match the selected dates and report types.</div>
   }
 </app-panel>

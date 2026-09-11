@@ -71,6 +71,7 @@ The bottom navigation respects `env(safe-area-inset-bottom)`. The application co
 - `Progress` -> `/progress`
   - `Account performance` -> `/progress`
   - `Chess profile` -> `/progress/profile`
+  - `Performance by rating` -> `/progress/performance-by-rating`
 - `Tools` links by default to `/analysis`.
   - `Analysis board` -> `/analysis`
   - `Lab` -> `/lab`
@@ -90,15 +91,16 @@ Parent group links navigate to the first/default child.
 - `/accounts/:accountId` temporarily redirects to `/progress/accounts/:accountId`.
 - `/progress` chooses the default progress account first, then an active account, then the first account.
 - `/progress/accounts/:accountId` owns the account progress dashboard.
+- `/progress/performance-by-rating` owns the cross-provider opponent-rating performance report. `/lab/performance-by-rating` is a compatibility redirect.
 - `/opening-struggles` is owned by the standalone `features/opening-struggles` feature and is backed by `/api/opening-struggles`.
 - `/lab` owns the Lab experiment catalog and does not mount an active experiment.
-- `/lab/top-opponents`, `/lab/monthly-games`, `/lab/performance-by-rating`, `/lab/tactical-detections`, and `/lab/training-log` each own one independently routable experiment page.
+- `/lab/top-opponents`, `/lab/monthly-games`, `/lab/tactical-detections`, and `/lab/training-log` each own one independently routable experiment page.
 
 ## Active-State Rules
 
 - `Study` is active for `/library`, `/chapters`, `/lines`, `/puzzles`, and both tactical scenario-training routes.
 - `Openings` is active for `/opening-analysis` and `/opening-struggles`.
-- `Progress` is active for `/progress`, `/progress/profile`, and `/progress/accounts/...`.
+- `Progress` is active for `/progress`, `/progress/profile`, `/progress/performance-by-rating`, and `/progress/accounts/...`.
 - Settings routes do not make Progress active.
 - `Tools` remains the home for Analysis and Lab. Do not move Analysis or Lab into Settings.
 - On mobile, `More` is active only when an active top-level destination is not one of Home, Study, Games, or Openings.

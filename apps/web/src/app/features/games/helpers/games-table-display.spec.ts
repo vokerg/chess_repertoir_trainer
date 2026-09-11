@@ -34,12 +34,14 @@ describe('games table display helpers', () => {
   it('summarizes processing progress as one durable status', () => {
     const notIndexed = game({});
     const indexed = { ...notIndexed, plyIndex: { status: 'INDEXED' as const } };
+    const indexFailed = { ...notIndexed, plyIndex: { status: 'FAILED' as const } };
     const analysed = {
       ...indexed,
       analysis: { ...indexed.analysis, status: 'COMPLETED' as const },
     };
 
-    expect(gameStatusLabel(notIndexed)).toBe('Not indexed');
+    expect(gameStatusLabel(notIndexed)).toBe('New');
+    expect(gameStatusLabel(indexFailed)).toBe('Index failed');
     expect(gameStatusLabel(indexed)).toBe('Indexed');
     expect(gameStatusLabel(analysed)).toBe('Analysed');
   });

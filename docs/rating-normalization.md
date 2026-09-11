@@ -10,7 +10,7 @@ The executable profiles and helpers are defined in:
 - `apps/api/src/modules/rating-normalization/rating-normalization.service.ts`
 - `packages/contracts/src/rating-normalization/rating-normalization.schemas.ts`
 
-`GET /api/rating-normalization/default` exposes the active profile. The performance-by-rating lab renders the active profile as a reference table. Opening Explorer peer targeting also classifies imported-game ratings through this domain before selecting Lichess population groups.
+`GET /api/rating-normalization/default` exposes the active profile. The Performance by rating report renders the active profile as a reference table. Opening Explorer peer targeting also classifies imported-game ratings through this domain before selecting Lichess population groups.
 
 When this document and the executable profile disagree, treat code and tests as runtime truth and correct this document in the same change.
 

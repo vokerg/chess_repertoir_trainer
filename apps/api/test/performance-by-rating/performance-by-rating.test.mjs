@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { buildApp } from '../../dist/app.js';
 import prismaModule from '../../dist/prisma.js';
-import { resolvePerformanceByRatingRange } from '../../dist/modules/lab/performance-by-rating/performance-by-rating.service.js';
+import { resolvePerformanceByRatingRange } from '../../dist/modules/performance-by-rating/performance-by-rating.service.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
@@ -176,13 +176,52 @@ try {
   const app = await buildApp({ logger: false, authConfig: { mode: 'dev-single-user', userId: devUser.id } });
   try {
     await app.ready();
+    const paths = app.swagger().paths;
+    assert.ok(paths?.['/api/performance-by-rating']?.get, 'the standalone API route is registered');
+    assert.equal(
+      paths?.['/api/lab/performance-by-rating']?.get?.deprecated,
+      true,
+      'the former Lab API route remains only as a deprecated compatibility alias',
+    );
+    assert.equal(
+      paths?.['/api/lab/performance-by-rating']?.get?.operationId,
+      'getPerformanceByRating',
+      'the legacy OpenAPI operation id remains stable for generated clients',
+    );
+    assert.deepEqual(
+      paths?.['/api/lab/performance-by-rating']?.get?.tags,
+      ['Lab'],
+      'the legacy route keeps its existing OpenAPI grouping',
+    );
+    assert.equal(
+      paths?.['/api/performance-by-rating']?.get?.operationId,
+      'getPerformanceByRatingReport',
+      'the canonical route has its own unique operation id',
+    );
+    assert.equal(
+      paths?.['/api/performance-by-rating']?.get?.tags?.[0],
+      'Progress',
+      'the promoted report is documented under Progress',
+    );
+
     const response = await app.inject({
       method: 'GET',
-      url: '/api/lab/performance-by-rating?from=2026-07-01&to=2026-07-14&minRating=600',
+      url: '/api/performance-by-rating?from=2026-07-01&to=2026-07-14&minRating=600',
     });
 
     assert.equal(response.statusCode, 200);
     const body = response.json();
+
+    const legacyResponse = await app.inject({
+      method: 'GET',
+      url: '/api/lab/performance-by-rating?from=2026-07-01&to=2026-07-14&minRating=600',
+    });
+    assert.equal(legacyResponse.statusCode, 200);
+    assert.deepEqual(
+      legacyResponse.json(),
+      body,
+      'the legacy Lab URL preserves the promoted report response',
+    );
     assert.deepEqual(body.range, { from: '2026-07-01', to: '2026-07-14' });
     assert.equal(body.items.length, 7);
     assert.deepEqual(
@@ -231,7 +270,7 @@ try {
 
     const invalidRange = await app.inject({
       method: 'GET',
-      url: '/api/lab/performance-by-rating?from=2026-07-15&to=2026-07-14',
+      url: '/api/performance-by-rating?from=2026-07-15&to=2026-07-14',
     });
     assert.equal(invalidRange.statusCode, 400);
   } finally {

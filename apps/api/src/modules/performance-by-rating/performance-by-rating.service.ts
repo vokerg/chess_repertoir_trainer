@@ -2,7 +2,7 @@ import type {
   PerformanceByRatingQuery,
   PerformanceByRatingResponse,
   PerformanceReportType,
-} from '@chess-trainer/contracts/lab';
+} from '@chess-trainer/contracts/performance-by-rating';
 import {
   findPerformanceByRatingRows,
   type PerformanceProvider,

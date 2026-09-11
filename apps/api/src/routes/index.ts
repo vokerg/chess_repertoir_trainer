@@ -9,6 +9,7 @@ import candidateDecisionModule from '../modules/candidate-decision/candidate-dec
 import importedGamesModule from '../modules/imported-games/imported-games.routes';
 import openingAnalysisBreakdownsModule from '../modules/imported-games/opening-analysis-breakdowns.routes';
 import openingStrugglesModule from '../modules/opening-struggles/opening-struggles.routes';
+import performanceByRatingModule from '../modules/performance-by-rating/performance-by-rating.routes';
 import labModule from '../modules/lab/lab.routes';
 import jobsModule from '../modules/jobs/job-run.routes';
 import accountImportModule from '../modules/account-imports/account-import.routes';
@@ -51,6 +52,7 @@ export default function registerRoutes(app: FastifyInstance, options: RegisterRo
   app.register(importedGamesModule);
   app.register(openingAnalysisBreakdownsModule);
   app.register(openingStrugglesModule);
+  app.register(performanceByRatingModule);
   app.register(labModule);
   app.register(jobsModule);
   app.register(accountImportModule);

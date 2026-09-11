@@ -1,10 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ApiService } from '../../../../../core/api/api.service';
+import { ApiService } from '../../../core/api/api.service';
 import type {
   PerformanceByRatingQuery,
   PerformanceByRatingResponse,
-} from '@chess-trainer/contracts/lab';
+} from '@chess-trainer/contracts/performance-by-rating';
 import type { RatingNormalizationProfile } from '@chess-trainer/contracts/rating-normalization';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class PerformanceByRatingApiService {
     if (query.from) params.set('from', query.from);
     if (query.to) params.set('to', query.to);
     if (query.minRating !== undefined) params.set('minRating', String(query.minRating));
-    return this.api.get<PerformanceByRatingResponse>(`/lab/performance-by-rating?${params.toString()}`);
+    return this.api.get<PerformanceByRatingResponse>(`/performance-by-rating?${params.toString()}`);
   }
 
   getRatingNormalizationProfile(): Observable<RatingNormalizationProfile> {
