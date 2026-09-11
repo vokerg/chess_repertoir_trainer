@@ -327,8 +327,8 @@
 }
 
 .reference-state,
-.lab-state,
-.lab-empty,
+.report-state,
+.report-empty,
 .report-summary {
   margin: 0;
   padding: 0.85rem 1rem;
@@ -345,7 +345,7 @@
 }
 
 .reference-state--error,
-.lab-state--error {
+.report-state--error {
   border-color: color-mix(in srgb, var(--ui-danger) 38%, var(--ui-border));
   background: var(--ui-danger-soft);
   color: var(--ui-danger);
@@ -357,7 +357,7 @@
   font-size: 0.84rem;
 }
 
-.lab-empty {
+.report-empty {
   text-align: center;
 }
 

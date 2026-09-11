@@ -86,6 +86,7 @@ Compact list projections and richer detail/report projections share selection se
 - Use course review to inspect deviations, opponent gaps, and course endings, and continue exact findings into Builder.
 - Use `/progress` for account performance, rating history, yearly highs, result summaries, and bounded best-victory/defeat evidence.
 - Use `/progress/profile` for the deterministic Player Chess Profile and its evidence/coverage states.
+- Use `/progress/performance-by-rating` to compare results across opponent rating bands, providers, and speeds.
 
 ### Tactics, puzzles, and Lab
 
@@ -93,7 +94,7 @@ Compact list projections and richer detail/report projections share selection se
 - Inspect tactical findings in game review and the Tactical Detections Lab.
 - Train missed-shot and blunder scenarios from the source position with persisted attempts and evaluation.
 - Use `/puzzles` for the persisted Lichess puzzle trainer with server-owned solutions and rated-result synchronization.
-- Use `/lab` for experimental or lower-level reports including performance by rating, top opponents, monthly games, training log, and tactical detections.
+- Use `/lab` for experimental or lower-level reports including top opponents, monthly games, training log, and tactical detections.
 
 ### Activity Feed foundation
 

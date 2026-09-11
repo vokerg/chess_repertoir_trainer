@@ -3,8 +3,6 @@ import { z } from 'zod';
 import {
   courseExtensionCandidatesResponseSchema,
   monthlyGamesResponseSchema,
-  performanceByRatingQuerySchema,
-  performanceByRatingResponseSchema,
   tacticalDetectionListResponseSchema,
   tacticalDetectionRunResponseSchema,
   topOpponentsResponseSchema,
@@ -14,7 +12,6 @@ import { requireAuth } from '../../auth/request-auth';
 import { courseExtensionCandidatesQuerySchema } from './course-extension-candidates/course-extension-candidates.schema';
 import { getCourseExtensionCandidates } from './course-extension-candidates/course-extension-candidates.service';
 import { getMonthlyGames } from './monthly-games/monthly-games.service';
-import { getPerformanceByRating } from './performance-by-rating/performance-by-rating.service';
 import {
   tacticalDetectionListSchema,
   tacticalDetectionRunSchema,
@@ -56,22 +53,6 @@ const labModule: FastifyPluginAsyncZod = async (app) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     return getMonthlyGames(auth.userId, { excludeBullet: request.query.excludeBullet });
-  });
-
-  app.get('/api/lab/performance-by-rating', {
-    schema: labSchema('getPerformanceByRating', 'Compare results across opponent rating bands', {
-      description: 'Groups scored Lichess and Chess.com blitz/rapid games by 100-point opponent rating bands, optionally filtered by minimum opponent rating.',
-      querystring: performanceByRatingQuerySchema,
-      response: {
-        200: performanceByRatingResponseSchema,
-        400: validationErrorResponseSchema,
-        401: unauthorizedResponseSchema,
-      },
-    }),
-  }, async (request, reply) => {
-    const auth = requireAuth(request, reply);
-    if (!auth) return;
-    return getPerformanceByRating(auth.userId, request.query);
   });
 
   app.get('/api/lab/course-extension-candidates', {

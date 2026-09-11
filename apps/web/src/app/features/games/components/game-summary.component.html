@@ -22,10 +22,12 @@
         </div>
       </div>
 
-      <div class="stats-section">
-        <p class="metric-label">Opening</p>
-        <p class="opening-value">{{ game().opening?.name || game().opening?.eco || 'Opening unavailable' }}</p>
-      </div>
+      @if (game().opening?.name || game().opening?.eco) {
+        <div class="stats-section">
+          <p class="metric-label">Opening</p>
+          <p class="opening-value">{{ game().opening?.name || game().opening?.eco }}</p>
+        </div>
+      }
 
       @if (game().tags?.length) {
         <div class="tag-section">

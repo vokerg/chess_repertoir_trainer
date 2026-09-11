@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
-import prisma from '../../../prisma';
-import { GAME_TAG } from '../../imported-games/game-tags';
+import prisma from '../../prisma';
+import { GAME_TAG } from '../imported-games/game-tags';
 
 export type PerformanceProvider = 'LICHESS' | 'CHESS_COM';
 export type PerformanceSpeed = 'bullet' | 'blitz' | 'rapid';

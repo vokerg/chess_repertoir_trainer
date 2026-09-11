@@ -1,15 +1,15 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import type { PerformanceByRatingRow } from '@chess-trainer/contracts/lab';
+import type { PerformanceByRatingRow } from '@chess-trainer/contracts/performance-by-rating';
 import type { RatingNormalizationProfile } from '@chess-trainer/contracts/rating-normalization';
-import { PerformanceByRatingExperimentComponent } from './performance-by-rating-experiment.component';
+import { PerformanceByRatingReportComponent } from './performance-by-rating-report.component';
 import {
   PerformanceByRatingStore,
   type PerformanceColumnPreset,
-} from './state/performance-by-rating.store';
+} from '../state/performance-by-rating.store';
 
-describe('PerformanceByRatingExperimentComponent', () => {
-  let fixture: ComponentFixture<PerformanceByRatingExperimentComponent>;
+describe('PerformanceByRatingReportComponent', () => {
+  let fixture: ComponentFixture<PerformanceByRatingReportComponent>;
   let store: jasmine.SpyObj<PerformanceByRatingStore>;
   const loading = signal(false);
   const loaded = signal(false);
@@ -121,16 +121,16 @@ describe('PerformanceByRatingExperimentComponent', () => {
     store.isColumnVisible.and.returnValue(true);
 
     await TestBed.configureTestingModule({
-      imports: [PerformanceByRatingExperimentComponent],
+      imports: [PerformanceByRatingReportComponent],
     })
-      .overrideComponent(PerformanceByRatingExperimentComponent, {
+      .overrideComponent(PerformanceByRatingReportComponent, {
         set: {
           providers: [{ provide: PerformanceByRatingStore, useValue: store }],
         },
       })
       .compileComponents();
 
-    fixture = TestBed.createComponent(PerformanceByRatingExperimentComponent);
+    fixture = TestBed.createComponent(PerformanceByRatingReportComponent);
     fixture.detectChanges();
   });
 
@@ -275,10 +275,10 @@ describe('PerformanceByRatingExperimentComponent', () => {
     expect(reference.querySelector('.reference-state')?.textContent).toContain('Loading');
 
     normalizationLoading.set(false);
-    normalizationError.set('Could not load the rating grade reference.');
+    normalizationError.set('Could not load the rating comparison guide.');
     fixture.detectChanges();
     expect(reference.querySelector('[role="alert"]')?.textContent?.trim()).toBe(
-      'Could not load the rating grade reference.',
+      'Could not load the rating comparison guide.',
     );
 
     normalizationError.set(null);
@@ -299,7 +299,7 @@ describe('PerformanceByRatingExperimentComponent', () => {
     fixture.detectChanges();
 
     const alert = fixture.nativeElement.querySelector(
-      '.lab-state--error[role="alert"]',
+      '.report-state--error[role="alert"]',
     ) as HTMLElement;
     expect(alert.textContent?.trim()).toBe('Could not load performance by rating.');
 
@@ -307,7 +307,7 @@ describe('PerformanceByRatingExperimentComponent', () => {
     loaded.set(true);
     fixture.detectChanges();
 
-    const empty = fixture.nativeElement.querySelector('.lab-empty') as HTMLElement;
+    const empty = fixture.nativeElement.querySelector('.report-empty') as HTMLElement;
     expect(empty.textContent).toContain('No scored games with opponent ratings');
   });
 

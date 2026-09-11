@@ -68,8 +68,9 @@ export function gameMetaLabel(game: OpeningAnalysisGame): string {
   const control = game.speedCategory
     ? game.speedCategory.charAt(0).toUpperCase() + game.speedCategory.slice(1)
     : 'Unknown control';
-  const opening = game.opening?.name || game.opening?.eco || 'Opening unavailable';
-  return `${control} - move ${game.moveNumber}: ${game.nextMoveSan || game.nextMoveUci} - ${opening}`;
+  const opening = game.opening?.name || game.opening?.eco;
+  const move = `${control} - move ${game.moveNumber}: ${game.nextMoveSan || game.nextMoveUci}`;
+  return opening ? `${move} - ${opening}` : move;
 }
 
 export function wdlLabel(wdl: OpeningWdl): string {

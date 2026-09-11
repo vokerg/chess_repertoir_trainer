@@ -3,16 +3,16 @@ import type {
   PerformanceByRatingRow,
   PerformanceReportType,
   PerformanceWdl,
-} from '@chess-trainer/contracts/lab';
+} from '@chess-trainer/contracts/performance-by-rating';
 import type { RatingPool, RatingRange } from '@chess-trainer/contracts/rating-normalization';
-import { PanelComponent } from '../../../../shared/ui/panel/panel.component';
-import { type UiShellAction } from '../../../../shared/ui/ui-shell.model';
-import { PerformanceByRatingApiService } from './data-access/performance-by-rating-api.service';
+import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { type UiShellAction } from '../../../shared/ui/ui-shell.model';
+import { PerformanceByRatingApiService } from '../data-access/performance-by-rating-api.service';
 import {
   PerformanceByRatingStore,
   PerformanceColumnId,
   PERFORMANCE_REPORT_TYPES,
-} from './state/performance-by-rating.store';
+} from '../state/performance-by-rating.store';
 
 interface ColumnDefinition {
   id: PerformanceColumnId;
@@ -28,15 +28,15 @@ interface ColumnGroup {
 }
 
 @Component({
-  selector: 'app-lab-performance-by-rating',
+  selector: 'app-performance-by-rating-report',
   standalone: true,
   imports: [PanelComponent],
   providers: [PerformanceByRatingApiService, PerformanceByRatingStore],
-  templateUrl: './performance-by-rating-experiment.component.html',
-  styleUrl: './performance-by-rating-experiment.component.css',
+  templateUrl: './performance-by-rating-report.component.html',
+  styleUrl: './performance-by-rating-report.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PerformanceByRatingExperimentComponent implements OnInit {
+export class PerformanceByRatingReportComponent implements OnInit {
   protected readonly store = inject(PerformanceByRatingStore);
   protected readonly reportTypes = PERFORMANCE_REPORT_TYPES;
   protected readonly normalizationPools: readonly RatingPool[] = [
