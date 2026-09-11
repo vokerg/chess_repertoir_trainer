@@ -188,6 +188,11 @@ try {
       'getPerformanceByRating',
       'the legacy OpenAPI operation id remains stable for generated clients',
     );
+    assert.deepEqual(
+      paths?.['/api/lab/performance-by-rating']?.get?.tags,
+      ['Lab'],
+      'the legacy route keeps its existing OpenAPI grouping',
+    );
     assert.equal(
       paths?.['/api/performance-by-rating']?.get?.operationId,
       'getPerformanceByRatingReport',
