@@ -68,6 +68,8 @@ async function main(): Promise<void> {
         candidatesReconciled: current.candidatesReconciled,
         positionsInspected: current.positionsInspected,
         orphansObserved: current.orphansObserved,
+        orphansFirstObserved: current.orphansFirstObserved,
+        orphansRefreshed: current.orphansRefreshed,
         eligibleObserved: current.eligibleObserved,
         positionsDeleted: current.positionsDeleted,
         analysisRowsDeleted: current.analysisRowsDeleted,

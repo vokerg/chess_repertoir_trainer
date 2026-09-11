@@ -48,6 +48,8 @@ export interface PositionCleanupRun {
   candidatesReconciled: number;
   positionsInspected: number;
   orphansObserved: number;
+  orphansFirstObserved: number;
+  orphansRefreshed: number;
   eligibleObserved: number;
   positionsDeleted: number;
   analysisRowsDeleted: number;

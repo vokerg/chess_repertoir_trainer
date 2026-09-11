@@ -287,7 +287,7 @@ export function createPositionCleanupRepository(
           await updateClaimedRun(transaction, runId, workKey, Prisma.sql`
             "phase" = 'EVALUATE',
             "evaluationUpperBound" = ${evaluationUpperBound},
-            "observationStartedAt" = CASE WHEN "mode" = 'DRY_RUN' THEN NOW() ELSE "observationStartedAt" END,
+            "observationStartedAt" = CASE WHEN "mode" = 'DRY_RUN' THEN COALESCE("observationStartedAt", NOW()) ELSE "observationStartedAt" END,
             "lastBatchAt" = NOW()
           `);
           return { inspected: 0, matched: 0, checkpoint: run.observeAfterPositionId, completedPhase: true };
@@ -369,6 +369,9 @@ export function createPositionCleanupRepository(
           "observeAfterPositionId" = ${summary.checkpoint},
           "positionsInspected" = "positionsInspected" + ${summary.inspected},
           "orphansObserved" = "orphansObserved" + ${summary.matched},
+          "orphansFirstObserved" = "orphansFirstObserved" + ${summary.firstObserved},
+          "orphansRefreshed" = "orphansRefreshed" + ${summary.refreshed},
+          "observationStartedAt" = CASE WHEN "mode" = 'DRY_RUN' THEN COALESCE("observationStartedAt", NOW()) ELSE "observationStartedAt" END,
           "lastBatchAt" = NOW()
         `);
         return {

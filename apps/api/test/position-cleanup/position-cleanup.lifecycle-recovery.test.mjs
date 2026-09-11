@@ -71,6 +71,9 @@ try {
   assert.equal(afterFirstBatch?.observeAfterPositionId, firstPositionId);
   assert.equal(afterFirstBatch?.positionsInspected, 1);
   assert.equal(afterFirstBatch?.orphansObserved, 1);
+  assert.equal(afterFirstBatch?.orphansFirstObserved, 1);
+  assert.equal(afterFirstBatch?.orphansRefreshed, 0);
+  assert.equal(afterFirstBatch?.observationStartedAt instanceof Date, true);
   assert.equal(afterFirstBatch?.workKey, crashedKey);
 
   // Simulate a worker dying after its atomic batch commit but before claim release.
@@ -90,6 +93,8 @@ try {
   assert.equal(recovered?.observeAfterPositionId, firstPositionId);
   assert.equal(recovered?.positionsInspected, 1);
   assert.equal(recovered?.orphansObserved, 1);
+  assert.equal(recovered?.orphansFirstObserved, 1);
+  assert.equal(recovered?.orphansRefreshed, 0);
   assert.equal(await repositoryA.heartbeat(run.id, crashedKey), false, 'stale work key must stay fenced out');
 
   const resumedKey = workKey('RESUMED');
@@ -111,6 +116,8 @@ try {
   assert.equal(beforeCancel?.phase, 'EVALUATE');
   assert.equal(beforeCancel?.positionsInspected, 2);
   assert.equal(beforeCancel?.orphansObserved, 2);
+  assert.equal(beforeCancel?.orphansFirstObserved, 2);
+  assert.equal(beforeCancel?.orphansRefreshed, 0);
 
   const cancelRequested = await service.cancel(run.id);
   assert.ok(cancelRequested.cancelRequestedAt instanceof Date);
@@ -125,6 +132,8 @@ try {
   assert.equal(cancelled?.workKey, null);
   assert.equal(cancelled?.positionsInspected, 2, 'restart must not double-count the committed first page');
   assert.equal(cancelled?.orphansObserved, 2, 'restart must not skip the second page');
+  assert.equal(cancelled?.orphansFirstObserved, 2, 'restart must not double-count first observations');
+  assert.equal(cancelled?.orphansRefreshed, 0, 'restart must not invent refreshed observations');
   assert.equal(cancelled?.staleRecoveryCount, 1);
 
   console.log('Position cleanup lifecycle recovery tests passed.');

@@ -95,6 +95,17 @@ try {
   });
   assert.equal(await candidateCount([p3.id]), 0, 'UPDATE transition trigger must reset the new position candidate');
 
+  await insertCandidate(p3.id, oldObservedAt);
+  await prisma.importedGamePly.update({
+    where: { importedGameId_plyNumber: { importedGameId: game.id, plyNumber: 1 } },
+    data: { moveUci: 'e2e4' },
+  });
+  assert.equal(
+    await candidateCount([p3.id]),
+    1,
+    'UPDATE transition trigger must ignore updates that retain the existing position reference',
+  );
+
   const p4 = await createPosition('duplicate');
   await insertCandidate(p4.id, oldObservedAt);
   await prisma.importedGamePly.createMany({
@@ -148,6 +159,7 @@ try {
   assert.equal(completed.terminalResult, 'OBSERVATIONAL');
   assert.equal(completed.positionsDeleted, 0);
   assert.equal(completed.eligibleObserved >= 1, true);
+  assert.equal(completed.orphansFirstObserved >= 1, true);
   assert.equal(completed.observationStartedAt instanceof Date, true);
   assert.equal(completed.observationCompletedAt instanceof Date, true);
   assert.equal(completed.observationCompletedAt >= completed.observationStartedAt, true);
