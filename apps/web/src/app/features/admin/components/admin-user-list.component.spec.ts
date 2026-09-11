@@ -29,6 +29,8 @@ describe('AdminUserListComponent', () => {
     expect(rowHeader?.getAttribute('scope')).toBe('row');
     expect(scroll?.getAttribute('tabindex')).toBe('0');
     expect(caption?.textContent).toContain('Administrator user summaries, page 1');
+    expect(root.textContent).toContain('User 11');
+    expect(root.textContent).toContain('user-11@example.test');
     expect(next?.disabled).toBeTrue();
   });
 });
@@ -36,6 +38,8 @@ describe('AdminUserListComponent', () => {
 function user(id: number): AdminUserSummary {
   return {
     id,
+    displayName: `User ${id}`,
+    email: `user-${id}@example.test`,
     createdAt: '2026-08-01T10:00:00.000Z',
     updatedAt: '2026-08-02T10:00:00.000Z',
     accountCount: 1,

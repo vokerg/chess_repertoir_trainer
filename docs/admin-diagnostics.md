@@ -22,6 +22,8 @@ ADMIN_ACTOR_KEY_VERSION=1
 
 Subjects are opaque Clerk user identifiers, not email addresses. Blank, duplicate, malformed, or unexpectedly large allow-lists fail startup. Enabled administrator authorization also fails startup unless normal authentication uses Clerk. The app-factory-only `test` policy is rejected in production.
 
+Administrator session evidence is derived only after the normal Clerk JWT signature, issuer, and authorized-party checks succeed. It requires the signed `sid`, `v`, and `iat` claims and preserves `jti` when Clerk supplies it, but does not require `jti`; Clerk development instances can issue otherwise-valid version 2 session tokens without that optional identifier. Administrator authority still comes exclusively from the exact server-side Clerk subject allow-list.
+
 The actor-key secret derives versioned HMAC identifiers for structured security logs. Actor and target keys use separate domains, and both remain separate from future deleted-identity tombstones owned by ONB-019.
 
 ## API
@@ -49,8 +51,10 @@ User listing uses opaque versioned keyset cursors over `AppUser.id DESC`, defaul
 
 ## Returned data
 
-The API returns bounded aggregates only:
+The API returns bounded diagnostics:
 
+- available application-user display names and email addresses;
+- up to 100 connected external-account identities per user, including provider, username, optional display name, and active state;
 - account counts grouped by provider and active state;
 - imported-game counts grouped by speed, index state, and analysis state;
 - course, chapter, and line counts without move trees;
@@ -61,7 +65,7 @@ The API returns bounded aggregates only:
 
 Lifecycle work and its pseudonymous audit summaries use the same bounded work limit as the other recent-work sections. Optional section query failures are represented as unavailable sections rather than invented zeroes.
 
-The response contracts exclude email, raw auth subject, provider usernames and URLs, PGN, tokens, FEN/position content, tactical/scenario payloads, AI reviews, raw job errors, full course lines, and per-user byte estimates.
+The response contracts exclude raw auth subjects, provider user IDs and URLs, PGN, tokens, FEN/position content, tactical/scenario payloads, AI reviews, raw job errors, full course lines, and per-user byte estimates. Email addresses and external-account usernames are returned only through the administrator-authorized diagnostics routes.
 
 ## Request-budget boundary
 
