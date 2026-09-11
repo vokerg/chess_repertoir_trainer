@@ -184,6 +184,16 @@ try {
       'the former Lab API route remains only as a deprecated compatibility alias',
     );
     assert.equal(
+      paths?.['/api/lab/performance-by-rating']?.get?.operationId,
+      'getPerformanceByRating',
+      'the legacy OpenAPI operation id remains stable for generated clients',
+    );
+    assert.equal(
+      paths?.['/api/performance-by-rating']?.get?.operationId,
+      'getPerformanceByRatingReport',
+      'the canonical route has its own unique operation id',
+    );
+    assert.equal(
       paths?.['/api/performance-by-rating']?.get?.tags?.[0],
       'Progress',
       'the promoted report is documented under Progress',
