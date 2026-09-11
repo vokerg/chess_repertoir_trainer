@@ -162,6 +162,11 @@ try {
   const [beforeRunClock] = await prisma.$queryRaw`SELECT clock_timestamp() AS "databaseNow"`;
   const run = await service.create({ mode: 'DRY_RUN', requestedBy: 'test:position-cleanup' });
   const [afterRunClock] = await prisma.$queryRaw`SELECT clock_timestamp() AS "databaseNow"`;
+  assert.equal(
+    run.evaluationUpperBound,
+    run.positionUpperBound,
+    'candidate evaluation traversal must be bounded by the accepted position upper bound',
+  );
   const acceptedRunNow = new Date(run.graceCutoff.getTime() + run.graceDays * DAY_MS);
   assert.equal(
     acceptedRunNow >= new Date(beforeRunClock.databaseNow.getTime() - 5)
@@ -184,6 +189,11 @@ try {
   assert.equal(completed.observationStartedAt instanceof Date, true);
   assert.equal(completed.observationCompletedAt instanceof Date, true);
   assert.equal(completed.observationCompletedAt >= completed.observationStartedAt, true);
+  assert.equal(
+    completed.evaluationUpperBound,
+    run.evaluationUpperBound,
+    'observation must not widen the accepted evaluation traversal bound',
+  );
 } finally {
   await prisma.$executeRaw`DELETE FROM "PositionCleanupRun"`;
   await prisma.$executeRaw`DELETE FROM "PositionCleanupCandidate"`;

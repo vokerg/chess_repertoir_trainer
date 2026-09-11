@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-08-28
+Last updated: 2026-09-11
 
 ## Program state
 
@@ -27,12 +27,12 @@ Detailed historical validation remains in task files and append-only reports.
 ## Under review
 
 - **ONB-009 / #194 — REVIEW.** Authenticated onboarding start/skip/finish/pause/resume/cancel/retry/restart/expansion commands are implemented on branch `onb-009/issue-194-lifecycle-commands`, runtime PR #406. The implementation remains open until review acceptance and squash merge.
+- **ONB-026 / #280 — REVIEW.** Bounded shared-position cleanup is implemented on `onb-026/issue-280-orphan-position-cleanup`, runtime PR #412. Exact-head CI/review validation remains before acceptance/merge.
 
 ## Ready implementation
 
 - **ONB-025 / #276 — READY.** Opportunistic stale-account refresh on authenticated application bootstrap over the delivered durable refresh path; recheck ONB-010/020 integration surfaces before claim.
 - **ONB-020 / #260 — READY.** Account/game destructive coordinator over delivered ONB-019 fences/operations and the completed account-import/preparation stack.
-- **ONB-026 / #280 — READY.** Bounded shared-position cleanup; claim-time schema/migration ownership and deployed PostgreSQL transition-relation compatibility checks remain mandatory.
 
 ## Allocated but not ready
 
@@ -61,7 +61,7 @@ Detailed historical validation remains in task files and append-only reports.
 - ONB-019: delivered destructive lifecycle persistence/fences/audit/provenance.
 - ONB-020/021: destructive account/game and whole-user execution.
 - ONB-025: authenticated stale-account refresh trigger.
-- ONB-026: bounded orphan shared-position cleanup.
+- ONB-026: bounded orphan shared-position cleanup, currently under review in PR #412.
 - ONB-024: administrator lifecycle adapters over canonical services.
 
 ## Latest reconciled validation

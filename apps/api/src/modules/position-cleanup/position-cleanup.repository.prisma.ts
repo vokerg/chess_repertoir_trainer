@@ -115,12 +115,12 @@ export function createPositionCleanupRepository(
           INSERT INTO "PositionCleanupRun" (
             "mode", "policyVersion", "graceDays", "graceCutoff",
             "inputPageSize", "initialDeleteBatchSize", "deleteBatchSize", "lockTimeoutMs", "requestedBy",
-            "reconcileUpperBound", "positionUpperBound", "updatedAt"
+            "reconcileUpperBound", "positionUpperBound", "evaluationUpperBound", "updatedAt"
           ) VALUES (
             ${input.mode}, ${input.policyVersion}, ${input.graceDays},
             (clock_timestamp() - make_interval(days => ${input.graceDays}::integer))::timestamp(3),
             ${input.inputPageSize}, ${input.deleteBatchSize}, ${input.deleteBatchSize}, ${input.lockTimeoutMs}, ${input.requestedBy},
-            ${reconcileUpperBound}, ${positionUpperBound}, NOW()
+            ${reconcileUpperBound}, ${positionUpperBound}, ${positionUpperBound}, NOW()
           )
           RETURNING *
         `);
@@ -298,13 +298,8 @@ export function createPositionCleanupRepository(
           LIMIT ${run.inputPageSize}
         `);
         if (input.length === 0) {
-          const evaluationUpperBound = await maxId(
-            transaction,
-            Prisma.sql`SELECT COALESCE(MAX("positionId"), 0)::int AS "maxId" FROM "PositionCleanupCandidate"`,
-          );
           await updateClaimedRun(transaction, runId, workKey, Prisma.sql`
             "phase" = 'EVALUATE',
-            "evaluationUpperBound" = ${evaluationUpperBound},
             "observationStartedAt" = CASE WHEN "mode" = 'DRY_RUN' THEN NOW() ELSE "observationStartedAt" END,
             "lastBatchAt" = NOW()
           `);

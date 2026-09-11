@@ -49,7 +49,15 @@ async function main(): Promise<void> {
     requestedBy: 'server-command:position-cleanup',
     confirmation,
   });
-  console.log(JSON.stringify({ runId: run.id, status: run.status, phase: run.phase }));
+  console.log(JSON.stringify({
+    runId: run.id,
+    status: run.status,
+    phase: run.phase,
+    graceCutoff: run.graceCutoff,
+    reconcileUpperBound: run.reconcileUpperBound,
+    positionUpperBound: run.positionUpperBound,
+    evaluationUpperBound: run.evaluationUpperBound,
+  }));
 
   for (;;) {
     const current = await service.status(run.id);
@@ -61,6 +69,13 @@ async function main(): Promise<void> {
         phase: current.phase,
         terminalResult: current.terminalResult,
         errorCode: current.errorCode,
+        graceCutoff: current.graceCutoff,
+        reconcileUpperBound: current.reconcileUpperBound,
+        positionUpperBound: current.positionUpperBound,
+        evaluationUpperBound: current.evaluationUpperBound,
+        reconcileAfterPositionId: current.reconcileAfterPositionId,
+        observeAfterPositionId: current.observeAfterPositionId,
+        evaluateAfterPositionId: current.evaluateAfterPositionId,
         inputPageSize: current.inputPageSize,
         initialDeleteBatchSize: current.initialDeleteBatchSize,
         deleteBatchSize: current.deleteBatchSize,

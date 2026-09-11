@@ -50,6 +50,9 @@ try {
   assert.match(dryRun.stdout, /"mode":"DRY_RUN"/);
   assert.match(dryRun.stdout, /"observational":true/);
   assert.match(dryRun.stdout, /"runId":\d+/);
+  assert.match(dryRun.stdout, /"positionUpperBound":\d+/);
+  assert.match(dryRun.stdout, /"evaluationUpperBound":\d+/);
+  assert.match(dryRun.stdout, /"evaluateAfterPositionId":\d+/);
   assert.match(dryRun.stdout, /"terminalResult":"OBSERVATIONAL"/);
   assert.match(dryRun.stdout, /"orphansFirstObserved":\d+/);
   assert.match(dryRun.stdout, /"orphansRefreshed":\d+/);

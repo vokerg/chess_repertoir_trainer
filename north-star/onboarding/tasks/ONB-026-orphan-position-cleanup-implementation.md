@@ -1,6 +1,6 @@
 # ONB-026 — Implement bounded orphan shared-position cleanup
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 185
 
 Delivery class: Implementation
 
-Planning maturity: Implementation-ready after ONB-006/007 acceptance and ONB-019 lifecycle-foundation delivery; claim-time schema/migration and deployed-PostgreSQL compatibility checks remain mandatory
+Planning maturity: Implementation complete on the claimed branch; PR #412 is under exact-head CI/review validation
 
 GitHub issue: [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280)
 
@@ -198,6 +198,8 @@ The canonical queue has promoted ONB-026 to `READY`. Before claiming, the claima
 
 ## Completion
 
-Pull request: none
+Runtime pull request: [#412](https://github.com/vokerg/chess_repertoir_trainer/pull/412)
+
+Runtime validation: pending final exact-head CI after takeover review corrections.
 
 Completed at: none
