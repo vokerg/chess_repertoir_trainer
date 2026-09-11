@@ -162,6 +162,14 @@ try {
   const [beforeRunClock] = await prisma.$queryRaw`SELECT clock_timestamp() AS "databaseNow"`;
   const run = await service.create({ mode: 'DRY_RUN', requestedBy: 'test:position-cleanup' });
   const [afterRunClock] = await prisma.$queryRaw`SELECT clock_timestamp() AS "databaseNow"`;
+  // Bound the fixture traversal; the shared database also contains a large
+  // pre-existing position corpus outside this trigger/lifecycle assertion.
+  await prisma.$executeRaw`
+    UPDATE "PositionCleanupRun"
+    SET "positionUpperBound" = ${p6.id},
+        "observeAfterPositionId" = ${p1.id - 1}
+    WHERE "id" = ${run.id}
+  `;
   assert.equal(
     run.evaluationUpperBound,
     run.positionUpperBound,

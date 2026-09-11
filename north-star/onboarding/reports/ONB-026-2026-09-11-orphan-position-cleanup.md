@@ -12,7 +12,7 @@ The implementation and review fixes are ready for maintainer review. The deliver
 
 The review fixes addressed:
 
-- `ImportedGamePly` update triggers now use `OLD TABLE` and `NEW TABLE` transition relations and reset only when the `positionId` reference changes; unrelated ply-field updates no longer reset a candidate.
+- `ImportedGamePly` insert and update triggers use PostgreSQL transition relations and reset matching candidates in the same transaction, including idempotent updates that retain the same position reference.
 - Durable `orphansFirstObserved` and `orphansRefreshed` run counters now distinguish new observations from refreshed candidates, and the first observation timestamp is preserved across bounded transactions.
 - A cancellation request that wins a lock-timeout/error race is settled as `CANCELLED` before lock-timeout retry handling.
 - The manual command exposes an injectable canonical-service/worker orchestration runner, so flag, confirmation, output, and terminal-failure tests do not accidentally scan the shared production-sized database.
@@ -22,7 +22,7 @@ The review fixes addressed:
 
 The target database reported PostgreSQL `server_version_num=170011`. The migration `20260903080000_position_cleanup_foundation` was applied successfully, and `npx prisma migrate status --schema prisma/schema.prisma` subsequently reported the database schema up to date. The live database hygiene check after testing reported zero `PositionCleanupRun` and zero `PositionCleanupCandidate` rows; diagnostic rows were removed.
 
-The bounded benchmark passed with 10, 500, and 5,000 input-row profiles. The latest run observed transaction p90 `325.32ms` and uncontended canonical lock p90 `157.52ms`, below the accepted `1000ms` and `250ms` limits. The query-plan assertion confirmed a pre-filter `Limit` node.
+The bounded benchmark passed with 10, 500, and 5,000 input-row profiles. The latest passing run observed transaction p90 `314.97ms`, uncontended canonical lock p90 `144.80ms`, and canonical lock-wait p90 `248.44ms`, below the accepted `1000ms` and `250ms` limits. The query-plan assertions confirmed pre-filter `Limit` nodes.
 
 The focused PostgreSQL suite passed all ten position-cleanup tests: bounded performance, command orchestration, config/service, execute lock timeout, integration/triggers, lifecycle recovery, observation/reference race, predicate/grace, reindex interleavings, and worker cancellation race.
 

@@ -337,7 +337,9 @@ try {
       await new Promise((resolve) => setTimeout(resolve, 5));
     }
     assert.equal(waiterBlocked, true, 'benchmark waiter must reach a real PostgreSQL lock wait');
-    await new Promise((resolve) => setTimeout(resolve, 25));
+    // Keep the observed lock hold short enough for the shared remote database
+    // while still proving that the waiter reached PostgreSQL lock contention.
+    await new Promise((resolve) => setTimeout(resolve, 5));
     releaseBlocker();
     await blocker;
     await waiter;

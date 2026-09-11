@@ -1,32 +1,41 @@
 import 'dotenv/config';
 import prisma from '../prisma';
 import { loadPositionCleanupConfig } from '../modules/position-cleanup/position-cleanup.config';
+import type { PositionCleanupConfig } from '../modules/position-cleanup/position-cleanup.config';
 import {
   POSITION_CLEANUP_EXECUTE_CONFIRMATION,
   createPositionCleanupService,
+  type PositionCleanupService,
 } from '../modules/position-cleanup/position-cleanup.service';
 import { isPositionCleanupTerminal } from '../modules/position-cleanup/position-cleanup.types';
-import { createPositionCleanupWorker } from '../modules/position-cleanup/position-cleanup.worker.service';
+import {
+  createPositionCleanupWorker,
+  type PositionCleanupWorker,
+} from '../modules/position-cleanup/position-cleanup.worker.service';
 
-const apply = process.argv.includes('--apply');
-const confirmation = process.argv
-  .find((argument) => argument.startsWith('--confirm='))
-  ?.slice('--confirm='.length);
+export interface PositionCleanupCommandInput {
+  apply: boolean;
+  confirmation?: string;
+  config: PositionCleanupConfig;
+  service: PositionCleanupService;
+  worker: PositionCleanupWorker;
+  log?: (message: string) => void;
+  wait?: (delayMs: number) => Promise<void>;
+}
 
-async function main(): Promise<void> {
-  const config = loadPositionCleanupConfig();
-  const service = createPositionCleanupService({ config });
-  const worker = createPositionCleanupWorker({ config });
-  const mode = apply ? 'EXECUTE' : 'DRY_RUN';
+export async function runPositionCleanupCommand(input: PositionCleanupCommandInput): Promise<boolean> {
+  const log = input.log ?? ((message: string) => console.log(message));
+  const waitForPoll = input.wait ?? wait;
+  const mode = input.apply ? 'EXECUTE' : 'DRY_RUN';
 
-  if (apply && confirmation !== POSITION_CLEANUP_EXECUTE_CONFIRMATION) {
+  if (input.apply && input.confirmation !== POSITION_CLEANUP_EXECUTE_CONFIRMATION) {
     throw new Error(
       `Execution requires --apply --confirm=${POSITION_CLEANUP_EXECUTE_CONFIRMATION}.`,
     );
   }
 
-  const preview = await service.preview(mode);
-  console.log(JSON.stringify({
+  const preview = await input.service.preview(mode);
+  log(JSON.stringify({
     mode: preview.mode,
     policyVersion: preview.policyVersion,
     graceDays: preview.graceDays,
@@ -38,18 +47,18 @@ async function main(): Promise<void> {
     postgresServerVersionNum: preview.postgresServerVersionNum,
   }));
 
-  if (!apply) {
-    console.log(
+  if (!input.apply) {
+    log(
       `Dry-run is observational across bounded transactions. Re-run with --apply --confirm=${POSITION_CLEANUP_EXECUTE_CONFIRMATION} only after reviewing the result.`,
     );
   }
 
-  const run = await service.create({
+  const run = await input.service.create({
     mode,
     requestedBy: 'server-command:position-cleanup',
-    confirmation,
+    confirmation: input.confirmation,
   });
-  console.log(JSON.stringify({
+  log(JSON.stringify({
     runId: run.id,
     status: run.status,
     phase: run.phase,
@@ -60,9 +69,9 @@ async function main(): Promise<void> {
   }));
 
   for (;;) {
-    const current = await service.status(run.id);
+    const current = await input.service.status(run.id);
     if (isPositionCleanupTerminal(current.status)) {
-      console.log(JSON.stringify({
+      log(JSON.stringify({
         runId: current.id,
         mode: current.mode,
         status: current.status,
@@ -96,16 +105,15 @@ async function main(): Promise<void> {
         observationCompletedAt: current.observationCompletedAt,
         completedAt: current.completedAt,
       }));
-      if (current.status !== 'COMPLETED') process.exitCode = 1;
-      return;
+      return current.status === 'COMPLETED';
     }
 
-    const didWork = await worker.runOnce();
+    const didWork = await input.worker.runOnce();
     if (!didWork) {
       // A separately running persistent worker may own the same durable run. Do not
       // turn a healthy exact-work-key claim into a false CLI failure; poll status and
       // opportunistically claim again after the normal cleanup poll interval.
-      await wait(config.pollIntervalMs);
+      await waitForPoll(input.config.pollIntervalMs);
     }
   }
 }
@@ -114,11 +122,29 @@ function wait(delayMs: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, delayMs));
 }
 
-main()
-  .catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
+async function main(): Promise<void> {
+  const config = loadPositionCleanupConfig();
+  const service = createPositionCleanupService({ config });
+  const worker = createPositionCleanupWorker({ config });
+  const completed = await runPositionCleanupCommand({
+    apply: process.argv.includes('--apply'),
+    confirmation: process.argv
+      .find((argument) => argument.startsWith('--confirm='))
+      ?.slice('--confirm='.length),
+    config,
+    service,
+    worker,
   });
+  if (!completed) process.exitCode = 1;
+}
+
+if (require.main === module) {
+  main()
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : error);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

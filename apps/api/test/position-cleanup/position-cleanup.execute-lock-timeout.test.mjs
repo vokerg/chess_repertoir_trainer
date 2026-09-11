@@ -93,6 +93,15 @@ try {
   assert.equal(created.initialDeleteBatchSize, 4);
   assert.equal(created.deleteBatchSize, 4);
 
+  // The shared API test database contains a large pre-existing position corpus.
+  // Keep this interleaving test bounded to its own fixture before advancing phases.
+  await prisma.$executeRaw`
+    UPDATE "PositionCleanupRun"
+    SET "positionUpperBound" = ${positionId},
+        "observeAfterPositionId" = ${positionId - 1}
+    WHERE "id" = ${created.id}
+  `;
+
   await runUntilPhase(created.id, 'EVALUATE');
 
   // The API test suite shares one PostgreSQL database, so observation can discover
