@@ -32,7 +32,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 185 | ONB-026 | [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280) | P1 | READY | Implement bounded orphan shared-position cleanup | Implementation | ONB-006/007/019 delivered; claim-time schema/migration and PostgreSQL capability checks mandatory |
 | 190 | ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) | P1 | DONE | Build administrator authorization and read-only diagnostics foundation | Implementation | Runtime PR #284; completion PR #298 |
 | 200 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) | P2 | DONE | Build administrator diagnostics Angular feature | Implementation | Runtime PR #307; completion PR #312 |
-| 210 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) | P1 | PROPOSED | Add administrator lifecycle previews and controls | Implementation | Depends on canonical lifecycle services, applicable ONB-020/021/026 delivery, and proven reverification |
+| 210 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) | P1 | REVIEW | Add administrator lifecycle previews and controls | Implementation | Account/game slice on `onb-024/issue-274-admin-lifecycle-controls`; ONB-021/026 actions remain deferred |
 
 ## Current ready queue
 

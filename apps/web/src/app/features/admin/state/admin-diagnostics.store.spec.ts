@@ -8,10 +8,12 @@ import type {
 import { of, Subject, throwError } from 'rxjs';
 import { AdminApiService } from '../data-access/admin-api.service';
 import { AdminDiagnosticsStore } from './admin-diagnostics.store';
+import { AuthService } from '../../../core/auth/auth.service';
 
 describe('AdminDiagnosticsStore', () => {
   let store: AdminDiagnosticsStore;
   let api: jasmine.SpyObj<AdminApiService>;
+  let auth: jasmine.SpyObj<AuthService>;
 
   beforeEach(() => {
     api = jasmine.createSpyObj<AdminApiService>('AdminApiService', [
@@ -19,7 +21,12 @@ describe('AdminDiagnosticsStore', () => {
       'listUsers',
       'getUserDetail',
       'getUserWork',
+      'previewLifecycle',
+      'executeLifecycle',
+      'getLifecycle',
+      'stopLifecycle',
     ]);
+    auth = jasmine.createSpyObj<AuthService>('AuthService', ['reverify']);
     api.getUserDetail.and.callFake((userId) => of(detail(userId)));
     api.getUserWork.and.callFake((userId) => of(work(userId)));
 
@@ -27,6 +34,7 @@ describe('AdminDiagnosticsStore', () => {
       providers: [
         AdminDiagnosticsStore,
         { provide: AdminApiService, useValue: api },
+        { provide: AuthService, useValue: auth },
       ],
     });
     store = TestBed.inject(AdminDiagnosticsStore);
@@ -57,10 +65,7 @@ describe('AdminDiagnosticsStore', () => {
 
   it('replaces the current page instead of accumulating an unbounded user list', async () => {
     api.getMe.and.returnValue(of(capability()));
-    api.listUsers.and.returnValues(
-      of(userPage([1, 2], 'cursor-2')),
-      of(userPage([3, 4], null)),
-    );
+    api.listUsers.and.returnValues(of(userPage([1, 2], 'cursor-2')), of(userPage([3, 4], null)));
 
     await store.initialize();
     await store.nextUsersPage();
@@ -109,10 +114,7 @@ describe('AdminDiagnosticsStore', () => {
 
   it('restores capability and diagnostics when initialized again after navigation or reload', async () => {
     api.getMe.and.returnValues(of(capability(1)), of(capability(2)));
-    api.listUsers.and.returnValues(
-      of(userPage([1], null)),
-      of(userPage([9], null)),
-    );
+    api.listUsers.and.returnValues(of(userPage([1], null)), of(userPage([9], null)));
 
     await store.initialize();
     await store.initialize();
@@ -146,8 +148,12 @@ describe('AdminDiagnosticsStore', () => {
     store.accessState.set('ready');
     const firstDetail = new Subject<AdminUserDetailResponse>();
     const firstWork = new Subject<AdminUserWorkResponse>();
-    api.getUserDetail.and.callFake((userId) => userId === 1 ? firstDetail.asObservable() : of(detail(userId)));
-    api.getUserWork.and.callFake((userId) => userId === 1 ? firstWork.asObservable() : of(work(userId)));
+    api.getUserDetail.and.callFake((userId) =>
+      userId === 1 ? firstDetail.asObservable() : of(detail(userId)),
+    );
+    api.getUserWork.and.callFake((userId) =>
+      userId === 1 ? firstWork.asObservable() : of(work(userId)),
+    );
 
     const firstLoad = store.selectUser(1);
     await store.selectUser(2);
@@ -161,11 +167,68 @@ describe('AdminDiagnosticsStore', () => {
     expect(store.detail()?.user.id).toBe(2);
     expect(store.work()?.userId).toBe(2);
   });
+
+  it('previews and reverifies before executing a target lifecycle operation', async () => {
+    store.accessState.set('ready');
+    store.selectedUserId.set(7);
+    store.lifecycleAccountId.set('5');
+    const preview = lifecyclePreview();
+    api.previewLifecycle.and.returnValue(of(preview));
+    api.executeLifecycle.and.returnValue(of({ ...preview, status: 'FENCING' }));
+    auth.reverify.and.resolveTo(true);
+
+    await store.previewLifecycle();
+    store.lifecycleConfirmation.set(preview.confirmationPhrase);
+    await store.executeLifecycle();
+
+    expect(api.previewLifecycle).toHaveBeenCalledOnceWith(7, {
+      action: 'PURGE_ACCOUNT_DATA',
+      accountId: 5,
+    });
+    expect(auth.reverify).toHaveBeenCalledTimes(1);
+    expect(api.executeLifecycle).toHaveBeenCalled();
+    expect(store.lifecycleOperation()?.status).toBe('FENCING');
+  });
 });
+
+function lifecyclePreview() {
+  return {
+    operationId: 44,
+    action: 'PURGE_ACCOUNT_DATA' as const,
+    status: 'PREVIEWED' as const,
+    scope: { resourceType: 'ACCOUNT' as const, userId: 7, accountId: 5 },
+    previewCounts: {
+      accounts: 1,
+      games: 3,
+      plies: 8,
+      analysisRuns: 1,
+      aiReviews: 0,
+      tacticalDetections: 0,
+      scenarioSessions: 0,
+      importRuns: 1,
+      jobRuns: 0,
+      preparationRuns: 0,
+    },
+    previewExpiresAt: '2026-09-08T22:00:00.000Z',
+    confirmationPhrase: 'PURGE ACCOUNT 5',
+    warningCodes: [],
+    stopRequest: 'NONE' as const,
+    firstDestructiveCommitAt: null,
+    checkpoint: null,
+    verification: null,
+    terminalResult: null,
+    errorCode: null,
+    startedAt: null,
+    completedAt: null,
+    createdAt: '2026-09-08T21:00:00.000Z',
+    updatedAt: '2026-09-08T21:00:00.000Z',
+    previewToken: 'preview-token-with-safe-length',
+  };
+}
 
 function capability(actorKeyVersion = 1): AdminMeResponse {
   return {
-    capabilities: ['ADMIN_DIAGNOSTICS_READ'],
+    capabilities: ['ADMIN_DIAGNOSTICS_READ', 'ADMIN_LIFECYCLE_PREVIEW', 'ADMIN_LIFECYCLE_EXECUTE'],
     actorKeyVersion,
     sessionEvidence: {
       hasVerifiedSession: true,

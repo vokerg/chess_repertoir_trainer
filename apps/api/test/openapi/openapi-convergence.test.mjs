@@ -91,6 +91,7 @@ const bodylessActions = new Map([
   ['POST /api/me/onboarding/runs/{runId}/retry', 'run id selects persisted failed preparation evidence eligible for a retry generation'],
   ['POST /api/me/onboarding/runs/{runId}/restart', 'run id supplies the persisted immutable preparation scope and recovery lineage'],
   ['POST /api/me/data-lifecycle/{operationId}/stop', 'Before the first destructive commit this requests terminal cancellation'],
+  ['POST /api/admin/users/{userId}/data-lifecycle/{operationId}/stop', 'Before the first destructive commit this requests terminal cancellation'],
 ]);
 
 for (const { method, path, operation } of operations.filter(({ method }) => ['post', 'patch', 'put'].includes(method))) {
@@ -116,6 +117,12 @@ const backfillOperation = first.paths['/api/me/accounts/{id}/backfill']?.post;
 assert.ok(backfillOperation?.responses?.['202'], 'account backfill must document durable 202 acceptance');
 const fullHistoryOperation = first.paths['/api/me/accounts/{id}/import-all-history']?.post;
 assert.ok(fullHistoryOperation?.responses?.['202'], 'full-history import must document durable 202 acceptance');
+
+const marathonCreateSchema = first.paths['/api/training-marathons']?.post?.requestBody?.content?.['application/json']?.schema;
+assert.ok(marathonCreateSchema?.properties?.mode?.enum?.includes('DAILY_REVIEW'), 'marathon mode must document Daily Review');
+const marathonNextSchema = first.paths['/api/training-marathons/{runId}/next']?.post?.responses?.['200']?.content?.['application/json']?.schema;
+assert.ok(marathonNextSchema?.oneOf?.some((variant) => variant.properties?.state?.enum?.includes('COMPLETED')), 'marathon next must document explicit Daily Review completion');
+assert.ok(first.paths['/api/training-marathons/{runId}/next']?.post?.responses?.['409'], 'marathon next must document an unfinished active item');
 
 const operationIds = operations.map(({ operation }) => operation.operationId);
 assert.equal(new Set(operationIds).size, operationIds.length, 'Operation IDs must be unique');

@@ -117,6 +117,70 @@ describe('AuthService Clerk mounts', () => {
     expect(auth.resolvedAppSession()?.appUser.user.id).toBe(8);
     expect(auth.resolvedAppSession()?.generation).toBe(2);
   });
+
+  it('uses Clerk session verification and refreshes the token before reporting success', async () => {
+    await auth.initialize();
+    const startVerification = jasmine.createSpy('startVerification').and.resolveTo({
+      status: 'needs_first_factor',
+      supportedFirstFactors: [{ strategy: 'password' }],
+    });
+    const attemptFirstFactorVerification = jasmine
+      .createSpy('attemptFirstFactorVerification')
+      .and.resolveTo({ status: 'complete', supportedFirstFactors: [] });
+    const getToken = jasmine.createSpy('getToken').and.resolveTo('fresh-token');
+    currentSession = {
+      id: 'session-reverify',
+      startVerification,
+      attemptFirstFactorVerification,
+      getToken,
+    } as unknown as NonNullable<Clerk['session']>;
+
+    const resultPromise = auth.reverify();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const factor = auth.reverificationChallenge()?.factors[0];
+    expect(factor?.strategy).toBe('password');
+    await auth.selectReverificationFactor(factor!.id);
+    await auth.submitReverification('correct horse battery staple');
+
+    expect(await resultPromise).toBeTrue();
+    expect(startVerification).toHaveBeenCalledOnceWith({ level: 'first_factor' });
+    expect(attemptFirstFactorVerification).toHaveBeenCalledOnceWith({
+      strategy: 'password',
+      password: 'correct horse battery staple',
+    });
+    expect(getToken).toHaveBeenCalledOnceWith({ skipCache: true });
+    expect(auth.reverificationChallenge()).toBeNull();
+  });
+
+  it('fails closed when the post-verification token refresh fails', async () => {
+    await auth.initialize();
+    const startVerification = jasmine.createSpy('startVerification').and.resolveTo({
+      status: 'needs_first_factor',
+      supportedFirstFactors: [{ strategy: 'password' }],
+    });
+    const attemptFirstFactorVerification = jasmine
+      .createSpy('attemptFirstFactorVerification')
+      .and.resolveTo({ status: 'complete', supportedFirstFactors: [] });
+    const getToken = jasmine.createSpy('getToken').and.rejectWith(new Error('refresh failed'));
+    currentSession = {
+      id: 'session-refresh-fails',
+      startVerification,
+      attemptFirstFactorVerification,
+      getToken,
+    } as unknown as NonNullable<Clerk['session']>;
+
+    const resultPromise = auth.reverify();
+    await Promise.resolve();
+    await Promise.resolve();
+    const factor = auth.reverificationChallenge()?.factors[0];
+    await auth.selectReverificationFactor(factor!.id);
+    await auth.submitReverification('password');
+
+    expect(await resultPromise).toBeFalse();
+    expect(auth.reverificationChallenge()).toBeNull();
+  });
 });
 
 function fakeSession(id: string, token: string): NonNullable<Clerk['session']> {

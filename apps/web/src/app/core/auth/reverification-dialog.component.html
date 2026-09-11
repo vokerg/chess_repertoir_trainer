@@ -1,0 +1,84 @@
+<dialog
+  #dialog
+  class="reverification-dialog"
+  aria-labelledby="reverification-dialog-title"
+  aria-describedby="reverification-dialog-description"
+  (cancel)="onCancel($event)"
+  (mousedown)="onBackdropPointerDown($event)"
+>
+  @if (challenge(); as state) {
+    <form class="reverification-dialog-panel" method="dialog" (submit)="submit($event)">
+      <header>
+        <div class="reverification-dialog-tone" aria-hidden="true"></div>
+        <div>
+          <h2 id="reverification-dialog-title">Verify administrator access</h2>
+          <p id="reverification-dialog-description">
+            Complete a fresh Clerk first-factor verification before this destructive action can be
+            submitted.
+          </p>
+        </div>
+      </header>
+
+      <div class="reverification-factor-list" aria-label="Verification methods">
+        @for (factor of state.factors; track factor.id) {
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="state.busy"
+            [attr.aria-pressed]="state.selectedFactor?.id === factor.id"
+            (click)="selectFactor(factor.id)"
+          >
+            {{ factor.label }}
+          </button>
+        }
+      </div>
+
+      @if (state.selectedFactor; as factor) {
+        <label class="reverification-dialog-field">
+          <span>
+            @if (factor.strategy === 'password') {
+              Password
+            } @else {
+              Verification code
+            }
+          </span>
+          <input
+            #credentialInput
+            [type]="factor.strategy === 'password' ? 'password' : 'text'"
+            [attr.inputmode]="factor.strategy === 'password' ? null : 'numeric'"
+            [attr.autocomplete]="
+              factor.strategy === 'password' ? 'current-password' : 'one-time-code'
+            "
+            [formControl]="credentialControl"
+            [disabled]="state.busy"
+          />
+        </label>
+      }
+
+      @if (state.error) {
+        <p class="reverification-dialog-error" role="alert">{{ state.error }}</p>
+      }
+
+      <div class="reverification-dialog-actions">
+        <button
+          #cancelButton
+          type="button"
+          class="secondary"
+          [disabled]="state.busy"
+          (click)="cancel()"
+        >
+          Cancel
+        </button>
+        @if (state.selectedFactor) {
+          <button
+            type="submit"
+            class="primary"
+            [disabled]="state.busy || credentialControl.invalid"
+          >
+            {{ state.busy ? 'Verifying…' : 'Verify' }}
+          </button>
+        }
+      </div>
+    </form>
+  }
+</dialog>

@@ -1,6 +1,6 @@
 # ONB-024 — Add administrator lifecycle previews and controls
 
-Status: PROPOSED
+Status: REVIEW
 
 Priority: P1
 
@@ -10,9 +10,17 @@ Delivery class: Implementation
 
 GitHub issue: [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274)
 
+Pull request: [#417](https://github.com/vokerg/chess_repertoir_trainer/pull/417)
+
 Target branch: `main`
 
 Suggested branch: `admin/onb-024-lifecycle-controls`
+
+Runtime branch: `onb-024/issue-274-admin-lifecycle-controls`
+
+Claimed: 2026-09-08 by OpenAI Codex with explicit user authorization after ONB-020 delivery review
+
+Delivered slice: account/game lifecycle preview, reverification-bound execution, status, permitted stop, bounded audit summaries, and Angular controls. Whole-user deletion and position cleanup remain gated on ONB-021/026 and are not exposed.
 
 ## Objective
 

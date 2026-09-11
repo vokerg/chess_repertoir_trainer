@@ -38,7 +38,7 @@ Detailed historical validation remains in task files and append-only reports.
 
 - ONB-010 / #195 — `PROPOSED`; depends on accepted/merged ONB-009 for the functional onboarding/Home command surface.
 - ONB-021 / #261 — `PROPOSED`; depends on ONB-020 for account/game destructive execution before whole-user/mobile purge.
-- ONB-024 / #274 — `PROPOSED`; depends on applicable canonical lifecycle/cleanup services and proven signed reverification.
+- ONB-024 / #274 — `REVIEW`; account/game controls consume merged ONB-020 and enforce signed fresh, one-use Clerk reverification. Whole-user and shared-position actions remain deferred to ONB-021/026.
 
 ## Current critical boundaries
 

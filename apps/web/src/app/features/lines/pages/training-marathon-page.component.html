@@ -1,57 +1,72 @@
 @if (store.loaded()) {
-  <section class="marathon-training-page">
-    <div class="marathon-header-shell">
-      <a [routerLink]="store.backLink()" class="training-back-link">&larr; {{ store.backLabel() }}</a>
-      <app-page-header
-        [title]="store.marathonTitle()"
-        [subtitle]="store.sourceSummary()"
-        [stats]="headerStats()"
-        [actions]="headerActions()"
+  @if (store.dailyReviewCompleted()) {
+    <app-panel
+      title="You're done for today."
+      [subtitle]="store.completedThisRun() + ' scheduled reviews completed in this run.'"
+    >
+      <button class="compact-action primary" type="button" (click)="store.switchMode('ALL')">
+        Continue training
+      </button>
+      <a class="compact-action secondary" [routerLink]="store.backLink()">Back</a>
+    </app-panel>
+  } @else {
+    <section class="marathon-training-page">
+      <div class="marathon-header-shell">
+        <a [routerLink]="store.backLink()" class="training-back-link"
+          >&larr; {{ store.backLabel() }}</a
+        >
+        <app-page-header
+          [title]="store.marathonTitle()"
+          [subtitle]="store.sourceSummary()"
+          [stats]="headerStats()"
+          [actions]="headerActions()"
+        />
+      </div>
+
+      <app-line-training-session
+        class="marathon-session"
+        [sessionId]="store.sessionId()"
+        [currentFen]="store.currentFen()"
+        [expectedMove]="store.expectedMove()"
+        [sideToTrain]="store.sideToTrain()"
+        [feedback]="store.feedback()"
+        [feedbackCorrect]="store.feedbackCorrect()"
+        [mistakesCount]="store.mistakesCount()"
+        [completed]="store.completed()"
+        [passed]="store.passed()"
+        [accuracy]="store.accuracy()"
+        [showExpectedMove]="store.showExpectedMove()"
+        [reviewLoading]="store.reviewLoading()"
+        [mistakes]="store.mistakes()"
+        [error]="store.error()"
+        [lastMove]="store.lastMove()"
+        [boardPositionVersion]="store.boardPositionVersion()"
+        [goalTitle]="store.lineName()"
+        [goalSubtitle]="
+          store.itemKind() === 'REINFORCEMENT_RETRY'
+            ? 'Reinforcement retry. This will not change tomorrow\'s scheduled review.'
+            : 'Play the current line from memory. Keep the expected move hidden unless you are stuck.'
+        "
+        progressTitle="Current line progress"
+        finishButtonLabel="Finish current line"
+        primaryActionLabel="Next line"
+        secondaryActionLabel="Stop marathon"
+        [secondaryActionLink]="store.backLink()"
+        [editActionLink]="['/lines', store.lineId(), 'edit']"
+        reviewSubtitle="Review missed moves for this line before moving to the next marathon line."
+        (boardMove)="store.playBoardMove($event)"
+        (toggleExpectedMove)="store.toggleExpectedMove()"
+        (finish)="store.finishTraining()"
+        (primaryAction)="store.startNextLine()"
       />
-    </div>
 
-    <app-line-training-session
-      class="marathon-session"
-      [sessionId]="store.sessionId()"
-      [currentFen]="store.currentFen()"
-      [expectedMove]="store.expectedMove()"
-      [sideToTrain]="store.sideToTrain()"
-      [feedback]="store.feedback()"
-      [feedbackCorrect]="store.feedbackCorrect()"
-      [mistakesCount]="store.mistakesCount()"
-      [completed]="store.completed()"
-      [passed]="store.passed()"
-      [accuracy]="store.accuracy()"
-      [showExpectedMove]="store.showExpectedMove()"
-      [reviewLoading]="store.reviewLoading()"
-      [mistakes]="store.mistakes()"
-      [error]="store.error()"
-      [lastMove]="store.lastMove()"
-      [boardPositionVersion]="store.boardPositionVersion()"
-      [goalTitle]="store.lineName()"
-      goalSubtitle="Play the current line from memory. Keep the expected move hidden unless you are stuck."
-      progressTitle="Current line progress"
-      finishButtonLabel="Finish current line"
-      primaryActionLabel="Next line"
-      secondaryActionLabel="Stop marathon"
-      [secondaryActionLink]="store.backLink()"
-      [editActionLink]="['/lines', store.lineId(), 'edit']"
-      reviewSubtitle="Review missed moves for this line before moving to the next marathon line."
-      (boardMove)="store.playBoardMove($event)"
-      (toggleExpectedMove)="store.toggleExpectedMove()"
-      (finish)="store.finishTraining()"
-      (primaryAction)="store.startNextLine()"
-    />
-
-    @if (store.error(); as error) {
-      <app-state-message class="marathon-error" tone="error" [message]="error" />
-    }
-  </section>
+      @if (store.error(); as error) {
+        <app-state-message class="marathon-error" tone="error" [message]="error" />
+      }
+    </section>
+  }
 } @else if (store.error(); as error) {
-  <app-panel
-    title="Marathon unavailable"
-    subtitle="The next training line could not be prepared."
-  >
+  <app-panel title="Marathon unavailable" subtitle="The next training line could not be prepared.">
     <app-state-message tone="error" [message]="error" />
     <a class="compact-action secondary" [routerLink]="store.backLink()">Back</a>
   </app-panel>

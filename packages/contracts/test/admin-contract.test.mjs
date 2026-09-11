@@ -16,7 +16,7 @@ assert.equal(adminUserListQuerySchema.safeParse({ limit: 101 }).success, false);
 assert.deepEqual(adminWorkQuerySchema.parse({}), { limit: 20 });
 
 const me = {
-  capabilities: ['ADMIN_DIAGNOSTICS_READ'],
+  capabilities: ['ADMIN_DIAGNOSTICS_READ', 'ADMIN_LIFECYCLE_PREVIEW', 'ADMIN_LIFECYCLE_EXECUTE'],
   actorKeyVersion: 1,
   sessionEvidence: {
     hasVerifiedSession: true,
@@ -31,17 +31,19 @@ const me = {
 assert.deepEqual(adminMeResponseSchema.parse(me), me);
 
 const list = {
-  items: [{
-    id: 7,
-    createdAt: '2026-08-04T18:00:00.000Z',
-    updatedAt: '2026-08-04T18:10:00.000Z',
-    accountCount: 2,
-    activeAccountCount: 1,
-    importedGameCount: 40,
-    courseCount: 3,
-    activeWorkCount: 1,
-    warnings: [],
-  }],
+  items: [
+    {
+      id: 7,
+      createdAt: '2026-08-04T18:00:00.000Z',
+      updatedAt: '2026-08-04T18:10:00.000Z',
+      accountCount: 2,
+      activeAccountCount: 1,
+      importedGameCount: 40,
+      courseCount: 3,
+      activeWorkCount: 1,
+      warnings: [],
+    },
+  ],
   nextCursor: null,
 };
 assert.deepEqual(adminUserListResponseSchema.parse(list), list);
@@ -53,7 +55,12 @@ const detail = {
     updatedAt: '2026-08-04T18:10:00.000Z',
   },
   sections: {
-    accounts: { available: true, total: 1, active: 1, groups: [{ provider: 'lichess', active: true, count: 1 }] },
+    accounts: {
+      available: true,
+      total: 1,
+      active: 1,
+      groups: [{ provider: 'lichess', active: true, count: 1 }],
+    },
     games: {
       available: true,
       total: 1,
@@ -68,8 +75,20 @@ const detail = {
       byAnalysisState: [{ state: null, count: 1 }],
     },
     courses: { available: true, courses: 0, chapters: 0, lines: 0 },
-    training: { available: true, sessions: 0, sublineAttempts: 0, latestSessionAt: null, latestSublineAttemptAt: null },
-    preparation: { available: true, totalRuns: 0, activeRuns: 0, latestUpdatedAt: null, warnings: [] },
+    training: {
+      available: true,
+      sessions: 0,
+      sublineAttempts: 0,
+      latestSessionAt: null,
+      latestSublineAttemptAt: null,
+    },
+    preparation: {
+      available: true,
+      totalRuns: 0,
+      activeRuns: 0,
+      latestUpdatedAt: null,
+      warnings: [],
+    },
     footprint: {
       available: true,
       rowCounts: {

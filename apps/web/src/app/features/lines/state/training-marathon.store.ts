@@ -1,7 +1,13 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { LinesApiService, readLinesError } from '../data-access/lines-api.service';
-import { MarathonMode, MarathonNextResponse, MarathonScopeType, RepertoireColor, TrainingReviewItem } from '../data-access/lines.models';
+import {
+  MarathonMode,
+  MarathonNextResponse,
+  MarathonScopeType,
+  RepertoireColor,
+  TrainingReviewItem,
+} from '../data-access/lines.models';
 import { MarathonInitializeOptions } from '../helpers/marathon-query.helpers';
 
 @Injectable()
@@ -39,6 +45,8 @@ export class TrainingMarathonStore {
   readonly lastMove = signal<{ from: string; to: string } | null>(null);
   readonly boardPositionVersion = signal(0);
   readonly completedThisRun = signal(0);
+  readonly dailyReviewCompleted = signal(false);
+  readonly itemKind = signal<'STANDARD' | 'SCHEDULED_REVIEW' | 'REINFORCEMENT_RETRY'>('STANDARD');
 
   readonly backLink = computed<readonly (string | number)[]>(() =>
     this.scopeId()
@@ -47,14 +55,18 @@ export class TrainingMarathonStore {
         : ['/chapters', this.scopeId()!, 'lines']
       : ['/library'],
   );
-  readonly backLabel = computed(() => (this.scopeId() ? (this.scopeType() === 'COURSE' ? 'Course' : 'Chapter lines') : 'Study'));
+  readonly backLabel = computed(() =>
+    this.scopeId() ? (this.scopeType() === 'COURSE' ? 'Course' : 'Chapter lines') : 'Study',
+  );
   readonly marathonTitle = computed(() => {
+    if (this.mode() === 'DAILY_REVIEW') return 'Daily Review';
     if (this.selectedSublineHashes().length > 0) return 'Selected subline marathon';
     if (this.selectedLineIds().length > 0) return 'Selected line marathon';
     return this.scopeType() === 'COURSE' ? 'Course marathon' : 'Chapter marathon';
   });
   readonly sourceSummary = computed(() => {
-    if (this.selectedSublineHashes().length > 0) return `${this.selectedSublineHashes().length} selected sublines`;
+    if (this.selectedSublineHashes().length > 0)
+      return `${this.selectedSublineHashes().length} selected sublines`;
     if (this.selectedLineIds().length > 0) return `${this.selectedLineIds().length} selected lines`;
     return this.scopeType() === 'COURSE' ? 'Whole course' : 'Whole chapter';
   });
@@ -76,6 +88,8 @@ export class TrainingMarathonStore {
     this.recentSublineHashes.set([]);
     this.runId.set(null);
     this.completedThisRun.set(0);
+    this.dailyReviewCompleted.set(false);
+    this.itemKind.set('STANDARD');
     this.countedCompletedSessionIds.clear();
     void this.startNextLine();
   }
@@ -88,13 +102,23 @@ export class TrainingMarathonStore {
       const response = await this.loadNextRunLine(requestVersion, true);
       if (!response) return;
       if (requestVersion !== this.requestVersion) return;
+      if (response.state === 'COMPLETED') {
+        this.dailyReviewCompleted.set(true);
+        this.completedThisRun.set(response.completedCount);
+        this.loaded.set(true);
+        return;
+      }
+      this.dailyReviewCompleted.set(false);
+      this.itemKind.set(response.itemKind);
       this.lineId.set(response.line.id);
       this.lineName.set(response.line.name);
       this.sideToTrain.set(response.line.sideToTrain);
       this.resetSessionState();
       this.sessionId.set(response.session.sessionId);
       this.sublineHash.set(response.subline.hash);
-      this.sublineMoveText.set(response.subline.moveText || response.session.sublineMoveText || null);
+      this.sublineMoveText.set(
+        response.subline.moveText || response.session.sublineMoveText || null,
+      );
       this.currentFen.set(response.session.fen);
       this.expectedMove.set(response.session.expectedMove);
       this.completed.set(response.session.completed ?? false);
@@ -114,10 +138,14 @@ export class TrainingMarathonStore {
   ): Promise<MarathonNextResponse | null> {
     let runId = this.runId();
     if (!runId) {
-      const run = await firstValueFrom(this.api.createMarathonRun({
-        scope: this.scopeId() ? { type: this.scopeType(), id: this.scopeId()! } : undefined,
-        mode: this.mode(), lineIds: this.selectedLineIds(), sublineHashes: this.selectedSublineHashes(),
-      }));
+      const run = await firstValueFrom(
+        this.api.createMarathonRun({
+          scope: this.scopeId() ? { type: this.scopeType(), id: this.scopeId()! } : undefined,
+          mode: this.mode(),
+          lineIds: this.selectedLineIds(),
+          sublineHashes: this.selectedSublineHashes(),
+        }),
+      );
       if (requestVersion !== this.requestVersion) return null;
       runId = run.runId;
       this.runId.set(runId);
@@ -145,7 +173,10 @@ export class TrainingMarathonStore {
       this.mistakesCount.set(result.mistakesCount ?? this.mistakesCount());
       if (result.correct) {
         const lastPlayedMove = result.playedMoves.at(-1)?.moveUci || uci;
-        this.lastMove.set({ from: lastPlayedMove.substring(0, 2), to: lastPlayedMove.substring(2, 4) });
+        this.lastMove.set({
+          from: lastPlayedMove.substring(0, 2),
+          to: lastPlayedMove.substring(2, 4),
+        });
         this.feedback.set('Correct!');
         this.feedbackCorrect.set(true);
       } else {
@@ -158,7 +189,12 @@ export class TrainingMarathonStore {
         );
         this.feedbackCorrect.set(false);
       }
-      if (result.completed) await this.completeSession(result.result === 'PASSED', result.accuracy, result.mistakesCount);
+      if (result.completed)
+        await this.completeSession(
+          result.result === 'PASSED',
+          result.accuracy,
+          result.mistakesCount,
+        );
     } catch (error) {
       this.error.set(readLinesError(error, 'Could not play move.'));
     }
@@ -174,6 +210,8 @@ export class TrainingMarathonStore {
     this.runId.set(null);
     this.recentSublineHashes.set([]);
     this.completedThisRun.set(0);
+    this.dailyReviewCompleted.set(false);
+    this.itemKind.set('STANDARD');
     this.countedCompletedSessionIds.clear();
     void this.startNextLine();
   }
@@ -193,13 +231,18 @@ export class TrainingMarathonStore {
     }
   }
 
-  private async completeSession(passed: boolean, accuracy: number | null, mistakesCount: number): Promise<void> {
+  private async completeSession(
+    passed: boolean,
+    accuracy: number | null,
+    mistakesCount: number,
+  ): Promise<void> {
     this.completed.set(true);
     this.passed.set(passed);
     this.accuracy.set(accuracy);
     this.mistakesCount.set(mistakesCount ?? this.mistakesCount());
     const sessionId = this.sessionId();
-    if (!this.countedCompletedSessionIds.has(sessionId)) {
+    const countsForRun = this.mode() !== 'DAILY_REVIEW' || this.itemKind() === 'SCHEDULED_REVIEW';
+    if (countsForRun && !this.countedCompletedSessionIds.has(sessionId)) {
       this.countedCompletedSessionIds.add(sessionId);
       this.completedThisRun.update((count) => count + 1);
     }
@@ -211,7 +254,9 @@ export class TrainingMarathonStore {
     if (!sessionId) return;
     this.reviewLoading.set(true);
     try {
-      this.mistakes.set((await firstValueFrom(this.api.getTrainingReview(sessionId))).mistakes ?? []);
+      this.mistakes.set(
+        (await firstValueFrom(this.api.getTrainingReview(sessionId))).mistakes ?? [],
+      );
     } catch {
       this.mistakes.set([]);
     } finally {
@@ -220,7 +265,9 @@ export class TrainingMarathonStore {
   }
 
   private rememberSubline(hash: string): void {
-    this.recentSublineHashes.update((hashes) => [...hashes.filter((item) => item !== hash), hash].slice(-20));
+    this.recentSublineHashes.update((hashes) =>
+      [...hashes.filter((item) => item !== hash), hash].slice(-20),
+    );
   }
 
   private resetSessionState(): void {

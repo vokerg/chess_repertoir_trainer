@@ -63,6 +63,24 @@ export interface AccountGameDataLifecycleService {
   ): Promise<DataLifecycleOperationResponse>;
   get(userId: number, operationId: number): Promise<DataLifecycleOperationResponse>;
   requestStop(userId: number, operationId: number): Promise<DataLifecycleOperationResponse>;
+  previewForAdmin(
+    actorUserId: number,
+    targetUserId: number,
+    actor: LifecycleAuditIdentity,
+    target: LifecycleAuditIdentity,
+    request: AccountGameDataLifecyclePreviewRequest,
+  ): Promise<DataLifecyclePreviewResponse>;
+  executeForAdmin(
+    targetUserId: number,
+    operationId: number,
+    request: DataLifecycleExecuteRequest,
+    verification: Record<string, unknown>,
+  ): Promise<DataLifecycleOperationResponse>;
+}
+
+export interface LifecycleAuditIdentity {
+  keyVersion: number;
+  digest: string;
 }
 
 export interface CreateAccountGameDataLifecycleServiceInput {
@@ -78,108 +96,139 @@ export function createAccountGameDataLifecycleService(
   input: CreateAccountGameDataLifecycleServiceInput = {},
 ): AccountGameDataLifecycleService {
   const lifecycleRepository = input.lifecycleRepository ?? DataLifecycleRepository;
-  const coordinatorRepository = input.coordinatorRepository ?? AccountGameDataLifecycleCoordinatorRepository;
-  const operationRepository = input.operationRepository ?? AccountGameDataLifecycleOperationRepository;
+  const coordinatorRepository =
+    input.coordinatorRepository ?? AccountGameDataLifecycleCoordinatorRepository;
+  const operationRepository =
+    input.operationRepository ?? AccountGameDataLifecycleOperationRepository;
   const auditKeyring = input.auditKeyring ?? loadLifecycleAuditKeyring();
   const now = input.now ?? (() => new Date());
   const randomToken = input.randomToken ?? (() => randomBytes(32).toString('base64url'));
 
+  async function preview(
+    actorUserId: number,
+    targetUserId: number,
+    actor: LifecycleAuditIdentity,
+    target: LifecycleAuditIdentity,
+    request: AccountGameDataLifecyclePreviewRequest,
+  ) {
+    validatePositiveInteger(actorUserId, 'actorUserId');
+    validatePositiveInteger(targetUserId, 'targetUserId');
+    const parsed = accountGameDataLifecyclePreviewRequestSchema.parse(request);
+    const action = parsed.action;
+    const scope = scopeForPreview(targetUserId, parsed);
+    const previewCounts = await coordinatorRepository.countAffectedRows(action, scope);
+    const previewToken = randomToken();
+    if (previewToken.length < 16)
+      throw new Error('Lifecycle preview token generator returned an unsafe token.');
+    const previewHash = hashPreview(action, scope, previewCounts);
+    const previewExpiresAt = new Date(now().getTime() + ACCOUNT_GAME_LIFECYCLE_PREVIEW_TTL_MS);
+    const confirmationPhrase = confirmationPhraseFor(action, scope);
+    const warningCodes = warningCodesFor(action);
+
+    const operation = await lifecycleRepository.createPreview({
+      action,
+      actorUserId,
+      targetUserId,
+      actorKeyVersion: actor.keyVersion,
+      actorKeyHash: actor.digest,
+      targetKeyVersion: target.keyVersion,
+      targetKeyHash: target.digest,
+      scope,
+      previewCounts,
+      previewHash,
+      previewTokenHash: hashOpaqueLifecycleToken(previewToken),
+      previewExpiresAt,
+      confirmationPhrase,
+      warningCodes,
+    });
+    await appendAudit(lifecycleRepository, auditKeyring, operation, 'PREVIEW_CREATED');
+
+    return dataLifecyclePreviewResponseSchema.parse({
+      ...toResponse(operation),
+      previewToken,
+    });
+  }
+
+  async function execute(
+    userId: number,
+    operationId: number,
+    request: DataLifecycleExecuteRequest,
+    verification?: Record<string, unknown>,
+  ) {
+    validatePositiveInteger(userId, 'userId');
+    validatePositiveInteger(operationId, 'operationId');
+    const parsed = dataLifecycleExecuteRequestSchema.parse(request);
+    const operation = await requireAccountGameOperation(lifecycleRepository, userId, operationId);
+    assertExecutionCredentials(operation, parsed);
+    const idempotencyKeyHash = hashOpaqueLifecycleToken(parsed.idempotencyKey);
+
+    let started: StoredDataLifecycleOperation;
+    if (operation.status === 'PREVIEWED') {
+      started = await lifecycleRepository.startExecution({
+        operationId,
+        targetUserId: userId,
+        previewTokenHash: hashOpaqueLifecycleToken(parsed.previewToken),
+        previewHash: operation.previewHash,
+        idempotencyKeyHash,
+        verification,
+        validateBeforeFence: async (transaction, lockedOperation) => {
+          const action = lockedOperation.action as AccountGameDataLifecycleAction;
+          const scope = accountGameScope(lockedOperation);
+          const lockedCoordinator =
+            createAccountGameDataLifecycleCoordinatorRepository(transaction);
+          const currentCounts = await lockedCoordinator.countAffectedRows(action, scope);
+          const currentPreviewHash = hashPreview(action, scope, currentCounts);
+          if (currentPreviewHash !== lockedOperation.previewHash) {
+            throw new DataLifecyclePreviewInvalidError();
+          }
+        },
+      });
+      await appendAudit(lifecycleRepository, auditKeyring, started, 'EXECUTION_REQUESTED');
+    } else if (operation.status === 'NEEDS_ATTENTION') {
+      if (operation.firstDestructiveCommitAt === null) {
+        throw new DataLifecycleInvalidStateError(
+          'A lifecycle operation that failed before mutation requires a new preview.',
+        );
+      }
+      if (operation.idempotencyKeyHash !== idempotencyKeyHash) {
+        throw new DataLifecycleInvalidStateError(
+          'The original lifecycle idempotency key is required to resume partial execution.',
+        );
+      }
+      started = await operationRepository.resumeNeedsAttention(
+        userId,
+        operationId,
+        idempotencyKeyHash,
+        verification,
+      );
+      await appendAudit(lifecycleRepository, auditKeyring, started, 'EXECUTION_RESUMED');
+    } else {
+      if (operation.idempotencyKeyHash !== idempotencyKeyHash) {
+        throw new DataLifecycleInvalidStateError(
+          'Lifecycle idempotency key is already bound to another execution request.',
+        );
+      }
+      started = operation;
+    }
+
+    return toResponse(started);
+  }
+
   return {
     async preview(userId, request) {
-      validatePositiveInteger(userId, 'userId');
-      const parsed = accountGameDataLifecyclePreviewRequestSchema.parse(request);
-      const action = parsed.action;
-      const scope = scopeForPreview(userId, parsed);
-      const previewCounts = await coordinatorRepository.countAffectedRows(action, scope);
-      const previewToken = randomToken();
-      if (previewToken.length < 16) throw new Error('Lifecycle preview token generator returned an unsafe token.');
-      const previewHash = hashPreview(action, scope, previewCounts);
-      const principal = auditPrincipal(auditKeyring, userId);
-      const previewExpiresAt = new Date(now().getTime() + ACCOUNT_GAME_LIFECYCLE_PREVIEW_TTL_MS);
-      const confirmationPhrase = confirmationPhraseFor(action, scope);
-      const warningCodes = warningCodesFor(action);
-
-      const operation = await lifecycleRepository.createPreview({
-        action,
-        actorUserId: userId,
-        targetUserId: userId,
-        actorKeyVersion: principal.keyVersion,
-        actorKeyHash: principal.digest,
-        targetKeyVersion: principal.keyVersion,
-        targetKeyHash: principal.digest,
-        scope,
-        previewCounts,
-        previewHash,
-        previewTokenHash: hashOpaqueLifecycleToken(previewToken),
-        previewExpiresAt,
-        confirmationPhrase,
-        warningCodes,
-      });
-      await appendAudit(lifecycleRepository, auditKeyring, operation, 'PREVIEW_CREATED');
-
-      return dataLifecyclePreviewResponseSchema.parse({
-        ...toResponse(operation),
-        previewToken,
-      });
+      const identity = auditPrincipal(auditKeyring, userId);
+      return preview(userId, userId, identity, identity, request);
     },
-
-    async execute(userId, operationId, request) {
-      validatePositiveInteger(userId, 'userId');
-      validatePositiveInteger(operationId, 'operationId');
-      const parsed = dataLifecycleExecuteRequestSchema.parse(request);
-      const operation = await requireAccountGameOperation(lifecycleRepository, userId, operationId);
-      assertExecutionCredentials(operation, parsed);
-      const idempotencyKeyHash = hashOpaqueLifecycleToken(parsed.idempotencyKey);
-
-      let started: StoredDataLifecycleOperation;
-      if (operation.status === 'PREVIEWED') {
-        started = await lifecycleRepository.startExecution({
-          operationId,
-          targetUserId: userId,
-          previewTokenHash: hashOpaqueLifecycleToken(parsed.previewToken),
-          previewHash: operation.previewHash,
-          idempotencyKeyHash,
-          validateBeforeFence: async (transaction, lockedOperation) => {
-            const action = lockedOperation.action as AccountGameDataLifecycleAction;
-            const scope = accountGameScope(lockedOperation);
-            const lockedCoordinator = createAccountGameDataLifecycleCoordinatorRepository(transaction);
-            const currentCounts = await lockedCoordinator.countAffectedRows(action, scope);
-            const currentPreviewHash = hashPreview(action, scope, currentCounts);
-            if (currentPreviewHash !== lockedOperation.previewHash) {
-              throw new DataLifecyclePreviewInvalidError();
-            }
-          },
-        });
-        await appendAudit(lifecycleRepository, auditKeyring, started, 'EXECUTION_REQUESTED');
-      } else if (operation.status === 'NEEDS_ATTENTION') {
-        if (operation.firstDestructiveCommitAt === null) {
-          throw new DataLifecycleInvalidStateError(
-            'A lifecycle operation that failed before mutation requires a new preview.',
-          );
-        }
-        if (operation.idempotencyKeyHash !== idempotencyKeyHash) {
-          throw new DataLifecycleInvalidStateError(
-            'The original lifecycle idempotency key is required to resume partial execution.',
-          );
-        }
-        started = await operationRepository.resumeNeedsAttention(userId, operationId);
-        await appendAudit(lifecycleRepository, auditKeyring, started, 'EXECUTION_RESUMED');
-      } else {
-        if (operation.idempotencyKeyHash !== idempotencyKeyHash) {
-          throw new DataLifecycleInvalidStateError(
-            'Lifecycle idempotency key is already bound to another execution request.',
-          );
-        }
-        started = operation;
-      }
-
-      return toResponse(started);
-    },
+    execute,
+    previewForAdmin: preview,
+    executeForAdmin: execute,
 
     async get(userId, operationId) {
       validatePositiveInteger(userId, 'userId');
       validatePositiveInteger(operationId, 'operationId');
-      return toResponse(await requireAccountGameOperation(lifecycleRepository, userId, operationId));
+      return toResponse(
+        await requireAccountGameOperation(lifecycleRepository, userId, operationId),
+      );
     },
 
     async requestStop(userId, operationId) {
@@ -292,20 +341,19 @@ function auditPrincipal(keyring: LifecycleHmacKeyring, userId: number) {
 
 async function appendAudit(
   repository: DataLifecycleRepositoryBoundary,
-  keyring: LifecycleHmacKeyring,
+  _keyring: LifecycleHmacKeyring,
   operation: StoredDataLifecycleOperation,
   eventType: string,
 ): Promise<void> {
-  const principal = auditPrincipal(keyring, operation.targetUserId);
   await repository.appendAudit({
     operationId: operation.id,
     eventType,
     action: operation.action,
     status: operation.status,
-    actorKeyVersion: principal.keyVersion,
-    actorKeyHash: principal.digest,
-    targetKeyVersion: principal.keyVersion,
-    targetKeyHash: principal.digest,
+    actorKeyVersion: operation.actorKeyVersion,
+    actorKeyHash: operation.actorKeyHash,
+    targetKeyVersion: operation.targetKeyVersion,
+    targetKeyHash: operation.targetKeyHash,
     resourceType: operation.scope.resourceType,
     aggregateCounts: operation.previewCounts,
     terminalResult: operation.terminalResult,
@@ -340,7 +388,8 @@ function uniqueSortedIds(values: number[]): number[] {
 }
 
 function validatePositiveInteger(value: number, label: string): void {
-  if (!Number.isSafeInteger(value) || value <= 0) throw new Error(`${label} must be a positive integer.`);
+  if (!Number.isSafeInteger(value) || value <= 0)
+    throw new Error(`${label} must be a positive integer.`);
 }
 
 export const AccountGameDataLifecycleService = createAccountGameDataLifecycleService();

@@ -6,6 +6,13 @@ import type {
   AdminUserWorkResponse,
 } from '@chess-trainer/contracts/admin';
 import { firstValueFrom } from 'rxjs';
+import type {
+  AccountGameDataLifecycleAction,
+  AccountGameDataLifecyclePreviewRequest,
+  DataLifecycleOperationResponse,
+  DataLifecyclePreviewResponse,
+} from '@chess-trainer/contracts/data-lifecycle';
+import { AuthService } from '../../../core/auth/auth.service';
 import { AdminApiService } from '../data-access/admin-api.service';
 
 export type AdminAccessState = 'idle' | 'loading' | 'ready' | 'forbidden' | 'unavailable';
@@ -17,9 +24,11 @@ const WORK_ITEM_LIMIT = 20;
 @Injectable()
 export class AdminDiagnosticsStore {
   private readonly api = inject(AdminApiService);
+  private readonly auth = inject(AuthService);
   private capabilityRequestSequence = 0;
   private userListRequestSequence = 0;
   private selectionRequestSequence = 0;
+  private lifecyclePreviewGeneration = 0;
   private userListRetryCursor: string | null = null;
   private userListRetryPageNumber = 1;
 
@@ -40,6 +49,15 @@ export class AdminDiagnosticsStore {
   readonly work = signal<AdminUserWorkResponse | null>(null);
   readonly workState = signal<AdminLoadState>('idle');
   readonly workError = signal<string | null>(null);
+  readonly lifecycleAction = signal<AccountGameDataLifecycleAction>('PURGE_ACCOUNT_DATA');
+  readonly lifecycleAccountId = signal('');
+  readonly lifecycleGameIds = signal('');
+  readonly lifecycleConfirmation = signal('');
+  readonly lifecyclePreview = signal<DataLifecyclePreviewResponse | null>(null);
+  readonly lifecycleOperation = signal<DataLifecycleOperationResponse | null>(null);
+  readonly lifecycleBusy = signal(false);
+  readonly lifecycleError = signal<string | null>(null);
+  private lifecycleIdempotencyKey: string | null = null;
 
   readonly hasNextPage = computed(() => this.nextCursor() !== null);
   readonly selectionHasPartialFailure = computed(() => {
@@ -98,6 +116,8 @@ export class AdminDiagnosticsStore {
     this.workError.set(null);
     this.detailState.set('loading');
     this.workState.set('loading');
+    this.invalidateLifecyclePreview();
+    this.lifecycleOperation.set(null);
 
     await Promise.all([
       this.loadDetail(userId, requestSequence),
@@ -109,6 +129,126 @@ export class AdminDiagnosticsStore {
     const userId = this.selectedUserId();
     if (userId === null) return;
     await this.selectUser(userId);
+  }
+
+  setLifecycleAction(value: AccountGameDataLifecycleAction): void {
+    if (this.lifecycleAction() === value) return;
+    this.lifecycleAction.set(value);
+    this.invalidateLifecyclePreview();
+  }
+
+  setLifecycleAccountId(value: string | number | null): void {
+    const nextValue = value == null ? '' : String(value);
+    if (this.lifecycleAccountId() === nextValue) return;
+    this.lifecycleAccountId.set(nextValue);
+    this.invalidateLifecyclePreview();
+  }
+
+  setLifecycleGameIds(value: string | null): void {
+    const nextValue = value ?? '';
+    if (this.lifecycleGameIds() === nextValue) return;
+    this.lifecycleGameIds.set(nextValue);
+    this.invalidateLifecyclePreview();
+  }
+
+  async previewLifecycle(): Promise<void> {
+    this.invalidateLifecyclePreview();
+    const previewGeneration = this.lifecyclePreviewGeneration;
+    const userId = this.selectedUserId();
+    const accountId = Number(this.lifecycleAccountId());
+    if (!userId || !Number.isSafeInteger(accountId) || accountId < 1) {
+      this.lifecycleError.set('Enter a valid account ID.');
+      return;
+    }
+    const action = this.lifecycleAction();
+    const gameIds = this.lifecycleGameIds()
+      .split(',')
+      .map((value) => Number(value.trim()))
+      .filter(Number.isSafeInteger);
+    if ((action === 'UNANALYSE_GAMES' || action === 'UNINDEX_GAMES') && gameIds.length === 0) {
+      this.lifecycleError.set('Enter at least one game ID for this action.');
+      return;
+    }
+    const request =
+      action === 'UNANALYSE_GAMES' || action === 'UNINDEX_GAMES'
+        ? { action, accountId, gameIds }
+        : ({ action, accountId } as AccountGameDataLifecyclePreviewRequest);
+    this.lifecycleBusy.set(true);
+    this.lifecycleError.set(null);
+    try {
+      const preview = await firstValueFrom(this.api.previewLifecycle(userId, request));
+      if (previewGeneration !== this.lifecyclePreviewGeneration) return;
+      this.lifecyclePreview.set(preview);
+      this.lifecycleOperation.set(preview);
+      this.lifecycleConfirmation.set('');
+      this.lifecycleIdempotencyKey = crypto.randomUUID();
+    } catch (error) {
+      if (previewGeneration !== this.lifecyclePreviewGeneration) return;
+      this.lifecycleError.set(readAdminError(error, 'Could not create lifecycle preview.'));
+    } finally {
+      this.lifecycleBusy.set(false);
+    }
+  }
+
+  async executeLifecycle(): Promise<void> {
+    const userId = this.selectedUserId();
+    const preview = this.lifecyclePreview();
+    const confirmationPhrase = this.lifecycleConfirmation();
+    const idempotencyKey = this.lifecycleIdempotencyKey;
+    if (!userId || !preview || !idempotencyKey) return;
+    if (confirmationPhrase !== preview.confirmationPhrase) {
+      this.lifecycleError.set('Enter the exact lifecycle confirmation phrase.');
+      return;
+    }
+    this.lifecycleBusy.set(true);
+    this.lifecycleError.set(null);
+    try {
+      if (!(await this.auth.reverify())) {
+        this.lifecycleError.set('Reverification was cancelled or is unavailable.');
+        return;
+      }
+      if (
+        this.selectedUserId() !== userId ||
+        this.lifecyclePreview() !== preview ||
+        this.lifecycleConfirmation() !== confirmationPhrase ||
+        this.lifecycleIdempotencyKey !== idempotencyKey
+      ) {
+        this.lifecycleError.set(
+          'Lifecycle inputs changed during reverification. Preview and confirm again.',
+        );
+        return;
+      }
+      const operation = await firstValueFrom(
+        this.api.executeLifecycle(userId, preview.operationId, {
+          previewToken: preview.previewToken,
+          confirmationPhrase,
+          idempotencyKey,
+        }),
+      );
+      this.lifecycleOperation.set(operation);
+    } catch (error) {
+      this.lifecycleError.set(readAdminError(error, 'Could not execute lifecycle operation.'));
+    } finally {
+      this.lifecycleBusy.set(false);
+    }
+  }
+
+  async refreshLifecycle(): Promise<void> {
+    const userId = this.selectedUserId();
+    const operation = this.lifecycleOperation();
+    if (!userId || !operation) return;
+    this.lifecycleOperation.set(
+      await firstValueFrom(this.api.getLifecycle(userId, operation.operationId)),
+    );
+  }
+
+  async stopLifecycle(): Promise<void> {
+    const userId = this.selectedUserId();
+    const operation = this.lifecycleOperation();
+    if (!userId || !operation) return;
+    this.lifecycleOperation.set(
+      await firstValueFrom(this.api.stopLifecycle(userId, operation.operationId)),
+    );
   }
 
   private async loadUsers(cursor: string | null, pageNumber: number): Promise<void> {
@@ -203,6 +343,17 @@ export class AdminDiagnosticsStore {
     this.clearSelection();
   }
 
+  private invalidateLifecyclePreview(): void {
+    this.lifecyclePreviewGeneration += 1;
+    this.lifecyclePreview.set(null);
+    this.lifecycleConfirmation.set('');
+    this.lifecycleIdempotencyKey = null;
+    if (this.lifecycleOperation()?.status === 'PREVIEWED') {
+      this.lifecycleOperation.set(null);
+    }
+    this.lifecycleError.set(null);
+  }
+
   private clearSelection(): void {
     this.selectedUserId.set(null);
     this.detail.set(null);
@@ -211,6 +362,8 @@ export class AdminDiagnosticsStore {
     this.work.set(null);
     this.workState.set('idle');
     this.workError.set(null);
+    this.invalidateLifecyclePreview();
+    this.lifecycleOperation.set(null);
   }
 }
 

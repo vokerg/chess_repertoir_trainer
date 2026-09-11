@@ -2,6 +2,8 @@ import prisma from '../../prisma';
 import { TrainingService } from '../../services/trainingService';
 import {
   TRAINING_MODE_MARATHON,
+  TRAINING_MODE_DAILY_REVIEW,
+  TRAINING_MODE_DAILY_REVIEW_RETRY,
   TRAINING_MODE_MIXED_WEAK_UNTRAINED,
   TRAINING_MODE_UNTRAINED_SUBLINES,
   TRAINING_MODE_WEAK_SUBLINES,
@@ -17,9 +19,11 @@ import {
   SublineScope,
 } from '../courses/sublines.service';
 import { groupRecentAttempts, loadRecentScoredAttempts, sublineIdentityKey } from '../training/recent-scored-attempts';
+import { DailyReviewService } from './daily-review.service';
 
 export type MarathonScope = { type: 'CHAPTER' | 'COURSE'; id: number };
-export type MarathonMode = 'ALL' | 'WEAK_SUBLINES' | 'UNTRAINED_SUBLINES' | 'MIXED_WEAK_UNTRAINED';
+export type MarathonMode = 'ALL' | 'WEAK_SUBLINES' | 'UNTRAINED_SUBLINES' | 'MIXED_WEAK_UNTRAINED' | 'DAILY_REVIEW';
+export type MarathonItemKind = 'STANDARD' | 'SCHEDULED_REVIEW' | 'REINFORCEMENT_RETRY';
 
 export interface MarathonNextRequest {
   scope?: MarathonScope;
@@ -142,8 +146,10 @@ export async function filterCandidatesByMode(
   userId: number,
   sublines: HashedAvailableSublineDto[],
   mode: MarathonMode,
+  now = new Date(),
 ): Promise<HashedAvailableSublineDto[]> {
   if (mode === 'ALL') return sublines;
+  if (mode === 'DAILY_REVIEW') return DailyReviewService.loadDueSublines(userId, sublines, now);
   const attempts = groupRecentAttempts(await loadRecentScoredAttempts(
     userId,
     sublines.map(({ lineId, hash }) => ({ lineId, sublineHash: hash })),
@@ -173,14 +179,17 @@ export async function buildMarathonNextResponse(
   mode: MarathonMode,
   subline: HashedAvailableSublineDto,
   preparedLine: DerivedLineData,
+  itemKind: MarathonItemKind = 'STANDARD',
 ) {
   const session = await TrainingService.startForPreparedSubline(
     userId,
     preparedLine,
     subline,
-    trainingModeForMarathonMode(mode),
+    trainingModeForMarathonMode(mode, itemKind),
   );
   return {
+    state: 'ITEM' as const,
+    itemKind,
     scope,
     mode,
     line: {
@@ -210,7 +219,10 @@ export function pickMarathonSubline(
   return pickRandomSubline(filterOutRecentSublines(sublines, recentSublineHashes), []);
 }
 
-function trainingModeForMarathonMode(mode: MarathonMode): string {
+function trainingModeForMarathonMode(mode: MarathonMode, itemKind: MarathonItemKind): string {
+  if (mode === 'DAILY_REVIEW') {
+    return itemKind === 'REINFORCEMENT_RETRY' ? TRAINING_MODE_DAILY_REVIEW_RETRY : TRAINING_MODE_DAILY_REVIEW;
+  }
   if (mode === 'WEAK_SUBLINES') return TRAINING_MODE_WEAK_SUBLINES;
   if (mode === 'UNTRAINED_SUBLINES') return TRAINING_MODE_UNTRAINED_SUBLINES;
   if (mode === 'MIXED_WEAK_UNTRAINED') return TRAINING_MODE_MIXED_WEAK_UNTRAINED;
