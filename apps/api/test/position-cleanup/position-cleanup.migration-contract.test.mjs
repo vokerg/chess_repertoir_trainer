@@ -34,7 +34,11 @@ assert.match(
 );
 assert.match(
   migration,
-  /CREATE TRIGGER "ImportedGamePly_position_cleanup_reset_update"\s*AFTER UPDATE ON "ImportedGamePly"\s*REFERENCING NEW TABLE AS position_cleanup_new_plies\s*FOR EACH STATEMENT/,
+  /CREATE TRIGGER "ImportedGamePly_position_cleanup_reset_update"\s*AFTER UPDATE ON "ImportedGamePly"\s*REFERENCING OLD TABLE AS position_cleanup_old_plies NEW TABLE AS position_cleanup_new_plies\s*FOR EACH STATEMENT/,
+);
+assert.match(
+  migration,
+  /CREATE FUNCTION "position_cleanup_reset_candidates_from_updated_plies"\(\)[\s\S]*NOT EXISTS \([\s\S]*FROM position_cleanup_old_plies AS old_ply[\s\S]*old_ply\."positionId" = new_ply\."positionId"/,
 );
 assert.match(migration, /SELECT DISTINCT "positionId"\s*FROM position_cleanup_new_plies/);
 assert.match(

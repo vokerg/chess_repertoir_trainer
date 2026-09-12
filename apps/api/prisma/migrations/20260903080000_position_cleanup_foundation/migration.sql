@@ -187,7 +187,7 @@ $$;
 CREATE FUNCTION "position_cleanup_reset_candidates_from_new_plies"()
 RETURNS TRIGGER
 LANGUAGE plpgsql
-AS $$
+AS $
 BEGIN
     PERFORM "position_cleanup_lock_reference_ids"(
         ARRAY(
@@ -208,7 +208,46 @@ BEGIN
 
     RETURN NULL;
 END;
-$$;
+$;
+
+CREATE FUNCTION "position_cleanup_reset_candidates_from_updated_plies"()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $
+BEGIN
+    -- UPDATE transition relations contain every affected row. Work only on position
+    -- ids introduced by the statement; score/classification/move-only updates keep
+    -- identical old/new position-id sets and therefore take no cleanup advisory locks.
+    PERFORM "position_cleanup_lock_reference_ids"(
+        ARRAY(
+            SELECT DISTINCT new_ply."positionId"
+            FROM position_cleanup_new_plies AS new_ply
+            WHERE new_ply."positionId" IS NOT NULL
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM position_cleanup_old_plies AS old_ply
+                  WHERE old_ply."positionId" = new_ply."positionId"
+              )
+            ORDER BY new_ply."positionId" ASC
+        )
+    );
+
+    DELETE FROM "PositionCleanupCandidate" AS candidate
+    USING (
+        SELECT DISTINCT new_ply."positionId"
+        FROM position_cleanup_new_plies AS new_ply
+        WHERE new_ply."positionId" IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1
+              FROM position_cleanup_old_plies AS old_ply
+              WHERE old_ply."positionId" = new_ply."positionId"
+          )
+    ) AS referenced
+    WHERE candidate."positionId" = referenced."positionId";
+
+    RETURN NULL;
+END;
+$;
 
 CREATE TRIGGER "ImportedGamePly_position_cleanup_reset_insert"
 AFTER INSERT ON "ImportedGamePly"
@@ -217,11 +256,13 @@ FOR EACH STATEMENT
 EXECUTE FUNCTION "position_cleanup_reset_candidates_from_new_plies"();
 
 -- PostgreSQL transition relations require an unqualified UPDATE event: an
--- UPDATE OF column list cannot be combined with REFERENCING NEW TABLE.
+-- UPDATE OF column list cannot be combined with transition relations. OLD/NEW
+-- statement tables let the trigger avoid cleanup work when position references
+-- are retained, while preserving database-owned reset for newly referenced ids.
 CREATE TRIGGER "ImportedGamePly_position_cleanup_reset_update"
 AFTER UPDATE ON "ImportedGamePly"
-REFERENCING NEW TABLE AS position_cleanup_new_plies
+REFERENCING OLD TABLE AS position_cleanup_old_plies NEW TABLE AS position_cleanup_new_plies
 FOR EACH STATEMENT
-EXECUTE FUNCTION "position_cleanup_reset_candidates_from_new_plies"();
+EXECUTE FUNCTION "position_cleanup_reset_candidates_from_updated_plies"();
 
 COMMIT;
