@@ -8,7 +8,7 @@ Order: 185
 
 Delivery class: Implementation
 
-Planning maturity: Implementation complete on the claimed branch; PR #412 is under exact-head CI/review validation
+Planning maturity: Implementation and takeover-review corrections complete on the claimed branch; PR #412 exact-head CI is the release gate
 
 GitHub issue: [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280)
 
@@ -200,7 +200,7 @@ The canonical queue has promoted ONB-026 to `READY`. Before claiming, the claima
 
 Implementation and review fixes are delivered on [PR #412](https://github.com/vokerg/chess_repertoir_trainer/pull/412), branch `onb-026/issue-280-orphan-position-cleanup`.
 
-The handoff includes the bounded candidate/run lifecycle, database-owned reference reset, plies-first maintenance locks, manual command, worker lifecycle, first-observed/refreshed observation counters, and focused worker/trigger regression coverage. The implementation was refreshed from current `origin/main` before final review. Live PostgreSQL migration, transition-relation, focused concurrency, and benchmark evidence is recorded in the report; a full production-scale manual sweep was not run against the shared approximately 1.07M-position corpus.
+The handoff includes the bounded candidate/run lifecycle, database-owned reference reset, plies-first maintenance locks, manual command, worker lifecycle, phase-exact inspected/matched counters, and focused worker/trigger regression coverage. Takeover review also fixed lock-timeout/cancellation precedence, removed per-delete-page Prisma client churn, narrowed retained-reference UPDATE trigger fencing, and restored real CLI argv/exit-contract coverage. The already-applied foundation migration is preserved unchanged and review corrections are in a forward migration. A full production-scale manual sweep was not run against the shared approximately 1.07M-position corpus.
 
 The append-only validation record is [`reports/ONB-026-2026-09-11-orphan-position-cleanup.md`](../reports/ONB-026-2026-09-11-orphan-position-cleanup.md). Maintainer acceptance, required live PostgreSQL evidence, squash merge, and issue closure remain pending.
 
@@ -208,6 +208,6 @@ The append-only validation record is [`reports/ONB-026-2026-09-11-orphan-positio
 
 Runtime pull request: [#412](https://github.com/vokerg/chess_repertoir_trainer/pull/412)
 
-Runtime validation: pending final exact-head CI after takeover review corrections.
+Runtime validation: PR exact-head CI is the authoritative release gate; see PR #412 checks.
 
 Completed at: pending maintainer acceptance and squash merge
