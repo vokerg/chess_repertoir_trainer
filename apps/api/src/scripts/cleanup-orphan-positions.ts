@@ -165,12 +165,16 @@ async function main(): Promise<void> {
   const config = loadPositionCleanupConfig();
   const service = createPositionCleanupService({ config });
   const worker = createPositionCleanupWorker({ config });
-  await runPositionCleanupEntrypoint({
-    argv: process.argv.slice(2),
-    config,
-    service,
-    worker,
-  });
+  try {
+    await runPositionCleanupEntrypoint({
+      argv: process.argv.slice(2),
+      config,
+      service,
+      worker,
+    });
+  } finally {
+    await worker.close();
+  }
 }
 
 if (require.main === module) {
