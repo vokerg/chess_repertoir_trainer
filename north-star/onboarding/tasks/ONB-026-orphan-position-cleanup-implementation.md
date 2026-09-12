@@ -1,6 +1,6 @@
 # ONB-026 — Implement bounded orphan shared-position cleanup
 
-Status: READY
+Status: REVIEW
 
 Priority: P1
 
@@ -8,19 +8,19 @@ Order: 185
 
 Delivery class: Implementation
 
-Planning maturity: Implementation-ready after ONB-006/007 acceptance and ONB-019 lifecycle-foundation delivery; claim-time schema/migration and deployed-PostgreSQL compatibility checks remain mandatory
+Planning maturity: Implementation and takeover-review corrections complete on the claimed branch; PR #412 exact-head CI is the release gate
 
 GitHub issue: [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280)
 
 Research owner: ONB-006 / [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT / ONB-026 implementation session
 
-Claim branch: none
+Claim branch: `onb-026/issue-280-orphan-position-cleanup`
 
-Claimed at: none
+Claimed at: 2026-09-03
 
-Claim scope: none
+Claim scope: Implement the canonical database-owned orphan-position candidate/run lifecycle, transition-relation reset triggers, bounded manual-first cleanup worker/service/command, and focused PostgreSQL validation without changing course trees, adding recurring scheduling, or broadening user/account destructive semantics.
 
 Promoted at: 2026-08-26 through merged-task completion reconciliation
 
@@ -196,8 +196,18 @@ Provide a server-side command following the existing `apps/api/src/scripts/` pat
 
 The canonical queue has promoted ONB-026 to `READY`. Before claiming, the claimant must still re-inspect current schema/migration ownership for ONB-011/017/019, check active ONB-020/021 work for writer/lock collisions, and verify the deployed PostgreSQL transition-relation capability. If any of those checks fails, return the task to `BLOCKED` or design review rather than improvising.
 
+## Review handoff
+
+Implementation and review fixes are delivered on [PR #412](https://github.com/vokerg/chess_repertoir_trainer/pull/412), branch `onb-026/issue-280-orphan-position-cleanup`.
+
+The handoff includes the bounded candidate/run lifecycle, database-owned reference reset, plies-first maintenance locks, manual command, worker lifecycle, phase-exact inspected/matched counters, and focused worker/trigger regression coverage. Takeover review also fixed lock-timeout/cancellation and generic-failure/cancellation precedence, removed per-delete-page Prisma client churn, narrowed retained-reference UPDATE trigger fencing, and restored real CLI argv/exit-contract coverage. The already-applied foundation migration is preserved unchanged and review corrections are in a forward migration. A full production-scale manual sweep was not run against the shared approximately 1.07M-position corpus.
+
+The append-only validation record is [`reports/ONB-026-2026-09-11-orphan-position-cleanup.md`](../reports/ONB-026-2026-09-11-orphan-position-cleanup.md). Maintainer acceptance, required live PostgreSQL evidence, squash merge, and issue closure remain pending.
+
 ## Completion
 
-Pull request: none
+Runtime pull request: [#412](https://github.com/vokerg/chess_repertoir_trainer/pull/412)
 
-Completed at: none
+Runtime validation: PR exact-head CI is the authoritative release gate; see PR #412 checks.
+
+Completed at: pending maintainer acceptance and squash merge

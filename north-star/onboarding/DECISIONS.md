@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Decisions
 
-Last updated: 2026-08-04
+Last updated: 2026-09-11
 
 Statuses:
 
@@ -842,3 +842,7 @@ Do not scan/filter an unbounded table to find a limited number of orphan matches
 ## Open
 
 See [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) for questions and owners.
+
+## Implementation reconciliation
+
+ONB-026 / #280 implementation PR [#412](https://github.com/vokerg/chess_repertoir_trainer/pull/412) consumes locked decisions D-145 through D-147: observed grace with database-enforced reference reset, input-bounded observational dry-run, and plies-first fixed-order maintenance locks with manual canonical invocation. No new cross-program decision was introduced; validated live evidence and the remaining target-scale command question are tracked in [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) and the ONB-026 review report.

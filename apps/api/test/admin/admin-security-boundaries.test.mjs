@@ -125,6 +125,9 @@ try {
   await unauthenticatedApp.close();
 }
 
+// Administrator diagnostics intentionally expose bounded email/account identity fields.
+// Keep the static boundary focused on raw provider/chess payloads that must never
+// enter the administrator response contract.
 for (const path of [
   '../../src/modules/admin/admin.routes.ts',
   '../../../../packages/contracts/src/admin/admin.schemas.ts',

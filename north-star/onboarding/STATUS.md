@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-08-28
+Last updated: 2026-09-11
 
 ## Program state
 
@@ -8,7 +8,7 @@ Last updated: 2026-08-28
 
 Program tracker: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
-The durable account-import, provider, preparation, onboarding-readiness, account-sync cutover, and destructive-lifecycle persistence foundations are delivered. ONB-009 lifecycle commands are implemented on runtime PR #406 and remain in review pending acceptance/merge. Remaining implementation is concentrated in functional onboarding UI, destructive execution, opportunistic stale refresh, whole-user deletion, administrator mutation adapters, and shared-position cleanup.
+The durable account-import, provider, preparation, onboarding-readiness, account-sync cutover, and destructive-lifecycle persistence foundations are delivered. ONB-009 lifecycle commands are implemented on runtime PR #406 and remain in review pending acceptance/merge. ONB-026 bounded shared-position cleanup is implemented on PR #412 and is in review pending maintainer acceptance; its live PostgreSQL migration, trigger, concurrency, and benchmark evidence is recorded in the task report. Remaining implementation is concentrated in functional onboarding UI, destructive execution, opportunistic stale refresh, whole-user deletion, and administrator mutation adapters.
 
 ## Delivered foundations
 
@@ -27,12 +27,12 @@ Detailed historical validation remains in task files and append-only reports.
 ## Under review
 
 - **ONB-009 / #194 — REVIEW.** Authenticated onboarding start/skip/finish/pause/resume/cancel/retry/restart/expansion commands are implemented on branch `onb-009/issue-194-lifecycle-commands`, runtime PR #406. The implementation remains open until review acceptance and squash merge.
+- **ONB-026 / #280 — REVIEW.** Bounded shared-position cleanup is implemented on `onb-026/issue-280-orphan-position-cleanup`, runtime PR #412. Exact-head CI/review validation remains before acceptance/merge.
 
 ## Ready implementation
 
 - **ONB-025 / #276 — READY.** Opportunistic stale-account refresh on authenticated application bootstrap over the delivered durable refresh path; recheck ONB-010/020 integration surfaces before claim.
 - **ONB-020 / #260 — READY.** Account/game destructive coordinator over delivered ONB-019 fences/operations and the completed account-import/preparation stack.
-- **ONB-026 / #280 — READY.** Bounded shared-position cleanup; claim-time schema/migration ownership and deployed PostgreSQL transition-relation compatibility checks remain mandatory.
 
 ## Allocated but not ready
 
@@ -61,7 +61,7 @@ Detailed historical validation remains in task files and append-only reports.
 - ONB-019: delivered destructive lifecycle persistence/fences/audit/provenance.
 - ONB-020/021: destructive account/game and whole-user execution.
 - ONB-025: authenticated stale-account refresh trigger.
-- ONB-026: bounded orphan shared-position cleanup.
+- ONB-026: bounded orphan shared-position cleanup, currently under review in PR #412.
 - ONB-024: administrator lifecycle adapters over canonical services.
 
 ## Latest reconciled validation
@@ -70,7 +70,8 @@ Detailed historical validation remains in task files and append-only reports.
 - ONB-019: final runtime head `c6db4e2b4a40629a5abe11c08b1bb657a3b99518`, CI #3013 / run `32115505177`, squash `d9175c5d60448399b7297393afc55db747717ce2`.
 - ONB-015: runtime head `5a2b6348ee516c477c9353020fd90f365f2cc25a` passed CI #3155 / run `32692461730`; final PR head `fc2aa0d08afebbc952cf5a55693ee99f77b7d29c` passed CI #3156 / run `32692956344`; squash `c89442fbe8945854f0d6d7545e947beb7bebccfe`.
 - ONB-009: runtime PR #406 is in exact-head CI/review validation; final validation evidence is recorded in its task/report and PR checks before handoff.
+- ONB-026: implementation/review fixes are on PR #412; the migration is applied against PostgreSQL `server_version_num=170011`, and the focused trigger, concurrency, lifecycle, worker, command-orchestration, and bounded benchmark suite passed. The latest passing benchmark observed transaction p90 `314.97ms`, uncontended lock p90 `144.80ms`, and lock-wait p90 `248.44ms`, below the accepted `1000ms`/`250ms` limits. A full production-scale manual sweep was intentionally not run against the shared ~1.07M-position database; the task report records that residual and the unrelated full-API shared-state test failure.
 
 ## Next deterministic action
 
-Complete ONB-009 / #194 review and acceptance/merge. For a new independent claim, **ONB-025 / #276** is the lowest-order unclaimed `READY` task, followed by ONB-020 and ONB-026 subject to their task-file claim-time checks.
+Complete ONB-009 / #194 and ONB-026 / #280 review and acceptance/merge before marking those implementation tracks delivered. For independent new work, **ONB-025 / #276** is the lowest-order unclaimed `READY` task, followed by ONB-020.
