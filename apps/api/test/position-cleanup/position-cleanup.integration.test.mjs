@@ -193,6 +193,8 @@ try {
   assert.equal(completed.status, 'COMPLETED');
   assert.equal(completed.terminalResult, 'OBSERVATIONAL');
   assert.equal(completed.positionsDeleted, 0);
+  assert.equal(completed.orphansMatched, completed.orphansFirstObserved + completed.orphansRefreshed);
+  assert.equal(completed.candidatesMatched, completed.eligibleObserved);
   assert.equal(completed.eligibleObserved >= 1, true);
   assert.equal(completed.observationStartedAt instanceof Date, true);
   assert.equal(completed.observationCompletedAt instanceof Date, true);
