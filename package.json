@@ -72,7 +72,13 @@
       "@xmldom/xmldom": "0.8.15"
     },
     "@hono/node-server": "1.19.15",
+    "ajv": {
+      "fast-uri": "3.1.7"
+    },
     "esbuild": "0.28.1",
+    "fast-json-stringify": {
+      "fast-uri": "4.1.4"
+    },
     "fastify": "5.12.3",
     "hono": "4.12.34",
     "jayson": {
