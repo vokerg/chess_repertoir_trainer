@@ -39,36 +39,39 @@ CREATE FUNCTION "position_cleanup_reset_candidates_from_updated_plies"()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    reset_position_ids INTEGER[];
 BEGIN
-    -- Only position ids introduced by this UPDATE statement need the cleanup
-    -- advisory fence/reset. Updates that retain the same position-id set (for
-    -- example score/classification/move changes) do no cleanup lock work.
-    PERFORM "position_cleanup_lock_reference_ids"(
-        ARRAY(
-            SELECT DISTINCT new_ply."positionId"
-            FROM position_cleanup_new_plies AS new_ply
-            WHERE new_ply."positionId" IS NOT NULL
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM position_cleanup_old_plies AS old_ply
-                  WHERE old_ply."positionId" = new_ply."positionId"
-              )
-            ORDER BY new_ply."positionId" ASC
-        )
-    );
-
-    DELETE FROM "PositionCleanupCandidate" AS candidate
-    USING (
+    -- A changed/new reference must always take the observer fence. A retained
+    -- reference only needs cleanup work when a stale candidate actually exists.
+    -- This keeps analysis/classification/move-only UPDATE statements off the
+    -- advisory-lock path during normal operation while preserving idempotent reset.
+    SELECT ARRAY(
         SELECT DISTINCT new_ply."positionId"
         FROM position_cleanup_new_plies AS new_ply
         WHERE new_ply."positionId" IS NOT NULL
-          AND NOT EXISTS (
-              SELECT 1
-              FROM position_cleanup_old_plies AS old_ply
-              WHERE old_ply."positionId" = new_ply."positionId"
+          AND (
+              NOT EXISTS (
+                  SELECT 1
+                  FROM position_cleanup_old_plies AS old_ply
+                  WHERE old_ply."importedGameId" = new_ply."importedGameId"
+                    AND old_ply."plyNumber" = new_ply."plyNumber"
+                    AND old_ply."positionId" = new_ply."positionId"
+              )
+              OR EXISTS (
+                  SELECT 1
+                  FROM "PositionCleanupCandidate" AS candidate
+                  WHERE candidate."positionId" = new_ply."positionId"
+              )
           )
-    ) AS referenced
-    WHERE candidate."positionId" = referenced."positionId";
+        ORDER BY new_ply."positionId" ASC
+    )
+    INTO reset_position_ids;
+
+    PERFORM "position_cleanup_lock_reference_ids"(reset_position_ids);
+
+    DELETE FROM "PositionCleanupCandidate" AS candidate
+    WHERE candidate."positionId" = ANY(reset_position_ids);
 
     RETURN NULL;
 END;
