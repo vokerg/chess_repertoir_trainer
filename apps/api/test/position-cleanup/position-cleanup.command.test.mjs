@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
   runPositionCleanupCommand,
+  runPositionCleanupEntrypoint,
 } from '../../dist/scripts/cleanup-orphan-positions.js';
 import {
   loadPositionCleanupConfig,
@@ -201,5 +202,57 @@ assert.equal(
   }),
   false,
 );
+
+const entryDryRun = createFakeCommand('DRY_RUN');
+let entryDryRunExitCode;
+assert.equal(
+  await runPositionCleanupEntrypoint({
+    argv: [],
+    config,
+    service: entryDryRun.service,
+    worker: entryDryRun.worker,
+    log() {},
+    setExitCode: (value) => { entryDryRunExitCode = value; },
+  }),
+  true,
+);
+assert.equal(entryDryRunExitCode, undefined);
+assert.deepEqual(entryDryRun.events.previewModes, ['DRY_RUN']);
+
+const entryExecuteFailure = createFakeCommand('EXECUTE', 'NEEDS_ATTENTION', 'NEEDS_ATTENTION');
+let entryExecuteExitCode;
+assert.equal(
+  await runPositionCleanupEntrypoint({
+    argv: ['--apply', `--confirm=${POSITION_CLEANUP_EXECUTE_CONFIRMATION}`],
+    config,
+    service: entryExecuteFailure.service,
+    worker: entryExecuteFailure.worker,
+    log() {},
+    setExitCode: (value) => { entryExecuteExitCode = value; },
+  }),
+  false,
+);
+assert.equal(entryExecuteExitCode, 1);
+assert.deepEqual(entryExecuteFailure.events.creates, [{
+  mode: 'EXECUTE',
+  requestedBy: 'server-command:position-cleanup',
+  confirmation: POSITION_CLEANUP_EXECUTE_CONFIRMATION,
+}]);
+
+const entryInvalidExecute = createFakeCommand('EXECUTE');
+let entryInvalidExitCode;
+await assert.rejects(
+  runPositionCleanupEntrypoint({
+    argv: ['--apply'],
+    config,
+    service: entryInvalidExecute.service,
+    worker: entryInvalidExecute.worker,
+    log() {},
+    setExitCode: (value) => { entryInvalidExitCode = value; },
+  }),
+  /Execution requires --apply --confirm=DELETE_ORPHAN_POSITIONS/,
+);
+assert.equal(entryInvalidExitCode, 1);
+assert.equal(entryInvalidExecute.events.previewModes.length, 0);
 
 console.log('Position cleanup command tests passed.');
