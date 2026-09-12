@@ -15,10 +15,12 @@ describe('AuthService Clerk mounts', () => {
   beforeEach(() => {
     currentUser = null;
     currentSession = null;
-    clerk = jasmine.createSpyObj<Clerk>(
-      'Clerk',
-      ['load', 'addListener', 'mountSignIn', 'mountSignUp'],
-    );
+    clerk = jasmine.createSpyObj<Clerk>('Clerk', [
+      'load',
+      'addListener',
+      'mountSignIn',
+      'mountSignUp',
+    ]);
     Object.defineProperties(clerk, {
       user: { configurable: true, get: () => currentUser },
       session: { configurable: true, get: () => currentSession },
@@ -66,17 +68,19 @@ describe('AuthService Clerk mounts', () => {
     currentSession = fakeSession('session-a', 'token-a');
     const first = resolveAppUser(auth, 'session-a');
     await Promise.resolve();
-    const firstRequest = http.expectOne((request) =>
-      request.url === `${appConfig.apiBaseUrl}/me`
-      && request.headers.get('Authorization') === 'Bearer token-a',
+    const firstRequest = http.expectOne(
+      (request) =>
+        request.url === `${appConfig.apiBaseUrl}/me` &&
+        request.headers.get('Authorization') === 'Bearer token-a',
     );
 
     currentSession = fakeSession('session-b', 'token-b');
     const second = resolveAppUser(auth, 'session-b');
     await Promise.resolve();
-    const secondRequest = http.expectOne((request) =>
-      request.url === `${appConfig.apiBaseUrl}/me`
-      && request.headers.get('Authorization') === 'Bearer token-b',
+    const secondRequest = http.expectOne(
+      (request) =>
+        request.url === `${appConfig.apiBaseUrl}/me` &&
+        request.headers.get('Authorization') === 'Bearer token-b',
     );
 
     secondRequest.flush(currentUserResponse(8, 'subject-b'));
@@ -94,10 +98,13 @@ describe('AuthService Clerk mounts', () => {
     currentSession = fakeSession('session-a', 'token-a');
     const first = resolveAppUser(auth, 'session-a');
     await Promise.resolve();
-    http.expectOne((request) =>
-      request.url === `${appConfig.apiBaseUrl}/me`
-      && request.headers.get('Authorization') === 'Bearer token-a',
-    ).flush(currentUserResponse(7, 'subject-a'));
+    http
+      .expectOne(
+        (request) =>
+          request.url === `${appConfig.apiBaseUrl}/me` &&
+          request.headers.get('Authorization') === 'Bearer token-a',
+      )
+      .flush(currentUserResponse(7, 'subject-a'));
     await first;
     expect(auth.resolvedAppSession()?.appUser.user.id).toBe(7);
     expect(auth.resolvedAppSession()?.generation).toBe(1);
@@ -109,10 +116,13 @@ describe('AuthService Clerk mounts', () => {
 
     const second = resolveAppUser(auth, 'session-b');
     await Promise.resolve();
-    http.expectOne((request) =>
-      request.url === `${appConfig.apiBaseUrl}/me`
-      && request.headers.get('Authorization') === 'Bearer token-b',
-    ).flush(currentUserResponse(8, 'subject-b'));
+    http
+      .expectOne(
+        (request) =>
+          request.url === `${appConfig.apiBaseUrl}/me` &&
+          request.headers.get('Authorization') === 'Bearer token-b',
+      )
+      .flush(currentUserResponse(8, 'subject-b'));
     await second;
     expect(auth.resolvedAppSession()?.appUser.user.id).toBe(8);
     expect(auth.resolvedAppSession()?.generation).toBe(2);
@@ -144,7 +154,7 @@ describe('AuthService Clerk mounts', () => {
     await auth.selectReverificationFactor(factor!.id);
     await auth.submitReverification('correct horse battery staple');
 
-    expect(await resultPromise).toBeTrue();
+    expect(await resultPromise).toBe('fresh-token');
     expect(startVerification).toHaveBeenCalledOnceWith({ level: 'first_factor' });
     expect(attemptFirstFactorVerification).toHaveBeenCalledOnceWith({
       strategy: 'password',
@@ -178,7 +188,7 @@ describe('AuthService Clerk mounts', () => {
     await auth.selectReverificationFactor(factor!.id);
     await auth.submitReverification('password');
 
-    expect(await resultPromise).toBeFalse();
+    expect(await resultPromise).toBeNull();
     expect(auth.reverificationChallenge()).toBeNull();
   });
 });
@@ -191,9 +201,11 @@ function fakeSession(id: string, token: string): NonNullable<Clerk['session']> {
 }
 
 function resolveAppUser(auth: AuthService, sessionId: string): Promise<void> {
-  return (auth as unknown as {
-    resolveAppUserOnce(value: string): Promise<void>;
-  }).resolveAppUserOnce(sessionId);
+  return (
+    auth as unknown as {
+      resolveAppUserOnce(value: string): Promise<void>;
+    }
+  ).resolveAppUserOnce(sessionId);
 }
 
 function syncFromClerk(auth: AuthService): void {

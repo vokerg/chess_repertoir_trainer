@@ -61,13 +61,26 @@ describe('AdminApiService', () => {
       service.previewLifecycle(7, { action: 'PURGE_ACCOUNT_DATA', accountId: 5 }),
     );
     await firstValueFrom(
-      service.executeLifecycle(7, 44, {
+      service.executeLifecycle(
+        7,
+        44,
+        {
+          previewToken: 'preview-token-with-safe-length',
+          confirmationPhrase: 'PURGE ACCOUNT 5',
+          idempotencyKey: 'stable-key-44',
+        },
+        'fresh-reverification-token',
+      ),
+    );
+    expect(api.post.calls.argsFor(0)[0]).toBe('/admin/users/7/data-lifecycle/preview');
+    expect(api.post.calls.argsFor(1)).toEqual([
+      '/admin/users/7/data-lifecycle/44/execute',
+      {
         previewToken: 'preview-token-with-safe-length',
         confirmationPhrase: 'PURGE ACCOUNT 5',
         idempotencyKey: 'stable-key-44',
-      }),
-    );
-    expect(api.post.calls.argsFor(0)[0]).toBe('/admin/users/7/data-lifecycle/preview');
-    expect(api.post.calls.argsFor(1)[0]).toBe('/admin/users/7/data-lifecycle/44/execute');
+      },
+      'fresh-reverification-token',
+    ]);
   });
 });

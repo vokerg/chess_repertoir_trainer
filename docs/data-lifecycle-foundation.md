@@ -109,4 +109,4 @@ Operations referenced by a deleted-identity tombstone are excluded from generic 
 
 ## Remaining downstream scope
 
-ONB-020 does not implement `DELETE_APP_USER`, device-local purge, shared `Position` cleanup, administrator mutation exposure, or a new Angular destructive-account interaction. Those remain separately owned by ONB-021, ONB-026, ONB-024, or later product/UI work. Account/game destructive mutation is available only through the canonical lifecycle preview/execute protocol; consumers must not restore direct unfenced delete/reset paths.
+ONB-020 does not implement `DELETE_APP_USER`, device-local purge, or shared `Position` cleanup. Those remain separately owned by ONB-021, ONB-026, ONB-024, or later product/UI work. The Angular account cards and administrator diagnostics consume the canonical account/game lifecycle preview/execute protocol; consumers must not restore direct unfenced delete/reset paths.

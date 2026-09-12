@@ -175,7 +175,7 @@ describe('AdminDiagnosticsStore', () => {
     const preview = lifecyclePreview();
     api.previewLifecycle.and.returnValue(of(preview));
     api.executeLifecycle.and.returnValue(of({ ...preview, status: 'FENCING' }));
-    auth.reverify.and.resolveTo(true);
+    auth.reverify.and.resolveTo('fresh-reverification-token');
 
     await store.previewLifecycle();
     store.lifecycleConfirmation.set(preview.confirmationPhrase);

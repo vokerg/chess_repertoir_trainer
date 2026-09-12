@@ -86,9 +86,9 @@ describe('AdminDiagnosticsStore lifecycle preview safety', () => {
     await store.previewLifecycle();
     store.lifecycleConfirmation.set(preview.confirmationPhrase);
 
-    let finishReverification!: (result: boolean) => void;
+    let finishReverification!: (result: string | null) => void;
     auth.reverify.and.returnValue(
-      new Promise<boolean>((resolve) => {
+      new Promise<string | null>((resolve) => {
         finishReverification = resolve;
       }),
     );
@@ -96,7 +96,7 @@ describe('AdminDiagnosticsStore lifecycle preview safety', () => {
     const execution = store.executeLifecycle();
     await Promise.resolve();
     store.setLifecycleAccountId('6');
-    finishReverification(true);
+    finishReverification('fresh-reverification-token');
     await execution;
 
     expect(api.executeLifecycle).not.toHaveBeenCalled();
@@ -104,6 +104,29 @@ describe('AdminDiagnosticsStore lifecycle preview safety', () => {
     expect(store.lifecycleError()).toBe(
       'Lifecycle inputs changed during reverification. Preview and confirm again.',
     );
+  });
+
+  it('binds the fresh Clerk token to the administrator execute request', async () => {
+    const preview = lifecyclePreview();
+    store.lifecycleAccountId.set('5');
+    api.previewLifecycle.and.returnValue(of(preview));
+    api.executeLifecycle.and.returnValue(of({ ...preview, status: 'FENCING' }));
+    auth.reverify.and.resolveTo('fresh-reverification-token');
+
+    await store.previewLifecycle();
+    store.lifecycleConfirmation.set(preview.confirmationPhrase);
+    await store.executeLifecycle();
+
+    expect(api.executeLifecycle).toHaveBeenCalledOnceWith(
+      7,
+      preview.operationId,
+      jasmine.objectContaining({
+        previewToken: preview.previewToken,
+        confirmationPhrase: preview.confirmationPhrase,
+      }),
+      'fresh-reverification-token',
+    );
+    expect(store.lifecycleOperation()?.status).toBe('FENCING');
   });
 });
 

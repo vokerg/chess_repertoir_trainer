@@ -129,6 +129,20 @@
   min-width: 0;
 }
 
+.admin-connected-accounts li > div small {
+  color: var(--ui-text-subtle);
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.75rem;
+}
+
+.admin-connected-account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
 .admin-connected-accounts code,
 .admin-connected-accounts strong {
   color: var(--ui-text);

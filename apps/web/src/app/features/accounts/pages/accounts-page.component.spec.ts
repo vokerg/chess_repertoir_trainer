@@ -51,6 +51,14 @@ describe('AccountsPageComponent', () => {
         'isImportControlling',
         'setDefaultProgressAccount',
         'toggleActive',
+        'openLifecycle',
+        'closeLifecycle',
+        'setLifecycleAction',
+        'setLifecycleConfirmation',
+        'previewLifecycle',
+        'executeLifecycle',
+        'refreshLifecycle',
+        'stopLifecycle',
       ],
       {
         form: signal({ provider: 'LICHESS' as const, username: '', displayName: '' }),
@@ -65,6 +73,13 @@ describe('AccountsPageComponent', () => {
         importingAllHistoryAccountId: signal<number | null>(null),
         controllingImportRunId: signal<number | null>(null),
         settingDefaultProgressAccountId: signal<number | null>(null),
+        lifecycleAccountId: signal<number | null>(null),
+        lifecycleAction: signal('PURGE_ACCOUNT_DATA' as const),
+        lifecycleConfirmation: signal(''),
+        lifecyclePreview: signal(null),
+        lifecycleOperation: signal(null),
+        lifecycleBusy: signal(false),
+        lifecycleError: signal<string | null>(null),
       },
     );
     confirmDialog = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', ['confirm']);
@@ -144,13 +159,26 @@ describe('AccountsPageComponent', () => {
     expect(store.importAllHistory).toHaveBeenCalledOnceWith(account);
   });
 
-  it('keeps destructive account removal disabled pending lifecycle cutover', () => {
+  it('places lifecycle actions on the visible account and keeps them behind the preview flow', () => {
     const deleteButton = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
-    ).find((button) => button.textContent?.includes('Delete account')) as HTMLButtonElement | undefined;
+    ).find((button) => button.textContent?.includes('Delete connected account')) as HTMLButtonElement | undefined;
 
     expect(deleteButton).toBeDefined();
-    expect(deleteButton?.disabled).toBeTrue();
+    expect(deleteButton?.disabled).toBeFalse();
+    expect(buttonLabels(fixture.nativeElement as HTMLElement)).toContain('Purge account data');
+    expect(rootText()).toContain('Account ID');
+  });
+
+  it('opens the lifecycle controls for the account whose action was selected', () => {
+    const purgeButton = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    ).find((button) => button.textContent?.includes('Purge account data')) as HTMLButtonElement;
+
+    purgeButton.click();
+    fixture.detectChanges();
+
+    expect(store.openLifecycle).toHaveBeenCalledOnceWith(account, 'PURGE_ACCOUNT_DATA');
   });
 
   it('renders dynamic errors, notices, and import progress with live-region semantics', () => {

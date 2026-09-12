@@ -1,6 +1,13 @@
 import { DOCUMENT } from '@angular/common';
 import { DestroyRef, inject, Injectable, signal } from '@angular/core';
+import type {
+  AccountGameDataLifecycleAction,
+  AccountGameDataLifecyclePreviewRequest,
+  DataLifecycleOperationResponse,
+  DataLifecyclePreviewResponse,
+} from '@chess-trainer/contracts/data-lifecycle';
 import { firstValueFrom } from 'rxjs';
+import { AuthService } from '../../../core/auth/auth.service';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import type {
   AccountForm,
@@ -20,13 +27,21 @@ const ACTIVE_IMPORT_STATUSES = new Set<AccountImportStatus>([
   'CANCEL_REQUESTED',
 ]);
 
+type AccountLifecycleAction = Extract<
+  AccountGameDataLifecycleAction,
+  'PURGE_ACCOUNT_DATA' | 'DELETE_EXTERNAL_ACCOUNT'
+>;
+
 @Injectable()
 export class AccountsStore {
   private readonly api = inject(AccountsApiService);
+  private readonly auth = inject(AuthService);
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
   private importPollTimer: number | null = null;
   private importRefreshInFlight = false;
+  private lifecyclePreviewGeneration = 0;
+  private lifecycleIdempotencyKey: string | null = null;
 
   readonly accounts = signal<ExternalAccount[]>([]);
   readonly importRuns = signal<Record<number, AccountImportRun>>({});
@@ -44,6 +59,13 @@ export class AccountsStore {
   readonly error = signal<string | null>(null);
   readonly notice = signal<string | null>(null);
   readonly form = signal<AccountForm>(defaultForm());
+  readonly lifecycleAccountId = signal<number | null>(null);
+  readonly lifecycleAction = signal<AccountLifecycleAction>('PURGE_ACCOUNT_DATA');
+  readonly lifecycleConfirmation = signal('');
+  readonly lifecyclePreview = signal<DataLifecyclePreviewResponse | null>(null);
+  readonly lifecycleOperation = signal<DataLifecycleOperationResponse | null>(null);
+  readonly lifecycleBusy = signal(false);
+  readonly lifecycleError = signal<string | null>(null);
 
   constructor() {
     this.destroyRef.onDestroy(() => this.stopImportPolling());
@@ -84,6 +106,134 @@ export class AccountsStore {
     this.form.update((form) => ({ ...form, [key]: value }));
   }
 
+  openLifecycle(
+    account: ExternalAccount,
+    action: AccountLifecycleAction = 'PURGE_ACCOUNT_DATA',
+  ): void {
+    this.lifecycleAccountId.set(account.id);
+    this.lifecycleAction.set(action);
+    this.invalidateLifecyclePreview();
+    this.clearMessages();
+  }
+
+  closeLifecycle(): void {
+    this.lifecycleAccountId.set(null);
+    this.invalidateLifecyclePreview();
+    this.clearMessages();
+  }
+
+  setLifecycleAction(action: AccountLifecycleAction): void {
+    if (this.lifecycleAction() === action) return;
+    this.lifecycleAction.set(action);
+    this.invalidateLifecyclePreview();
+  }
+
+  setLifecycleConfirmation(value: string): void {
+    this.lifecycleConfirmation.set(value);
+  }
+
+  async previewLifecycle(): Promise<void> {
+    this.invalidateLifecyclePreview();
+    const previewGeneration = this.lifecyclePreviewGeneration;
+    const accountId = this.lifecycleAccountId();
+    if (accountId === null) {
+      this.lifecycleError.set('Choose an account before previewing a lifecycle action.');
+      return;
+    }
+
+    const request: AccountGameDataLifecyclePreviewRequest = {
+      action: this.lifecycleAction(),
+      accountId,
+    };
+    this.lifecycleBusy.set(true);
+    try {
+      const preview = await firstValueFrom(this.api.previewLifecycle(request));
+      if (previewGeneration !== this.lifecyclePreviewGeneration) return;
+      this.lifecyclePreview.set(preview);
+      this.lifecycleOperation.set(preview);
+      this.lifecycleConfirmation.set('');
+      this.lifecycleIdempotencyKey = crypto.randomUUID();
+    } catch (error) {
+      if (previewGeneration !== this.lifecyclePreviewGeneration) return;
+      this.lifecycleError.set(readApiError(error, 'Could not create lifecycle preview.'));
+    } finally {
+      this.lifecycleBusy.set(false);
+    }
+  }
+
+  async executeLifecycle(): Promise<void> {
+    const accountId = this.lifecycleAccountId();
+    const preview = this.lifecyclePreview();
+    const confirmationPhrase = this.lifecycleConfirmation();
+    const idempotencyKey = this.lifecycleIdempotencyKey;
+    if (accountId === null || !preview || !idempotencyKey) return;
+    if (confirmationPhrase !== preview.confirmationPhrase) {
+      this.lifecycleError.set('Enter the exact lifecycle confirmation phrase.');
+      return;
+    }
+
+    this.lifecycleBusy.set(true);
+    this.lifecycleError.set(null);
+    try {
+      const reverificationToken = await this.auth.reverify();
+      if (!reverificationToken) {
+        this.lifecycleError.set('Reverification was cancelled or is unavailable.');
+        return;
+      }
+      if (
+        this.lifecycleAccountId() !== accountId ||
+        this.lifecyclePreview() !== preview ||
+        this.lifecycleConfirmation() !== confirmationPhrase ||
+        this.lifecycleIdempotencyKey !== idempotencyKey
+      ) {
+        this.lifecycleError.set(
+          'Lifecycle inputs changed during reverification. Preview and confirm again.',
+        );
+        return;
+      }
+      const operation = await firstValueFrom(
+        this.api.executeLifecycle(
+          preview.operationId,
+          {
+            previewToken: preview.previewToken,
+            confirmationPhrase,
+            idempotencyKey,
+          },
+          reverificationToken,
+        ),
+      );
+      this.lifecycleOperation.set(operation);
+    } catch (error) {
+      this.lifecycleError.set(readApiError(error, 'Could not execute lifecycle operation.'));
+    } finally {
+      this.lifecycleBusy.set(false);
+    }
+  }
+
+  async refreshLifecycle(): Promise<void> {
+    const operation = this.lifecycleOperation();
+    if (!operation) return;
+    try {
+      this.lifecycleOperation.set(
+        await firstValueFrom(this.api.getLifecycle(operation.operationId)),
+      );
+    } catch (error) {
+      this.lifecycleError.set(readApiError(error, 'Could not refresh lifecycle status.'));
+    }
+  }
+
+  async stopLifecycle(): Promise<void> {
+    const operation = this.lifecycleOperation();
+    if (!operation) return;
+    try {
+      this.lifecycleOperation.set(
+        await firstValueFrom(this.api.stopLifecycle(operation.operationId)),
+      );
+    } catch (error) {
+      this.lifecycleError.set(readApiError(error, 'Could not request a lifecycle stop.'));
+    }
+  }
+
   async createAccount(): Promise<void> {
     const form = this.form();
     const username = form.username.trim();
@@ -102,8 +252,8 @@ export class AccountsStore {
       this.accounts.update((accounts) =>
         [account, ...accounts.filter((item) => item.id !== account.id)].sort(
           (left, right) =>
-            providerLabel(left.provider).localeCompare(providerLabel(right.provider))
-            || left.username.localeCompare(right.username),
+            providerLabel(left.provider).localeCompare(providerLabel(right.provider)) ||
+            left.username.localeCompare(right.username),
         ),
       );
       this.notice.set(`Account ${account.username} is ready to refresh.`);
@@ -122,7 +272,9 @@ export class AccountsStore {
     try {
       const response = await firstValueFrom(this.api.syncAccount(account.id));
       this.patchImportRun(response.importRun);
-      this.notice.set(`${providerLabel(account.provider)} account ${account.username} refresh queued.`);
+      this.notice.set(
+        `${providerLabel(account.provider)} account ${account.username} refresh queued.`,
+      );
       this.syncImportPolling();
     } catch (error) {
       this.error.set(readApiError(error, `Could not queue ${account.username}.`));
@@ -167,7 +319,9 @@ export class AccountsStore {
         );
         await this.loadImportRuns().catch(() => undefined);
       } else {
-        this.notice.set(`Queued game refresh for ${queued} active ${queued === 1 ? 'account' : 'accounts'}.`);
+        this.notice.set(
+          `Queued game refresh for ${queued} active ${queued === 1 ? 'account' : 'accounts'}.`,
+        );
       }
       this.syncImportPolling();
     } finally {
@@ -199,7 +353,9 @@ export class AccountsStore {
     try {
       const response = await firstValueFrom(this.api.importAllHistory(account.id));
       this.patchImportRun(response.importRun);
-      this.notice.set(`Queued all supported Lichess history for ${account.username}. This may take a while and continues in the background.`);
+      this.notice.set(
+        `Queued all supported Lichess history for ${account.username}. This may take a while and continues in the background.`,
+      );
       this.syncImportPolling();
     } catch (error) {
       this.error.set(readApiError(error, `Could not queue all history for ${account.username}.`));
@@ -336,11 +492,12 @@ export class AccountsStore {
     this.controllingImportRunId.set(run.id);
     this.clearMessages();
     try {
-      const response = action === 'pause'
-        ? await firstValueFrom(this.api.pauseImport(run.id))
-        : action === 'resume'
-          ? await firstValueFrom(this.api.resumeImport(run.id))
-          : await firstValueFrom(this.api.cancelImport(run.id));
+      const response =
+        action === 'pause'
+          ? await firstValueFrom(this.api.pauseImport(run.id))
+          : action === 'resume'
+            ? await firstValueFrom(this.api.resumeImport(run.id))
+            : await firstValueFrom(this.api.cancelImport(run.id));
       this.patchImportRun(response.importRun);
       this.notice.set(`Account import ${action} request accepted.`);
       this.syncImportPolling();
@@ -392,12 +549,15 @@ export class AccountsStore {
   }
 
   private syncImportPolling(): void {
-    const shouldPoll = Object.values(this.importRuns()).some((run) => ACTIVE_IMPORT_STATUSES.has(run.status));
+    const shouldPoll = Object.values(this.importRuns()).some((run) =>
+      ACTIVE_IMPORT_STATUSES.has(run.status),
+    );
     if (shouldPoll && this.importPollTimer === null) {
-      this.importPollTimer = this.document.defaultView?.setInterval(
-        () => void this.refreshImportRuns(),
-        IMPORT_POLL_INTERVAL_MS,
-      ) ?? null;
+      this.importPollTimer =
+        this.document.defaultView?.setInterval(
+          () => void this.refreshImportRuns(),
+          IMPORT_POLL_INTERVAL_MS,
+        ) ?? null;
     } else if (!shouldPoll) {
       this.stopImportPolling();
     }
@@ -407,6 +567,15 @@ export class AccountsStore {
     if (this.importPollTimer === null) return;
     this.document.defaultView?.clearInterval(this.importPollTimer);
     this.importPollTimer = null;
+  }
+
+  private invalidateLifecyclePreview(): void {
+    this.lifecyclePreviewGeneration += 1;
+    this.lifecyclePreview.set(null);
+    this.lifecycleOperation.set(null);
+    this.lifecycleConfirmation.set('');
+    this.lifecycleIdempotencyKey = null;
+    this.lifecycleError.set(null);
   }
 
   private clearMessages(): void {
