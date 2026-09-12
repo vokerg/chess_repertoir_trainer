@@ -112,4 +112,5 @@ try {
   if (positionIds.length > 0) {
     await prisma.position.deleteMany({ where: { id: { in: positionIds } } }).catch(() => {});
   }
+  await worker.close();
 }
