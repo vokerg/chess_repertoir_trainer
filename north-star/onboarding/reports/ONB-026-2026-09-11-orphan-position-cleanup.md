@@ -1,51 +1,66 @@
 # ONB-026 orphan shared-position cleanup review report
 
-Date: 2026-09-11
+Date: 2026-09-12
 Status: `REVIEW`
 Pull request: [#412](https://github.com/vokerg/chess_repertoir_trainer/pull/412)
 Branch: `onb-026/issue-280-orphan-position-cleanup`
-Base refreshed from: `origin/main` at `7bc7a77874df2fc208313d18766b8ca51bb21f35`
+Base: `origin/main` at `956ddf05f63c71af7783ea133ac67044f6c78b87`
 
 ## Review outcome
 
-The implementation and review fixes are ready for maintainer review. The delivered scope remains manual-first, disabled-by-default, PostgreSQL-only shared-position cleanup. It does not add recurring scheduling, course-tree deletion, account/user deletion, or an administrator mutation route.
+The implementation and takeover-review fixes are ready for exact-head validation and maintainer review. The delivered scope remains manual-first, disabled-by-default, PostgreSQL-only shared-position cleanup. It does not add recurring scheduling, course-tree deletion, account/user deletion, or an administrator mutation route.
 
-The review fixes addressed:
+The takeover review addressed:
 
-- `ImportedGamePly` insert and update triggers use PostgreSQL transition relations and reset matching candidates in the same transaction, including idempotent updates that retain the same position reference.
-- Durable `orphansFirstObserved` and `orphansRefreshed` run counters now distinguish new observations from refreshed candidates, and the first observation timestamp is preserved across bounded transactions.
-- A cancellation request that wins a lock-timeout/error race is settled as `CANCELLED` before lock-timeout retry handling.
-- The manual command exposes an injectable canonical-service/worker orchestration runner, so flag, confirmation, output, and terminal-failure tests do not accidentally scan the shared production-sized database.
-- Live shared-database fixtures scope their traversal bounds to their own positions before testing lifecycle or lock interleavings.
+- Lock-timeout settlement is atomic with cancellation state. If cancellation committed before timeout settlement, the run becomes `CANCELLED` without consuming the third retry or incorrectly becoming `NEEDS_ATTENTION`.
+- The `ImportedGamePly` UPDATE trigger now uses OLD/NEW transition relations. A changed/new position reference always takes the database-owned observer fence; a retained reference takes cleanup fence/reset work only when a stale candidate exists. Ordinary score/classification/move-only updates with no candidate therefore acquire no cleanup advisory locks.
+- A focused PostgreSQL regression holds the ONB-026 advisory lock and proves the normal unchanged-reference update bypasses that fence, while a stale-candidate update still uses it and rolls back safely on lock timeout.
+- Durable counters are phase-exact: reconciliation records `reconcileCandidatesInspected` / `candidatesReconciled`, observation records `positionsInspected` / `orphansMatched`, and evaluation records `candidatesInspected` / `candidatesMatched`. Detailed first-observed/refreshed, dry-run eligible, delete, and dependent-row counters remain available.
+- Execute batches use the same repository boundary as the rest of the worker and the test suite. The production-only per-delete-page `PrismaClient` construction/disconnect path was removed.
+- The command exposes an injectable entrypoint that owns argv parsing and failure exit-code mapping. Tests cover default dry-run parsing, explicit apply/typed confirmation, terminal failure => exit code 1, and invalid execute invocation => exit code 1.
+- The already-applied foundation migration `20260903080000_position_cleanup_foundation` was restored unchanged. Review corrections are delivered in the forward migration `20260912050000_position_cleanup_review_fixes` rather than rewriting applied migration history.
 
-## Live database evidence
+## Migration and database evidence
 
-The target database reported PostgreSQL `server_version_num=170011`. The migration `20260903080000_position_cleanup_foundation` was applied successfully, and `npx prisma migrate status --schema prisma/schema.prisma` subsequently reported the database schema up to date. The live database hygiene check after testing reported zero `PositionCleanupRun` and zero `PositionCleanupCandidate` rows; diagnostic rows were removed.
+The previously inspected shared target reported PostgreSQL `server_version_num=170011`, and the foundation migration was applied there during the original implementation validation. That foundation migration is now preserved byte-for-byte on the branch.
 
-The bounded benchmark passed with 10, 500, and 5,000 input-row profiles. The latest passing run observed transaction p90 `314.97ms`, uncontended canonical lock p90 `144.80ms`, and canonical lock-wait p90 `248.44ms`, below the accepted `1000ms` and `250ms` limits. The query-plan assertions confirmed pre-filter `Limit` nodes.
+The takeover review added `20260912050000_position_cleanup_review_fixes`. It has **not** been manually applied to the shared target as part of this review. Migration application on a clean PostgreSQL instance is covered by the pull request CI gate. This report intentionally does not claim that the shared target is already at the new review migration.
 
-The focused PostgreSQL suite passed all ten position-cleanup tests: bounded performance, command orchestration, config/service, execute lock timeout, integration/triggers, lifecycle recovery, observation/reference race, predicate/grace, reindex interleavings, and worker cancellation race.
+No destructive execute cleanup was run against the shared target during the takeover review.
+
+## Performance evidence
+
+The existing bounded benchmark covers 10, 500, and 5,000 input-row profiles, asserts a pre-filter `Limit` node, and enforces the accepted transaction and lock budgets. The last recorded branch benchmark before the takeover corrections observed transaction p90 `314.97ms`, uncontended canonical lock p90 `144.80ms`, and canonical lock-wait p90 `248.44ms`, below the accepted `1000ms` / `250ms` limits.
+
+The takeover change specifically removes cleanup advisory-lock fan-out from normal retained-reference ply updates and adds a lock-contention regression for that behavior. The standard API test runner discovers all position-cleanup `*.test.mjs` files, including the benchmark and the new regression.
 
 ## Validation record
 
-Passed:
+The pull request's exact-head CI checks are the authoritative release gate rather than a copied run id in this append-only report. The CI workflow covers dependency setup, lint, build, architecture/hygiene guardrails, migration application, and the full API test runner.
 
-- `npm run build` (domain, contracts, API, web, and mobile; elevated rerun was required for Angular process spawning).
-- `npm run build:api`.
-- `npm run lint` (API, web, and mobile).
-- `npm run check:architecture`.
-- `npm run check:hygiene`.
-- `npx prisma format --schema apps/api/prisma/schema.prisma`.
-- `npx prisma validate --schema prisma/schema.prisma` from `apps/api`.
-- `npx prisma migrate deploy --schema prisma/schema.prisma` and migration-status verification.
-- The focused position-cleanup test suite listed above.
-- `git diff --check` (only the repository's existing LF-to-CRLF warnings were emitted for touched files).
+The position-cleanup suite currently contains 17 focused test files covering:
 
-Not complete or not run:
+- bounded performance and query-plan limits;
+- migration/schema contracts;
+- configuration/service policy;
+- insert/update trigger behavior and rollback;
+- unchanged-update advisory-fence filtering;
+- observation/reference races and transient re-reference grace reset;
+- reconciliation;
+- predicate/grace equivalence;
+- execute cascade behavior;
+- dependent-writer, reindex, and cascade-writer interleavings;
+- lock timeout and lock-timeout/cancellation precedence;
+- cancellation between batches;
+- stale recovery/replay;
+- worker shutdown;
+- command orchestration, argv parsing, typed confirmation, and exit mapping.
 
-- `npm test --workspace=apps/api` reached the full test runner but stopped in the unrelated `account-import.claim-admission.test.mjs` fixture because the shared database contains pre-existing queued import state; the same test also failed when run alone with no claim. This is not an ONB-026 assertion or schema dependency.
-- Root `npm test` was not rerun after that API-gate failure because it includes the same failing API workspace gate.
-- A complete production-scale manual cleanup sweep was intentionally not run. The shared database contains approximately 1.07 million positions; a diagnostic dry-run confirmed bounded progress, but was stopped before a multi-minute full traversal. The command contract is covered by the injectable command test, and SQL/lifecycle behavior is covered by the live focused suite.
-- A migration rollback was not executed against the shared database; rollback assessment remains a maintainer/deployment decision.
+Still intentionally not performed:
 
-The standard command remains disabled unless `POSITION_CLEANUP_ENABLED=true` is explicitly provided, and no destructive execute cleanup was run by this review.
+- A complete production-scale manual cleanup sweep. The shared database previously measured approximately 1.07 million positions, and no need was identified to run destructive or multi-minute maintenance merely to validate the implementation.
+- A destructive execute cleanup against the shared target.
+- A manual application of the new review migration to the shared target.
+- Migration rollback against the shared target; rollback remains a maintainer/deployment decision.
+
+The command remains disabled unless `POSITION_CLEANUP_ENABLED=true` is explicitly provided.
