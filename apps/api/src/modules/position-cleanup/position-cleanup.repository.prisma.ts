@@ -49,7 +49,7 @@ interface DeleteSummaryRow extends BatchSummaryRow {
   skippedReferenced: number;
 }
 
-interface LockTimeoutSettlementRow {
+interface TerminalSettlementRow {
   status: string;
 }
 
@@ -57,6 +57,10 @@ export type PositionCleanupLockTimeoutSettlement =
   | 'RETRY'
   | 'CANCELLED'
   | 'NEEDS_ATTENTION';
+
+export type PositionCleanupFailureSettlement =
+  | 'CANCELLED'
+  | 'FAILED';
 
 export class PositionCleanupInvalidStateError extends Error {}
 export class PositionCleanupUnsupportedDatabaseError extends Error {}
@@ -81,7 +85,11 @@ export interface PositionCleanupRepository {
     workKey: string,
     maxRetries: number,
   ): Promise<PositionCleanupLockTimeoutSettlement>;
-  failClaimed(runId: number, workKey: string, errorCode: string): Promise<void>;
+  failClaimed(
+    runId: number,
+    workKey: string,
+    errorCode: string,
+  ): Promise<PositionCleanupFailureSettlement>;
 }
 
 export function createPositionCleanupRepository(
@@ -537,7 +545,7 @@ export function createPositionCleanupRepository(
       validateRunId(runId);
       validateWorkKey(workKey);
       if (!Number.isSafeInteger(maxRetries) || maxRetries <= 0) throw new Error('maxRetries must be a positive integer.');
-      const rows = await database.$queryRaw<LockTimeoutSettlementRow[]>(Prisma.sql`
+      const rows = await database.$queryRaw<TerminalSettlementRow[]>(Prisma.sql`
         UPDATE "PositionCleanupRun"
         SET "retryCount" = CASE
               WHEN "cancelRequestedAt" IS NULL THEN "retryCount" + 1
@@ -600,12 +608,21 @@ export function createPositionCleanupRepository(
       validateRunId(runId);
       validateWorkKey(workKey);
       validateErrorCode(errorCode);
-      const updated = await database.$executeRaw(Prisma.sql`
+      const rows = await database.$queryRaw<TerminalSettlementRow[]>(Prisma.sql`
         UPDATE "PositionCleanupRun"
-        SET "status" = 'FAILED',
+        SET "status" = CASE
+              WHEN "cancelRequestedAt" IS NOT NULL THEN 'CANCELLED'
+              ELSE 'FAILED'
+            END,
             "phase" = 'DONE',
-            "terminalResult" = 'FAILED',
-            "errorCode" = ${errorCode},
+            "terminalResult" = CASE
+              WHEN "cancelRequestedAt" IS NOT NULL THEN 'CANCELLED'
+              ELSE 'FAILED'
+            END,
+            "errorCode" = CASE
+              WHEN "cancelRequestedAt" IS NOT NULL THEN "errorCode"
+              ELSE ${errorCode}
+            END,
             "completedAt" = NOW(),
             "workKey" = NULL,
             "claimedAt" = NULL,
@@ -614,8 +631,12 @@ export function createPositionCleanupRepository(
         WHERE "id" = ${runId}
           AND "workKey" = ${workKey}
           AND "status" = 'RUNNING'
+        RETURNING "status"
       `);
-      if (updated !== 1) throw new PositionCleanupInvalidStateError('Cleanup failure settlement lost its work key.');
+      const status = rows[0]?.status;
+      if (status === 'CANCELLED') return 'CANCELLED';
+      if (status === 'FAILED') return 'FAILED';
+      throw new PositionCleanupInvalidStateError('Cleanup failure settlement lost its work key.');
     },
   };
 }
