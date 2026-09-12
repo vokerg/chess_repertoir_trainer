@@ -60,8 +60,10 @@ try {
   const blockerReady = new Promise((resolve) => { markBlockerReady = resolve; });
   const blockerRelease = new Promise((resolve) => { releaseBlocker = resolve; });
   blockerPromise = blockerClient.$transaction(async (transaction) => {
-    await transaction.$executeRaw`
-      SELECT pg_advisory_xact_lock(280026, ${position.id})
+    await transaction.$queryRaw`
+      SELECT "position_cleanup_lock_reference_ids"(
+        ARRAY[${position.id}]::integer[]
+      ) AS "lockedCount"
     `;
     markBlockerReady();
     await blockerRelease;
