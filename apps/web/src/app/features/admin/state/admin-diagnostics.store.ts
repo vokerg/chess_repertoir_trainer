@@ -12,7 +12,6 @@ import type {
   DataLifecycleOperationResponse,
   DataLifecyclePreviewResponse,
 } from '@chess-trainer/contracts/data-lifecycle';
-import { AuthService } from '../../../core/auth/auth.service';
 import { AdminApiService } from '../data-access/admin-api.service';
 
 export type AdminAccessState = 'idle' | 'loading' | 'ready' | 'forbidden' | 'unavailable';
@@ -24,7 +23,6 @@ const WORK_ITEM_LIMIT = 20;
 @Injectable()
 export class AdminDiagnosticsStore {
   private readonly api = inject(AdminApiService);
-  private readonly auth = inject(AuthService);
   private capabilityRequestSequence = 0;
   private userListRequestSequence = 0;
   private selectionRequestSequence = 0;
@@ -214,6 +212,8 @@ export class AdminDiagnosticsStore {
     const preview = this.lifecyclePreview();
     const confirmationPhrase = this.lifecycleConfirmation();
     const idempotencyKey = this.lifecycleIdempotencyKey;
+    const previewAccountId =
+      preview && 'accountId' in preview.scope ? String(preview.scope.accountId) : null;
     if (!userId || !preview || !idempotencyKey) return;
     if (confirmationPhrase !== preview.confirmationPhrase) {
       this.lifecycleError.set('Enter the exact lifecycle confirmation phrase.');
@@ -222,20 +222,14 @@ export class AdminDiagnosticsStore {
     this.lifecycleBusy.set(true);
     this.lifecycleError.set(null);
     try {
-      const reverificationToken = await this.auth.reverify();
-      if (!reverificationToken) {
-        this.lifecycleError.set('Reverification was cancelled or is unavailable.');
-        return;
-      }
       if (
         this.selectedUserId() !== userId ||
+        this.lifecycleAccountId() !== previewAccountId ||
         this.lifecyclePreview() !== preview ||
         this.lifecycleConfirmation() !== confirmationPhrase ||
         this.lifecycleIdempotencyKey !== idempotencyKey
       ) {
-        this.lifecycleError.set(
-          'Lifecycle inputs changed during reverification. Preview and confirm again.',
-        );
+        this.lifecycleError.set('Lifecycle inputs changed. Preview and confirm again.');
         return;
       }
       const operation = await firstValueFrom(
@@ -247,7 +241,6 @@ export class AdminDiagnosticsStore {
             confirmationPhrase,
             idempotencyKey,
           },
-          reverificationToken,
         ),
       );
       this.lifecycleOperation.set(operation);

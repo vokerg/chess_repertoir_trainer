@@ -29,7 +29,7 @@ describe('AccountsApiService lifecycle endpoints', () => {
     api.post.and.returnValue(of(preview as never));
 
     await firstValueFrom(service.previewLifecycle({ action: 'PURGE_ACCOUNT_DATA', accountId: 5 }));
-    await firstValueFrom(service.executeLifecycle(44, execute, 'fresh-reverification-token'));
+    await firstValueFrom(service.executeLifecycle(44, execute));
     await firstValueFrom(service.stopLifecycle(44));
     api.get.and.returnValue(of(preview as never));
     await firstValueFrom(service.getLifecycle(44));
@@ -41,7 +41,6 @@ describe('AccountsApiService lifecycle endpoints', () => {
     expect(api.post.calls.argsFor(1)).toEqual([
       '/me/data-lifecycle/44/execute',
       execute,
-      'fresh-reverification-token',
     ]);
     expect(api.post.calls.argsFor(2)).toEqual(['/me/data-lifecycle/44/stop', {}]);
     expect(api.get).toHaveBeenCalledOnceWith('/me/data-lifecycle/44');

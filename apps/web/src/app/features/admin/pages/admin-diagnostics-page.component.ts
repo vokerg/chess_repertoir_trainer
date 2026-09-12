@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ReverificationDialogComponent } from '../../../core/auth/reverification-dialog.component';
 import { AdminUserDiagnosticsComponent } from '../components/admin-user-diagnostics.component';
 import { AdminUserListComponent } from '../components/admin-user-list.component';
 import { DataLifecycleSafetyComponent } from '../../../shared/ui/data-lifecycle-safety/data-lifecycle-safety.component';
@@ -28,7 +27,6 @@ import { PanelComponent } from '../../../shared/ui/panel/panel.component';
     PageHeaderComponent,
     PanelComponent,
     FormsModule,
-    ReverificationDialogComponent,
   ],
   providers: [AdminApiService, AdminDiagnosticsStore],
   templateUrl: './admin-diagnostics-page.component.html',
@@ -73,16 +71,6 @@ export class AdminDiagnosticsPageComponent implements OnInit {
         id: 'verified-session',
         label: 'Verified session evidence',
         value: capability.sessionEvidence.hasVerifiedSession ? 'Present' : 'Absent',
-      },
-      {
-        id: 'factor-age',
-        label: 'Factor verification age',
-        value: capability.sessionEvidence.hasFactorVerificationAge ? 'Present' : 'Absent',
-      },
-      {
-        id: 'reverification',
-        label: 'Reverification evidence',
-        value: capability.sessionEvidence.hasReverificationId ? 'Present' : 'Absent',
       },
     ];
   });

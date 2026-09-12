@@ -91,12 +91,12 @@ ONB-021 remains blocked on ONB-020 delivery.
 
 Still owned by ONB-024:
 
-- proof that the pinned Clerk client flow can provide fresh signed `fva` plus one-use `reverification_id` evidence bound to the requested execution;
+- whether a separate step-up challenge should ever be added as an optional deployment policy; it is not required by the current lifecycle flow;
 - exact administrator capability/action mapping over the final ONB-020/021/026 services;
 - bounded administrator audit list/detail projection and retention configuration;
 - whether/when administrator whole-user deletion is explicitly enabled by a separate support/policy decision.
 
-Administrator execution stays disabled where canonical lifecycle services or proven reverification evidence do not yet exist.
+Administrator execution uses the canonical lifecycle services with preview-bound typed confirmation and server-side administrator capability checks; separate Clerk reverification is not a dependency.
 
 ## ONB-025 / #276 — stale-account refresh trigger
 

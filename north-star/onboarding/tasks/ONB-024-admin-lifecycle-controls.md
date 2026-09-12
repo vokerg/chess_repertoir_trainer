@@ -20,7 +20,7 @@ Runtime branch: `onb-024/issue-274-admin-lifecycle-controls`
 
 Claimed: 2026-09-08 by OpenAI Codex with explicit user authorization after ONB-020 delivery review
 
-Delivered slice: account/game lifecycle preview, reverification-bound execution, status, permitted stop, bounded audit summaries, and Angular controls. Whole-user deletion and position cleanup remain gated on ONB-021/026 and are not exposed.
+Delivered slice: account/game lifecycle preview, confirmation-bound execution, status, permitted stop, bounded audit summaries, and Angular controls. Whole-user deletion and position cleanup remain gated on ONB-021/026 and are not exposed.
 
 ## Objective
 
@@ -40,9 +40,9 @@ Expose capability-gated administrator preview, execution, operation-status, allo
 - `apps/api/src/modules/admin/` adapters;
 - canonical lifecycle application services and contracts from ONB-019/020/021;
 - `@chess-trainer/contracts/admin` and lifecycle contracts;
-- Clerk verified-session/reverification integration from ONB-022;
+- Clerk verified-session and server-side administrator authorization from ONB-022;
 - administrator Angular feature from ONB-023;
-- focused API/lifecycle/audit/reverification/UI tests.
+- focused API/lifecycle/audit/confirmation/UI tests.
 
 ## Scope
 
@@ -58,19 +58,16 @@ Provide capability-gated routes equivalent to:
 
 The administrator route resolves actor authority and target identity, then calls the same lifecycle service used by self-service routes. It does not own deletion SQL or lifecycle state transitions.
 
-### Reverification
+### Execution confirmation
 
 Execution requires:
 
 - valid preview bound to actor, target, kind, version/digest, and expiry;
 - typed confirmation;
 - idempotency key;
-- signed Clerk `fva` within the configured freshness window;
-- a signed one-use `reverification_id`;
-- backend binding of the reverification id to actor, target, operation kind, preview digest, and idempotency key;
-- rejection of stale, reused, missing, or mismatched evidence.
-
-If the pinned Clerk JS integration cannot produce and refresh this evidence, execution remains disabled. Do not simulate reauthentication.
+- normal authenticated administrator session and server-issued capability;
+- backend binding of the execution to actor, target, operation kind, preview digest, and idempotency key;
+- rejection of stale, reused, missing, or mismatched preview/confirmation evidence.
 
 ### Audit and retention
 
@@ -107,8 +104,8 @@ If the pinned Clerk JS integration cannot produce and refresh this evidence, exe
 - preview expiry/state changes fail safely;
 - idempotent replay returns the same canonical operation;
 - idempotency key reuse with different semantics conflicts;
-- each reverification id authorizes at most one matching execution;
-- stale/missing/mismatched `fva` or reverification evidence blocks execution;
+- each idempotency key authorizes at most one matching execution;
+- stale/missing/mismatched preview or confirmation evidence blocks execution;
 - accepted long-running work returns durable `202` and survives browser/API/worker restart;
 - administrator adapters cannot bypass resource fences, claim drain, bounded phases, retry, failure state, or audit;
 - no parallel destructive implementation exists;
@@ -119,14 +116,13 @@ If the pinned Clerk JS integration cannot produce and refresh this evidence, exe
 - capability/target non-enumeration tests;
 - preview expiry/digest/state-change tests;
 - typed confirmation and idempotency tests;
-- `fva` freshness and one-use reverification tests;
 - replay/mismatch/concurrent execution tests;
 - adapter tests proving calls enter the canonical lifecycle service;
 - fence/drain/partial failure/restart tests inherited from and integrated with ONB-019/020/021;
 - audit sensitive-field and key-version tests;
-- Angular preview/confirm/accepted/status/failure/reverification tests;
+- Angular preview/confirm/accepted/status/failure tests;
 - full API/web/contracts/lifecycle build, lint, test, OpenAPI, migration, and architecture gates.
 
 ## Claim rule
 
-Do not claim until all applicable dependencies are DONE and `TASKS.md` promotes ONB-024 to READY. Before branching, re-inspect the final lifecycle service and pinned Clerk reverification API. Do not commit directly to `main`.
+Do not claim until all applicable dependencies are DONE and `TASKS.md` promotes ONB-024 to READY. Before branching, re-inspect the final lifecycle service and current server-side administrator authorization. Do not commit directly to `main`.

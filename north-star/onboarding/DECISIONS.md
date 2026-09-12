@@ -499,11 +499,11 @@ Status: `LOCKED`
 
 Ship a migration-free read-only foundation first. Use numeric internal user ID lookup, deterministic opaque cursor pagination, database-computed aggregates, explicit partial sections, and exact approved row counts. Exclude display names, email, usernames, raw auth subjects, PGN, provider URLs, tokens, FEN/position content, tactical/scenario payloads, AI reviews, raw job errors, full course trees, arbitrary exports, and per-user byte estimates from the initial projection.
 
-### D-084 — Destructive administrator execution requires signed one-use reverification
+### D-084 — Destructive administrator execution requires preview-bound confirmation
 
 Status: `LOCKED`
 
-Require a valid actor/target/kind/version/expiry-bound preview, typed confirmation, idempotency key, recent signed Clerk `fva`, and a signed `reverification_id` that is persisted and bound to exactly one matching execution. If the pinned Clerk client flow cannot mint and refresh this evidence, administrator execution stays disabled. Do not simulate reauthentication with a password prompt or shared secret.
+Require a valid actor/target/kind/version/expiry-bound preview, exact typed confirmation, idempotency key, normal authenticated administrator access, server-side capability authorization, and one matching execution binding. Recheck ownership, exact aggregate counts, preview expiry/digest, lifecycle state, and idempotency before installing the fence. Do not add a separate email challenge, password prompt, or fresh reverification token to this lifecycle flow.
 
 ### D-085 — Administrator request budgets follow deployment topology
 

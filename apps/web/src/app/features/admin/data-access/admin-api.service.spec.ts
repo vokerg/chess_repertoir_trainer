@@ -69,7 +69,6 @@ describe('AdminApiService', () => {
           confirmationPhrase: 'PURGE ACCOUNT 5',
           idempotencyKey: 'stable-key-44',
         },
-        'fresh-reverification-token',
       ),
     );
     expect(api.post.calls.argsFor(0)[0]).toBe('/admin/users/7/data-lifecycle/preview');
@@ -80,7 +79,6 @@ describe('AdminApiService', () => {
         confirmationPhrase: 'PURGE ACCOUNT 5',
         idempotencyKey: 'stable-key-44',
       },
-      'fresh-reverification-token',
     ]);
   });
 });

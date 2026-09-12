@@ -90,7 +90,7 @@ ONB-023 Angular diagnostics — DONE
 ONB-024 administrator lifecycle adapters — PROPOSED
 ```
 
-ONB-024 must remain a thin adapter over the canonical lifecycle/cleanup services and proven signed reverification. It must not create an administrator-only mutation state machine.
+ONB-024 must remain a thin adapter over the canonical lifecycle/cleanup services and preview-bound typed confirmation with server-side administrator authorization. It must not create an administrator-only mutation state machine.
 
 ## Phase status
 
@@ -146,7 +146,7 @@ Current state:
 
 - ONB-022 / #272 — `DONE`.
 - ONB-023 / #273 — `DONE`.
-- ONB-024 / #274 — `PROPOSED` behind applicable canonical lifecycle services and proven signed reverification.
+- ONB-024 / #274 — `PROPOSED` behind applicable canonical lifecycle services and server-side administrator authorization.
 
 ## Operational constraints carried forward
 

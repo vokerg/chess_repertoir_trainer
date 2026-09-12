@@ -74,7 +74,7 @@ export interface AccountGameDataLifecycleService {
     targetUserId: number,
     operationId: number,
     request: DataLifecycleExecuteRequest,
-    verification: Record<string, unknown>,
+    verification?: Record<string, unknown>,
   ): Promise<DataLifecycleOperationResponse>;
 }
 

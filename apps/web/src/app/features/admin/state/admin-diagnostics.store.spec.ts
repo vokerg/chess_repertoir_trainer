@@ -8,12 +8,10 @@ import type {
 import { of, Subject, throwError } from 'rxjs';
 import { AdminApiService } from '../data-access/admin-api.service';
 import { AdminDiagnosticsStore } from './admin-diagnostics.store';
-import { AuthService } from '../../../core/auth/auth.service';
 
 describe('AdminDiagnosticsStore', () => {
   let store: AdminDiagnosticsStore;
   let api: jasmine.SpyObj<AdminApiService>;
-  let auth: jasmine.SpyObj<AuthService>;
 
   beforeEach(() => {
     api = jasmine.createSpyObj<AdminApiService>('AdminApiService', [
@@ -26,7 +24,6 @@ describe('AdminDiagnosticsStore', () => {
       'getLifecycle',
       'stopLifecycle',
     ]);
-    auth = jasmine.createSpyObj<AuthService>('AuthService', ['reverify']);
     api.getUserDetail.and.callFake((userId) => of(detail(userId)));
     api.getUserWork.and.callFake((userId) => of(work(userId)));
 
@@ -34,7 +31,6 @@ describe('AdminDiagnosticsStore', () => {
       providers: [
         AdminDiagnosticsStore,
         { provide: AdminApiService, useValue: api },
-        { provide: AuthService, useValue: auth },
       ],
     });
     store = TestBed.inject(AdminDiagnosticsStore);
@@ -168,14 +164,13 @@ describe('AdminDiagnosticsStore', () => {
     expect(store.work()?.userId).toBe(2);
   });
 
-  it('previews and reverifies before executing a target lifecycle operation', async () => {
+  it('previews and executes a target lifecycle operation with typed confirmation', async () => {
     store.accessState.set('ready');
     store.selectedUserId.set(7);
     store.lifecycleAccountId.set('5');
     const preview = lifecyclePreview();
     api.previewLifecycle.and.returnValue(of(preview));
     api.executeLifecycle.and.returnValue(of({ ...preview, status: 'FENCING' }));
-    auth.reverify.and.resolveTo('fresh-reverification-token');
 
     await store.previewLifecycle();
     store.lifecycleConfirmation.set(preview.confirmationPhrase);
@@ -185,7 +180,6 @@ describe('AdminDiagnosticsStore', () => {
       action: 'PURGE_ACCOUNT_DATA',
       accountId: 5,
     });
-    expect(auth.reverify).toHaveBeenCalledTimes(1);
     expect(api.executeLifecycle).toHaveBeenCalled();
     expect(store.lifecycleOperation()?.status).toBe('FENCING');
   });

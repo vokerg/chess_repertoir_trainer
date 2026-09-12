@@ -7,7 +7,6 @@ import type {
   DataLifecyclePreviewResponse,
 } from '@chess-trainer/contracts/data-lifecycle';
 import { firstValueFrom } from 'rxjs';
-import { AuthService } from '../../../core/auth/auth.service';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import type {
   AccountForm,
@@ -35,7 +34,6 @@ type AccountLifecycleAction = Extract<
 @Injectable()
 export class AccountsStore {
   private readonly api = inject(AccountsApiService);
-  private readonly auth = inject(AuthService);
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
   private importPollTimer: number | null = null;
@@ -175,20 +173,13 @@ export class AccountsStore {
     this.lifecycleBusy.set(true);
     this.lifecycleError.set(null);
     try {
-      const reverificationToken = await this.auth.reverify();
-      if (!reverificationToken) {
-        this.lifecycleError.set('Reverification was cancelled or is unavailable.');
-        return;
-      }
       if (
         this.lifecycleAccountId() !== accountId ||
         this.lifecyclePreview() !== preview ||
         this.lifecycleConfirmation() !== confirmationPhrase ||
         this.lifecycleIdempotencyKey !== idempotencyKey
       ) {
-        this.lifecycleError.set(
-          'Lifecycle inputs changed during reverification. Preview and confirm again.',
-        );
+        this.lifecycleError.set('Lifecycle inputs changed. Preview and confirm again.');
         return;
       }
       const operation = await firstValueFrom(
@@ -199,7 +190,6 @@ export class AccountsStore {
             confirmationPhrase,
             idempotencyKey,
           },
-          reverificationToken,
         ),
       );
       this.lifecycleOperation.set(operation);
