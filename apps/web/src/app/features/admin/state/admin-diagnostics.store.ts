@@ -65,6 +65,20 @@ export class AdminDiagnosticsStore {
     const workFailed = this.workState() === 'error';
     return detailFailed !== workFailed;
   });
+  readonly lifecycleAccounts = computed(() => {
+    const accounts = this.detail()?.sections.accounts;
+    return accounts?.available ? accounts.items : [];
+  });
+  readonly lifecycleTargetLabel = computed(() => {
+    const accountId = Number(this.lifecycleAccountId());
+    const account = this.lifecycleAccounts().find((item) => item.id === accountId);
+    if (account) {
+      return account.provider + ' @' + account.username + ' (Account ID ' + account.id + ')';
+    }
+    return this.lifecycleAccountId()
+      ? 'Account ID ' + this.lifecycleAccountId()
+      : 'No account selected';
+  });
 
   async initialize(): Promise<void> {
     const requestSequence = ++this.capabilityRequestSequence;
@@ -110,6 +124,7 @@ export class AdminDiagnosticsStore {
 
     const requestSequence = ++this.selectionRequestSequence;
     this.selectedUserId.set(userId);
+    this.lifecycleAccountId.set('');
     this.detail.set(null);
     this.work.set(null);
     this.detailError.set(null);
@@ -151,13 +166,17 @@ export class AdminDiagnosticsStore {
     this.invalidateLifecyclePreview();
   }
 
+  setLifecycleConfirmation(value: string): void {
+    this.lifecycleConfirmation.set(value);
+  }
+
   async previewLifecycle(): Promise<void> {
     this.invalidateLifecyclePreview();
     const previewGeneration = this.lifecyclePreviewGeneration;
     const userId = this.selectedUserId();
     const accountId = Number(this.lifecycleAccountId());
     if (!userId || !Number.isSafeInteger(accountId) || accountId < 1) {
-      this.lifecycleError.set('Enter a valid account ID.');
+      this.lifecycleError.set('Choose an account from the selected user’s Accounts section.');
       return;
     }
     const action = this.lifecycleAction();
@@ -203,7 +222,8 @@ export class AdminDiagnosticsStore {
     this.lifecycleBusy.set(true);
     this.lifecycleError.set(null);
     try {
-      if (!(await this.auth.reverify())) {
+      const reverificationToken = await this.auth.reverify();
+      if (!reverificationToken) {
         this.lifecycleError.set('Reverification was cancelled or is unavailable.');
         return;
       }
@@ -219,11 +239,16 @@ export class AdminDiagnosticsStore {
         return;
       }
       const operation = await firstValueFrom(
-        this.api.executeLifecycle(userId, preview.operationId, {
-          previewToken: preview.previewToken,
-          confirmationPhrase,
-          idempotencyKey,
-        }),
+        this.api.executeLifecycle(
+          userId,
+          preview.operationId,
+          {
+            previewToken: preview.previewToken,
+            confirmationPhrase,
+            idempotencyKey,
+          },
+          reverificationToken,
+        ),
       );
       this.lifecycleOperation.set(operation);
     } catch (error) {
@@ -290,6 +315,17 @@ export class AdminDiagnosticsStore {
       if (requestSequence !== this.selectionRequestSequence) return;
       this.detail.set(detail);
       this.detailState.set('ready');
+      if (
+        !this.lifecycleAccounts().some(
+          (account) => String(account.id) === this.lifecycleAccountId(),
+        )
+      ) {
+        this.lifecycleAccountId.set(
+          String(
+            detail.sections.accounts.available ? (detail.sections.accounts.items[0]?.id ?? '') : '',
+          ),
+        );
+      }
     } catch (error) {
       if (requestSequence !== this.selectionRequestSequence) return;
       if (httpStatus(error) === 403) {
@@ -356,6 +392,7 @@ export class AdminDiagnosticsStore {
 
   private clearSelection(): void {
     this.selectedUserId.set(null);
+    this.lifecycleAccountId.set('');
     this.detail.set(null);
     this.detailState.set('idle');
     this.detailError.set(null);

@@ -36,8 +36,18 @@
                       @if (account.displayName && account.displayName !== account.username) {
                         <span>{{ account.displayName }}</span>
                       }
+                      <small>Account ID {{ account.id }}</small>
                     </div>
-                    <span>{{ account.active ? 'active' : 'inactive' }}</span>
+                    <div class="admin-connected-account-actions">
+                      <span>{{ account.active ? 'active' : 'inactive' }}</span>
+                      <button
+                        type="button"
+                        class="secondary"
+                        (click)="selectLifecycleAccount.emit(account.id)"
+                      >
+                        Use for lifecycle
+                      </button>
+                    </div>
                   </li>
                 }
               </ul>

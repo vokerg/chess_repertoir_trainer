@@ -1,0 +1,111 @@
+:host {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.lifecycle-preview,
+.lifecycle-operation {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.9rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
+}
+
+.lifecycle-preview-heading,
+.lifecycle-operation > div:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.lifecycle-preview-heading h4,
+.lifecycle-preview-heading p,
+.lifecycle-operation p {
+  margin: 0;
+}
+
+.lifecycle-preview-heading h4 {
+  color: var(--ui-text);
+  font-size: 0.95rem;
+}
+
+.lifecycle-preview-heading p,
+.lifecycle-operation p {
+  color: var(--ui-text-muted);
+  line-height: 1.45;
+}
+
+.lifecycle-preview-heading p {
+  margin-top: 0.25rem;
+}
+
+.lifecycle-preview-state,
+.lifecycle-operation-status {
+  color: var(--ui-warning);
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.lifecycle-safety-notes {
+  padding: 0.75rem;
+  border-left: 3px solid var(--ui-warning);
+  background: var(--ui-warning-soft);
+  color: var(--ui-text);
+}
+
+.lifecycle-safety-notes ul {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.45rem 0 0;
+  padding-left: 1.15rem;
+  color: var(--ui-text-muted);
+}
+
+.lifecycle-confirmation {
+  display: grid;
+  justify-items: start;
+  gap: 0.55rem;
+}
+
+.lifecycle-confirmation p {
+  color: var(--ui-text-muted);
+}
+
+.lifecycle-confirmation code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  background: var(--ui-chrome);
+  color: var(--ui-text-inverse);
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.8rem;
+}
+
+.lifecycle-confirmation label {
+  display: grid;
+  gap: 0.35rem;
+  width: min(100%, 32rem);
+  color: var(--ui-text-muted);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.lifecycle-operation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.lifecycle-error {
+  margin: 0;
+  color: var(--ui-danger);
+  font-weight: 700;
+}

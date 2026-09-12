@@ -1,0 +1,92 @@
+@if (error(); as errorMessage) {
+  <p class="lifecycle-error" role="alert">{{ errorMessage }}</p>
+}
+
+@if (preview(); as previewValue) {
+  <section class="lifecycle-preview" aria-labelledby="lifecycle-preview-title">
+    <div class="lifecycle-preview-heading">
+      <div>
+        <h4 id="lifecycle-preview-title">Exact impact preview</h4>
+        <p>
+          <strong>{{ previewValue.action }}</strong> targets
+          <strong>{{ targetLabel() }}</strong> and expires
+          {{ previewValue.previewExpiresAt | date: 'medium' }}.
+        </p>
+      </div>
+      <span class="lifecycle-preview-state">Preview only</span>
+    </div>
+
+    <app-fact-grid
+      ariaLabel="Exact destructive impact counts"
+      [items]="impactFacts()"
+      [columns]="3"
+      [compactColumns]="2"
+    />
+
+    <div class="lifecycle-safety-notes">
+      <strong>Safety checks</strong>
+      <ul>
+        <li>No data is changed by this preview.</li>
+        <li>
+          The server rechecks ownership and these counts before installing the lifecycle fence.
+        </li>
+        @if (previewValue.warningCodes.length) {
+          <li>Warnings: {{ previewValue.warningCodes.join(', ') }}</li>
+        } @else {
+          <li>No additional server warnings were returned.</li>
+        }
+      </ul>
+    </div>
+
+    <div class="lifecycle-confirmation">
+      <p>Type the exact phrase below, then complete fresh identity verification to continue.</p>
+      <code>{{ previewValue.confirmationPhrase }}</code>
+      <label>
+        Confirmation phrase
+        <input
+          type="text"
+          [ngModel]="confirmation()"
+          (ngModelChange)="confirmationChange.emit($event)"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </label>
+      <button type="button" class="danger" [disabled]="!canExecute()" (click)="execute.emit()">
+        {{ busy() ? 'Working...' : executeLabel() }}
+      </button>
+    </div>
+  </section>
+}
+
+@if (operation(); as operationValue) {
+  <section class="lifecycle-operation" aria-live="polite" aria-label="Lifecycle operation status">
+    <div>
+      <strong>Operation {{ operationValue.operationId }}</strong>
+      <span class="lifecycle-operation-status">{{ operationValue.status }}</span>
+    </div>
+    @if (operationValue.firstDestructiveCommitAt) {
+      <p>
+        Destructive work started
+        {{ operationValue.firstDestructiveCommitAt | date: 'medium' }}. The worker continues in
+        bounded batches.
+      </p>
+    } @else {
+      <p>No destructive commit has been recorded yet.</p>
+    }
+    @if (operationValue.terminalResult) {
+      <p>
+        Terminal result: <strong>{{ operationValue.terminalResult }}</strong>
+      </p>
+    }
+    <div class="lifecycle-operation-actions">
+      <button type="button" class="secondary" [disabled]="busy()" (click)="refresh.emit()">
+        Refresh status
+      </button>
+      @if (canStop()) {
+        <button type="button" class="secondary" [disabled]="busy()" (click)="stop.emit()">
+          Request stop
+        </button>
+      }
+    </div>
+  </section>
+}

@@ -30,6 +30,7 @@ export class AdminUserDiagnosticsComponent {
   readonly workError = input<string | null>(null);
 
   readonly retry = output<void>();
+  readonly selectLifecycleAccount = output<number>();
 
   protected readonly accountFacts = computed<readonly UiFactItem[]>(() => {
     const section = this.detail()?.sections.accounts;

@@ -1,5 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import type {
+  AccountGameDataLifecyclePreviewRequest,
+  DataLifecycleExecuteRequest,
+  DataLifecycleOperationResponse,
+  DataLifecyclePreviewResponse,
+} from '@chess-trainer/contracts/data-lifecycle';
+import type {
   LichessConnectionStatus,
   LichessDisconnectResponse,
 } from '@chess-trainer/contracts/lichess';
@@ -30,6 +36,35 @@ export class AccountsApiService {
     return this.api.get<ExternalAccount>(`/me/accounts/${accountId}`);
   }
 
+  previewLifecycle(
+    request: AccountGameDataLifecyclePreviewRequest,
+  ): Observable<DataLifecyclePreviewResponse> {
+    return this.api.post<DataLifecyclePreviewResponse>('/me/data-lifecycle/preview', request);
+  }
+
+  executeLifecycle(
+    operationId: number,
+    request: DataLifecycleExecuteRequest,
+    reverificationToken: string,
+  ): Observable<DataLifecycleOperationResponse> {
+    return this.api.post<DataLifecycleOperationResponse>(
+      `/me/data-lifecycle/${operationId}/execute`,
+      request,
+      reverificationToken,
+    );
+  }
+
+  getLifecycle(operationId: number): Observable<DataLifecycleOperationResponse> {
+    return this.api.get<DataLifecycleOperationResponse>(`/me/data-lifecycle/${operationId}`);
+  }
+
+  stopLifecycle(operationId: number): Observable<DataLifecycleOperationResponse> {
+    return this.api.post<DataLifecycleOperationResponse>(
+      `/me/data-lifecycle/${operationId}/stop`,
+      {},
+    );
+  }
+
   getRatingHistory(
     accountId: number,
     query: AccountRatingHistoryQuery = {},
@@ -46,7 +81,9 @@ export class AccountsApiService {
   }
 
   getRatingStats(accountId: number): Observable<AccountRatingStatsResponse | null> {
-    return this.api.get<AccountRatingStatsResponse | null>(`/me/accounts/${accountId}/rating-stats`);
+    return this.api.get<AccountRatingStatsResponse | null>(
+      `/me/accounts/${accountId}/rating-stats`,
+    );
   }
 
   getPerformanceStats(
@@ -110,7 +147,10 @@ export class AccountsApiService {
   }
 
   retryImport(importRunId: number): Observable<CreateAccountImportRunResponse> {
-    return this.api.post<CreateAccountImportRunResponse>(`/me/account-imports/${importRunId}/retry`, {});
+    return this.api.post<CreateAccountImportRunResponse>(
+      `/me/account-imports/${importRunId}/retry`,
+      {},
+    );
   }
 
   getWorkflowSummary(accountId: number): Observable<ExternalAccountWorkflowSummaryResponse> {

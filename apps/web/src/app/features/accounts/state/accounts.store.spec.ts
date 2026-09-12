@@ -1,5 +1,10 @@
 import { TestBed } from '@angular/core/testing';
+import type {
+  DataLifecycleOperationResponse,
+  DataLifecyclePreviewResponse,
+} from '@chess-trainer/contracts/data-lifecycle';
 import { of, throwError } from 'rxjs';
+import { AuthService } from '../../../core/auth/auth.service';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import type { AccountImportRun, ExternalAccount } from '../data-access/accounts.models';
 import { AccountsStore } from './accounts.store';
@@ -7,10 +12,15 @@ import { AccountsStore } from './accounts.store';
 describe('AccountsStore', () => {
   let store: AccountsStore;
   let api: jasmine.SpyObj<AccountsApiService>;
+  let auth: jasmine.SpyObj<AuthService>;
 
   beforeEach(() => {
     api = jasmine.createSpyObj<AccountsApiService>('AccountsApiService', [
       'getAccounts',
+      'previewLifecycle',
+      'executeLifecycle',
+      'getLifecycle',
+      'stopLifecycle',
       'createAccount',
       'syncAccount',
       'backfillAccount',
@@ -27,6 +37,8 @@ describe('AccountsStore', () => {
       'startLichessConnection',
       'disconnectLichess',
     ]);
+    auth = jasmine.createSpyObj<AuthService>('AuthService', ['reverify']);
+    auth.reverify.and.resolveTo(null);
     api.getAccountImports.and.returnValue(of({ items: [] }));
     api.getActiveAccountImports.and.returnValue(of({ items: [] }));
 
@@ -34,6 +46,7 @@ describe('AccountsStore', () => {
       providers: [
         AccountsStore,
         { provide: AccountsApiService, useValue: api },
+        { provide: AuthService, useValue: auth },
       ],
     });
 
@@ -78,12 +91,16 @@ describe('AccountsStore', () => {
     const inactive = account(2, 'second', false);
     const activeTwo = account(3, 'third', true);
     store.accounts.set([activeOne, inactive, activeTwo]);
-    api.syncAccount.withArgs(activeOne.id).and.returnValue(of({
-      importRun: importRun(100, activeOne.id, 'QUEUED'),
-    }));
-    api.syncAccount.withArgs(activeTwo.id).and.returnValue(of({
-      importRun: importRun(101, activeTwo.id, 'QUEUED'),
-    }));
+    api.syncAccount.withArgs(activeOne.id).and.returnValue(
+      of({
+        importRun: importRun(100, activeOne.id, 'QUEUED'),
+      }),
+    );
+    api.syncAccount.withArgs(activeTwo.id).and.returnValue(
+      of({
+        importRun: importRun(101, activeTwo.id, 'QUEUED'),
+      }),
+    );
 
     await store.syncActiveAccounts();
 
@@ -99,12 +116,16 @@ describe('AccountsStore', () => {
     const succeeding = account(2, 'second', true);
     const persistedActive = importRun(199, failing.id, 'RUNNING');
     store.accounts.set([failing, succeeding]);
-    api.syncAccount.withArgs(failing.id).and.returnValue(
-      throwError(() => ({ error: { message: 'Account already has an active import.' } })),
+    api.syncAccount
+      .withArgs(failing.id)
+      .and.returnValue(
+        throwError(() => ({ error: { message: 'Account already has an active import.' } })),
+      );
+    api.syncAccount.withArgs(succeeding.id).and.returnValue(
+      of({
+        importRun: importRun(200, succeeding.id, 'QUEUED'),
+      }),
     );
-    api.syncAccount.withArgs(succeeding.id).and.returnValue(of({
-      importRun: importRun(200, succeeding.id, 'QUEUED'),
-    }));
     api.getActiveAccountImports.and.returnValue(of({ items: [persistedActive] }));
     api.getAccountImports.and.returnValue(of({ items: [importRun(200, succeeding.id, 'QUEUED')] }));
 
@@ -112,7 +133,9 @@ describe('AccountsStore', () => {
 
     expect(store.importRunForAccount(failing.id)?.id).toBe(199);
     expect(store.importRunForAccount(succeeding.id)?.id).toBe(200);
-    expect(store.error()).toContain('Queued 1 account refresh. Failed: Account already has an active import.');
+    expect(store.error()).toContain(
+      'Queued 1 account refresh. Failed: Account already has an active import.',
+    );
     expect(store.notice()).toBeNull();
   });
 
@@ -219,13 +242,47 @@ describe('AccountsStore', () => {
     const updatedAccounts = [{ ...first, isDefaultProgressAccount: true }, second];
     store.accounts.set([first, second]);
     api.setDefaultProgressAccount.and.returnValue(
-      of({ defaultProgressAccountId: first.id, account: updatedAccounts[0], accounts: updatedAccounts }),
+      of({
+        defaultProgressAccountId: first.id,
+        account: updatedAccounts[0],
+        accounts: updatedAccounts,
+      }),
     );
 
     await store.setDefaultProgressAccount(first);
 
     expect(api.setDefaultProgressAccount).toHaveBeenCalledOnceWith(first.id);
     expect(store.accounts()).toEqual(updatedAccounts);
+  });
+
+  it('previews and executes an account lifecycle action through the guarded protocol', async () => {
+    const tracked = account(5, 'purge-target', true);
+    const preview = lifecyclePreview();
+    store.openLifecycle(tracked, 'PURGE_ACCOUNT_DATA');
+    api.previewLifecycle.and.returnValue(of(preview));
+    api.executeLifecycle.and.returnValue(
+      of({ ...preview, status: 'FENCING' } as unknown as DataLifecycleOperationResponse),
+    );
+    auth.reverify.and.resolveTo('fresh-reverification-token');
+
+    await store.previewLifecycle();
+    store.lifecycleConfirmation.set(preview.confirmationPhrase);
+    await store.executeLifecycle();
+
+    expect(api.previewLifecycle).toHaveBeenCalledOnceWith({
+      action: 'PURGE_ACCOUNT_DATA',
+      accountId: tracked.id,
+    });
+    expect(auth.reverify).toHaveBeenCalledOnceWith();
+    expect(api.executeLifecycle).toHaveBeenCalledOnceWith(
+      preview.operationId,
+      jasmine.objectContaining({
+        previewToken: preview.previewToken,
+        confirmationPhrase: preview.confirmationPhrase,
+      }),
+      'fresh-reverification-token',
+    );
+    expect(store.lifecycleOperation()?.status).toBe('FENCING');
   });
 });
 
@@ -291,5 +348,40 @@ function importRun(
     completedAt: terminal ? '2026-07-02T09:00:00.000Z' : null,
     errorCode: status === 'FAILED' ? 'TEST_FAILURE' : null,
     error: status === 'FAILED' ? 'Test import failure.' : null,
+  };
+}
+
+function lifecyclePreview(): DataLifecyclePreviewResponse {
+  return {
+    operationId: 44,
+    action: 'PURGE_ACCOUNT_DATA',
+    status: 'PREVIEWED',
+    scope: { resourceType: 'ACCOUNT', userId: 1, accountId: 5 },
+    previewCounts: {
+      accounts: 1,
+      games: 3,
+      plies: 8,
+      analysisRuns: 1,
+      aiReviews: 0,
+      tacticalDetections: 0,
+      scenarioSessions: 0,
+      importRuns: 1,
+      jobRuns: 0,
+      preparationRuns: 0,
+    },
+    previewExpiresAt: '2026-09-12T12:00:00.000Z',
+    confirmationPhrase: 'PURGE ACCOUNT 5',
+    warningCodes: ['DESTRUCTIVE_OPERATION'],
+    stopRequest: 'NONE',
+    firstDestructiveCommitAt: null,
+    checkpoint: null,
+    verification: null,
+    terminalResult: null,
+    errorCode: null,
+    startedAt: null,
+    completedAt: null,
+    createdAt: '2026-09-12T11:50:00.000Z',
+    updatedAt: '2026-09-12T11:50:00.000Z',
+    previewToken: 'preview-token-with-safe-length',
   };
 }

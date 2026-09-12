@@ -2,10 +2,12 @@ import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { ReverificationDialogComponent } from '../../../core/auth/reverification-dialog.component';
 import {
   FactGridComponent,
   type UiFactItem,
 } from '../../../shared/ui/fact-grid/fact-grid.component';
+import { DataLifecycleSafetyComponent } from '../../../shared/ui/data-lifecycle-safety/data-lifecycle-safety.component';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import {
   PageHeaderAction,
@@ -34,6 +36,8 @@ import { AccountsStore } from '../state/accounts.store';
     PanelComponent,
     FactGridComponent,
     StateMessageComponent,
+    DataLifecycleSafetyComponent,
+    ReverificationDialogComponent,
   ],
   providers: [AccountsApiService, AccountsStore],
   templateUrl: './accounts-page.component.html',
@@ -94,6 +98,7 @@ export class AccountsPageComponent implements OnInit {
                 run?.status === 'COMPLETED' ? run.completedAt : account.lastSyncAt,
               ),
             },
+            { id: 'account-id', label: 'Account ID', value: account.id, mono: true },
             { id: 'created', label: 'Created', value: dateLabel(account.createdAt) },
           ] satisfies readonly UiFactItem[],
         ];
