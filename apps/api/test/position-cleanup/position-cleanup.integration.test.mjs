@@ -113,8 +113,8 @@ try {
   });
   assert.equal(
     await candidateCount([p4.id]),
-    1,
-    'UPDATE trigger must not reset or lock candidates when the position reference is unchanged',
+    0,
+    'UPDATE trigger must still idempotently reset a stale candidate when positionId is unchanged',
   );
 
   const p5 = await createPosition('rollback');
