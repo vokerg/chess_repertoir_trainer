@@ -23,6 +23,38 @@ export interface PositionCleanupCommandInput {
   wait?: (delayMs: number) => Promise<void>;
 }
 
+export interface PositionCleanupEntrypointInput {
+  argv: readonly string[];
+  config: PositionCleanupConfig;
+  service: PositionCleanupService;
+  worker: PositionCleanupWorker;
+  log?: (message: string) => void;
+  wait?: (delayMs: number) => Promise<void>;
+  setExitCode?: (exitCode: number) => void;
+}
+
+export async function runPositionCleanupEntrypoint(
+  input: PositionCleanupEntrypointInput,
+): Promise<boolean> {
+  const apply = input.argv.includes('--apply');
+  const confirmation = input.argv
+    .find((argument) => argument.startsWith('--confirm='))
+    ?.slice('--confirm='.length);
+  const completed = await runPositionCleanupCommand({
+    apply,
+    confirmation,
+    config: input.config,
+    service: input.service,
+    worker: input.worker,
+    log: input.log,
+    wait: input.wait,
+  });
+  if (!completed) {
+    (input.setExitCode ?? ((exitCode) => { process.exitCode = exitCode; }))(1);
+  }
+  return completed;
+}
+
 export async function runPositionCleanupCommand(input: PositionCleanupCommandInput): Promise<boolean> {
   const log = input.log ?? ((message: string) => console.log(message));
   const waitForPoll = input.wait ?? wait;
@@ -129,16 +161,12 @@ async function main(): Promise<void> {
   const config = loadPositionCleanupConfig();
   const service = createPositionCleanupService({ config });
   const worker = createPositionCleanupWorker({ config });
-  const completed = await runPositionCleanupCommand({
-    apply: process.argv.includes('--apply'),
-    confirmation: process.argv
-      .find((argument) => argument.startsWith('--confirm='))
-      ?.slice('--confirm='.length),
+  await runPositionCleanupEntrypoint({
+    argv: process.argv.slice(2),
     config,
     service,
     worker,
   });
-  if (!completed) process.exitCode = 1;
 }
 
 if (require.main === module) {
