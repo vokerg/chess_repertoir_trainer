@@ -166,6 +166,10 @@ async function bootstrap() {
       await retentionInFlight;
       process.removeListener('SIGINT', onSigint);
       process.removeListener('SIGTERM', onSigterm);
+      await positionCleanupWorker.close().catch((error) => {
+        console.error('Position cleanup worker Prisma shutdown failed', error);
+        process.exitCode = 1;
+      });
       await disconnectPrisma();
     } finally {
       resolveCleanupCompleted?.();
