@@ -49,6 +49,15 @@ interface DeleteSummaryRow extends BatchSummaryRow {
   skippedReferenced: number;
 }
 
+interface LockTimeoutSettlementRow {
+  status: string;
+}
+
+export type PositionCleanupLockTimeoutSettlement =
+  | 'RETRY'
+  | 'CANCELLED'
+  | 'NEEDS_ATTENTION';
+
 export class PositionCleanupInvalidStateError extends Error {}
 export class PositionCleanupUnsupportedDatabaseError extends Error {}
 
@@ -67,7 +76,11 @@ export interface PositionCleanupRepository {
   observeBatch(runId: number, workKey: string): Promise<PositionCleanupBatchResult>;
   evaluateDryRunBatch(runId: number, workKey: string): Promise<PositionCleanupBatchResult>;
   executeDeleteBatch(runId: number, workKey: string): Promise<PositionCleanupDeleteBatchResult>;
-  recordLockTimeout(runId: number, workKey: string, maxRetries: number): Promise<void>;
+  recordLockTimeout(
+    runId: number,
+    workKey: string,
+    maxRetries: number,
+  ): Promise<PositionCleanupLockTimeoutSettlement>;
   failClaimed(runId: number, workKey: string, errorCode: string): Promise<void>;
 }
 
@@ -521,21 +534,49 @@ export function createPositionCleanupRepository(
       validateRunId(runId);
       validateWorkKey(workKey);
       if (!Number.isSafeInteger(maxRetries) || maxRetries <= 0) throw new Error('maxRetries must be a positive integer.');
-      const updated = await database.$executeRaw(Prisma.sql`
+      const rows = await database.$queryRaw<LockTimeoutSettlementRow[]>(Prisma.sql`
         UPDATE "PositionCleanupRun"
-        SET "retryCount" = "retryCount" + 1,
-            "lockTimeoutStreak" = "lockTimeoutStreak" + 1,
+        SET "retryCount" = CASE
+              WHEN "cancelRequestedAt" IS NULL THEN "retryCount" + 1
+              ELSE "retryCount"
+            END,
+            "lockTimeoutStreak" = CASE
+              WHEN "cancelRequestedAt" IS NULL THEN "lockTimeoutStreak" + 1
+              ELSE "lockTimeoutStreak"
+            END,
             "deleteBatchSize" = CASE
-              WHEN "lockTimeoutStreak" + 1 >= 2
+              WHEN "cancelRequestedAt" IS NULL
+                AND "lockTimeoutStreak" + 1 >= 2
                 AND "lockTimeoutStreak" + 1 < ${maxRetries}
               THEN GREATEST(1, "deleteBatchSize" / 2)
               ELSE "deleteBatchSize"
             END,
-            "errorCode" = 'POSITION_CLEANUP_LOCK_TIMEOUT',
-            "status" = CASE WHEN "lockTimeoutStreak" + 1 >= ${maxRetries} THEN 'NEEDS_ATTENTION' ELSE "status" END,
-            "phase" = CASE WHEN "lockTimeoutStreak" + 1 >= ${maxRetries} THEN 'DONE' ELSE "phase" END,
-            "terminalResult" = CASE WHEN "lockTimeoutStreak" + 1 >= ${maxRetries} THEN 'NEEDS_ATTENTION' ELSE NULL END,
-            "completedAt" = CASE WHEN "lockTimeoutStreak" + 1 >= ${maxRetries} THEN NOW() ELSE NULL END,
+            "errorCode" = CASE
+              WHEN "cancelRequestedAt" IS NULL THEN 'POSITION_CLEANUP_LOCK_TIMEOUT'
+              ELSE "errorCode"
+            END,
+            "status" = CASE
+              WHEN "cancelRequestedAt" IS NOT NULL THEN 'CANCELLED'
+              WHEN "lockTimeoutStreak" + 1 >= ${maxRetries} THEN 'NEEDS_ATTENTION'
+              ELSE "status"
+            END,
+            "phase" = CASE
+              WHEN "cancelRequestedAt" IS NOT NULL
+                OR "lockTimeoutStreak" + 1 >= ${maxRetries}
+              THEN 'DONE'
+              ELSE "phase"
+            END,
+            "terminalResult" = CASE
+              WHEN "cancelRequestedAt" IS NOT NULL THEN 'CANCELLED'
+              WHEN "lockTimeoutStreak" + 1 >= ${maxRetries} THEN 'NEEDS_ATTENTION'
+              ELSE NULL
+            END,
+            "completedAt" = CASE
+              WHEN "cancelRequestedAt" IS NOT NULL
+                OR "lockTimeoutStreak" + 1 >= ${maxRetries}
+              THEN NOW()
+              ELSE NULL
+            END,
             "workKey" = NULL,
             "claimedAt" = NULL,
             "heartbeatAt" = NULL,
@@ -543,8 +584,13 @@ export function createPositionCleanupRepository(
         WHERE "id" = ${runId}
           AND "workKey" = ${workKey}
           AND "status" = 'RUNNING'
+        RETURNING "status"
       `);
-      if (updated !== 1) throw new PositionCleanupInvalidStateError('Cleanup lock-timeout settlement lost its work key.');
+      const status = rows[0]?.status;
+      if (status === 'CANCELLED') return 'CANCELLED';
+      if (status === 'NEEDS_ATTENTION') return 'NEEDS_ATTENTION';
+      if (status === 'RUNNING') return 'RETRY';
+      throw new PositionCleanupInvalidStateError('Cleanup lock-timeout settlement lost its work key.');
     },
 
     async failClaimed(runId, workKey, errorCode) {

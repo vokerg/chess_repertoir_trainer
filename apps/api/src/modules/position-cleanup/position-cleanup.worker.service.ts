@@ -85,8 +85,16 @@ export function createPositionCleanupWorker(input: {
     } catch (error) {
       if (isLockTimeout(error)) {
         logger.warn(safeContext(error, run), 'Position cleanup delete batch hit lock timeout');
-        await repository.recordLockTimeout(run.id, workKey, MAX_LOCK_TIMEOUT_RETRIES);
-        if (!stopRequested) await waitForPoll(input.config.pollIntervalMs);
+        const settlement = await repository.recordLockTimeout(
+          run.id,
+          workKey,
+          MAX_LOCK_TIMEOUT_RETRIES,
+        );
+        if (settlement === 'CANCELLED') {
+          logger.info({ runId: run.id }, 'Position cleanup cancellation won the lock-timeout settlement race');
+        } else if (settlement === 'RETRY' && !stopRequested) {
+          await waitForPoll(input.config.pollIntervalMs);
+        }
       } else if (await settleCancellationRace(run.id, workKey)) {
         logger.info({ runId: run.id }, 'Position cleanup cancellation settled between batches');
       } else {
