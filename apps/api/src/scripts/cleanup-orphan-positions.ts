@@ -36,23 +36,27 @@ export interface PositionCleanupEntrypointInput {
 export async function runPositionCleanupEntrypoint(
   input: PositionCleanupEntrypointInput,
 ): Promise<boolean> {
-  const apply = input.argv.includes('--apply');
-  const confirmation = input.argv
-    .find((argument) => argument.startsWith('--confirm='))
-    ?.slice('--confirm='.length);
-  const completed = await runPositionCleanupCommand({
-    apply,
-    confirmation,
-    config: input.config,
-    service: input.service,
-    worker: input.worker,
-    log: input.log,
-    wait: input.wait,
-  });
-  if (!completed) {
-    (input.setExitCode ?? ((exitCode) => { process.exitCode = exitCode; }))(1);
+  const setExitCode = input.setExitCode ?? ((exitCode: number) => { process.exitCode = exitCode; });
+  try {
+    const apply = input.argv.includes('--apply');
+    const confirmation = input.argv
+      .find((argument) => argument.startsWith('--confirm='))
+      ?.slice('--confirm='.length);
+    const completed = await runPositionCleanupCommand({
+      apply,
+      confirmation,
+      config: input.config,
+      service: input.service,
+      worker: input.worker,
+      log: input.log,
+      wait: input.wait,
+    });
+    if (!completed) setExitCode(1);
+    return completed;
+  } catch (error) {
+    setExitCode(1);
+    throw error;
   }
-  return completed;
 }
 
 export async function runPositionCleanupCommand(input: PositionCleanupCommandInput): Promise<boolean> {
