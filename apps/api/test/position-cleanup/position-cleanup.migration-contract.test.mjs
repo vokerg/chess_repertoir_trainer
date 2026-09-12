@@ -26,8 +26,11 @@ assert.match(
   migration,
   /CREATE UNIQUE INDEX "PositionCleanupRun_one_nonterminal_key"\s*ON "PositionCleanupRun"\(\(1\)\)\s*WHERE "status" IN \('QUEUED', 'RUNNING'\)/,
 );
+assert.match(migration, /"reconcileCandidatesInspected" INTEGER NOT NULL DEFAULT 0/);
+assert.match(migration, /"orphansMatched" INTEGER NOT NULL DEFAULT 0/);
 assert.match(migration, /"orphansFirstObserved" INTEGER NOT NULL DEFAULT 0/);
 assert.match(migration, /"orphansRefreshed" INTEGER NOT NULL DEFAULT 0/);
+assert.match(migration, /"candidatesMatched" INTEGER NOT NULL DEFAULT 0/);
 assert.match(
   migration,
   /CREATE TRIGGER "ImportedGamePly_position_cleanup_reset_insert"\s*AFTER INSERT ON "ImportedGamePly"\s*REFERENCING NEW TABLE AS position_cleanup_new_plies\s*FOR EACH STATEMENT/,
