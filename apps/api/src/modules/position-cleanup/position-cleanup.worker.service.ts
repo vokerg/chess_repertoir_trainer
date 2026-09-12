@@ -100,12 +100,18 @@ export function createPositionCleanupWorker(input: {
         } else if (settlement === 'RETRY' && !stopRequested) {
           await waitForPoll(input.config.pollIntervalMs);
         }
-      } else if (await settleCancellationRace(run.id, workKey)) {
-        logger.info({ runId: run.id }, 'Position cleanup cancellation settled between batches');
       } else {
-        logger.error(safeContext(error, run), 'Position cleanup iteration failed');
         try {
-          await repository.failClaimed(run.id, workKey, errorCode(error));
+          const settlement = await repository.failClaimed(
+            run.id,
+            workKey,
+            errorCode(error),
+          );
+          if (settlement === 'CANCELLED') {
+            logger.info({ runId: run.id }, 'Position cleanup cancellation won the failure settlement race');
+          } else {
+            logger.error(safeContext(error, run), 'Position cleanup iteration failed');
+          }
         } catch (settleError) {
           logger.warn(safeContext(settleError, run), 'Position cleanup failure lost its work-key fence');
         }
@@ -180,18 +186,6 @@ export function createPositionCleanupWorker(input: {
       executeRepository = createPositionCleanupRepository(executeClient);
     }
     return executeRepository;
-  }
-
-  async function settleCancellationRace(runId: number, workKey: string): Promise<boolean> {
-    const current = await repository.getRun(runId);
-    if (
-      current?.status === 'RUNNING'
-      && current.workKey === workKey
-      && current.cancelRequestedAt !== null
-    ) {
-      return repository.settleCancellation(runId, workKey);
-    }
-    return false;
   }
 
   function waitForPoll(delayMs: number): Promise<void> {
