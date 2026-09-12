@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { Prisma } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import type { PositionCleanupConfig } from './position-cleanup.config';
 import {
   PositionCleanupInvalidStateError,
   PositionCleanupRepository,
+  createPositionCleanupRepository,
   type PositionCleanupRepository as PositionCleanupRepositoryBoundary,
 } from './position-cleanup.repository.prisma';
 import type { PositionCleanupRun } from './position-cleanup.types';
@@ -20,6 +21,7 @@ export interface PositionCleanupWorker {
   run(): Promise<void>;
   runOnce(): Promise<boolean>;
   requestStop(): void;
+  close(): Promise<void>;
 }
 
 const consoleLogger: PositionCleanupWorkerLogger = {
@@ -39,8 +41,11 @@ export function createPositionCleanupWorker(input: {
   const now = input.now ?? Date.now;
   let running = false;
   let stopRequested = false;
+  let closed = false;
   let wakePoll: (() => void) | null = null;
   let nextMaintenanceAt = 0;
+  let executeClient: PrismaClient | null = null;
+  let executeRepository: PositionCleanupRepositoryBoundary | null = null;
 
   const requestStop = () => {
     stopRequested = true;
@@ -48,6 +53,7 @@ export function createPositionCleanupWorker(input: {
   };
 
   const runOnce = async (): Promise<boolean> => {
+    if (closed) throw new Error('Position cleanup worker is closed.');
     if (now() >= nextMaintenanceAt) {
       const recovered = await repository.recoverStaleClaims(new Date(now() - input.config.staleAfterMs));
       if (recovered > 0) logger.warn({ recovered }, 'Recovered stale position cleanup claims');
@@ -114,6 +120,14 @@ export function createPositionCleanupWorker(input: {
   return {
     requestStop,
     runOnce,
+    async close() {
+      if (closed) return;
+      closed = true;
+      const client = executeClient;
+      executeClient = null;
+      executeRepository = null;
+      if (client) await client.$disconnect();
+    },
     async run() {
       if (!input.config.enabled) {
         logger.info({}, 'Position cleanup worker disabled by configuration');
@@ -150,12 +164,22 @@ export function createPositionCleanupWorker(input: {
         return;
       case 'EVALUATE':
         if (run.mode === 'DRY_RUN') await repository.evaluateDryRunBatch(run.id, workKey);
-        else await repository.executeDeleteBatch(run.id, workKey);
+        else await getExecuteRepository().executeDeleteBatch(run.id, workKey);
         return;
       case 'DONE':
         await repository.releaseClaim(run.id, workKey);
         return;
     }
+  }
+
+  function getExecuteRepository(): PositionCleanupRepositoryBoundary {
+    if (input.repository) return repository;
+    if (closed) throw new Error('Position cleanup worker is closed.');
+    if (!executeRepository) {
+      executeClient = new PrismaClient();
+      executeRepository = createPositionCleanupRepository(executeClient);
+    }
+    return executeRepository;
   }
 
   async function settleCancellationRace(runId: number, workKey: string): Promise<boolean> {
