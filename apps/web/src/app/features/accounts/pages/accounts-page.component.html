@@ -231,16 +231,74 @@
                   </button>
                   <button
                     type="button"
+                    class="secondary account-purge-button"
+                    (click)="store.openLifecycle(account, 'PURGE_ACCOUNT_DATA')"
+                  >Purge account data</button>
+                  <button
+                    type="button"
                     class="secondary account-delete-button"
-                    disabled
-                    title="Safe account removal is temporarily unavailable while lifecycle cutover is completed."
-                  >Delete account</button>
+                    (click)="store.openLifecycle(account, 'DELETE_EXTERNAL_ACCOUNT')"
+                  >Delete connected account</button>
                 </div>
               </details>
             </div>
+
+            @if (store.lifecycleAccountId() === account.id) {
+              <section
+                class="account-lifecycle"
+                [attr.aria-labelledby]="'account-lifecycle-title-' + account.id"
+              >
+                <div class="account-lifecycle-heading">
+                  <div>
+                    <h4 [id]="'account-lifecycle-title-' + account.id">Lifecycle controls</h4>
+                    <p>
+                      Preview the exact impact for
+                      <strong>{{ providerLabel(account.provider) }} &#64;{{ account.username }}</strong>
+                      before anything can be accepted.
+                    </p>
+                  </div>
+                  <button type="button" class="secondary" (click)="store.closeLifecycle()">
+                    Close
+                  </button>
+                </div>
+                <div class="account-lifecycle-form">
+                  <label>
+                    Action
+                    <select
+                      [ngModel]="store.lifecycleAction()"
+                      (ngModelChange)="store.setLifecycleAction($event)"
+                    >
+                      <option value="PURGE_ACCOUNT_DATA">Purge account data</option>
+                      <option value="DELETE_EXTERNAL_ACCOUNT">Delete connected account</option>
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    class="secondary"
+                    [disabled]="store.lifecycleBusy()"
+                    (click)="store.previewLifecycle()"
+                  >
+                    Preview impact
+                  </button>
+                </div>
+                <app-data-lifecycle-safety
+                  [targetLabel]="providerLabel(account.provider) + ' @' + account.username + ' (Account ID ' + account.id + ')'"
+                  [preview]="store.lifecyclePreview()"
+                  [operation]="store.lifecycleOperation()"
+                  [confirmation]="store.lifecycleConfirmation()"
+                  [busy]="store.lifecycleBusy()"
+                  [error]="store.lifecycleError()"
+                  (confirmationChange)="store.setLifecycleConfirmation($event)"
+                  (execute)="store.executeLifecycle()"
+                  (refresh)="store.refreshLifecycle()"
+                  (stop)="store.stopLifecycle()"
+                />
+              </section>
+            }
           </article>
         }
       </div>
     }
   </app-panel>
+  <app-reverification-dialog />
 </section>

@@ -52,10 +52,12 @@ export class AdminApiService {
     userId: number,
     operationId: number,
     request: DataLifecycleExecuteRequest,
+    reverificationToken: string,
   ): Observable<DataLifecycleOperationResponse> {
     return this.api.post<DataLifecycleOperationResponse>(
       `/admin/users/${userId}/data-lifecycle/${operationId}/execute`,
       request,
+      reverificationToken,
     );
   }
 

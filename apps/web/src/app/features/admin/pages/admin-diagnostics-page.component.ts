@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ReverificationDialogComponent } from '../../../core/auth/reverification-dialog.component';
 import { AdminUserDiagnosticsComponent } from '../components/admin-user-diagnostics.component';
 import { AdminUserListComponent } from '../components/admin-user-list.component';
+import { DataLifecycleSafetyComponent } from '../../../shared/ui/data-lifecycle-safety/data-lifecycle-safety.component';
 import { AdminApiService } from '../data-access/admin-api.service';
 import { AdminDiagnosticsStore } from '../state/admin-diagnostics.store';
 import {
@@ -22,6 +23,7 @@ import { PanelComponent } from '../../../shared/ui/panel/panel.component';
   imports: [
     AdminUserDiagnosticsComponent,
     AdminUserListComponent,
+    DataLifecycleSafetyComponent,
     FactGridComponent,
     PageHeaderComponent,
     PanelComponent,

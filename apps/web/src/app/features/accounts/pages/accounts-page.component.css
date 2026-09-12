@@ -217,6 +217,54 @@
   min-width: 0;
 }
 
+.account-lifecycle {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--ui-border);
+}
+
+.account-lifecycle-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.account-lifecycle-heading h4,
+.account-lifecycle-heading p {
+  margin: 0;
+}
+
+.account-lifecycle-heading h4 {
+  color: var(--ui-text);
+  font-size: 1rem;
+}
+
+.account-lifecycle-heading p {
+  margin-top: 0.25rem;
+  color: var(--ui-text-muted);
+  line-height: 1.45;
+}
+
+.account-lifecycle-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.account-lifecycle-form label {
+  display: grid;
+  gap: 0.35rem;
+  width: min(100%, 24rem);
+  color: var(--ui-text-muted);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
 .account-primary-actions {
   align-items: stretch;
 }
@@ -276,6 +324,15 @@
 .account-delete-button:not(:disabled) {
   border-color: color-mix(in srgb, var(--ui-danger) 52%, var(--ui-border));
   color: var(--ui-danger);
+}
+
+.account-purge-button {
+  border-color: color-mix(in srgb, var(--ui-warning) 48%, var(--ui-border));
+  color: var(--ui-warning);
+}
+
+.account-purge-button:hover {
+  background: var(--ui-warning-soft);
 }
 
 .account-delete-button:hover:not(:disabled) {

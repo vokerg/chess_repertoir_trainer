@@ -58,8 +58,8 @@ export class AuthService {
   private readonly reverificationChallengeState = signal<ReverificationChallengeState | null>(null);
   private resolvedSessionId: string | null = null;
   private sessionGeneration = 0;
-  private reverificationPromise: Promise<boolean> | null = null;
-  private reverificationResolver: ((result: boolean) => void) | null = null;
+  private reverificationPromise: Promise<string | null> | null = null;
+  private reverificationResolver: ((result: string | null) => void) | null = null;
   private reverificationSessionId: string | null = null;
 
   readonly initialized = this.initializedState.asReadonly();
@@ -101,14 +101,14 @@ export class AuthService {
     return (await this.clerk?.session?.getToken()) ?? null;
   }
 
-  async reverify(): Promise<boolean> {
+  async reverify(): Promise<string | null> {
     await this.initialize();
     const session = this.clerk?.session;
-    if (!session) return false;
+    if (!session) return null;
     if (this.reverificationPromise) return this.reverificationPromise;
 
-    let resolveResult: (result: boolean) => void = () => {};
-    const resultPromise = new Promise<boolean>((resolve) => {
+    let resolveResult: (result: string | null) => void = () => {};
+    const resultPromise = new Promise<string | null>((resolve) => {
       resolveResult = resolve;
     });
     this.reverificationPromise = resultPromise;
@@ -130,13 +130,13 @@ export class AuthService {
         return resultPromise;
       }
       if (verification.status !== 'needs_first_factor') {
-        this.finishReverification(false);
+        this.finishReverification(null);
         return resultPromise;
       }
 
       const factors = this.mapReverificationFactors(verification);
       if (factors.length === 0) {
-        this.finishReverification(false);
+        this.finishReverification(null);
         return resultPromise;
       }
       this.reverificationChallengeState.set({
@@ -146,7 +146,7 @@ export class AuthService {
         error: null,
       });
     } catch {
-      if (this.reverificationPromise === resultPromise) this.finishReverification(false);
+      if (this.reverificationPromise === resultPromise) this.finishReverification(null);
     }
 
     return resultPromise;
@@ -243,7 +243,7 @@ export class AuthService {
   }
 
   cancelReverification(): void {
-    if (this.reverificationPromise) this.finishReverification(false);
+    if (this.reverificationPromise) this.finishReverification(null);
   }
 
   async signOut(): Promise<void> {
@@ -363,9 +363,7 @@ export class AuthService {
     }
   }
 
-  private mapReverificationFactors(
-    verification: ClerkSessionVerification,
-  ): ReverificationFactor[] {
+  private mapReverificationFactors(verification: ClerkSessionVerification): ReverificationFactor[] {
     const factors = verification.supportedFirstFactors ?? [];
     const mapped: ReverificationFactor[] = [];
     factors.forEach((factor, index) => {
@@ -388,7 +386,9 @@ export class AuthService {
         mapped.push({
           id: `phone_code:${factor.phoneNumberId}`,
           strategy: 'phone_code',
-          label: factor.safeIdentifier ? `Text code to ${factor.safeIdentifier}` : 'Text message code',
+          label: factor.safeIdentifier
+            ? `Text code to ${factor.safeIdentifier}`
+            : 'Text message code',
           safeIdentifier: factor.safeIdentifier ?? null,
           phoneNumberId: factor.phoneNumberId,
         });
@@ -405,7 +405,7 @@ export class AuthService {
 
   private async completeReverification(
     session: ClerkSession,
-    expectedPromise: Promise<boolean> | null,
+    expectedPromise: Promise<string | null> | null,
   ): Promise<void> {
     if (!expectedPromise || this.reverificationPromise !== expectedPromise) return;
     try {
@@ -415,16 +415,16 @@ export class AuthService {
         this.reverificationPromise !== expectedPromise ||
         this.currentReverificationSession()?.id !== session.id
       ) {
-        this.finishReverification(false);
+        this.finishReverification(null);
         return;
       }
-      this.finishReverification(true);
+      this.finishReverification(freshToken);
     } catch {
-      if (this.reverificationPromise === expectedPromise) this.finishReverification(false);
+      if (this.reverificationPromise === expectedPromise) this.finishReverification(null);
     }
   }
 
-  private finishReverification(result: boolean): void {
+  private finishReverification(result: string | null): void {
     const resolve = this.reverificationResolver;
     this.reverificationResolver = null;
     this.reverificationPromise = null;

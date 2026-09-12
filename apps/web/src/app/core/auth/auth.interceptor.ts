@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   if (!isApiRequest(request.url)) return next(request);
+  if (request.headers.has('Authorization')) return next(request);
 
   const auth = inject(AuthService);
   return from(auth.getToken()).pipe(
@@ -21,5 +22,7 @@ function isApiRequest(url: string): boolean {
   const apiUrl = new URL(appConfig.apiBaseUrl, window.location.origin);
 
   if (requestUrl.origin !== apiUrl.origin) return false;
-  return requestUrl.pathname === apiUrl.pathname || requestUrl.pathname.startsWith(`${apiUrl.pathname}/`);
+  return (
+    requestUrl.pathname === apiUrl.pathname || requestUrl.pathname.startsWith(`${apiUrl.pathname}/`)
+  );
 }
