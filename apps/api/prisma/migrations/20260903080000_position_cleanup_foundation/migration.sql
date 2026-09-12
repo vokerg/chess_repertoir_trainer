@@ -57,11 +57,14 @@ CREATE TABLE "PositionCleanupRun" (
     "reconcileAfterPositionId" INTEGER NOT NULL DEFAULT 0,
     "observeAfterPositionId" INTEGER NOT NULL DEFAULT 0,
     "evaluateAfterPositionId" INTEGER NOT NULL DEFAULT 0,
-    "candidatesInspected" INTEGER NOT NULL DEFAULT 0,
+    "reconcileCandidatesInspected" INTEGER NOT NULL DEFAULT 0,
     "candidatesReconciled" INTEGER NOT NULL DEFAULT 0,
     "positionsInspected" INTEGER NOT NULL DEFAULT 0,
+    "orphansMatched" INTEGER NOT NULL DEFAULT 0,
     "orphansFirstObserved" INTEGER NOT NULL DEFAULT 0,
     "orphansRefreshed" INTEGER NOT NULL DEFAULT 0,
+    "candidatesInspected" INTEGER NOT NULL DEFAULT 0,
+    "candidatesMatched" INTEGER NOT NULL DEFAULT 0,
     "eligibleObserved" INTEGER NOT NULL DEFAULT 0,
     "positionsDeleted" INTEGER NOT NULL DEFAULT 0,
     "analysisRowsDeleted" INTEGER NOT NULL DEFAULT 0,
@@ -117,11 +120,14 @@ CREATE TABLE "PositionCleanupRun" (
         ),
     CONSTRAINT "PositionCleanupRun_counters_check"
         CHECK (
-            "candidatesInspected" >= 0
+            "reconcileCandidatesInspected" >= 0
             AND "candidatesReconciled" >= 0
             AND "positionsInspected" >= 0
+            AND "orphansMatched" >= 0
             AND "orphansFirstObserved" >= 0
             AND "orphansRefreshed" >= 0
+            AND "candidatesInspected" >= 0
+            AND "candidatesMatched" >= 0
             AND "eligibleObserved" >= 0
             AND "positionsDeleted" >= 0
             AND "analysisRowsDeleted" >= 0
