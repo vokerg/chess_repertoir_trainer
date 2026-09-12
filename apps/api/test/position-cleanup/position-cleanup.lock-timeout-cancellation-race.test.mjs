@@ -12,8 +12,10 @@ import { createPositionCleanupWorker } from '../../dist/modules/position-cleanup
 
 const prisma = prismaModule.default;
 const cleanupClient = new PrismaClient();
+const controlClient = new PrismaClient();
 const blockerClient = new PrismaClient();
-const repository = createPositionCleanupRepository(cleanupClient);
+const cleanupRepository = createPositionCleanupRepository(cleanupClient);
+const controlRepository = createPositionCleanupRepository(controlClient);
 const config = loadPositionCleanupConfig({
   POSITION_CLEANUP_ENABLED: 'true',
   POSITION_CLEANUP_INPUT_PAGE_SIZE: '1',
@@ -23,10 +25,10 @@ const config = loadPositionCleanupConfig({
   POSITION_CLEANUP_HEARTBEAT_INTERVAL_MS: '1000',
   POSITION_CLEANUP_STALE_AFTER_MS: '5000',
 });
-const service = createPositionCleanupService({ config, repository });
+const service = createPositionCleanupService({ config, repository: controlRepository });
 const worker = createPositionCleanupWorker({
   config,
-  repository,
+  repository: cleanupRepository,
   logger: { info() {}, warn() {}, error() {} },
 });
 const suffix = randomUUID();
@@ -154,5 +156,6 @@ try {
   await prisma.$executeRaw`DELETE FROM "PositionCleanupCandidate"`.catch(() => {});
   if (positionId) await prisma.position.delete({ where: { id: positionId } }).catch(() => {});
   await cleanupClient.$disconnect();
+  await controlClient.$disconnect();
   await blockerClient.$disconnect();
 }
