@@ -49,20 +49,16 @@ BEGIN
     SELECT ARRAY(
         SELECT DISTINCT new_ply."positionId"
         FROM position_cleanup_new_plies AS new_ply
+        LEFT JOIN position_cleanup_old_plies AS old_ply
+          ON old_ply."importedGameId" = new_ply."importedGameId"
+         AND old_ply."plyNumber" = new_ply."plyNumber"
+         AND old_ply."positionId" = new_ply."positionId"
+        LEFT JOIN "PositionCleanupCandidate" AS candidate
+          ON candidate."positionId" = new_ply."positionId"
         WHERE new_ply."positionId" IS NOT NULL
           AND (
-              NOT EXISTS (
-                  SELECT 1
-                  FROM position_cleanup_old_plies AS old_ply
-                  WHERE old_ply."importedGameId" = new_ply."importedGameId"
-                    AND old_ply."plyNumber" = new_ply."plyNumber"
-                    AND old_ply."positionId" = new_ply."positionId"
-              )
-              OR EXISTS (
-                  SELECT 1
-                  FROM "PositionCleanupCandidate" AS candidate
-                  WHERE candidate."positionId" = new_ply."positionId"
-              )
+              old_ply."importedGameId" IS NULL
+              OR candidate."positionId" IS NOT NULL
           )
         ORDER BY new_ply."positionId" ASC
     )
