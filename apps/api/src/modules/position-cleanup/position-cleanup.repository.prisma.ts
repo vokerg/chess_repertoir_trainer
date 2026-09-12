@@ -291,7 +291,7 @@ export function createPositionCleanupRepository(
         }
         await updateClaimedRun(transaction, runId, workKey, Prisma.sql`
           "reconcileAfterPositionId" = ${summary.checkpoint},
-          "candidatesInspected" = "candidatesInspected" + ${summary.inspected},
+          "reconcileCandidatesInspected" = "reconcileCandidatesInspected" + ${summary.inspected},
           "candidatesReconciled" = "candidatesReconciled" + ${summary.matched},
           "lastBatchAt" = NOW()
         `);
@@ -395,6 +395,7 @@ export function createPositionCleanupRepository(
         await updateClaimedRun(transaction, runId, workKey, Prisma.sql`
           "observeAfterPositionId" = ${summary.checkpoint},
           "positionsInspected" = "positionsInspected" + ${summary.inspected},
+          "orphansMatched" = "orphansMatched" + ${summary.matched},
           "orphansFirstObserved" = "orphansFirstObserved" + ${summary.firstObserved},
           "orphansRefreshed" = "orphansRefreshed" + ${summary.refreshed},
           "lastBatchAt" = NOW()
@@ -446,6 +447,7 @@ export function createPositionCleanupRepository(
         await updateClaimedRun(transaction, runId, workKey, Prisma.sql`
           "evaluateAfterPositionId" = ${summary.checkpoint},
           "candidatesInspected" = "candidatesInspected" + ${summary.inspected},
+          "candidatesMatched" = "candidatesMatched" + ${summary.matched},
           "eligibleObserved" = "eligibleObserved" + ${summary.matched},
           "lastBatchAt" = NOW()
         `);
@@ -518,6 +520,7 @@ export function createPositionCleanupRepository(
         await updateClaimedRun(transaction, runId, workKey, Prisma.sql`
           "evaluateAfterPositionId" = ${summary.checkpoint},
           "candidatesInspected" = "candidatesInspected" + ${summary.inspected},
+          "candidatesMatched" = "candidatesMatched" + ${summary.matched},
           "positionsDeleted" = "positionsDeleted" + ${summary.deleted},
           "analysisRowsDeleted" = "analysisRowsDeleted" + ${summary.analysisRowsDeleted},
           "cacheRowsDeleted" = "cacheRowsDeleted" + ${summary.cacheRowsDeleted},
