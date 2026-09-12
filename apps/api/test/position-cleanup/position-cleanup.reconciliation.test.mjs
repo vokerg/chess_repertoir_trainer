@@ -89,8 +89,9 @@ try {
   const afterReconcile = await service.status(run.id);
   assert.equal(afterReconcile.phase, 'RECONCILE');
   assert.equal(afterReconcile.reconcileAfterPositionId, position.id);
-  assert.equal(afterReconcile.candidatesInspected, 1);
+  assert.equal(afterReconcile.reconcileCandidatesInspected, 1);
   assert.equal(afterReconcile.candidatesReconciled, 1);
+  assert.equal(afterReconcile.candidatesInspected, 0, 'evaluation counters must remain phase-exact');
   assert.equal(
     await prisma.positionCleanupCandidate.count({ where: { positionId: position.id } }),
     0,
