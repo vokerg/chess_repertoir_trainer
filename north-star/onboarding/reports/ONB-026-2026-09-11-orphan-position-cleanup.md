@@ -12,7 +12,7 @@ The implementation and takeover-review fixes are ready for exact-head validation
 
 The takeover review addressed:
 
-- Lock-timeout settlement is atomic with cancellation state. If cancellation committed before timeout settlement, the run becomes `CANCELLED` without consuming the third retry or incorrectly becoming `NEEDS_ATTENTION`.
+- Lock-timeout and generic-failure settlement are atomic with cancellation state. If cancellation committed before terminal settlement, the run becomes `CANCELLED` rather than incorrectly becoming `NEEDS_ATTENTION` or `FAILED`.
 - The `ImportedGamePly` UPDATE trigger now uses OLD/NEW transition relations. A changed/new position reference always takes the database-owned observer fence; a retained reference takes cleanup fence/reset work only when a stale candidate exists. Ordinary score/classification/move-only updates with no candidate therefore acquire no cleanup advisory locks.
 - A focused PostgreSQL regression holds the ONB-026 advisory lock and proves the normal unchanged-reference update bypasses that fence, while a stale-candidate update still uses it and rolls back safely on lock timeout.
 - Durable counters are phase-exact: reconciliation records `reconcileCandidatesInspected` / `candidatesReconciled`, observation records `positionsInspected` / `orphansMatched`, and evaluation records `candidatesInspected` / `candidatesMatched`. Detailed first-observed/refreshed, dry-run eligible, delete, and dependent-row counters remain available.
@@ -38,7 +38,7 @@ The takeover change specifically removes cleanup advisory-lock fan-out from norm
 
 The pull request's exact-head CI checks are the authoritative release gate rather than a copied run id in this append-only report. The CI workflow covers dependency setup, lint, build, architecture/hygiene guardrails, migration application, and the full API test runner.
 
-The position-cleanup suite currently contains 17 focused test files covering:
+The position-cleanup suite currently contains 18 focused test files covering:
 
 - bounded performance and query-plan limits;
 - migration/schema contracts;
@@ -50,7 +50,7 @@ The position-cleanup suite currently contains 17 focused test files covering:
 - predicate/grace equivalence;
 - execute cascade behavior;
 - dependent-writer, reindex, and cascade-writer interleavings;
-- lock timeout and lock-timeout/cancellation precedence;
+- lock timeout plus lock-timeout/cancellation and generic-failure/cancellation precedence;
 - cancellation between batches;
 - stale recovery/replay;
 - worker shutdown;
