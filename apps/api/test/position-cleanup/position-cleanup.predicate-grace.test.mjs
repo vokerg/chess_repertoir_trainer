@@ -112,6 +112,7 @@ try {
 
   assert.equal(dryCompleted.status, 'COMPLETED');
   assert.equal(dryCompleted.terminalResult, 'OBSERVATIONAL');
+  assert.equal(dryCompleted.candidatesMatched, 3, 'dry-run must persist its EVALUATE matched counter');
   assert.equal(dryCompleted.eligibleObserved, 3, 'cutoff equality and older candidates must be dry-run eligible');
   assert.equal(dryCompleted.positionsDeleted, 0);
   assert.ok(dryCompleted.observationStartedAt instanceof Date);
@@ -134,6 +135,7 @@ try {
   );
   assert.equal(executeCompleted.terminalResult, 'EXECUTED');
   assert.equal(executeCompleted.positionsDeleted, dryCompleted.eligibleObserved, 'execute must apply the same accepted grace/reference predicate as dry-run');
+  assert.equal(executeCompleted.candidatesMatched, 3, 'execute must persist its EVALUATE matched counter');
   assert.equal(executeCompleted.positionsDeleted, 3);
   assert.equal(executeCompleted.analysisRowsDeleted, 1);
   assert.equal(executeCompleted.cacheRowsDeleted, 1);
