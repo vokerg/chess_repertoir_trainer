@@ -50,8 +50,13 @@ assert.match(
 );
 assert.match(
   reviewMigration,
-  /CREATE FUNCTION "position_cleanup_reset_candidates_from_updated_plies"\(\)[\s\S]*NOT EXISTS \([\s\S]*FROM position_cleanup_old_plies AS old_ply[\s\S]*old_ply\."positionId" = new_ply\."positionId"/,
+  /CREATE FUNCTION "position_cleanup_reset_candidates_from_updated_plies"\(\)[\s\S]*old_ply\."importedGameId" = new_ply\."importedGameId"[\s\S]*old_ply\."plyNumber" = new_ply\."plyNumber"[\s\S]*old_ply\."positionId" = new_ply\."positionId"/,
 );
+assert.match(
+  reviewMigration,
+  /OR EXISTS \([\s\S]*FROM "PositionCleanupCandidate" AS candidate[\s\S]*candidate\."positionId" = new_ply\."positionId"/,
+);
+assert.match(reviewMigration, /WHERE candidate\."positionId" = ANY\(reset_position_ids\)/);
 assert.match(migration, /SELECT DISTINCT "positionId"\s*FROM position_cleanup_new_plies/);
 assert.match(
   migration,
