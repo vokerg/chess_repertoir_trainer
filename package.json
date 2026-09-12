@@ -71,6 +71,9 @@
     "@expo/plist": {
       "@xmldom/xmldom": "0.8.15"
     },
+    "@fastify/ajv-compiler": {
+      "fast-uri": "3.1.7"
+    },
     "@hono/node-server": "1.19.15",
     "ajv": {
       "fast-uri": "3.1.7"
@@ -86,6 +89,9 @@
       "ws": "8.21.0"
     },
     "js-yaml": "4.3.1",
+    "json-schema-resolver": {
+      "fast-uri": "3.1.7"
+    },
     "piscina": "5.2.0",
     "plist": {
       "@xmldom/xmldom": "0.9.12"
