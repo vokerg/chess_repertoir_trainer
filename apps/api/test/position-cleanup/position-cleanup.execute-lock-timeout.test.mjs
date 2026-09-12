@@ -131,6 +131,8 @@ try {
   assert.equal(afterFirstTimeout.status, 'RUNNING');
   assert.equal(afterFirstTimeout.phase, 'EVALUATE');
   assert.equal(afterFirstTimeout.evaluateAfterPositionId, 0);
+  assert.equal(afterFirstTimeout.candidatesInspected, 0);
+  assert.equal(afterFirstTimeout.candidatesMatched, 0);
   assert.equal(afterFirstTimeout.retryCount, 1);
   assert.equal(afterFirstTimeout.lockTimeoutStreak, 1);
   assert.equal(afterFirstTimeout.initialDeleteBatchSize, 4);
@@ -155,6 +157,8 @@ try {
   const afterSuccessfulBatch = await service.status(created.id);
   assert.equal(afterSuccessfulBatch.status, 'RUNNING');
   assert.equal(afterSuccessfulBatch.evaluateAfterPositionId, positionId);
+  assert.equal(afterSuccessfulBatch.candidatesInspected, 1);
+  assert.equal(afterSuccessfulBatch.candidatesMatched, 1);
   assert.equal(afterSuccessfulBatch.positionsDeleted, 1);
   assert.equal(afterSuccessfulBatch.analysisRowsDeleted, 1);
   assert.equal(afterSuccessfulBatch.cacheRowsDeleted, 1);
