@@ -44,11 +44,14 @@ export interface PositionCleanupRun {
   reconcileAfterPositionId: number;
   observeAfterPositionId: number;
   evaluateAfterPositionId: number;
-  candidatesInspected: number;
+  reconcileCandidatesInspected: number;
   candidatesReconciled: number;
   positionsInspected: number;
+  orphansMatched: number;
   orphansFirstObserved: number;
   orphansRefreshed: number;
+  candidatesInspected: number;
+  candidatesMatched: number;
   eligibleObserved: number;
   positionsDeleted: number;
   analysisRowsDeleted: number;
