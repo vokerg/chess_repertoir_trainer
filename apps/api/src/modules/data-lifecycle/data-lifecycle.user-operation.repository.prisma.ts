@@ -21,6 +21,7 @@ interface ClaimedOperationRow {
 }
 
 export interface UserDataLifecycleOperationRepository {
+  getTargetUserId(operationId: number): Promise<number | null>;
   claimNext(workKey: string): Promise<StoredDataLifecycleOperation | null>;
   releaseClaim(operationId: number, workKey: string): Promise<boolean>;
   recoverStaleClaims(staleBefore: Date): Promise<number>;
@@ -36,6 +37,15 @@ export function createUserDataLifecycleOperationRepository(
 ): UserDataLifecycleOperationRepository {
   const lifecycleRepository = createDataLifecycleRepository(database);
   return {
+    async getTargetUserId(operationId) {
+      validatePositiveInteger(operationId, 'operationId');
+      const row = await database.dataLifecycleOperation.findFirst({
+        where: { id: operationId, action: 'DELETE_APP_USER' },
+        select: { targetUserId: true },
+      });
+      return row?.targetUserId ?? null;
+    },
+
     async claimNext(workKey) {
       validateWorkKey(workKey);
       const rows = await database.$queryRaw<ClaimedOperationRow[]>(Prisma.sql`
