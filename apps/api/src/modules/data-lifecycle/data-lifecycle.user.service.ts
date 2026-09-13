@@ -109,6 +109,7 @@ export function createUserDataLifecycleService(
     const receiptToken = deriveReceiptToken(
       auditKeyring,
       operation.actorKeyVersion,
+      operation.id,
       parsed.idempotencyKey,
     );
     const receiptTokenHash = hashOpaqueLifecycleToken(receiptToken);
@@ -295,10 +296,11 @@ async function requireUserDeletion(
 function deriveReceiptToken(
   keyring: LifecycleHmacKeyring,
   keyVersion: number,
+  operationId: number,
   idempotencyKey: string,
 ): string {
   const digest = keyring
-    .candidates(idempotencyKey, 'user-deletion-receipt')
+    .candidates(`${operationId}:${idempotencyKey}`, 'user-deletion-receipt')
     .find((candidate) => candidate.keyVersion === keyVersion);
   if (!digest) {
     throw new Error(
