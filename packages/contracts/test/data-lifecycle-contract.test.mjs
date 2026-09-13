@@ -14,6 +14,11 @@ import {
   dataLifecycleStopRequestSchema,
   dataLifecycleTerminalResultSchema,
   importedGameOpeningProvenanceSchema,
+  wholeUserDataLifecyclePreviewRequestSchema,
+  wholeUserDataLifecycleExecuteResponseSchema,
+  dataLifecycleReceiptStatusRequestSchema,
+  dataLifecycleReceiptStatusResponseSchema,
+  dataLifecycleIdentityBlockedResponseSchema,
 } from '../dist/data-lifecycle/index.js';
 
 for (const action of [
@@ -107,6 +112,15 @@ assert.equal(accountGameDataLifecyclePreviewRequestSchema.safeParse({
   gameIds: [90],
 }).success, false);
 
+assert.deepEqual(wholeUserDataLifecyclePreviewRequestSchema.parse({
+  action: 'DELETE_APP_USER',
+}), {
+  action: 'DELETE_APP_USER',
+});
+assert.equal(wholeUserDataLifecyclePreviewRequestSchema.safeParse({
+  action: 'DELETE_EXTERNAL_ACCOUNT',
+}).success, false);
+
 assert.deepEqual(dataLifecycleExecuteRequestSchema.parse({
   previewToken: '0123456789abcdef0123456789abcdef',
   confirmationPhrase: 'DELETE ACCOUNT 12',
@@ -148,6 +162,50 @@ assert.deepEqual(dataLifecyclePreviewResponseSchema.parse({
   status: 'PREVIEWED',
   startedAt: null,
   previewToken: '0123456789abcdef0123456789abcdef',
+});
+
+const userOperation = {
+  ...operation,
+  action: 'DELETE_APP_USER',
+  scope: { resourceType: 'USER', userId: 4 },
+};
+assert.deepEqual(wholeUserDataLifecycleExecuteResponseSchema.parse({
+  ...userOperation,
+  receiptToken: 'udr_0123456789abcdef',
+}), {
+  ...userOperation,
+  receiptToken: 'udr_0123456789abcdef',
+});
+assert.deepEqual(dataLifecycleReceiptStatusRequestSchema.parse({
+  receiptToken: 'udr_0123456789abcdef',
+}), {
+  receiptToken: 'udr_0123456789abcdef',
+});
+assert.deepEqual(dataLifecycleReceiptStatusResponseSchema.parse({
+  operationId: 44,
+  action: 'DELETE_APP_USER',
+  status: 'COMPLETED',
+  terminalResult: 'COMPLETED',
+  completedAt: '2026-09-01T08:00:00.000Z',
+  purgeLocalData: true,
+}), {
+  operationId: 44,
+  action: 'DELETE_APP_USER',
+  status: 'COMPLETED',
+  terminalResult: 'COMPLETED',
+  completedAt: '2026-09-01T08:00:00.000Z',
+  purgeLocalData: true,
+});
+assert.deepEqual(dataLifecycleIdentityBlockedResponseSchema.parse({
+  error: 'Application account deletion is in progress.',
+  code: 'DATA_LIFECYCLE_DELETION_IN_PROGRESS',
+  operationId: 44,
+  purgeLocalData: true,
+}), {
+  error: 'Application account deletion is in progress.',
+  code: 'DATA_LIFECYCLE_DELETION_IN_PROGRESS',
+  operationId: 44,
+  purgeLocalData: true,
 });
 
 console.log('Data lifecycle contract tests passed.');

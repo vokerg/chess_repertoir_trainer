@@ -14,6 +14,7 @@ import {
 } from './modules/account-imports/providers/lichess/lichess-account-import.executor';
 import { loadAccountGameDataLifecycleWorkerConfig } from './modules/data-lifecycle/data-lifecycle.account-game.worker.config';
 import { createAccountGameDataLifecycleWorker } from './modules/data-lifecycle/data-lifecycle.account-game.worker.service';
+import { createUserDataLifecycleWorker } from './modules/data-lifecycle/data-lifecycle.user.worker.service';
 import { defaultJobTaskExecutorRegistry } from './modules/jobs/imported-game-job-executors';
 import { JobRunRepository } from './modules/jobs/job-run.repository.prisma';
 import { loadJobWorkerConfig } from './modules/jobs/job-worker.config';
@@ -62,6 +63,7 @@ async function bootstrap() {
   });
   const preparationWorker = createPreparationReconciler({ config: preparationConfig });
   const lifecycleWorker = createAccountGameDataLifecycleWorker({ config: lifecycleConfig });
+  const userLifecycleWorker = createUserDataLifecycleWorker({ config: lifecycleConfig });
   const positionCleanupWorker = createPositionCleanupWorker({ config: positionCleanupConfig });
   let shuttingDown = false;
   let retentionTimer: NodeJS.Timeout | undefined;
@@ -103,12 +105,14 @@ async function bootstrap() {
   const accountImportWorkerPromise = accountImportWorker.run();
   const preparationWorkerPromise = preparationWorker.run();
   const lifecycleWorkerPromise = lifecycleWorker.run();
+  const userLifecycleWorkerPromise = userLifecycleWorker.run();
   const positionCleanupWorkerPromise = positionCleanupWorker.run();
   const workerPromises = [
     jobWorkerPromise,
     accountImportWorkerPromise,
     preparationWorkerPromise,
     lifecycleWorkerPromise,
+    userLifecycleWorkerPromise,
     positionCleanupWorkerPromise,
   ];
   const runPromise = Promise.all(workerPromises);
@@ -125,6 +129,7 @@ async function bootstrap() {
     accountImportWorker.requestStop(`Worker received ${signal}.`);
     preparationWorker.requestStop();
     lifecycleWorker.requestStop();
+    userLifecycleWorker.requestStop();
     positionCleanupWorker.requestStop();
 
     const stopped = await settlesWithin(cleanupCompleted, shutdownTimeoutMs);
@@ -151,6 +156,7 @@ async function bootstrap() {
     accountImportWorker.requestStop('Peer worker failed.');
     preparationWorker.requestStop();
     lifecycleWorker.requestStop();
+    userLifecycleWorker.requestStop();
     positionCleanupWorker.requestStop();
     const peerStopped = await settlesWithin(
       Promise.allSettled(workerPromises),

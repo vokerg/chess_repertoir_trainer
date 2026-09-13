@@ -1,6 +1,6 @@
 # ONB-021 — Implement whole-user deletion and mobile purge handshake
 
-Status: PROPOSED
+Status: IN_PROGRESS
 
 Priority: P0
 
@@ -8,17 +8,17 @@ Order: 180
 
 Delivery class: Implementation
 
-Planning maturity: Allocated by ONB-004; blocked on lifecycle/account coordinator and administration policy
+Planning maturity: Implementation claimed after ONB-019/020 lifecycle dependencies and ONB-005 policy foundation were verified delivered on current main
 
 GitHub issue: [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT / ONB-021 implementation session
 
-Claim branch: none
+Implementation branch: `onb-021/issue-261-whole-user-deletion-mobile-purge`
 
-Claimed at: none
+Claimed at: 2026-09-13
 
-Claim scope: none
+Claim scope: whole-user DELETE_APP_USER lifecycle over ONB-019/020 primitives; user-wide drain, bounded residual deletion, identity tombstone/receipt/auth integration, provider credential cleanup, mobile local-user purge handshake, focused tests and canonical documentation; no shared Position cleanup, administrator UI, or general mobile account-management redesign
 
 ## Outcome
 

@@ -54,6 +54,63 @@ export function createCurrentAppUserService(
       };
     }),
 
+    resolveExternalUserForDeletionOperation: async (
+      identity: ExternalIdentity,
+      operationId: number,
+    ) => {
+      if (!Number.isSafeInteger(operationId) || operationId <= 0) {
+        throw new Error('operationId must be a positive integer.');
+      }
+
+      const existing = await database.appUser.findUnique({
+        where: {
+          authProvider_authSubject: {
+            authProvider: identity.provider,
+            authSubject: identity.externalSubject,
+          },
+        },
+        select: { id: true },
+      });
+      if (existing) {
+        const operation = await database.dataLifecycleOperation.findFirst({
+          where: {
+            id: operationId,
+            targetUserId: existing.id,
+            action: 'DELETE_APP_USER',
+          },
+          select: { id: true },
+        });
+        if (!operation) return null;
+        return {
+          auth: {
+            userId: existing.id,
+            provider: identity.provider,
+            externalSubject: identity.externalSubject,
+            ...(identity.email ? { email: identity.email } : {}),
+          } satisfies RequestAuth,
+        };
+      }
+
+      const deletedOperation = await deletedIdentityGuard.findOperationForIdentity(
+        identity.provider,
+        identity.externalSubject,
+      );
+      if (!deletedOperation || deletedOperation.operationId !== operationId) return null;
+      const operation = await database.dataLifecycleOperation.findFirst({
+        where: { id: operationId, action: 'DELETE_APP_USER' },
+        select: { targetUserId: true },
+      });
+      if (!operation) return null;
+      return {
+        auth: {
+          userId: operation.targetUserId,
+          provider: identity.provider,
+          externalSubject: identity.externalSubject,
+          ...(identity.email ? { email: identity.email } : {}),
+        } satisfies RequestAuth,
+      };
+    },
+
     resolveExternalUser: async (identity: ExternalIdentity) => database.$transaction(async (transaction) => {
       // Lock/check the identity before reading AppUser. Concurrent first-time
       // provisioning therefore cannot race the unique auth identity, and a

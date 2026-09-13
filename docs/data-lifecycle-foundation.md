@@ -1,10 +1,10 @@
 # Destructive data lifecycle foundation
 
-This document describes the current persistence and write-admission foundation for destructive data lifecycle work. ONB-020 now consumes this foundation for public account/imported-game preview, execution, cancellation/drain, bounded destructive batches, and verification; whole-user deletion remains downstream.
+This document describes the current persistence and write-admission foundation for destructive data lifecycle work. ONB-020 consumes the foundation for account/imported-game operations, and ONB-021 extends the same durable state machine to whole-application-user deletion and the mobile offline purge handshake.
 
 ## Durable records
 
-`DataLifecycleOperation` is the durable lifecycle state machine. A preview stores the action, target user, immutable scope snapshot, bounded aggregate counts, preview hash/token hash, expiry, warning codes, and confirmation phrase. Execution binds the preview to a target-user-scoped idempotency key and may additionally store an opaque receipt-token hash.
+`DataLifecycleOperation` is the durable lifecycle state machine. A preview stores the action, target user, immutable scope snapshot, bounded aggregate counts, preview hash/token hash, expiry, warning codes, and confirmation phrase. Execution binds the preview to a target-user-scoped idempotency key and may additionally store an opaque receipt-token hash. Whole-user deletion derives its opaque receipt from the operation id plus idempotency key under the versioned lifecycle HMAC key, so a retry reproduces the same operation-specific capability without storing receipt plaintext.
 
 Execution state carries a worker claim, heartbeat, checkpoint, first-destructive-commit timestamp, verification result, terminal result, and machine-readable error code. A stale worker claim may be cleared without clearing the lifecycle resource fence.
 
@@ -77,7 +77,7 @@ Auth provisioning and final user deletion share the lock order **identity, then 
 
 Before normal `AppUser` provisioning, `CurrentAppUserService` checks deleted-identity HMAC tombstones. A matching tombstone rejects provisioning. `AppUser` INSERT is also USER-fence guarded, so another direct creation path cannot recreate the same numeric target while deletion is fenced. `OAuthLoginState` has no `AppUser` foreign key, so its writes have an explicit USER-scope lifecycle guard rather than relying on cascade cleanup.
 
-A future `DELETE_APP_USER` executor must create the tombstone in `runDestructiveTransaction(...)`'s `beforeUserLock` callback so the identity lock is acquired first; the main destructive callback then deletes the AppUser after the repository acquires the user lock and internally binds the lifecycle operation. The database trigger verifies that the bound operation targets that user and is a `DELETE_APP_USER` operation. Both steps remain part of one database transaction.
+`DELETE_APP_USER` creates the tombstone in `runDestructiveTransaction(...)`'s `beforeUserLock` callback so the identity lock is acquired first; the main destructive callback then deletes the AppUser after the repository acquires the user lock and internally binds the lifecycle operation. The database trigger verifies that the bound operation targets that user and is a `DELETE_APP_USER` operation. Tombstone creation, final user deletion, checkpoint advancement, and first-commit evidence therefore share one database transaction.
 
 HMAC configuration is versioned for rotation:
 
@@ -89,6 +89,22 @@ HMAC configuration is versioned for rotation:
 - `DATA_LIFECYCLE_AUDIT_HMAC_PREVIOUS_KEYS`
 
 The current key must be explicitly configured before previous keys are accepted. Previous-key versions must be strictly lower than the current version; they are verification-only and cannot silently become the signing key. For deleted identities, every persisted tombstone key version for a provider must remain present in the configured keyring while that tombstone is authoritative. Missing historical versions fail provisioning closed rather than silently recreating an identity that can no longer be verified.
+
+## ONB-021 whole-user deletion consumer
+
+ONB-021 implements `DELETE_APP_USER` over USER scope. Preview is authenticated and non-fencing. Execute revalidates the preview under the lifecycle user lock, installs the USER fence, and returns an opaque receipt capability before background execution proceeds. A narrow read-only auth resolver is used only for retries of that exact deletion execute route, so an already-fenced or already-deleted identity can recover the same operation/receipt without updating or recreating `AppUser`. Ordinary authenticated routes continue to fail closed with a typed deletion-in-progress or deleted-identity response.
+
+The persistent worker cancels and drains user-wide import, preparation, and job work, then reuses the ONB-020 account purge/delete primitives for each account in deterministic id order. Residual user-owned tables are removed in bounded phases, including course/training, puzzle review state, tactical/AI state, activity aggregates, jobs/preparation history, OAuth login state, and the local Lichess connection. Shared Position/PositionAnalysis, MastersExplorerCache, global tags, puzzle corpus, lifecycle audit, operation/receipt evidence, and the deleted-identity tombstone are retained.
+
+Lichess token revocation is best effort and occurs in the bounded local connection-removal phase after durable destructive execution has begun. Local encrypted connection material is still mandatory-delete even when upstream revocation fails. The final phase creates the deleted-identity tombstone before the USER lock and deletes `AppUser` only inside the bound lifecycle transaction. Verification must observe zero remaining AppUser-owned rows before completion releases the USER fence.
+
+Receipt status, stop, and repair/resume endpoints live under `/api/data-lifecycle/user-deletion` and do not provision an AppUser. Receipt capability lookup therefore remains valid after final user removal.
+
+### Mobile purge handshake
+
+The authenticated mobile session probe is `GET /api/mobile-sync/session`. Once a USER fence exists, ordinary auth resolution returns `DATA_LIFECYCLE_DELETION_IN_PROGRESS` with `purgeLocalData: true`; after final deletion it returns `DATA_LIFECYCLE_IDENTITY_DELETED` with the same purge instruction.
+
+Mobile probes the server before activating a signed-in local user and again when the app returns to the foreground. Either typed deletion signal deletes the device `local_user` row inside an exclusive SQLite transaction. Existing foreign-key cascades remove downloaded course data, local training state, marathon state, synchronization state, and pending outbox rows before Clerk sign-out completes. Attempt upload handles the same signal so a stale outbox is purged instead of retried. Network/unrelated server failures do not erase offline data.
 
 ## Opening provenance
 
@@ -109,4 +125,4 @@ Operations referenced by a deleted-identity tombstone are excluded from generic 
 
 ## Remaining downstream scope
 
-ONB-020 does not implement `DELETE_APP_USER`, device-local purge, or shared `Position` cleanup. Those remain separately owned by ONB-021, ONB-026, ONB-024, or later product/UI work. The Angular account cards and administrator diagnostics consume the canonical account/game lifecycle preview/execute protocol; consumers must not restore direct unfenced delete/reset paths.
+ONB-021 does not perform shared `Position` cleanup and does not add administrator execution or a general mobile account-management redesign. Shared-position cleanup remains ONB-026-owned, administrator mutation exposure remains separately policy-gated, and UI consumers must continue to use the lifecycle preview/execute protocol rather than restoring direct unfenced deletion.

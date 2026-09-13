@@ -1,9 +1,11 @@
 import {
   mobileCourseBundleSchema,
+  mobileSessionProbeSchema,
   mobileSyncManifestSchema,
   mobileTrainingAttemptBatchRequestSchema,
   mobileTrainingAttemptBatchResponseSchema,
   type MobileCourseBundleDto,
+  type MobileSessionProbeDto,
   type MobileSyncManifestDto,
   type MobileTrainingAttemptBatchRequestDto,
   type MobileTrainingAttemptBatchResponseDto,
@@ -20,6 +22,23 @@ export class MobileApiError extends Error {
     super(message);
     this.name = 'MobileApiError';
   }
+}
+
+export async function getMobileSessionProbe(token: string): Promise<MobileSessionProbeDto> {
+  const payload = await requestJson('/api/mobile-sync/session', token);
+  return mobileSessionProbeSchema.parse(payload);
+}
+
+export function isMobileDeletionSignal(error: unknown): boolean {
+  if (!(error instanceof MobileApiError)) return false;
+  const body = error.responseBody;
+  if (!body || typeof body !== 'object') return false;
+  const record = body as Record<string, unknown>;
+  return record['purgeLocalData'] === true
+    && (
+      record['code'] === 'DATA_LIFECYCLE_DELETION_IN_PROGRESS'
+      || record['code'] === 'DATA_LIFECYCLE_IDENTITY_DELETED'
+    );
 }
 
 export async function getMobileManifest(token: string): Promise<MobileSyncManifestDto> {
