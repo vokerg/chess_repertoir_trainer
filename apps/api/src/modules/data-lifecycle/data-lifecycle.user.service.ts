@@ -131,6 +131,9 @@ export function createUserDataLifecycleService(
         receiptExpiresAt: null,
         validateBeforeFence: async (transaction, lockedOperation) => {
           const lockedUserRepository = createUserDataLifecycleRepository(transaction);
+          if (lockedOperation.scope.resourceType !== 'USER') {
+            throw new DataLifecyclePreviewInvalidError();
+          }
           const counts = await lockedUserRepository.countAffectedRows(userId);
           const currentHash = hashPreview(lockedOperation.scope, counts);
           if (currentHash !== lockedOperation.previewHash) {
