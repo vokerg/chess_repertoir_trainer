@@ -335,6 +335,7 @@ export function createUserDataLifecycleWorker(
     }
 
     if (checkpoint.phase === 'DONE') {
+      await appendAuditOnce(operation, 'DELETED_IDENTITY_TOMBSTONED');
       await moveToVerify(operation, workKey);
       return;
     }
@@ -495,14 +496,13 @@ export function createUserDataLifecycleWorker(
     workKey: string,
     checkpoint: UserDeletionCheckpoint,
   ): Promise<void> {
-    let identity: { provider: string; externalSubject: string } | null = null;
     await lifecycleRepository.runDestructiveTransaction({
       operationId: operation.id,
       targetUserId: operation.targetUserId,
       workKey,
       checkpoint: { ...checkpoint, phase: 'DONE' },
       beforeUserLock: async (transaction) => {
-        identity = await userRepository.getIdentity(transaction, operation.targetUserId);
+        const identity = await userRepository.getIdentity(transaction, operation.targetUserId);
         await deletedIdentityGuard.createTombstone(transaction, {
           provider: identity.provider,
           externalSubject: identity.externalSubject,
@@ -510,12 +510,7 @@ export function createUserDataLifecycleWorker(
         });
       },
     }, async (transaction) => {
-      await assertDestructiveStepAllowed(
-        transaction,
-        operation,
-        workKey,
-        false,
-      );
+      await assertDestructiveStepAllowed(transaction, operation, workKey);
       await transaction.oAuthLoginState.deleteMany({
         where: { userId: operation.targetUserId },
       });
@@ -568,7 +563,7 @@ export function createUserDataLifecycleWorker(
       checkpoint,
       beforeUserLock: async (transaction) => {
         await lockDataLifecycleUserScope(transaction, operation.targetUserId);
-        await assertDestructiveStepAllowed(transaction, operation, workKey, true);
+        await assertDestructiveStepAllowed(transaction, operation, workKey);
       },
     }, work);
   }
@@ -653,12 +648,7 @@ async function assertDestructiveStepAllowed(
   transaction: Prisma.TransactionClient,
   operation: StoredDataLifecycleOperation,
   workKey: string,
-  alreadyOwnsUserLock: boolean,
 ): Promise<void> {
-  if (!alreadyOwnsUserLock) {
-    // Final deletion acquires the identity lock first in beforeUserLock; the generic
-    // destructive transaction then acquires the user lock before this check.
-  }
   const current = await transaction.dataLifecycleOperation.findUnique({
     where: { id: operation.id },
     select: {
