@@ -22,8 +22,8 @@ const mobileSyncModule: FastifyPluginAsyncZod = async (app) => {
       response: {
         200: mobileSessionProbeSchema,
         401: unauthorizedResponseSchema,
-        409: dataLifecycleIdentityBlockedResponseSchema,
         410: dataLifecycleIdentityBlockedResponseSchema,
+        423: dataLifecycleIdentityBlockedResponseSchema,
       },
     },
   }, async (request, reply) => {
