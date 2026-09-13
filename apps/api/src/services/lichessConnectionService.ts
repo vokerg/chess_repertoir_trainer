@@ -185,6 +185,29 @@ export const LichessConnectionService = {
     });
   },
 
+  async revokeUpstreamForUser(userId: number): Promise<{ attempted: boolean; revoked: boolean }> {
+    const connection = await prisma.lichessConnection.findUnique({ where: { userId } });
+    if (!connection) return { attempted: false, revoked: false };
+
+    let token: string;
+    try {
+      token = decryptToken({
+        ciphertext: connection.accessTokenCiphertext,
+        iv: connection.accessTokenIv,
+        authTag: connection.accessTokenAuthTag,
+      });
+    } catch {
+      return { attempted: true, revoked: false };
+    }
+
+    try {
+      await revokeLichessToken(token);
+      return { attempted: true, revoked: true };
+    } catch {
+      return { attempted: true, revoked: false };
+    }
+  },
+
   async disconnectForUser(userId: number): Promise<{ disconnected: true }> {
     const connection = await prisma.lichessConnection.findUnique({ where: { userId } });
     if (!connection) return { disconnected: true };
