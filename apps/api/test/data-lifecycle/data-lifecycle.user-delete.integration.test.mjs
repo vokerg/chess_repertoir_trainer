@@ -65,6 +65,34 @@ try {
       username: `delete-${suffix}`,
     },
   });
+  const game = await prisma.importedGame.create({
+    data: {
+      userId: user.id,
+      accountId: account.id,
+      provider: 'LICHESS',
+      providerGameId: `game-${suffix}`,
+      pgn: '1. e4 e5',
+    },
+  });
+  const jobRun = await prisma.jobRun.create({
+    data: {
+      userId: user.id,
+      kind: 'INDEX_GAMES',
+      source: 'USER_ACTION',
+      priority: 100,
+      status: 'RUNNING',
+      totalTasks: 1,
+      tasks: {
+        create: {
+          importedGameId: game.id,
+          ordinal: 0,
+          status: 'RUNNING',
+          workKey: `job-${suffix}`,
+          startedAt: new Date(),
+        },
+      },
+    },
+  });
   await prisma.course.create({
     data: {
       userId: user.id,
@@ -97,6 +125,8 @@ try {
   operationId = preview.operationId;
   assert.equal(preview.scope.resourceType, 'USER');
   assert.equal(preview.previewCounts.accounts, 1);
+  assert.equal(preview.previewCounts.games, 1);
+  assert.equal(preview.previewCounts.jobRuns, 1);
 
   const credentials = {
     previewToken: preview.previewToken,
@@ -130,6 +160,9 @@ try {
   assert.equal(deletionAuth?.auth.userId, user.id);
 
   let revokeCalls = 0;
+  // Simulate the existing job worker acknowledging the lifecycle task cancellation
+  // by releasing its claim after the first cancellation pass.
+  let releasedJobClaim = false;
   const worker = createUserDataLifecycleWorker({
     deletedIdentityGuard,
     lichessRevoker: {
@@ -150,6 +183,16 @@ try {
       assert.fail(`Whole-user deletion settled unexpectedly as ${status.status}`);
     }
     assert.equal(await worker.runOnce(), true);
+    if (!releasedJobClaim) {
+      const task = await prisma.jobTask.findFirst({ where: { jobRunId: jobRun.id } });
+      if (task?.status === 'CANCELLED' && task.workKey !== null) {
+        await prisma.jobTask.update({
+          where: { id: task.id },
+          data: { workKey: null, settledAt: new Date() },
+        });
+        releasedJobClaim = true;
+      }
+    }
   }
 
   const completed = await service.getByReceipt(firstExecute.receiptToken);
@@ -161,6 +204,7 @@ try {
   assert.equal(await prisma.appUser.count({ where: { id: user.id } }), 0);
   assert.equal(await prisma.externalAccount.count({ where: { userId: user.id } }), 0);
   assert.equal(await prisma.course.count({ where: { userId: user.id } }), 0);
+  assert.equal(await prisma.jobRun.count({ where: { userId: user.id } }), 0);
   assert.equal(await prisma.oAuthLoginState.count({ where: { userId: user.id } }), 0);
   assert.equal(await prisma.lichessConnection.count({ where: { userId: user.id } }), 0);
   assert.equal(
