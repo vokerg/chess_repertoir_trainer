@@ -442,14 +442,23 @@ export function createUserDataLifecycleWorker(
   ): Promise<void> {
     const phase = checkpoint.phase as UserResidualPhase;
     if (phase === 'LICHESS_CONNECTION') {
-      const revocation = await lichessRevoker.revokeUpstreamForUser(operation.targetUserId);
-      logger.info(
-        { operationId: operation.id, attempted: revocation.attempted, revoked: revocation.revoked },
-        'Whole-user lifecycle completed best-effort upstream credential revocation',
+      const alreadyAttempted = await operationRepository.hasAuditEvent(
+        operation.id,
+        'PROVIDER_CREDENTIAL_REVOKED',
+      ) || await operationRepository.hasAuditEvent(
+        operation.id,
+        'PROVIDER_CREDENTIAL_REVOKE_BEST_EFFORT',
       );
-      await appendAuditOnce(operation, revocation.revoked
-        ? 'PROVIDER_CREDENTIAL_REVOKED'
-        : 'PROVIDER_CREDENTIAL_REVOKE_BEST_EFFORT');
+      if (!alreadyAttempted) {
+        const revocation = await lichessRevoker.revokeUpstreamForUser(operation.targetUserId);
+        logger.info(
+          { operationId: operation.id, attempted: revocation.attempted, revoked: revocation.revoked },
+          'Whole-user lifecycle completed best-effort upstream credential revocation',
+        );
+        await appendAuditOnce(operation, revocation.revoked
+          ? 'PROVIDER_CREDENTIAL_REVOKED'
+          : 'PROVIDER_CREDENTIAL_REVOKE_BEST_EFFORT');
+      }
     }
 
     let deleted = 0;
