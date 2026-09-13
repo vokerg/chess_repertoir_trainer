@@ -278,13 +278,21 @@ async function fetchLichessAccount(accessToken: string): Promise<{ id: string; u
 }
 
 async function revokeLichessToken(accessToken: string): Promise<void> {
-  const response = await fetch(tokenUrl, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5_000);
+  timeout.unref();
+  try {
+    const response = await fetch(tokenUrl, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: controller.signal,
+    });
 
-  if (!response.ok && response.status !== 401 && response.status !== 403) {
-    throw new Error('Could not revoke Lichess OAuth token.');
+    if (!response.ok && response.status !== 401 && response.status !== 403) {
+      throw new Error('Could not revoke Lichess OAuth token.');
+    }
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
