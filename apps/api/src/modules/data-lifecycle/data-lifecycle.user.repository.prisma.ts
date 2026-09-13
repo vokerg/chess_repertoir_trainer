@@ -101,8 +101,10 @@ export interface UserDataLifecycleRepository {
   verifyDeleted(userId: number): Promise<{ ok: boolean; checks: Record<string, number | boolean> }>;
 }
 
+type UserLifecycleDatabase = PrismaClient | Prisma.TransactionClient;
+
 export function createUserDataLifecycleRepository(
-  database: PrismaClient = prisma,
+  database: UserLifecycleDatabase = prisma,
 ): UserDataLifecycleRepository {
   return {
     async countAffectedRows(userId) {
@@ -387,8 +389,8 @@ export function createUserDataLifecycleRepository(
 
 async function deleteIdBatch(
   delegate: {
-    findMany(args: unknown): Promise<Array<{ id: number }>>;
-    deleteMany(args: unknown): Promise<{ count: number }>;
+    findMany(args: any): Promise<Array<{ id: number }>>;
+    deleteMany(args: any): Promise<{ count: number }>;
   },
   where: Record<string, unknown>,
   take: number,
