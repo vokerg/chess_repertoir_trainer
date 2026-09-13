@@ -1,7 +1,6 @@
 import {
   dataLifecycleErrorResponseSchema,
   dataLifecycleExecuteRequestSchema,
-  dataLifecycleIdentityBlockedResponseSchema,
   dataLifecycleOperationResponseSchema,
   dataLifecyclePreviewResponseSchema,
   dataLifecycleReceiptStatusRequestSchema,
