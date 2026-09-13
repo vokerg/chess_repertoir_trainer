@@ -100,6 +100,13 @@ export function AttemptSyncProvider({ children }: { children: ReactNode }) {
       setStatus(summary.status);
       setRevision((value) => value + 1);
     } catch (caught) {
+      if (await session.handleApiError(caught)) {
+        setStatus(EMPTY_STATUS);
+        setLastRun(null);
+        setError(null);
+        setRevision((value) => value + 1);
+        return;
+      }
       const message = caught instanceof Error ? caught.message : 'Attempt synchronization failed.';
       setError(message);
       try {
