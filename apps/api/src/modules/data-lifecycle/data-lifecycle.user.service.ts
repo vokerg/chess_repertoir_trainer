@@ -106,21 +106,28 @@ export function createUserDataLifecycleService(
     const operation = await requireUserDeletion(lifecycleRepository, userId, operationId);
     assertExecutionCredentials(operation, parsed);
     const idempotencyKeyHash = hashOpaqueLifecycleToken(parsed.idempotencyKey);
-    let receiptToken: string | null = null;
+    const receiptToken = deriveReceiptToken(
+      auditKeyring,
+      operation.actorKeyVersion,
+      parsed.idempotencyKey,
+    );
+    const receiptTokenHash = hashOpaqueLifecycleToken(receiptToken);
     let started: StoredDataLifecycleOperation;
 
+    if (operation.receiptTokenHash && operation.receiptTokenHash !== receiptTokenHash) {
+      throw new DataLifecycleInvalidStateError(
+        'Lifecycle receipt is already bound to another execution request.',
+      );
+    }
+
     if (operation.status === 'PREVIEWED') {
-      receiptToken = randomToken();
-      if (receiptToken.length < 16) {
-        throw new Error('Lifecycle receipt token generator returned an unsafe token.');
-      }
       started = await lifecycleRepository.startExecution({
         operationId,
         targetUserId: userId,
         previewTokenHash: hashOpaqueLifecycleToken(parsed.previewToken),
         previewHash: operation.previewHash,
         idempotencyKeyHash,
-        receiptTokenHash: hashOpaqueLifecycleToken(receiptToken),
+        receiptTokenHash,
         receiptExpiresAt: null,
         validateBeforeFence: async (transaction, lockedOperation) => {
           const lockedUserRepository = createUserDataLifecycleRepository(transaction);
@@ -280,6 +287,22 @@ async function requireUserDeletion(
     throw new UserDataLifecycleOperationNotFoundError();
   }
   return operation;
+}
+
+function deriveReceiptToken(
+  keyring: LifecycleHmacKeyring,
+  keyVersion: number,
+  idempotencyKey: string,
+): string {
+  const digest = keyring
+    .candidates(idempotencyKey, 'user-deletion-receipt')
+    .find((candidate) => candidate.keyVersion === keyVersion);
+  if (!digest) {
+    throw new Error(
+      `Lifecycle HMAC key version ${keyVersion} is required to reproduce the deletion receipt.`,
+    );
+  }
+  return `udr_${digest.digest}`;
 }
 
 function hashPreview(
