@@ -64,6 +64,12 @@ export async function loadUnlockedLocalUser(db: SQLiteDatabase): Promise<LocalUs
   return row ? mapLocalUser(row) : null;
 }
 
+export async function deleteLocalUser(db: SQLiteDatabase, appUserId: string): Promise<void> {
+  await db.withExclusiveTransactionAsync(async (tx) => {
+    await tx.runAsync('DELETE FROM local_user WHERE app_user_id = ?', appUserId);
+  });
+}
+
 export async function lockLocalUser(db: SQLiteDatabase, appUserId: string): Promise<void> {
   const now = new Date().toISOString();
   await db.runAsync(
