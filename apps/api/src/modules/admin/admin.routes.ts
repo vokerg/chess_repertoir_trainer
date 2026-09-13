@@ -54,8 +54,6 @@ const adminLifecycleUnavailableResponseSchema = z.object({
 const adminLifecycleParamsSchema = adminUserParamsSchema.extend({
   operationId: z.coerce.number().int().positive(),
 });
-const ADMIN_REVERIFICATION_MAX_AGE_MINUTES = 10;
-
 function forbidden() {
   return { message: 'Forbidden', code: 'ADMIN_FORBIDDEN' as const };
 }
@@ -434,7 +432,6 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
         403: adminErrorResponseSchema,
         409: z.union([adminErrorResponseSchema, dataLifecycleErrorResponseSchema]),
         410: dataLifecycleErrorResponseSchema,
-        428: adminErrorResponseSchema,
         500: adminLifecycleUnavailableResponseSchema,
       },
     },
@@ -447,31 +444,13 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
         'ADMIN_LIFECYCLE_EXECUTE',
       );
       if (!principal) return;
-      const firstFactorAge = principal.factorVerificationAge?.[0];
-      if (
-        firstFactorAge === undefined ||
-        firstFactorAge < 0 ||
-        firstFactorAge > ADMIN_REVERIFICATION_MAX_AGE_MINUTES ||
-        !principal.reverificationId
-      ) {
-        reply.code(428);
-        return {
-          message: 'Fresh administrator reverification is required.',
-          code: 'ADMIN_REVERIFICATION_REQUIRED' as const,
-        };
-      }
       try {
         const result = await lifecycleService.executeForAdmin(
           request.params.userId,
           request.params.operationId,
           request.body,
           {
-            method: 'CLERK_SIGNED_FVA_AND_REVERIFICATION_ID',
-            reverificationIdHash: createHash('sha256')
-              .update('admin-reverification\0')
-              .update(principal.reverificationId)
-              .digest('hex'),
-            firstFactorAgeMinutes: firstFactorAge,
+            method: 'TYPED_CONFIRMATION_PHRASE',
           },
         );
         reply.code(202);

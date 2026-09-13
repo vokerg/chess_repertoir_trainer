@@ -45,12 +45,10 @@ export class AccountsApiService {
   executeLifecycle(
     operationId: number,
     request: DataLifecycleExecuteRequest,
-    reverificationToken: string,
   ): Observable<DataLifecycleOperationResponse> {
     return this.api.post<DataLifecycleOperationResponse>(
       `/me/data-lifecycle/${operationId}/execute`,
       request,
-      reverificationToken,
     );
   }
 

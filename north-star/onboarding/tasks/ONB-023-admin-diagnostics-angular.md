@@ -116,6 +116,6 @@ Delivered runtime preserves the server authorization boundary: Angular uses the 
 
 Completion evidence is reconciled in `north-star/onboarding/reports/ONB-023-2026-08-09-completion-reconciliation.md` together with `TASKS.md`, `STATUS.md`, and issue #273 execution metadata through completion PR #312.
 
-Residual handoff: ONB-024 remains `PROPOSED` behind its lifecycle-service and signed-reverification dependencies. This task does not promote or enable administrator mutation behavior.
+Residual handoff: ONB-024 remains `PROPOSED` behind its lifecycle-service and administrator-authorization dependencies. This task does not promote or enable administrator mutation behavior.
 
 Completed at: 2026-08-09, effective when PR #312 is approved and squash-merged. Issue #273 remains open until that merge.

@@ -1,13 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
-import { AuthService } from '../../../core/auth/auth.service';
 import { AdminApiService } from '../data-access/admin-api.service';
 import { AdminDiagnosticsStore } from './admin-diagnostics.store';
 
 describe('AdminDiagnosticsStore lifecycle preview safety', () => {
   let store: AdminDiagnosticsStore;
   let api: jasmine.SpyObj<AdminApiService>;
-  let auth: jasmine.SpyObj<AuthService>;
 
   beforeEach(() => {
     api = jasmine.createSpyObj<AdminApiService>('AdminApiService', [
@@ -20,13 +18,10 @@ describe('AdminDiagnosticsStore lifecycle preview safety', () => {
       'getLifecycle',
       'stopLifecycle',
     ]);
-    auth = jasmine.createSpyObj<AuthService>('AuthService', ['reverify']);
-
     TestBed.configureTestingModule({
       providers: [
         AdminDiagnosticsStore,
         { provide: AdminApiService, useValue: api },
-        { provide: AuthService, useValue: auth },
       ],
     });
     store = TestBed.inject(AdminDiagnosticsStore);
@@ -57,7 +52,6 @@ describe('AdminDiagnosticsStore lifecycle preview safety', () => {
     expect(store.lifecycleError()).toBe('replacement preview failed');
 
     await store.executeLifecycle();
-    expect(auth.reverify).not.toHaveBeenCalled();
     expect(api.executeLifecycle).not.toHaveBeenCalled();
   });
 
@@ -79,39 +73,25 @@ describe('AdminDiagnosticsStore lifecycle preview safety', () => {
     expect(store.lifecycleConfirmation()).toBe('');
   });
 
-  it('does not submit an old preview when inputs change during reverification', async () => {
+  it('does not submit an old preview when inputs change before execution', async () => {
     const preview = lifecyclePreview();
     store.lifecycleAccountId.set('5');
     api.previewLifecycle.and.returnValue(of(preview));
     await store.previewLifecycle();
     store.lifecycleConfirmation.set(preview.confirmationPhrase);
 
-    let finishReverification!: (result: string | null) => void;
-    auth.reverify.and.returnValue(
-      new Promise<string | null>((resolve) => {
-        finishReverification = resolve;
-      }),
-    );
-
-    const execution = store.executeLifecycle();
-    await Promise.resolve();
-    store.setLifecycleAccountId('6');
-    finishReverification('fresh-reverification-token');
-    await execution;
+    store.lifecycleAccountId.set('6');
+    await store.executeLifecycle();
 
     expect(api.executeLifecycle).not.toHaveBeenCalled();
-    expect(store.lifecyclePreview()).toBeNull();
-    expect(store.lifecycleError()).toBe(
-      'Lifecycle inputs changed during reverification. Preview and confirm again.',
-    );
+    expect(store.lifecycleError()).toBe('Lifecycle inputs changed. Preview and confirm again.');
   });
 
-  it('binds the fresh Clerk token to the administrator execute request', async () => {
+  it('executes the administrator request with preview-bound confirmation only', async () => {
     const preview = lifecyclePreview();
     store.lifecycleAccountId.set('5');
     api.previewLifecycle.and.returnValue(of(preview));
     api.executeLifecycle.and.returnValue(of({ ...preview, status: 'FENCING' }));
-    auth.reverify.and.resolveTo('fresh-reverification-token');
 
     await store.previewLifecycle();
     store.lifecycleConfirmation.set(preview.confirmationPhrase);
@@ -124,7 +104,6 @@ describe('AdminDiagnosticsStore lifecycle preview safety', () => {
         previewToken: preview.previewToken,
         confirmationPhrase: preview.confirmationPhrase,
       }),
-      'fresh-reverification-token',
     );
     expect(store.lifecycleOperation()?.status).toBe('FENCING');
   });

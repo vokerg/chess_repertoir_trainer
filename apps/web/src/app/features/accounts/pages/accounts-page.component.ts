@@ -2,7 +2,6 @@ import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ReverificationDialogComponent } from '../../../core/auth/reverification-dialog.component';
 import {
   FactGridComponent,
   type UiFactItem,
@@ -37,7 +36,6 @@ import { AccountsStore } from '../state/accounts.store';
     FactGridComponent,
     StateMessageComponent,
     DataLifecycleSafetyComponent,
-    ReverificationDialogComponent,
   ],
   providers: [AccountsApiService, AccountsStore],
   templateUrl: './accounts-page.component.html',

@@ -4,7 +4,6 @@ import type {
   DataLifecyclePreviewResponse,
 } from '@chess-trainer/contracts/data-lifecycle';
 import { of, throwError } from 'rxjs';
-import { AuthService } from '../../../core/auth/auth.service';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import type { AccountImportRun, ExternalAccount } from '../data-access/accounts.models';
 import { AccountsStore } from './accounts.store';
@@ -12,7 +11,6 @@ import { AccountsStore } from './accounts.store';
 describe('AccountsStore', () => {
   let store: AccountsStore;
   let api: jasmine.SpyObj<AccountsApiService>;
-  let auth: jasmine.SpyObj<AuthService>;
 
   beforeEach(() => {
     api = jasmine.createSpyObj<AccountsApiService>('AccountsApiService', [
@@ -37,8 +35,6 @@ describe('AccountsStore', () => {
       'startLichessConnection',
       'disconnectLichess',
     ]);
-    auth = jasmine.createSpyObj<AuthService>('AuthService', ['reverify']);
-    auth.reverify.and.resolveTo(null);
     api.getAccountImports.and.returnValue(of({ items: [] }));
     api.getActiveAccountImports.and.returnValue(of({ items: [] }));
 
@@ -46,7 +42,6 @@ describe('AccountsStore', () => {
       providers: [
         AccountsStore,
         { provide: AccountsApiService, useValue: api },
-        { provide: AuthService, useValue: auth },
       ],
     });
 
@@ -263,7 +258,6 @@ describe('AccountsStore', () => {
     api.executeLifecycle.and.returnValue(
       of({ ...preview, status: 'FENCING' } as unknown as DataLifecycleOperationResponse),
     );
-    auth.reverify.and.resolveTo('fresh-reverification-token');
 
     await store.previewLifecycle();
     store.lifecycleConfirmation.set(preview.confirmationPhrase);
@@ -273,14 +267,12 @@ describe('AccountsStore', () => {
       action: 'PURGE_ACCOUNT_DATA',
       accountId: tracked.id,
     });
-    expect(auth.reverify).toHaveBeenCalledOnceWith();
     expect(api.executeLifecycle).toHaveBeenCalledOnceWith(
       preview.operationId,
       jasmine.objectContaining({
         previewToken: preview.previewToken,
         confirmationPhrase: preview.confirmationPhrase,
       }),
-      'fresh-reverification-token',
     );
     expect(store.lifecycleOperation()?.status).toBe('FENCING');
   });

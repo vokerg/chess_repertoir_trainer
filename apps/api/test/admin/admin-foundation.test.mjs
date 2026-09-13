@@ -499,15 +499,14 @@ await withApp(
         idempotencyKey: 'stable-key-44',
       },
     });
-    assert.equal(
-      executeResponse.statusCode,
-      428,
-      'execution requires signed fresh reverification evidence',
-    );
-    assert.equal(
-      lifecycleCalls.some((call) => call[0] === 'execute'),
-      false,
-    );
+    assert.equal(executeResponse.statusCode, 202, executeResponse.body);
+    assert.deepEqual(lifecycleCalls[1].slice(0, 3), ['execute', 10, 44]);
+    assert.deepEqual(lifecycleCalls[1][3], {
+      previewToken: 'preview-token-with-safe-length',
+      confirmationPhrase: 'PURGE ACCOUNT 5',
+      idempotencyKey: 'stable-key-44',
+    });
+    assert.deepEqual(lifecycleCalls[1][4], { method: 'TYPED_CONFIRMATION_PHRASE' });
 
     const document = app.swagger();
     assert.equal(document.paths['/api/admin/me'].get.operationId, 'getAdminMe');

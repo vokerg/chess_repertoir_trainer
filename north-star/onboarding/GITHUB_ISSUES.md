@@ -79,7 +79,7 @@ When repository metadata and issue state disagree, reconcile them before substan
 ### Administrator path
 
 - ONB-022 / #272 and ONB-023 / #273 — `DONE`.
-- ONB-024 / #274 — `PROPOSED` behind applicable canonical lifecycle/cleanup services and proven signed reverification.
+- ONB-024 / #274 — `PROPOSED` behind applicable canonical lifecycle/cleanup services and server-side administrator authorization.
 
 ## Completion records reconciled on 2026-08-26
 
