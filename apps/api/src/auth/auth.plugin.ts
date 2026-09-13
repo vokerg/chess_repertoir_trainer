@@ -24,6 +24,21 @@ function isPublicRequest(request: FastifyRequest) {
     || path.startsWith('/api/data-lifecycle/user-deletion/');
 }
 
+function readUserDeletionExecuteOperationId(request: FastifyRequest): number | null {
+  const path = request.url.split('?', 1)[0];
+  const match = /^\/api\/me\/data-lifecycle\/user-deletion\/(\d+)\/execute$/.exec(path);
+  if (!match?.[1]) return null;
+  const operationId = Number(match[1]);
+  return Number.isSafeInteger(operationId) && operationId > 0 ? operationId : null;
+}
+
+function lifecycleOperationNotFoundResponse() {
+  return {
+    error: 'Whole-user deletion operation was not found.',
+    code: 'DATA_LIFECYCLE_OWNERSHIP_CHANGED' as const,
+  };
+}
+
 function readCookie(request: FastifyRequest, name: string) {
   const cookieHeader = request.headers.cookie;
   if (!cookieHeader) return undefined;
@@ -94,6 +109,22 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
 
     if (config.mode === 'dev-single-user') {
       try {
+        const deletionOperationId = readUserDeletionExecuteOperationId(request);
+        if (deletionOperationId !== null) {
+          const resolved = await CurrentAppUserService.resolveExternalUserForDeletionOperation(
+            {
+              provider: 'dev',
+              externalSubject: 'dev-single-user',
+            },
+            deletionOperationId,
+          );
+          if (!resolved) {
+            return reply.code(404).send(lifecycleOperationNotFoundResponse());
+          }
+          request.auth = resolved.auth;
+          return;
+        }
+
         const resolved = await CurrentAppUserService.resolveDevUser(config.userId);
         request.auth = resolved.auth;
         return;
@@ -164,12 +195,26 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
 
     request.verifiedSession = normalizeVerifiedSessionContext(payload, subject);
     try {
-      const resolved = await CurrentAppUserService.resolveExternalUser({
+      const identity = {
         provider: 'clerk',
         externalSubject: subject,
         email: readEmail(payload),
         displayName: readDisplayName(payload),
-      });
+      };
+      const deletionOperationId = readUserDeletionExecuteOperationId(request);
+      if (deletionOperationId !== null) {
+        const resolved = await CurrentAppUserService.resolveExternalUserForDeletionOperation(
+          identity,
+          deletionOperationId,
+        );
+        if (!resolved) {
+          return reply.code(404).send(lifecycleOperationNotFoundResponse());
+        }
+        request.auth = resolved.auth;
+        return;
+      }
+
+      const resolved = await CurrentAppUserService.resolveExternalUser(identity);
       request.auth = resolved.auth;
     } catch (error) {
       if (error instanceof DeletedIdentityBlockedError) {
