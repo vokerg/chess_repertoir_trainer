@@ -4,6 +4,7 @@ import { AuthConfig, loadAuthConfig } from './auth.config';
 import { CurrentAppUserService } from './current-app-user.service';
 import { normalizeVerifiedSessionContext } from './verified-session-context';
 import { DeletedIdentityBlockedError } from '../modules/data-lifecycle/deleted-identity.guard';
+import { DataLifecycleWriteBlockedError } from '../modules/data-lifecycle/data-lifecycle.guard';
 
 const PUBLIC_PATHS = new Set([
   '/health',
@@ -17,7 +18,10 @@ const PUBLIC_PATHS = new Set([
 
 function isPublicRequest(request: FastifyRequest) {
   const path = request.url.split('?', 1)[0];
-  return request.method === 'OPTIONS' || PUBLIC_PATHS.has(path) || path.startsWith('/api/docs/');
+  return request.method === 'OPTIONS'
+    || PUBLIC_PATHS.has(path)
+    || path.startsWith('/api/docs/')
+    || path.startsWith('/api/data-lifecycle/user-deletion/');
 }
 
 function readCookie(request: FastifyRequest, name: string) {
@@ -95,7 +99,10 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
         return;
       } catch (error) {
         if (error instanceof DeletedIdentityBlockedError) {
-          return reply.code(403).send({ message: 'Application account has been deleted.' });
+          return reply.code(410).send(deletedIdentityResponse(error.operationId));
+        }
+        if (error instanceof DataLifecycleWriteBlockedError && error.resourceType === 'USER') {
+          return reply.code(409).send(deletionInProgressResponse(error.operationId));
         }
         throw error;
       }
@@ -167,9 +174,32 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
     } catch (error) {
       if (error instanceof DeletedIdentityBlockedError) {
         request.log.info({ operationId: error.operationId }, 'Rejected provisioning for deleted auth identity');
-        return reply.code(403).send({ message: 'Application account has been deleted.' });
+        return reply.code(410).send(deletedIdentityResponse(error.operationId));
+      }
+      if (error instanceof DataLifecycleWriteBlockedError && error.resourceType === 'USER') {
+        request.log.info({ operationId: error.operationId }, 'Rejected request while application account deletion is in progress');
+        return reply.code(409).send(deletionInProgressResponse(error.operationId));
       }
       throw error;
     }
   });
 });
+
+
+function deletionInProgressResponse(operationId: number) {
+  return {
+    error: 'Application account deletion is in progress.',
+    code: 'DATA_LIFECYCLE_DELETION_IN_PROGRESS' as const,
+    operationId,
+    purgeLocalData: true as const,
+  };
+}
+
+function deletedIdentityResponse(operationId: number) {
+  return {
+    error: 'Application account has been deleted.',
+    code: 'DATA_LIFECYCLE_IDENTITY_DELETED' as const,
+    operationId,
+    purgeLocalData: true as const,
+  };
+}
