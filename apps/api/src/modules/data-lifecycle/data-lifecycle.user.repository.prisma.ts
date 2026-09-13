@@ -170,7 +170,11 @@ export function createUserDataLifecycleRepository(
           where: { userId, status: { in: [...ACTIVE_PREPARATION_STATUSES] } },
         }),
         database.jobRun.count({
-          where: { userId, status: { in: [...ACTIVE_JOB_STATUSES] } },
+          where: {
+            userId,
+            status: { in: [...ACTIVE_JOB_STATUSES] },
+            tasks: { some: { status: { in: [...ACTIVE_JOB_TASK_STATUSES] } } },
+          },
         }),
         database.jobTask.count({
           where: {
