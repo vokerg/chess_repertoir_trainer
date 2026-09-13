@@ -1,5 +1,6 @@
 import {
   mobileCourseBundleSchema,
+  mobileSessionProbeSchema,
   mobileSyncManifestSchema,
   mobileTrainingAttemptBatchRequestSchema,
   mobileTrainingAttemptBatchResponseSchema,
@@ -12,6 +13,22 @@ import { MobileSyncService } from './mobile-sync.service';
 import { mobileSyncCourseParamsSchema, mobileSyncErrorSchema } from './mobile-sync.schemas';
 
 const mobileSyncModule: FastifyPluginAsyncZod = async (app) => {
+  app.get('/api/mobile-sync/session', {
+    schema: {
+      operationId: 'getMobileSyncSession',
+      tags: ['Mobile sync'],
+      summary: 'Probe whether the authenticated mobile session can access server data',
+      response: {
+        200: mobileSessionProbeSchema,
+        401: unauthorizedResponseSchema,
+      },
+    },
+  }, async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    return { ok: true as const };
+  });
+
   app.get('/api/mobile-sync/manifest', {
     schema: {
       operationId: 'getMobileSyncManifest',
