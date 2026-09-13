@@ -480,13 +480,11 @@ export function createUserDataLifecycleWorker(
     }
 
     const index = USER_RESIDUAL_PHASES.indexOf(phase);
-    const nextPhase = USER_RESIDUAL_PHASES[index + 1] ?? 'DELETE_APP_USER';
+    const nextPhase = USER_RESIDUAL_PHASES[index + 1];
     await lifecycleRepository.updateCheckpoint(
       operation.id,
       workKey,
-      nextPhase === 'DELETE_APP_USER'
-        ? finalDeleteCheckpoint()
-        : residualCheckpoint(nextPhase),
+      nextPhase ? residualCheckpoint(nextPhase) : finalDeleteCheckpoint(),
     );
     await release(operation, workKey);
   }
