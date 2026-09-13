@@ -133,7 +133,7 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
           return reply.code(410).send(deletedIdentityResponse(error.operationId));
         }
         if (error instanceof DataLifecycleWriteBlockedError && error.resourceType === 'USER') {
-          return reply.code(409).send(deletionInProgressResponse(error.operationId));
+          return reply.code(423).send(deletionInProgressResponse(error.operationId));
         }
         throw error;
       }
@@ -223,7 +223,7 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
       }
       if (error instanceof DataLifecycleWriteBlockedError && error.resourceType === 'USER') {
         request.log.info({ operationId: error.operationId }, 'Rejected request while application account deletion is in progress');
-        return reply.code(409).send(deletionInProgressResponse(error.operationId));
+        return reply.code(423).send(deletionInProgressResponse(error.operationId));
       }
       throw error;
     }
