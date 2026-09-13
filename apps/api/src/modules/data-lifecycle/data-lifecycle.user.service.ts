@@ -22,6 +22,7 @@ import {
 } from './data-lifecycle.repository.prisma';
 import {
   UserDataLifecycleRepository,
+  createUserDataLifecycleRepository,
   type UserDataLifecycleRepository as UserRepositoryBoundary,
 } from './data-lifecycle.user.repository.prisma';
 import {
@@ -121,8 +122,9 @@ export function createUserDataLifecycleService(
         idempotencyKeyHash,
         receiptTokenHash: hashOpaqueLifecycleToken(receiptToken),
         receiptExpiresAt: null,
-        validateBeforeFence: async (_transaction, lockedOperation) => {
-          const counts = await userRepository.countAffectedRows(userId);
+        validateBeforeFence: async (transaction, lockedOperation) => {
+          const lockedUserRepository = createUserDataLifecycleRepository(transaction);
+          const counts = await lockedUserRepository.countAffectedRows(userId);
           const currentHash = hashPreview(lockedOperation.scope, counts);
           if (currentHash !== lockedOperation.previewHash) {
             throw new DataLifecyclePreviewInvalidError();
@@ -240,11 +242,10 @@ export function createUserDataLifecycleService(
 
     async requestStopByReceipt(operationId, receiptToken) {
       await requireReceipt(operationId, receiptToken);
-      const status = await deletedIdentityGuard.findOperationByReceipt(receiptToken);
-      if (!status) throw new UserDataLifecycleOperationNotFoundError();
+      const targetUserId = await targetUserIdForReceipt(operationRepository, operationId);
       const operation = await lifecycleRepository.getForTargetUser(
-        await targetUserIdForReceipt(lifecycleRepository, status.operationId),
-        status.operationId,
+        targetUserId,
+        operationId,
       );
       if (!operation) throw new UserDataLifecycleOperationNotFoundError();
       const stopped = await lifecycleRepository.requestStop(operation.targetUserId, operation.id);
@@ -254,40 +255,20 @@ export function createUserDataLifecycleService(
 
     async resumeByReceipt(operationId, receiptToken, request) {
       await requireReceipt(operationId, receiptToken);
-      const targetUserId = await targetUserIdForReceipt(lifecycleRepository, operationId);
+      const targetUserId = await targetUserIdForReceipt(operationRepository, operationId);
       return executeForUser(targetUserId, operationId, request);
     },
   };
 }
 
 async function targetUserIdForReceipt(
-  repository: LifecycleRepositoryBoundary,
+  repository: OperationRepositoryBoundary,
   operationId: number,
 ): Promise<number> {
-  // The generic repository deliberately exposes target-scoped reads only. Receipt
-  // capability routes use the durable operation id plus a bounded candidate scan
-  // through the operation's USER scope by trying the id encoded in that scope is
-  // not possible here, so the caller uses the singleton implementation helper below.
-  const target = await DataLifecycleReceiptTargetLookup.get(operationId);
+  const target = await repository.getTargetUserId(operationId);
   if (target === null) throw new UserDataLifecycleOperationNotFoundError();
-  const operation = await repository.getForTargetUser(target, operationId);
-  if (!operation || operation.action !== 'DELETE_APP_USER') {
-    throw new UserDataLifecycleOperationNotFoundError();
-  }
   return target;
 }
-
-import prisma from '../../prisma';
-
-const DataLifecycleReceiptTargetLookup = {
-  async get(operationId: number): Promise<number | null> {
-    const row = await prisma.dataLifecycleOperation.findUnique({
-      where: { id: operationId },
-      select: { targetUserId: true, action: true },
-    });
-    return row?.action === 'DELETE_APP_USER' ? row.targetUserId : null;
-  },
-};
 
 async function requireUserDeletion(
   repository: LifecycleRepositoryBoundary,
