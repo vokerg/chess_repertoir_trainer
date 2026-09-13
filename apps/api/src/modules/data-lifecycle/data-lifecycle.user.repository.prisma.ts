@@ -32,6 +32,9 @@ export type UserResidualPhase =
   | 'SCENARIO_SESSIONS'
   | 'LICHESS_PUZZLE_ROUNDS'
   | 'LICHESS_PUZZLE_REVIEW_STATES'
+  | 'IMPORTED_GAME_AI_REVIEWS'
+  | 'TACTICAL_DETECTIONS'
+  | 'TACTICAL_PROCESSED_GAMES'
   | 'TACTICAL_FEEDBACK'
   | 'TACTICAL_RUNS'
   | 'ACTIVITY_AGGREGATES'
@@ -48,6 +51,9 @@ export const USER_RESIDUAL_PHASES: readonly UserResidualPhase[] = [
   'SCENARIO_SESSIONS',
   'LICHESS_PUZZLE_ROUNDS',
   'LICHESS_PUZZLE_REVIEW_STATES',
+  'IMPORTED_GAME_AI_REVIEWS',
+  'TACTICAL_DETECTIONS',
+  'TACTICAL_PROCESSED_GAMES',
   'TACTICAL_FEEDBACK',
   'TACTICAL_RUNS',
   'ACTIVITY_AGGREGATES',
@@ -298,6 +304,28 @@ export function createUserDataLifecycleRepository(
             where: { userId, puzzleId: { in: rows.map(({ puzzleId }) => puzzleId) } },
           })).count;
         }
+        case 'IMPORTED_GAME_AI_REVIEWS':
+          return deleteIdBatch(transaction.importedGameAiReview, { userId }, take);
+        case 'TACTICAL_DETECTIONS':
+          return deleteIdBatch(transaction.tacticalDetection, { userId }, take);
+        case 'TACTICAL_PROCESSED_GAMES': {
+          const rows = await transaction.tacticalDetectionProcessedGame.findMany({
+            where: { userId },
+            select: { importedGameId: true, thresholdsHash: true },
+            orderBy: [{ importedGameId: 'asc' }, { thresholdsHash: 'asc' }],
+            take,
+          });
+          if (rows.length === 0) return 0;
+          return (await transaction.tacticalDetectionProcessedGame.deleteMany({
+            where: {
+              userId,
+              OR: rows.map(({ importedGameId, thresholdsHash }) => ({
+                importedGameId,
+                thresholdsHash,
+              })),
+            },
+          })).count;
+        }
         case 'TACTICAL_FEEDBACK':
           return deleteIdBatch(transaction.tacticalDetectionFeedback, { userId }, take);
         case 'TACTICAL_RUNS':
@@ -353,6 +381,15 @@ export function createUserDataLifecycleRepository(
         preparationRuns,
         oauthStates,
         lichessConnections,
+        aiReviews,
+        tacticalDetections,
+        tacticalProcessedGames,
+        tacticalFeedback,
+        tacticalRuns,
+        trainingSublineAttempts,
+        reviewStates,
+        puzzleReviewStates,
+        activityAggregates,
       ] = await Promise.all([
         database.appUser.count({ where: { id: userId } }),
         database.externalAccount.count({ where: { userId } }),
@@ -365,6 +402,15 @@ export function createUserDataLifecycleRepository(
         database.dataPreparationRun.count({ where: { userId } }),
         database.oAuthLoginState.count({ where: { userId } }),
         database.lichessConnection.count({ where: { userId } }),
+        database.importedGameAiReview.count({ where: { userId } }),
+        database.tacticalDetection.count({ where: { userId } }),
+        database.tacticalDetectionProcessedGame.count({ where: { userId } }),
+        database.tacticalDetectionFeedback.count({ where: { userId } }),
+        database.tacticalDetectionRun.count({ where: { userId } }),
+        database.trainingSublineAttempt.count({ where: { userId } }),
+        database.repertoireSublineReviewState.count({ where: { userId } }),
+        database.lichessPuzzleReviewState.count({ where: { userId } }),
+        database.userActivityDailyAggregate.count({ where: { userId } }),
       ]);
       const checks = {
         users,
@@ -378,6 +424,15 @@ export function createUserDataLifecycleRepository(
         preparationRuns,
         oauthStates,
         lichessConnections,
+        aiReviews,
+        tacticalDetections,
+        tacticalProcessedGames,
+        tacticalFeedback,
+        tacticalRuns,
+        trainingSublineAttempts,
+        reviewStates,
+        puzzleReviewStates,
+        activityAggregates,
       };
       return {
         ok: Object.values(checks).every((count) => count === 0),
