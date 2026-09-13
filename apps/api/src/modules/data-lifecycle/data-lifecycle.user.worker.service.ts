@@ -71,7 +71,6 @@ export interface UserDataLifecycleWorker {
 }
 
 type UserDeletionPhase =
-  | 'REVOKE_LICHESS'
   | 'PURGE_ACCOUNT_GAMES'
   | 'PURGE_ACCOUNT_FINALIZE'
   | 'DELETE_ACCOUNT'
@@ -316,24 +315,6 @@ export function createUserDataLifecycleWorker(
     }
 
     const checkpoint = parseCheckpoint(operation);
-    if (checkpoint.phase === 'REVOKE_LICHESS') {
-      const revocation = await lichessRevoker.revokeUpstreamForUser(operation.targetUserId);
-      logger.info(
-        { operationId: operation.id, attempted: revocation.attempted, revoked: revocation.revoked },
-        'Whole-user lifecycle completed best-effort upstream credential revocation',
-      );
-      await lifecycleRepository.updateCheckpoint(
-        operation.id,
-        workKey,
-        accountPurgeCheckpoint(null),
-      );
-      await appendAuditOnce(operation, revocation.revoked
-        ? 'PROVIDER_CREDENTIAL_REVOKED'
-        : 'PROVIDER_CREDENTIAL_REVOKE_BEST_EFFORT');
-      await release(operation, workKey);
-      return;
-    }
-
     if (
       checkpoint.phase === 'PURGE_ACCOUNT_GAMES'
       || checkpoint.phase === 'PURGE_ACCOUNT_FINALIZE'
@@ -460,6 +441,17 @@ export function createUserDataLifecycleWorker(
     checkpoint: UserDeletionCheckpoint,
   ): Promise<void> {
     const phase = checkpoint.phase as UserResidualPhase;
+    if (phase === 'LICHESS_CONNECTION') {
+      const revocation = await lichessRevoker.revokeUpstreamForUser(operation.targetUserId);
+      logger.info(
+        { operationId: operation.id, attempted: revocation.attempted, revoked: revocation.revoked },
+        'Whole-user lifecycle completed best-effort upstream credential revocation',
+      );
+      await appendAuditOnce(operation, revocation.revoked
+        ? 'PROVIDER_CREDENTIAL_REVOKED'
+        : 'PROVIDER_CREDENTIAL_REVOKE_BEST_EFFORT');
+    }
+
     let deleted = 0;
     await runDestructiveBatch(
       operation,
@@ -705,7 +697,7 @@ function parseCheckpoint(operation: StoredDataLifecycleOperation): UserDeletionC
   if (operation.checkpoint === null || operation.checkpoint === undefined) {
     return {
       version: 1,
-      phase: 'REVOKE_LICHESS',
+      phase: 'PURGE_ACCOUNT_GAMES',
       afterAccountId: null,
       accountId: null,
       afterGameId: null,
@@ -713,7 +705,6 @@ function parseCheckpoint(operation: StoredDataLifecycleOperation): UserDeletionC
   }
   const checkpoint = operation.checkpoint as Partial<UserDeletionCheckpoint>;
   const phases: readonly string[] = [
-    'REVOKE_LICHESS',
     'PURGE_ACCOUNT_GAMES',
     'PURGE_ACCOUNT_FINALIZE',
     'DELETE_ACCOUNT',
