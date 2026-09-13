@@ -1,3 +1,4 @@
+import { dataLifecycleIdentityBlockedResponseSchema } from '@chess-trainer/contracts/data-lifecycle';
 import {
   mobileCourseBundleSchema,
   mobileSessionProbeSchema,
@@ -21,6 +22,8 @@ const mobileSyncModule: FastifyPluginAsyncZod = async (app) => {
       response: {
         200: mobileSessionProbeSchema,
         401: unauthorizedResponseSchema,
+        409: dataLifecycleIdentityBlockedResponseSchema,
+        410: dataLifecycleIdentityBlockedResponseSchema,
       },
     },
   }, async (request, reply) => {
