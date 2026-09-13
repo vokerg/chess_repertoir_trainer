@@ -25,6 +25,7 @@ export interface UserDataLifecycleOperationRepository {
   claimNext(workKey: string): Promise<StoredDataLifecycleOperation | null>;
   releaseClaim(operationId: number, workKey: string): Promise<boolean>;
   recoverStaleClaims(staleBefore: Date): Promise<number>;
+  hasAuditEvent(operationId: number, eventType: string): Promise<boolean>;
   resumeNeedsAttention(
     targetUserId: number,
     operationId: number,
@@ -106,6 +107,16 @@ export function createUserDataLifecycleOperationRepository(
           AND "workKey" IS NOT NULL
           AND COALESCE("heartbeatAt", "claimedAt") < ${staleBefore}
       `);
+    },
+
+    async hasAuditEvent(operationId, eventType) {
+      validatePositiveInteger(operationId, 'operationId');
+      if (!/^[A-Z0-9_]{1,80}$/.test(eventType)) {
+        throw new Error('Lifecycle audit eventType must be a bounded machine-readable code.');
+      }
+      return (await database.dataLifecycleAuditEvent.count({
+        where: { operationId, eventType },
+      })) > 0;
     },
 
     async resumeNeedsAttention(targetUserId, operationId, idempotencyKeyHash) {
