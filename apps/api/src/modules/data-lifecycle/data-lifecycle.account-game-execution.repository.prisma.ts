@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient } from '@prisma/client';
-import { dataLifecycleScopeSchema } from '@chess-trainer/contracts/data-lifecycle';
+import { dataLifecyclePreviewCountsSchema, dataLifecycleScopeSchema } from '@chess-trainer/contracts/data-lifecycle';
 import prisma from '../../prisma';
 import { calculateTagCodes } from '../imported-games/game-tagging.service';
 import { lockDataLifecycleUserScope } from './data-lifecycle.guard';
@@ -11,6 +11,7 @@ import {
 } from './data-lifecycle.repository.prisma';
 import {
   DATA_LIFECYCLE_GAME_BATCH_LIMIT,
+  createAccountGameDataLifecycleCoordinatorRepository,
   type AccountGameDataLifecycleScope,
 } from './data-lifecycle.coordinator.repository.prisma';
 
@@ -88,7 +89,17 @@ export interface SynchronousAccountPurgeInput {
 
 export interface AccountGameDataLifecycleExecutionRepository {
   cancelScopedJobTasks(userId: number, jobTaskIds: number[]): Promise<number>;
-  purgeAccountDataSynchronously(input: SynchronousAccountPurgeInput): Promise<void>;
+  prepareSynchronousAccountPurge(input: SynchronousAccountPurgeInput): Promise<boolean>;
+  completeSynchronousAccountPurge(input: {
+    operationId: number;
+    targetUserId: number;
+    idempotencyKeyHash: string;
+  }): Promise<void>;
+  markSynchronousAccountPurgeNeedsAttention(input: {
+    operationId: number;
+    targetUserId: number;
+    errorCode: string;
+  }): Promise<void>;
   unanalyseGameBatch(
     transaction: Prisma.TransactionClient,
     scope: AccountGameDataLifecycleScope,
@@ -122,10 +133,10 @@ export function createAccountGameDataLifecycleExecutionRepository(
   database: PrismaClient = prisma,
 ): AccountGameDataLifecycleExecutionRepository {
   return {
-    async purgeAccountDataSynchronously(input) {
+    async prepareSynchronousAccountPurge(input) {
       validateSynchronousAccountPurgeInput(input);
 
-      await database.$transaction(async (transaction) => {
+      return database.$transaction(async (transaction) => {
         await lockDataLifecycleUserScope(transaction, input.targetUserId);
 
         const operation = await transaction.dataLifecycleOperation.findFirst({
@@ -153,11 +164,16 @@ export function createAccountGameDataLifecycleExecutionRepository(
 
         if (operation.status === 'COMPLETED') {
           assertSynchronousPurgeReplay(operation, input);
-          return;
+          return true;
         }
         if (['FAILED', 'CANCELLED', 'EXPIRED'].includes(operation.status)) {
           throw new DataLifecycleInvalidStateError(
             'A terminal lifecycle operation cannot be purged again.',
+          );
+        }
+        if (operation.firstDestructiveCommitAt !== null) {
+          throw new DataLifecycleInvalidStateError(
+            'A partially committed lifecycle purge must resume through the worker path.',
           );
         }
         if (
@@ -183,22 +199,30 @@ export function createAccountGameDataLifecycleExecutionRepository(
           throw new DataLifecyclePreviewInvalidError();
         }
 
+        if (operation.idempotencyKeyHash === null) {
+          const currentCounts =
+            await createAccountGameDataLifecycleCoordinatorRepository(transaction)
+              .countAffectedRows('PURGE_ACCOUNT_DATA', scope);
+          const previewCounts = dataLifecyclePreviewCountsSchema.parse(operation.previewCountsJson);
+          if (JSON.stringify(currentCounts) !== JSON.stringify(previewCounts)) {
+            throw new DataLifecyclePreviewInvalidError();
+          }
+        }
+
         await retireCompetingLifecycleOperations(transaction, input.targetUserId, input.operationId);
         await ensureSynchronousPurgeFence(transaction, input.operationId, scope);
-        await transaction.$executeRaw(Prisma.sql`
-          SELECT set_config('app.data_lifecycle_operation_id', ${String(input.operationId)}, TRUE)
-        `);
 
-        const started = await transaction.$executeRaw(Prisma.sql`
+        const directWorkKey = synchronousPurgeWorkKey(input.operationId);
+        const prepared = await transaction.$executeRaw(Prisma.sql`
           UPDATE "DataLifecycleOperation"
-          SET "status" = 'EXECUTING',
+          SET "status" = 'WAITING_FOR_DRAIN',
               "idempotencyKeyHash" = ${input.idempotencyKeyHash},
               "verificationJson" = ${input.verification ? JSON.stringify(input.verification) : null}::jsonb,
               "stopRequest" = 'NONE',
               "stopRequestedAt" = NULL,
-              "workKey" = NULL,
-              "claimedAt" = NULL,
-              "heartbeatAt" = NULL,
+              "workKey" = ${directWorkKey},
+              "claimedAt" = COALESCE("claimedAt", NOW()),
+              "heartbeatAt" = NOW(),
               "terminalResult" = NULL,
               "errorCode" = NULL,
               "startedAt" = COALESCE("startedAt", NOW()),
@@ -207,6 +231,93 @@ export function createAccountGameDataLifecycleExecutionRepository(
           WHERE "id" = ${input.operationId}
             AND "targetUserId" = ${input.targetUserId}
             AND "status" NOT IN ('COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED')
+        `);
+        if (prepared !== 1) {
+          throw new DataLifecycleInvalidStateError(
+            'Lifecycle operation changed before synchronous purge could prepare.',
+          );
+        }
+        return false;
+      });
+    },
+
+    async completeSynchronousAccountPurge(input) {
+      validatePositiveInteger(input.operationId, 'operationId');
+      validatePositiveInteger(input.targetUserId, 'targetUserId');
+      validateSha256(input.idempotencyKeyHash, 'idempotencyKeyHash');
+
+      await database.$transaction(async (transaction) => {
+        await lockDataLifecycleUserScope(transaction, input.targetUserId);
+
+        const operation = await transaction.dataLifecycleOperation.findFirst({
+          where: { id: input.operationId, targetUserId: input.targetUserId },
+        });
+        if (!operation) throw new DataLifecycleOwnershipChangedError();
+        if (operation.action !== 'PURGE_ACCOUNT_DATA') {
+          throw new DataLifecycleInvalidStateError(
+            'Synchronous account purge requires a PURGE_ACCOUNT_DATA operation.',
+          );
+        }
+        if (operation.status === 'COMPLETED') {
+          if (operation.idempotencyKeyHash !== input.idempotencyKeyHash) {
+            throw new DataLifecycleInvalidStateError(
+              'Lifecycle idempotency key is already bound to another execution request.',
+            );
+          }
+          return;
+        }
+        if (
+          operation.status !== 'WAITING_FOR_DRAIN'
+          || operation.idempotencyKeyHash !== input.idempotencyKeyHash
+          || operation.workKey !== synchronousPurgeWorkKey(input.operationId)
+        ) {
+          throw new DataLifecycleInvalidStateError(
+            'Synchronous account purge is not prepared for completion.',
+          );
+        }
+
+        const scope = dataLifecycleScopeSchema.parse(operation.scopeJson);
+        if (scope.resourceType !== 'ACCOUNT' || scope.userId !== input.targetUserId) {
+          throw new DataLifecyclePreviewInvalidError();
+        }
+        const activeFence = await transaction.dataLifecycleResourceFence.findFirst({
+          where: {
+            operationId: input.operationId,
+            ownerUserId: input.targetUserId,
+            resourceType: 'ACCOUNT',
+            resourceId: scope.accountId,
+            releasedAt: null,
+          },
+          select: { id: true },
+        });
+        if (!activeFence) {
+          throw new DataLifecycleInvalidStateError(
+            'Synchronous account purge lost its lifecycle fence before completion.',
+          );
+        }
+
+        const drain =
+          await createAccountGameDataLifecycleCoordinatorRepository(transaction)
+            .loadDrainSnapshot(scope);
+        if (drain.legacyImportBlockers > 0 || !drain.drained) {
+          throw new DataLifecycleInvalidStateError(
+            'Account work must be fully drained before synchronous purge.',
+          );
+        }
+
+        await transaction.$executeRaw(Prisma.sql`
+          SELECT set_config('app.data_lifecycle_operation_id', ${String(input.operationId)}, TRUE)
+        `);
+
+        const started = await transaction.$executeRaw(Prisma.sql`
+          UPDATE "DataLifecycleOperation"
+          SET "status" = 'EXECUTING',
+              "heartbeatAt" = NOW(),
+              "updatedAt" = NOW()
+          WHERE "id" = ${input.operationId}
+            AND "targetUserId" = ${input.targetUserId}
+            AND "status" = 'WAITING_FOR_DRAIN'
+            AND "workKey" = ${synchronousPurgeWorkKey(input.operationId)}
         `);
         if (started !== 1) {
           throw new DataLifecycleInvalidStateError(
@@ -249,6 +360,7 @@ export function createAccountGameDataLifecycleExecutionRepository(
           WHERE "id" = ${input.operationId}
             AND "targetUserId" = ${input.targetUserId}
             AND "status" = 'EXECUTING'
+            AND "workKey" = ${synchronousPurgeWorkKey(input.operationId)}
         `);
         if (completed !== 1) {
           throw new DataLifecycleInvalidStateError(
@@ -261,6 +373,42 @@ export function createAccountGameDataLifecycleExecutionRepository(
           WHERE "operationId" = ${input.operationId}
             AND "releasedAt" IS NULL
         `);
+      });
+    },
+
+    async markSynchronousAccountPurgeNeedsAttention(input) {
+      validatePositiveInteger(input.operationId, 'operationId');
+      validatePositiveInteger(input.targetUserId, 'targetUserId');
+      if (!/^[A-Z0-9_:-]{1,120}$/.test(input.errorCode)) {
+        throw new Error('errorCode must be a bounded lifecycle error code.');
+      }
+
+      await database.$transaction(async (transaction) => {
+        await lockDataLifecycleUserScope(transaction, input.targetUserId);
+        const updated = await transaction.$executeRaw(Prisma.sql`
+          UPDATE "DataLifecycleOperation"
+          SET "status" = 'NEEDS_ATTENTION',
+              "terminalResult" = 'NEEDS_ATTENTION',
+              "errorCode" = ${input.errorCode},
+              "workKey" = NULL,
+              "claimedAt" = NULL,
+              "heartbeatAt" = NULL,
+              "updatedAt" = NOW()
+          WHERE "id" = ${input.operationId}
+            AND "targetUserId" = ${input.targetUserId}
+            AND "status" = 'WAITING_FOR_DRAIN'
+            AND "firstDestructiveCommitAt" IS NULL
+        `);
+        if (updated !== 1) {
+          const current = await transaction.dataLifecycleOperation.findFirst({
+            where: { id: input.operationId, targetUserId: input.targetUserId },
+            select: { status: true },
+          });
+          if (current?.status === 'COMPLETED' || current?.status === 'NEEDS_ATTENTION') return;
+          throw new DataLifecycleInvalidStateError(
+            'Lifecycle operation changed before drain failure could be recorded.',
+          );
+        }
       });
     },
 
@@ -705,6 +853,10 @@ function assertSynchronousPurgeReplay(
   ) {
     throw new DataLifecyclePreviewInvalidError();
   }
+}
+
+function synchronousPurgeWorkKey(operationId: number): string {
+  return `ADMIN_DIRECT_PURGE:${operationId}`;
 }
 
 function validateSynchronousAccountPurgeInput(input: SynchronousAccountPurgeInput): void {
