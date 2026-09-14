@@ -64,7 +64,12 @@
       <strong>Operation {{ operationValue.operationId }}</strong>
       <span class="lifecycle-operation-status">{{ operationValue.status }}</span>
     </div>
-    @if (operationValue.firstDestructiveCommitAt) {
+    @if (operationValue.status === 'COMPLETED' && operationValue.firstDestructiveCommitAt) {
+      <p>
+        Destructive work completed
+        {{ (operationValue.completedAt || operationValue.firstDestructiveCommitAt) | date: 'medium' }}.
+      </p>
+    } @else if (operationValue.firstDestructiveCommitAt) {
       <p>
         Destructive work started
         {{ operationValue.firstDestructiveCommitAt | date: 'medium' }}. The worker continues in
