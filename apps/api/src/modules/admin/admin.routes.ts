@@ -423,6 +423,7 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
       operationId: 'executeAdminAccountGameDataLifecycle',
       tags: ['Administrator lifecycle'],
       summary: 'Execute a previewed administrator lifecycle operation',
+      description: 'Validates the preview token, typed confirmation, and idempotency key. PURGE_ACCOUNT_DATA completes in the request transaction; other account/game actions continue through the lifecycle worker.',
       params: adminLifecycleParamsSchema,
       body: dataLifecycleExecuteRequestSchema,
       response: {

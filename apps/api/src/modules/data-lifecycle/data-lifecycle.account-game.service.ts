@@ -21,6 +21,10 @@ import {
   type AccountGameDataLifecycleOperationRepository as OperationRepositoryBoundary,
 } from './data-lifecycle.account-game-operation.repository.prisma';
 import {
+  AccountGameDataLifecycleExecutionRepository,
+  type AccountGameDataLifecycleExecutionRepository as ExecutionRepositoryBoundary,
+} from './data-lifecycle.account-game-execution.repository.prisma';
+import {
   DataLifecycleInvalidStateError,
   DataLifecyclePreviewInvalidError,
   DataLifecycleRepository,
@@ -87,6 +91,7 @@ export interface CreateAccountGameDataLifecycleServiceInput {
   lifecycleRepository?: DataLifecycleRepositoryBoundary;
   coordinatorRepository?: CoordinatorRepositoryBoundary;
   operationRepository?: OperationRepositoryBoundary;
+  executionRepository?: ExecutionRepositoryBoundary;
   auditKeyring?: LifecycleHmacKeyring;
   now?: () => Date;
   randomToken?: () => string;
@@ -100,6 +105,8 @@ export function createAccountGameDataLifecycleService(
     input.coordinatorRepository ?? AccountGameDataLifecycleCoordinatorRepository;
   const operationRepository =
     input.operationRepository ?? AccountGameDataLifecycleOperationRepository;
+  const executionRepository =
+    input.executionRepository ?? AccountGameDataLifecycleExecutionRepository;
   const auditKeyring = input.auditKeyring ?? loadLifecycleAuditKeyring();
   const now = input.now ?? (() => new Date());
   const randomToken = input.randomToken ?? (() => randomBytes(32).toString('base64url'));
@@ -214,6 +221,46 @@ export function createAccountGameDataLifecycleService(
     return toResponse(started);
   }
 
+  async function executeForAdmin(
+    targetUserId: number,
+    operationId: number,
+    request: DataLifecycleExecuteRequest,
+    verification?: Record<string, unknown>,
+  ) {
+    validatePositiveInteger(targetUserId, 'targetUserId');
+    validatePositiveInteger(operationId, 'operationId');
+    const parsed = dataLifecycleExecuteRequestSchema.parse(request);
+    const operation = await requireAccountGameOperation(
+      lifecycleRepository,
+      targetUserId,
+      operationId,
+    );
+    assertExecutionCredentials(operation, parsed);
+
+    if (operation.action !== 'PURGE_ACCOUNT_DATA') {
+      return execute(targetUserId, operationId, parsed, verification);
+    }
+
+    const alreadyCompleted = operation.status === 'COMPLETED';
+    await executionRepository.purgeAccountDataSynchronously({
+      operationId,
+      targetUserId,
+      previewTokenHash: hashOpaqueLifecycleToken(parsed.previewToken),
+      previewHash: operation.previewHash,
+      idempotencyKeyHash: hashOpaqueLifecycleToken(parsed.idempotencyKey),
+      verification,
+    });
+    const completed = await requireAccountGameOperation(
+      lifecycleRepository,
+      targetUserId,
+      operationId,
+    );
+    if (!alreadyCompleted) {
+      await appendAudit(lifecycleRepository, auditKeyring, completed, 'COMPLETED');
+    }
+    return toResponse(completed);
+  }
+
   return {
     async preview(userId, request) {
       const identity = auditPrincipal(auditKeyring, userId);
@@ -221,7 +268,7 @@ export function createAccountGameDataLifecycleService(
     },
     execute,
     previewForAdmin: preview,
-    executeForAdmin: execute,
+    executeForAdmin,
 
     async get(userId, operationId) {
       validatePositiveInteger(userId, 'userId');

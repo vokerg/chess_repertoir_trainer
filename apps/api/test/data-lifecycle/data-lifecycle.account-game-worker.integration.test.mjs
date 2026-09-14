@@ -373,6 +373,71 @@ try {
   );
   assert.equal((await service.get(userId, stalePreview.operationId)).status, 'PREVIEWED');
 
+  const directPurgeAccount = await prisma.externalAccount.create({
+    data: {
+      userId,
+      provider: 'LICHESS',
+      username: `direct-purge-${suffix}`,
+    },
+  });
+  const directPurgeGame = await prisma.importedGame.create({
+    data: {
+      userId,
+      accountId: directPurgeAccount.id,
+      provider: 'LICHESS',
+      providerGameId: `direct-purge-game-${suffix}`,
+      pgn: '1. e4 e5',
+    },
+  });
+  const directPurgeScenario = await createScenarioForGame(directPurgeGame.id, 'direct-purge');
+  const blockingPreview = await service.preview(userId, {
+    action: 'UNANALYSE_GAMES',
+    accountId: directPurgeAccount.id,
+    gameIds: [directPurgeGame.id],
+  });
+  operationIds.push(blockingPreview.operationId);
+  const blockingExecution = await service.execute(userId, blockingPreview.operationId, {
+    previewToken: blockingPreview.previewToken,
+    confirmationPhrase: blockingPreview.confirmationPhrase,
+    idempotencyKey: `onb-020-direct-blocker-${suffix}`,
+  });
+  assert.equal(blockingExecution.status, 'FENCING');
+
+  const adminPreview = await service.previewForAdmin(
+    1,
+    userId,
+    { keyVersion: 1, digest: hash(`admin-direct:${suffix}`) },
+    { keyVersion: 1, digest: hash(`target-direct:${suffix}`) },
+    { action: 'PURGE_ACCOUNT_DATA', accountId: directPurgeAccount.id },
+  );
+  operationIds.push(adminPreview.operationId);
+  const adminExecution = await service.executeForAdmin(
+    userId,
+    adminPreview.operationId,
+    {
+      previewToken: adminPreview.previewToken,
+      confirmationPhrase: adminPreview.confirmationPhrase,
+      idempotencyKey: `onb-020-admin-direct-${suffix}`,
+    },
+    { method: 'TYPED_CONFIRMATION_PHRASE' },
+  );
+  assert.equal(adminExecution.status, 'COMPLETED');
+  assert.equal(await prisma.importedGame.count({ where: { id: directPurgeGame.id } }), 0);
+  assert.equal(
+    await prisma.scenarioTrainingSession.count({ where: { id: directPurgeScenario.id } }),
+    0,
+  );
+  assert.equal(
+    (await service.get(userId, blockingPreview.operationId)).errorCode,
+    'SUPERSEDED_BY_ADMIN_PURGE',
+  );
+  assert.equal(
+    await prisma.dataLifecycleResourceFence.count({
+      where: { ownerUserId: userId, releasedAt: null },
+    }),
+    0,
+  );
+
   const purgeAccount = await prisma.externalAccount.create({
     data: {
       userId,
