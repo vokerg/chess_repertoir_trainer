@@ -390,6 +390,46 @@ try {
     },
   });
   const directPurgeScenario = await createScenarioForGame(directPurgeGame.id, 'direct-purge');
+
+  const staleAdminPreview = await service.previewForAdmin(
+    1,
+    userId,
+    { keyVersion: 1, digest: hash(`admin-direct-stale:${suffix}`) },
+    { keyVersion: 1, digest: hash(`target-direct-stale:${suffix}`) },
+    { action: 'PURGE_ACCOUNT_DATA', accountId: directPurgeAccount.id },
+  );
+  operationIds.push(staleAdminPreview.operationId);
+  const lateDirectPurgeGame = await prisma.importedGame.create({
+    data: {
+      userId,
+      accountId: directPurgeAccount.id,
+      provider: 'LICHESS',
+      providerGameId: `direct-purge-late-game-${suffix}`,
+      pgn: '1. d4 d5',
+    },
+  });
+  const activeDirectImport = await prisma.importRun.create({
+    data: {
+      ...canonicalImportData(directPurgeAccount.id, 'LICHESS', 'direct-purge-active'),
+      status: 'QUEUED',
+      completedAt: null,
+    },
+  });
+  await assert.rejects(
+    service.executeForAdmin(
+      userId,
+      staleAdminPreview.operationId,
+      {
+        previewToken: staleAdminPreview.previewToken,
+        confirmationPhrase: staleAdminPreview.confirmationPhrase,
+        idempotencyKey: `onb-020-admin-direct-stale-${suffix}`,
+      },
+      { method: 'TYPED_CONFIRMATION_PHRASE' },
+    ),
+    (error) => error?.code === 'DATA_LIFECYCLE_PREVIEW_INVALID',
+  );
+  assert.equal((await service.get(userId, staleAdminPreview.operationId)).status, 'PREVIEWED');
+
   const blockingPreview = await service.preview(userId, {
     action: 'UNANALYSE_GAMES',
     accountId: directPurgeAccount.id,
@@ -423,9 +463,14 @@ try {
   );
   assert.equal(adminExecution.status, 'COMPLETED');
   assert.equal(await prisma.importedGame.count({ where: { id: directPurgeGame.id } }), 0);
+  assert.equal(await prisma.importedGame.count({ where: { id: lateDirectPurgeGame.id } }), 0);
   assert.equal(
     await prisma.scenarioTrainingSession.count({ where: { id: directPurgeScenario.id } }),
     0,
+  );
+  assert.equal(
+    (await prisma.importRun.findUniqueOrThrow({ where: { id: activeDirectImport.id } })).status,
+    'CANCELLED',
   );
   assert.equal(
     (await service.get(userId, blockingPreview.operationId)).errorCode,
