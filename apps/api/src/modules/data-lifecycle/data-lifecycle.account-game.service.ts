@@ -10,6 +10,14 @@ import {
   type DataLifecyclePreviewResponse,
 } from '@chess-trainer/contracts/data-lifecycle';
 import {
+  AccountImportLifecycleRepository,
+  type AccountImportLifecycleRepository as ImportRepositoryBoundary,
+} from '../account-imports/account-import.lifecycle.repository.prisma';
+import {
+  PreparationReconcilerRepository,
+  type PreparationReconcilerRepository as PreparationRepositoryBoundary,
+} from '../preparation/preparation-reconciler.repository.prisma';
+import {
   AccountGameDataLifecycleCoordinatorRepository,
   createAccountGameDataLifecycleCoordinatorRepository,
   type AccountGameDataLifecycleAction,
@@ -38,6 +46,8 @@ import {
 } from './data-lifecycle.hmac';
 
 export const ACCOUNT_GAME_LIFECYCLE_PREVIEW_TTL_MS = 10 * 60_000;
+const ADMIN_DIRECT_PURGE_DRAIN_POLL_INTERVAL_MS = 100;
+const ADMIN_DIRECT_PURGE_DRAIN_TIMEOUT_MS = 30_000;
 
 const ACCOUNT_GAME_ACTIONS = new Set<AccountGameDataLifecycleAction>([
   'UNANALYSE_GAMES',
@@ -92,6 +102,8 @@ export interface CreateAccountGameDataLifecycleServiceInput {
   coordinatorRepository?: CoordinatorRepositoryBoundary;
   operationRepository?: OperationRepositoryBoundary;
   executionRepository?: ExecutionRepositoryBoundary;
+  importRepository?: ImportRepositoryBoundary;
+  preparationRepository?: PreparationRepositoryBoundary;
   auditKeyring?: LifecycleHmacKeyring;
   now?: () => Date;
   randomToken?: () => string;
@@ -107,6 +119,9 @@ export function createAccountGameDataLifecycleService(
     input.operationRepository ?? AccountGameDataLifecycleOperationRepository;
   const executionRepository =
     input.executionRepository ?? AccountGameDataLifecycleExecutionRepository;
+  const importRepository = input.importRepository ?? AccountImportLifecycleRepository;
+  const preparationRepository =
+    input.preparationRepository ?? PreparationReconcilerRepository;
   const auditKeyring = input.auditKeyring ?? loadLifecycleAuditKeyring();
   const now = input.now ?? (() => new Date());
   const randomToken = input.randomToken ?? (() => randomBytes(32).toString('base64url'));
@@ -237,28 +252,111 @@ export function createAccountGameDataLifecycleService(
     );
     assertExecutionCredentials(operation, parsed);
 
-    if (operation.action !== 'PURGE_ACCOUNT_DATA') {
+    if (
+      operation.action !== 'PURGE_ACCOUNT_DATA'
+      || (operation.status === 'NEEDS_ATTENTION' && operation.firstDestructiveCommitAt !== null)
+    ) {
       return execute(targetUserId, operationId, parsed, verification);
     }
 
+    const scope = accountGameScope(operation);
+    if (scope.resourceType !== 'ACCOUNT') {
+      throw new DataLifecycleInvalidStateError(
+        'PURGE_ACCOUNT_DATA requires an account lifecycle scope.',
+      );
+    }
+
+    const idempotencyKeyHash = hashOpaqueLifecycleToken(parsed.idempotencyKey);
     const alreadyCompleted = operation.status === 'COMPLETED';
-    await executionRepository.purgeAccountDataSynchronously({
+    const completedReplay = await executionRepository.prepareSynchronousAccountPurge({
       operationId,
       targetUserId,
       previewTokenHash: hashOpaqueLifecycleToken(parsed.previewToken),
       previewHash: operation.previewHash,
-      idempotencyKeyHash: hashOpaqueLifecycleToken(parsed.idempotencyKey),
+      idempotencyKeyHash,
       verification,
     });
+
+    if (!completedReplay) {
+      await quiesceAccountForDirectPurge(scope, operationId, targetUserId);
+      await executionRepository.completeSynchronousAccountPurge({
+        operationId,
+        targetUserId,
+        idempotencyKeyHash,
+      });
+    }
+
     const completed = await requireAccountGameOperation(
       lifecycleRepository,
       targetUserId,
       operationId,
     );
-    if (!alreadyCompleted) {
+    if (!alreadyCompleted && completed.status === 'COMPLETED') {
       await appendAudit(lifecycleRepository, auditKeyring, completed, 'COMPLETED');
     }
     return toResponse(completed);
+  }
+
+  async function quiesceAccountForDirectPurge(
+    scope: Extract<AccountGameDataLifecycleScope, { resourceType: 'ACCOUNT' }>,
+    operationId: number,
+    targetUserId: number,
+  ): Promise<void> {
+    const deadline = Date.now() + ADMIN_DIRECT_PURGE_DRAIN_TIMEOUT_MS;
+
+    try {
+      while (true) {
+        const targets = await coordinatorRepository.listCancellationTargets(scope);
+        for (const importRunId of targets.importRunIds) {
+          await importRepository.requestCancel(targetUserId, importRunId);
+        }
+        for (const preparationRunId of targets.preparationRunIds) {
+          await preparationRepository.requestCancel(targetUserId, preparationRunId);
+        }
+        await executionRepository.cancelScopedJobTasks(targetUserId, targets.jobTaskIds);
+
+        const snapshot = await coordinatorRepository.loadDrainSnapshot(scope);
+        if (snapshot.legacyImportBlockers > 0) {
+          await executionRepository.markSynchronousAccountPurgeNeedsAttention({
+            operationId,
+            targetUserId,
+            errorCode: 'DATA_LIFECYCLE_LEGACY_IMPORT_BLOCKED',
+          });
+          throw new DataLifecycleInvalidStateError(
+            'Account purge is blocked by active legacy import work.',
+          );
+        }
+        if (snapshot.drained) return;
+        if (Date.now() >= deadline) {
+          await executionRepository.markSynchronousAccountPurgeNeedsAttention({
+            operationId,
+            targetUserId,
+            errorCode: 'DATA_LIFECYCLE_DRAIN_TIMEOUT',
+          });
+          throw new DataLifecycleInvalidStateError(
+            'Account work did not drain before the synchronous purge deadline.',
+          );
+        }
+
+        await wait(ADMIN_DIRECT_PURGE_DRAIN_POLL_INTERVAL_MS);
+      }
+    } catch (error) {
+      if (
+        error instanceof DataLifecycleInvalidStateError
+        && (
+          error.message === 'Account purge is blocked by active legacy import work.'
+          || error.message === 'Account work did not drain before the synchronous purge deadline.'
+        )
+      ) {
+        throw error;
+      }
+      await executionRepository.markSynchronousAccountPurgeNeedsAttention({
+        operationId,
+        targetUserId,
+        errorCode: 'DATA_LIFECYCLE_DRAIN_FAILED',
+      });
+      throw error;
+    }
   }
 
   return {
@@ -432,6 +530,10 @@ function toResponse(operation: StoredDataLifecycleOperation): DataLifecycleOpera
 
 function uniqueSortedIds(values: number[]): number[] {
   return Array.from(new Set(values)).sort((left, right) => left - right);
+}
+
+function wait(delayMs: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
 }
 
 function validatePositiveInteger(value: number, label: string): void {
