@@ -92,7 +92,7 @@ const service = createAccountGameDataLifecycleService({
       prepareCalls.push(input);
       operation = {
         ...operation,
-        status: 'WAITING_FOR_DRAIN',
+        status: 'QUEUED',
         idempotencyKeyHash: input.idempotencyKeyHash,
         verification: input.verification,
         startedAt: now,
