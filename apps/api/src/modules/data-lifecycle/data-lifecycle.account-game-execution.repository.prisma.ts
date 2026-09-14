@@ -212,17 +212,16 @@ export function createAccountGameDataLifecycleExecutionRepository(
         await retireCompetingLifecycleOperations(transaction, input.targetUserId, input.operationId);
         await ensureSynchronousPurgeFence(transaction, input.operationId, scope);
 
-        const directWorkKey = synchronousPurgeWorkKey(input.operationId);
         const prepared = await transaction.$executeRaw(Prisma.sql`
           UPDATE "DataLifecycleOperation"
-          SET "status" = 'WAITING_FOR_DRAIN',
+          SET "status" = 'QUEUED',
               "idempotencyKeyHash" = ${input.idempotencyKeyHash},
               "verificationJson" = ${input.verification ? JSON.stringify(input.verification) : null}::jsonb,
               "stopRequest" = 'NONE',
               "stopRequestedAt" = NULL,
-              "workKey" = ${directWorkKey},
-              "claimedAt" = COALESCE("claimedAt", NOW()),
-              "heartbeatAt" = NOW(),
+              "workKey" = NULL,
+              "claimedAt" = NULL,
+              "heartbeatAt" = NULL,
               "terminalResult" = NULL,
               "errorCode" = NULL,
               "startedAt" = COALESCE("startedAt", NOW()),
@@ -267,9 +266,8 @@ export function createAccountGameDataLifecycleExecutionRepository(
           return;
         }
         if (
-          operation.status !== 'WAITING_FOR_DRAIN'
+          operation.status !== 'QUEUED'
           || operation.idempotencyKeyHash !== input.idempotencyKeyHash
-          || operation.workKey !== synchronousPurgeWorkKey(input.operationId)
         ) {
           throw new DataLifecycleInvalidStateError(
             'Synchronous account purge is not prepared for completion.',
@@ -316,8 +314,7 @@ export function createAccountGameDataLifecycleExecutionRepository(
               "updatedAt" = NOW()
           WHERE "id" = ${input.operationId}
             AND "targetUserId" = ${input.targetUserId}
-            AND "status" = 'WAITING_FOR_DRAIN'
-            AND "workKey" = ${synchronousPurgeWorkKey(input.operationId)}
+            AND "status" = 'QUEUED'
         `);
         if (started !== 1) {
           throw new DataLifecycleInvalidStateError(
@@ -360,7 +357,6 @@ export function createAccountGameDataLifecycleExecutionRepository(
           WHERE "id" = ${input.operationId}
             AND "targetUserId" = ${input.targetUserId}
             AND "status" = 'EXECUTING'
-            AND "workKey" = ${synchronousPurgeWorkKey(input.operationId)}
         `);
         if (completed !== 1) {
           throw new DataLifecycleInvalidStateError(
@@ -396,7 +392,7 @@ export function createAccountGameDataLifecycleExecutionRepository(
               "updatedAt" = NOW()
           WHERE "id" = ${input.operationId}
             AND "targetUserId" = ${input.targetUserId}
-            AND "status" = 'WAITING_FOR_DRAIN'
+            AND "status" = 'QUEUED'
             AND "firstDestructiveCommitAt" IS NULL
         `);
         if (updated !== 1) {
@@ -853,10 +849,6 @@ function assertSynchronousPurgeReplay(
   ) {
     throw new DataLifecyclePreviewInvalidError();
   }
-}
-
-function synchronousPurgeWorkKey(operationId: number): string {
-  return `ADMIN_DIRECT_PURGE:${operationId}`;
 }
 
 function validateSynchronousAccountPurgeInput(input: SynchronousAccountPurgeInput): void {
