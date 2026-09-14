@@ -1,6 +1,6 @@
 # Destructive data lifecycle foundation
 
-This document describes the current persistence and write-admission foundation for destructive data lifecycle work. ONB-020 now consumes this foundation for public account/imported-game preview, execution, cancellation/drain, bounded destructive batches, and verification; whole-user deletion remains downstream. Administrator `PURGE_ACCOUNT_DATA` is a small synchronous exception that uses the same account purge mutations inside one transaction and returns a completed operation without the worker/drain phases.
+This document describes the current persistence and write-admission foundation for destructive data lifecycle work. ONB-020 now consumes this foundation for public account/imported-game preview, execution, cancellation/drain, bounded destructive batches, and verification; whole-user deletion remains downstream. Administrator `PURGE_ACCOUNT_DATA` is a small synchronous request-level exception that uses the same account purge mutations while preserving the lifecycle safety phases: it commits a durable fence, cancels and drains account work, then performs the destructive purge in one transaction and returns a completed operation.
 
 ## Durable records
 
