@@ -267,7 +267,6 @@ export function createAccountGameDataLifecycleService(
     }
 
     const idempotencyKeyHash = hashOpaqueLifecycleToken(parsed.idempotencyKey);
-    const alreadyCompleted = operation.status === 'COMPLETED';
     const completedReplay = await executionRepository.prepareSynchronousAccountPurge({
       operationId,
       targetUserId,
@@ -291,7 +290,10 @@ export function createAccountGameDataLifecycleService(
       targetUserId,
       operationId,
     );
-    if (!alreadyCompleted && completed.status === 'COMPLETED') {
+    if (
+      completed.status === 'COMPLETED'
+      && !await operationRepository.hasAuditEvent(completed.id, 'COMPLETED')
+    ) {
       await appendAudit(lifecycleRepository, auditKeyring, completed, 'COMPLETED');
     }
     return toResponse(completed);
