@@ -71,6 +71,11 @@ const service = createAccountGameDataLifecycleService({
       audits.push(input);
     },
   },
+  operationRepository: {
+    async hasAuditEvent(operationIdValue, eventType) {
+      return audits.some((event) => event.operationId === operationIdValue && event.eventType === eventType);
+    },
+  },
   coordinatorRepository: {
     async listCancellationTargets() {
       return { importRunIds: [], preparationRunIds: [], jobTaskIds: [], hasMore: false };
