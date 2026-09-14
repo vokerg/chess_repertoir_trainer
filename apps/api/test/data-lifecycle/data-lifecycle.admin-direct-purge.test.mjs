@@ -58,7 +58,8 @@ let operation = {
   updatedAt: new Date('2026-09-14T09:50:00.000Z'),
 };
 
-const purgeCalls = [];
+const prepareCalls = [];
+const completeCalls = [];
 const audits = [];
 const service = createAccountGameDataLifecycleService({
   auditKeyring: new LifecycleHmacKeyring([{ version: 1, secret: 'admin-direct-purge-test' }]),
@@ -70,21 +71,50 @@ const service = createAccountGameDataLifecycleService({
       audits.push(input);
     },
   },
+  coordinatorRepository: {
+    async listCancellationTargets() {
+      return { importRunIds: [], preparationRunIds: [], jobTaskIds: [], hasMore: false };
+    },
+    async loadDrainSnapshot() {
+      return {
+        activeImportRuns: 0,
+        activeImportWorkKeys: 0,
+        activePreparationRuns: 0,
+        activeJobRuns: 0,
+        activeJobTaskWorkKeys: 0,
+        legacyImportBlockers: 0,
+        drained: true,
+      };
+    },
+  },
   executionRepository: {
-    async purgeAccountDataSynchronously(input) {
-      purgeCalls.push(input);
+    async prepareSynchronousAccountPurge(input) {
+      prepareCalls.push(input);
+      operation = {
+        ...operation,
+        status: 'WAITING_FOR_DRAIN',
+        idempotencyKeyHash: input.idempotencyKeyHash,
+        verification: input.verification,
+        startedAt: now,
+        updatedAt: now,
+      };
+      return false;
+    },
+    async completeSynchronousAccountPurge(input) {
+      completeCalls.push(input);
       operation = {
         ...operation,
         status: 'COMPLETED',
-        idempotencyKeyHash: input.idempotencyKeyHash,
         firstDestructiveCommitAt: now,
         checkpoint: { version: 1, phase: 'DONE', afterGameId: null },
-        verification: input.verification,
         terminalResult: 'COMPLETED',
-        startedAt: now,
         completedAt: now,
         updatedAt: now,
       };
+    },
+    async markSynchronousAccountPurgeNeedsAttention() {},
+    async cancelScopedJobTasks() {
+      return 0;
     },
   },
 });
@@ -102,8 +132,8 @@ const result = await service.executeForAdmin(
 
 assert.equal(result.status, 'COMPLETED');
 assert.equal(result.terminalResult, 'COMPLETED');
-assert.equal(purgeCalls.length, 1);
-assert.deepEqual(purgeCalls[0], {
+assert.equal(prepareCalls.length, 1);
+assert.deepEqual(prepareCalls[0], {
   operationId,
   targetUserId,
   previewTokenHash: hashOpaqueLifecycleToken(previewToken),
@@ -111,6 +141,11 @@ assert.deepEqual(purgeCalls[0], {
   idempotencyKeyHash: hashOpaqueLifecycleToken(idempotencyKey),
   verification: { method: 'TYPED_CONFIRMATION_PHRASE' },
 });
+assert.deepEqual(completeCalls, [{
+  operationId,
+  targetUserId,
+  idempotencyKeyHash: hashOpaqueLifecycleToken(idempotencyKey),
+}]);
 assert.deepEqual(audits.map(({ eventType, status, terminalResult }) => ({ eventType, status, terminalResult })), [
   { eventType: 'COMPLETED', status: 'COMPLETED', terminalResult: 'COMPLETED' },
 ]);
