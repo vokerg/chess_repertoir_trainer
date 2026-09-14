@@ -53,7 +53,7 @@ Fences are released only for verified completion or a pre-mutation cancellation/
 
 ### ONB-020 account/game consumer
 
-ONB-020 implements `UNANALYSE_GAMES`, `UNINDEX_GAMES`, `PURGE_ACCOUNT_DATA`, and `DELETE_EXTERNAL_ACCOUNT` over this state machine. Authenticated preview/execute/status/stop routes live under `/api/me/data-lifecycle`, and the existing persistent worker process claims the account/game lifecycle operations. The administrator execute route handles `PURGE_ACCOUNT_DATA` synchronously as a bounded account transaction; administrator executions of the other account/game actions still enter the worker state machine.
+ONB-020 implements `UNANALYSE_GAMES`, `UNINDEX_GAMES`, `PURGE_ACCOUNT_DATA`, and `DELETE_EXTERNAL_ACCOUNT` over this state machine. Authenticated preview/execute/status/stop routes live under `/api/me/data-lifecycle`, and the existing persistent worker process claims the account/game lifecycle operations. The administrator execute route handles `PURGE_ACCOUNT_DATA` synchronously at request level: it revalidates the preview, commits an unclaimed `QUEUED` operation with a durable account fence, drains account work, then performs the destructive purge transaction and releases the fence. Administrator executions of the other account/game actions still enter the worker state machine.
 
 The account/game worker requests cancellation through the existing import/preparation control paths and cancels only affected imported-game `JobTask` rows. It waits for target durable claims and residual task work keys before mutation. Destructive game batches are deterministic, configurable, and never exceed 100 ids.
 
