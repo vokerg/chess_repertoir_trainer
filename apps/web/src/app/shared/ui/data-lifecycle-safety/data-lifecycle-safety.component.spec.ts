@@ -28,6 +28,21 @@ describe('DataLifecycleSafetyComponent', () => {
 
     expect(root.querySelector('button.danger')?.hasAttribute('disabled')).toBeFalse();
   });
+
+  it('describes completed work without implying that a worker is still running', () => {
+    const fixture = TestBed.createComponent(DataLifecycleSafetyComponent);
+    fixture.componentRef.setInput('operation', {
+      ...lifecyclePreview(),
+      status: 'COMPLETED',
+      firstDestructiveCommitAt: '2026-09-14T10:00:00.000Z',
+      terminalResult: 'COMPLETED',
+    });
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Destructive work completed');
+    expect(text).not.toContain('The worker continues');
+  });
 });
 
 function lifecyclePreview(): DataLifecyclePreviewResponse {
