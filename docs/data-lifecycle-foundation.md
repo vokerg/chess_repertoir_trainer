@@ -1,6 +1,6 @@
 # Destructive data lifecycle foundation
 
-This document describes the current persistence and write-admission foundation for destructive data lifecycle work. ONB-020 consumes the foundation for account/imported-game operations, and ONB-021 extends the same durable state machine to whole-application-user deletion and the mobile offline purge handshake.
+This document describes the current persistence and write-admission foundation for destructive data lifecycle work. ONB-020 consumes the foundation for account/imported-game operations, and ONB-021 extends the same durable state machine to whole-application-user deletion and the mobile offline purge handshake. Administrator `PURGE_ACCOUNT_DATA` is a small synchronous request-level exception that uses the same account purge mutations while preserving the lifecycle safety phases: it commits a durable fence, cancels and drains account work, then performs the destructive purge in one transaction and returns a completed operation.
 
 ## Durable records
 
@@ -53,7 +53,7 @@ Fences are released only for verified completion or a pre-mutation cancellation/
 
 ### ONB-020 account/game consumer
 
-ONB-020 implements `UNANALYSE_GAMES`, `UNINDEX_GAMES`, `PURGE_ACCOUNT_DATA`, and `DELETE_EXTERNAL_ACCOUNT` over this state machine. Authenticated preview/execute/status/stop routes live under `/api/me/data-lifecycle`, and the existing persistent worker process claims the account/game lifecycle operations.
+ONB-020 implements `UNANALYSE_GAMES`, `UNINDEX_GAMES`, `PURGE_ACCOUNT_DATA`, and `DELETE_EXTERNAL_ACCOUNT` over this state machine. Authenticated preview/execute/status/stop routes live under `/api/me/data-lifecycle`, and the existing persistent worker process claims the account/game lifecycle operations. The administrator execute route handles `PURGE_ACCOUNT_DATA` synchronously at request level: it revalidates the preview, commits an unclaimed `QUEUED` operation with a durable account fence, drains account work, then performs the destructive purge transaction and releases the fence. Administrator executions of the other account/game actions still enter the worker state machine.
 
 The account/game worker requests cancellation through the existing import/preparation control paths and cancels only affected imported-game `JobTask` rows. It waits for target durable claims and residual task work keys before mutation. Destructive game batches are deterministic, configurable, and never exceed 100 ids.
 
@@ -104,7 +104,7 @@ Receipt status, stop, and repair/resume endpoints live under `/api/data-lifecycl
 
 The authenticated mobile session probe is `GET /api/mobile-sync/session`. Once a USER fence exists, ordinary auth resolution returns `DATA_LIFECYCLE_DELETION_IN_PROGRESS` with `purgeLocalData: true`; after final deletion it returns `DATA_LIFECYCLE_IDENTITY_DELETED` with the same purge instruction.
 
-Mobile probes the server before activating a signed-in local user and again when the app returns to the foreground. Either typed deletion signal deletes the device `local_user` row inside an exclusive SQLite transaction. Existing foreign-key cascades remove downloaded course data, local training state, marathon state, synchronization state, and pending outbox rows before Clerk sign-out completes. Attempt upload handles the same signal so a stale outbox is purged instead of retried. Network/unrelated server failures do not erase offline data.
+Mobile probes the server before activating a signed-in local user and again when the app returns to the foreground. Either typed deletion signal deletes the device `local_user` row inside an exclusive SQLite transaction. Existing foreign-key cascades remove downloaded course data, local training state, marathon state, synchronization state, and pending outbox rows before Clerk sign-out completes. Attempt upload, course-manifest refresh, and course download handle the same signal so any authenticated next contact purges stale local data instead of treating deletion as an ordinary request failure. Network/unrelated server failures do not erase offline data.
 
 ## Opening provenance
 
@@ -125,4 +125,4 @@ Operations referenced by a deleted-identity tombstone are excluded from generic 
 
 ## Remaining downstream scope
 
-ONB-021 does not perform shared `Position` cleanup and does not add administrator execution or a general mobile account-management redesign. Shared-position cleanup remains ONB-026-owned, administrator mutation exposure remains separately policy-gated, and UI consumers must continue to use the lifecycle preview/execute protocol rather than restoring direct unfenced deletion.
+ONB-021 does not perform shared `Position` cleanup, does not add administrator whole-user deletion, and does not add a general mobile account-management redesign. Shared-position cleanup remains ONB-026-owned, administrator whole-user mutation exposure remains separately policy-gated, and UI consumers must continue to use the lifecycle preview/execute protocol rather than restoring direct unfenced deletion.
