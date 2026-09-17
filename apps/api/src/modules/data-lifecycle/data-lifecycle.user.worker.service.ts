@@ -86,6 +86,13 @@ interface UserDeletionCheckpoint {
   afterGameId: number | null;
 }
 
+class EmptyResidualPhaseError extends Error {
+  constructor() {
+    super('Whole-user residual phase had no rows to delete.');
+    this.name = 'EmptyResidualPhaseError';
+  }
+}
+
 const consoleLogger: UserDataLifecycleWorkerLogger = {
   info(context, message) { console.info(message, context); },
   warn(context, message) { console.warn(message, context); },
@@ -463,19 +470,25 @@ export function createUserDataLifecycleWorker(
     }
 
     let deleted = 0;
-    await runDestructiveBatch(
-      operation,
-      workKey,
-      checkpoint,
-      async (transaction) => {
-        deleted = await userRepository.deleteResidualBatch(
-          transaction,
-          operation.targetUserId,
-          phase,
-          input.config.gameBatchLimit,
-        );
-      },
-    );
+    try {
+      await runDestructiveBatch(
+        operation,
+        workKey,
+        checkpoint,
+        async (transaction) => {
+          deleted = await userRepository.deleteResidualBatch(
+            transaction,
+            operation.targetUserId,
+            phase,
+            input.config.gameBatchLimit,
+          );
+          if (deleted === 0) throw new EmptyResidualPhaseError();
+        },
+      );
+    } catch (error) {
+      if (!(error instanceof EmptyResidualPhaseError)) throw error;
+    }
+
     if (deleted > 0) {
       await release(operation, workKey);
       return;
