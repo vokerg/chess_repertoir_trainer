@@ -15,20 +15,17 @@ const appUserOwnedModels = [];
 
 for (const [, modelName, body] of modelBlocks) {
   if (modelName === 'AppUser') continue;
-  const relationLines = body
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => /\bAppUser\b/.test(line) && /@relation\(/.test(line));
-  if (relationLines.length === 0) continue;
+  const appUserRelations = [...body.matchAll(/\\bAppUser\\b\\s+@relation\\(([^)]*)\\)/g)];
+  if (appUserRelations.length === 0) continue;
 
   assert.equal(
-    relationLines.length,
+    appUserRelations.length,
     1,
     `${modelName} should have one direct AppUser ownership relation`,
   );
   assert.match(
-    relationLines[0],
-    /onDelete:\s*Cascade/,
+    appUserRelations[0][1],
+    /onDelete:\\s*Cascade/,
     `${modelName} must cascade from AppUser so final identity deletion cannot be blocked`,
   );
   appUserOwnedModels.push(modelName);
