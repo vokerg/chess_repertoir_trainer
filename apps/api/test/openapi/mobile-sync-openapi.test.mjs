@@ -19,16 +19,19 @@ const app = await buildApp({
 try {
   await app.ready();
   const document = app.swagger();
+  const session = document.paths['/api/mobile-sync/session']?.get;
   const manifest = document.paths['/api/mobile-sync/manifest']?.get;
   const bundle = document.paths['/api/mobile-sync/courses/{courseId}']?.get;
   const ingestion = document.paths['/api/mobile-sync/training-attempts']?.post;
 
+  assert.equal(session?.operationId, 'getMobileSyncSession');
+  assert.deepEqual(Object.keys(session?.responses ?? {}).sort(), ['200', '401', '410', '423']);
   assert.equal(manifest?.operationId, 'getMobileSyncManifest');
-  assert.deepEqual(Object.keys(manifest?.responses ?? {}).sort(), ['200', '401']);
+  assert.deepEqual(Object.keys(manifest?.responses ?? {}).sort(), ['200', '401', '410', '423']);
   assert.equal(bundle?.operationId, 'getMobileCourseBundle');
-  assert.deepEqual(Object.keys(bundle?.responses ?? {}).sort(), ['200', '400', '401', '404']);
+  assert.deepEqual(Object.keys(bundle?.responses ?? {}).sort(), ['200', '400', '401', '404', '410', '423']);
   assert.equal(ingestion?.operationId, 'ingestMobileTrainingAttempts');
-  assert.deepEqual(Object.keys(ingestion?.responses ?? {}).sort(), ['200', '400', '401']);
+  assert.deepEqual(Object.keys(ingestion?.responses ?? {}).sort(), ['200', '400', '401', '410', '423']);
   assert.ok(ingestion?.requestBody);
 
   const malformed = await app.inject({
