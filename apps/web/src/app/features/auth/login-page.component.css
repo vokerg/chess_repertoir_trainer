@@ -1,0 +1,54 @@
+.clerk-mount {
+  display: grid;
+  min-height: 380px;
+  place-items: center;
+}
+
+.switch-auth {
+  margin: 0.9rem 0 0;
+  color: #63716d;
+  font-size: 0.84rem;
+  text-align: center;
+}
+
+.switch-auth a {
+  color: #1f7865;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.switch-auth a:hover,
+.switch-auth a:focus-visible { text-decoration: underline; }
+
+.dev-auth-state {
+  border: 1px solid #cbd7d2;
+  border-radius: 14px;
+  padding: 1rem;
+  background: #f7f9f8;
+}
+
+.dev-auth-state strong { color: #172321; }
+.dev-auth-state p { margin: 0.45rem 0 1rem; color: #63716d; line-height: 1.5; }
+
+.auth-action {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 0.65rem 0.9rem;
+  background: #47b89c;
+  color: #071713;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.auth-error {
+  margin: 1rem 0 0;
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #fff1f2;
+  color: #9f1239;
+  font-size: 0.84rem;
+  font-weight: 700;
+}

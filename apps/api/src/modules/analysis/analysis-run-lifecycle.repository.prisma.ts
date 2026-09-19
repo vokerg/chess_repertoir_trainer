@@ -1,0 +1,328 @@
+import { Prisma } from '@prisma/client';
+import prisma from '../../prisma';
+
+const compactGameAnalysisRunInclude = {
+  importedGame: {
+    select: {
+      plies: {
+        orderBy: { plyNumber: 'asc' as const },
+        select: {
+          plyNumber: true,
+          moveUci: true,
+          scoreLossCp: true,
+          classificationCode: true,
+          position: {
+            select: {
+              analysis: {
+                select: {
+                  id: true,
+                  bestMoveUci: true,
+                  bestScoreCpWhite: true,
+                  bestMateWhite: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+const latestRunStatuses = ['RUNNING', 'COMPLETED', 'FAILED'] as const;
+
+export async function getLatestGameAnalysisRunDeterministic(
+  userId: number,
+  importedGameId: number,
+) {
+  return prisma.gameAnalysisRun.findFirst({
+    where: {
+      importedGameId,
+      importedGame: { userId },
+      status: { in: [...latestRunStatuses] },
+    },
+    orderBy: [
+      { createdAt: 'desc' },
+      { id: 'desc' },
+    ],
+    include: compactGameAnalysisRunInclude,
+  });
+}
+
+export interface ImportedGameAnalysisExecutionState {
+  totalPlies: number;
+  analysedPlies: number;
+  maxRunId: number;
+  latest: {
+    id: number;
+    status: string;
+    positionsTotal: number;
+    positionsDone: number;
+    createdAt: Date;
+  } | null;
+  hasOtherCurrentRunAtLatestTimestamp: boolean;
+}
+
+export async function getImportedGameAnalysisExecutionState(
+  userId: number,
+  importedGameId: number,
+): Promise<ImportedGameAnalysisExecutionState | null> {
+  const game = await prisma.importedGame.findFirst({
+    where: { id: importedGameId, userId },
+    select: {
+      id: true,
+      _count: { select: { plies: true } },
+    },
+  });
+  if (!game) return null;
+
+  const [latest, maxRun, analysedPlies] = await Promise.all([
+    prisma.gameAnalysisRun.findFirst({
+      where: {
+        importedGameId,
+        status: { in: [...latestRunStatuses] },
+      },
+      orderBy: [
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ],
+      select: {
+        id: true,
+        status: true,
+        positionsTotal: true,
+        positionsDone: true,
+        createdAt: true,
+      },
+    }),
+    prisma.gameAnalysisRun.findFirst({
+      where: { importedGameId },
+      orderBy: { id: 'desc' },
+      select: { id: true },
+    }),
+    prisma.importedGamePly.count({
+      where: {
+        importedGameId,
+        scoreLossCp: { not: null },
+        classificationCode: { not: null },
+      },
+    }),
+  ]);
+
+  const hasOtherCurrentRunAtLatestTimestamp = latest
+    ? await prisma.gameAnalysisRun.findFirst({
+      where: {
+        importedGameId,
+        id: { not: latest.id },
+        createdAt: latest.createdAt,
+        status: 'COMPLETED',
+        positionsDone: { gte: game._count.plies },
+        positionsTotal: { gte: game._count.plies },
+      },
+      select: { id: true },
+    }).then(Boolean)
+    : false;
+
+  return {
+    totalPlies: game._count.plies,
+    analysedPlies,
+    maxRunId: maxRun?.id ?? 0,
+    latest,
+    hasOtherCurrentRunAtLatestTimestamp,
+  };
+}
+
+export async function recordGameAnalysisSetupFailure(input: {
+  userId: number;
+  importedGameId: number;
+  force: boolean;
+  error: string;
+}): Promise<{ id: number; status: string } | null> {
+  return prisma.$transaction(async (transaction) => {
+    const locked = await transaction.$queryRaw<Array<{ id: number }>>(Prisma.sql`
+      SELECT "id"
+      FROM "ImportedGame"
+      WHERE "id" = ${input.importedGameId}
+        AND "userId" = ${input.userId}
+      FOR UPDATE
+    `);
+    if (!locked[0]) throw new Error('Imported game not found');
+
+    const [totalPlies, analysedPlies, latest] = await Promise.all([
+      transaction.importedGamePly.count({
+        where: { importedGameId: input.importedGameId },
+      }),
+      transaction.importedGamePly.count({
+        where: {
+          importedGameId: input.importedGameId,
+          scoreLossCp: { not: null },
+          classificationCode: { not: null },
+        },
+      }),
+      transaction.gameAnalysisRun.findFirst({
+        where: {
+          importedGameId: input.importedGameId,
+          status: { in: [...latestRunStatuses] },
+        },
+        orderBy: [
+          { createdAt: 'desc' },
+          { id: 'desc' },
+        ],
+        select: {
+          status: true,
+          positionsTotal: true,
+          positionsDone: true,
+        },
+      }),
+    ]);
+
+    const isCurrent = latest?.status === 'COMPLETED'
+      && latest.positionsDone >= totalPlies
+      && latest.positionsTotal >= totalPlies
+      && analysedPlies >= totalPlies;
+    if (!input.force && isCurrent) return null;
+
+    const completedAt = new Date();
+    const run = await transaction.gameAnalysisRun.create({
+      data: {
+        importedGameId: input.importedGameId,
+        status: 'FAILED',
+        positionsTotal: totalPlies,
+        positionsDone: analysedPlies,
+        error: input.error,
+        completedAt,
+      },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        completedAt: true,
+        whiteAccuracy: true,
+        blackAccuracy: true,
+      },
+    });
+
+    await transaction.importedGame.update({
+      where: { id: input.importedGameId },
+      data: {
+        latestAnalysisRunId: run.id,
+        latestAnalysisStatus: run.status,
+        latestAnalysisCreatedAt: run.createdAt,
+        latestAnalysisCompletedAt: run.completedAt,
+        latestWhiteAccuracy: run.whiteAccuracy,
+        latestBlackAccuracy: run.blackAccuracy,
+      },
+    });
+
+    return { id: run.id, status: run.status };
+  });
+}
+
+export async function findAbortCleanupCandidate(input: {
+  userId: number;
+  importedGameId: number;
+  afterRunId: number;
+  error: string;
+}): Promise<number | null> {
+  const failed = await prisma.gameAnalysisRun.findFirst({
+    where: {
+      importedGameId: input.importedGameId,
+      importedGame: { userId: input.userId },
+      id: { gt: input.afterRunId },
+      status: 'FAILED',
+      error: input.error,
+    },
+    orderBy: { id: 'desc' },
+    select: { id: true },
+  });
+  if (failed) return failed.id;
+
+  const running = await prisma.gameAnalysisRun.findMany({
+    where: {
+      importedGameId: input.importedGameId,
+      importedGame: { userId: input.userId },
+      id: { gt: input.afterRunId },
+      status: 'RUNNING',
+    },
+    orderBy: { id: 'desc' },
+    take: 2,
+    select: { id: true },
+  });
+  return running.length === 1 ? running[0].id : null;
+}
+
+export async function abandonGameAnalysisRun(runId: number): Promise<boolean> {
+  return prisma.$transaction(async (transaction) => {
+    const run = await transaction.gameAnalysisRun.findUnique({
+      where: { id: runId },
+      select: { id: true, importedGameId: true, status: true },
+    });
+    if (!run || !['RUNNING', 'FAILED'].includes(run.status)) return false;
+
+    const snapshots = await transaction.$queryRaw<Array<{ latestAnalysisRunId: number | null }>>(
+      Prisma.sql`
+        SELECT "latestAnalysisRunId"
+        FROM "ImportedGame"
+        WHERE "id" = ${run.importedGameId}
+        FOR UPDATE
+      `,
+    );
+    if (!snapshots.length) return false;
+
+    const deleted = await transaction.gameAnalysisRun.deleteMany({
+      where: {
+        id: run.id,
+        status: { in: ['RUNNING', 'FAILED'] },
+      },
+    });
+    if (deleted.count !== 1) return false;
+
+    if (snapshots[0].latestAnalysisRunId !== run.id) return true;
+
+    const previous = await transaction.gameAnalysisRun.findFirst({
+      where: {
+        importedGameId: run.importedGameId,
+        status: { in: [...latestRunStatuses] },
+      },
+      orderBy: [
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ],
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        completedAt: true,
+        whiteAccuracy: true,
+        blackAccuracy: true,
+      },
+    });
+
+    await transaction.importedGame.update({
+      where: { id: run.importedGameId },
+      data: {
+        latestAnalysisRunId: null,
+        latestAnalysisStatus: null,
+        latestAnalysisCreatedAt: null,
+        latestAnalysisCompletedAt: null,
+        latestWhiteAccuracy: null,
+        latestBlackAccuracy: null,
+      },
+    });
+
+    if (previous) {
+      await transaction.importedGame.update({
+        where: { id: run.importedGameId },
+        data: {
+          latestAnalysisRunId: previous.id,
+          latestAnalysisStatus: previous.status,
+          latestAnalysisCreatedAt: previous.createdAt,
+          latestAnalysisCompletedAt: previous.completedAt,
+          latestWhiteAccuracy: previous.whiteAccuracy,
+          latestBlackAccuracy: previous.blackAccuracy,
+        },
+      });
+    }
+
+    return true;
+  });
+}

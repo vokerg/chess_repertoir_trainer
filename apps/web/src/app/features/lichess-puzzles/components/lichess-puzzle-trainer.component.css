@@ -1,0 +1,122 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.puzzle-trainer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 390px);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.puzzle-board-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.puzzle-board-surface {
+  display: grid;
+  width: min(100%, 700px);
+  padding: clamp(0.5rem, 1.2vw, 0.9rem);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-soft);
+}
+
+.puzzle-board-surface app-chessground-board {
+  width: 100%;
+}
+
+.puzzle-summary {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.puzzle-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.puzzle-themes span {
+  padding: 0.28rem 0.58rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.puzzle-guidance {
+  margin: 0;
+  padding: 0.8rem 0.9rem;
+  border-left: 3px solid var(--ui-info);
+  border-radius: 0 var(--ui-radius-control) var(--ui-radius-control) 0;
+  background: var(--ui-info-soft);
+  color: var(--ui-text);
+  line-height: 1.55;
+}
+
+.puzzle-feedback {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 35%, var(--ui-border));
+  border-radius: var(--ui-radius-control);
+  text-align: center;
+  font-weight: 850;
+}
+
+.puzzle-feedback.incorrect {
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+}
+
+.puzzle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.puzzle-actions button:focus-visible {
+  outline: 3px solid var(--ui-focus-outline);
+  outline-offset: 3px;
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.workbenchSingleColumnMaxPx. */
+@media (max-width: 980px) {
+  .puzzle-trainer-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .puzzle-board-surface {
+    width: min(100%, 640px);
+  }
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
+@media (max-width: 640px) {
+  .puzzle-trainer-layout {
+    gap: var(--space-3);
+  }
+
+  .puzzle-board-surface {
+    padding: 0.35rem;
+    border-radius: var(--ui-radius-control);
+  }
+
+  .puzzle-actions {
+    flex-direction: column;
+  }
+
+  .puzzle-actions button {
+    width: 100%;
+  }
+}

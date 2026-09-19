@@ -1,0 +1,85 @@
+<section class="appearance-settings-page stack">
+  <app-page-header
+    title="Appearance"
+    subtitle="Adjust board sound feedback for this browser."
+  />
+
+  <app-panel
+    title="Board sounds"
+    subtitle="Choose a sound character and volume, then preview the result before returning to the board."
+  >
+    <div class="sound-settings">
+      <div class="setting-field">
+        <label class="setting-label" for="board-sound-pack">Sound pack</label>
+        <select
+          id="board-sound-pack"
+          [value]="sounds.pack()"
+          (change)="changePack($event)"
+          aria-describedby="board-sound-pack-help"
+        >
+          @for (option of soundPacks; track option.id) {
+            <option [value]="option.id">{{ option.label }}</option>
+          }
+        </select>
+        <p id="board-sound-pack-help" class="setting-help">{{ selectedPackDescription() }}</p>
+      </div>
+
+      <div class="setting-field">
+        <div class="setting-heading">
+          <label class="setting-label" for="board-sound-volume">Volume</label>
+          <output for="board-sound-volume">{{ volumePercent() }}%</output>
+        </div>
+        <input
+          id="board-sound-volume"
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          [value]="volumePercent()"
+          [disabled]="sounds.pack() === 'silent'"
+          (input)="changeVolume($event)"
+          aria-describedby="board-sound-volume-help"
+        />
+        <p id="board-sound-volume-help" class="setting-help">
+          Sound pack and volume preferences are stored only in this browser.
+        </p>
+      </div>
+
+      <div
+        class="preview-group"
+        role="group"
+        aria-labelledby="board-sound-preview-label"
+        aria-describedby="board-sound-preview-help"
+      >
+        <span id="board-sound-preview-label" class="setting-label">Preview</span>
+        <p id="board-sound-preview-help" class="setting-help">Test the current pack without leaving this page.</p>
+        <div class="preview-actions">
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="sounds.pack() === 'silent'"
+            (click)="preview('move')"
+          >
+            Move
+          </button>
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="sounds.pack() === 'silent'"
+            (click)="preview('capture')"
+          >
+            Capture
+          </button>
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="sounds.pack() === 'silent'"
+            (click)="preview('error')"
+          >
+            Error
+          </button>
+        </div>
+      </div>
+    </div>
+  </app-panel>
+</section>

@@ -1,0 +1,385 @@
+import assert from 'node:assert/strict';
+import {
+  accountPerformanceStatsResponseSchema,
+  accountImportCoverageSchema,
+  accountImportRunSchema,
+  accountImportScopeSchema,
+  boardImageQuerySchema,
+  createAccountImportRunBodySchema,
+  importedGameFacetsResponseSchema,
+  importedGameSearchQuerySchema,
+  mobileSyncManifestSchema,
+  openingExplorerQuerySchema,
+  openingExplorerResponseSchema,
+  openingStrugglesQuerySchema,
+  openingStrugglesResponseSchema,
+  performanceByRatingQuerySchema,
+  performanceByRatingResponseSchema,
+  positionAnalysisLineSchema,
+  serializableTrainingSessionSchema,
+} from '../dist/index.js';
+
+const accountPerformanceStats = {
+  account: { id: 7, provider: 'LICHESS', username: 'profile-user', displayName: null },
+  range: { from: '2026-07-01', to: '2026-08-01' },
+  speeds: ['bullet', 'blitz', 'rapid'],
+  gamesCount: 3,
+  wdl: { wins: 2, draws: 0, losses: 1 },
+  averageOpponentRating: { overall: 1500, wins: 1750, draws: null, losses: 1000 },
+  timeControlWdl: [
+    { timeControl: '5+0', gamesCount: 3, wins: 2, draws: 0, losses: 1, scorePercent: 67 },
+  ],
+  recentGames: [
+    {
+      gameId: 1,
+      endedAt: '2026-08-01T06:42:00.000Z',
+      speed: 'blitz',
+      userRating: 1500,
+      opponentRating: 1600,
+      opponentUsername: 'recent-opponent',
+      providerUrl: null,
+      resultForUser: 'WIN',
+      timeControl: '5+0',
+    },
+  ],
+  bestVictories: [],
+  mostEmbarrassingDefeats: [],
+  bestVictory: null,
+  mostEmbarrassingDefeat: null,
+};
+assert.deepEqual(
+  accountPerformanceStatsResponseSchema.parse(accountPerformanceStats),
+  accountPerformanceStats,
+);
+
+const durableImportScope = {
+  variant: 'STANDARD',
+  speeds: ['BLITZ', 'RAPID'],
+  rated: 'BOTH',
+};
+assert.deepEqual(accountImportScopeSchema.parse(durableImportScope), durableImportScope);
+assert.equal(
+  accountImportScopeSchema.safeParse({ ...durableImportScope, speeds: ['BLITZ', 'BLITZ'] }).success,
+  false,
+  'durable import scopes reject duplicate speed literals',
+);
+assert.equal(
+  createAccountImportRunBodySchema.safeParse({
+    accountId: 7,
+    mode: 'BOUNDED_INITIAL',
+    scope: durableImportScope,
+    requestedFrom: '2026-05-01T00:00:00.000Z',
+    requestedTo: '2026-08-01T00:00:00.000Z',
+  }).success,
+  true,
+);
+assert.equal(
+  createAccountImportRunBodySchema.safeParse({
+    accountId: 7,
+    mode: 'BOUNDED_INITIAL',
+    scope: durableImportScope,
+    requestedFrom: '2026-08-01T00:00:00.000Z',
+    requestedTo: '2026-08-01T00:00:00.000Z',
+  }).success,
+  false,
+  'durable import requests require a non-empty half-open range',
+);
+
+const durableImportRun = {
+  id: 41,
+  accountId: 7,
+  provider: 'LICHESS',
+  mode: 'BOUNDED_INITIAL',
+  source: 'ONBOARDING',
+  status: 'QUEUED',
+  priority: 100,
+  scopeVersion: 1,
+  scopeHash: 'a'.repeat(64),
+  scope: durableImportScope,
+  requestedFrom: '2026-05-01T00:00:00.000Z',
+  requestedTo: '2026-08-01T00:00:00.000Z',
+  retryOfImportRunId: null,
+  windows: { total: 7, completed: 0 },
+  games: {
+    seen: 0,
+    matchedScope: 0,
+    imported: 0,
+    duplicate: 0,
+    updated: 0,
+    skipped: 0,
+    skippedOutOfScope: 0,
+    failed: 0,
+  },
+  lastProgressAt: null,
+  retryAt: null,
+  rateLimitUntil: null,
+  createdAt: '2026-08-10T20:00:00.000Z',
+  updatedAt: '2026-08-10T20:00:00.000Z',
+  startedAt: '2026-08-10T20:00:00.000Z',
+  completedAt: null,
+  errorCode: null,
+  error: null,
+};
+assert.deepEqual(accountImportRunSchema.parse(durableImportRun), durableImportRun);
+assert.equal(
+  accountImportRunSchema.safeParse({ ...durableImportRun, scope: null }).success,
+  false,
+  'durable runs cannot lose their immutable scope',
+);
+assert.equal(
+  accountImportRunSchema.safeParse({
+    ...durableImportRun,
+    mode: 'LEGACY_SYNC',
+    source: 'LEGACY_SYNC',
+    scopeVersion: null,
+    scopeHash: null,
+    scope: null,
+    requestedFrom: null,
+    requestedTo: null,
+  }).success,
+  true,
+  'legacy synchronous history remains explicitly representable',
+);
+
+const importCoverage = {
+  accountId: 7,
+  scopeVersion: 1,
+  scopeHash: 'b'.repeat(64),
+  scope: durableImportScope,
+  coveredFrom: '2026-05-01T00:00:00.000Z',
+  coveredThrough: '2026-08-01T00:00:00.000Z',
+  lastCompletedImportRunId: 41,
+  createdAt: '2026-08-10T20:00:00.000Z',
+  updatedAt: '2026-08-10T20:00:00.000Z',
+};
+assert.deepEqual(accountImportCoverageSchema.parse(importCoverage), importCoverage);
+assert.equal(
+  accountImportCoverageSchema.safeParse({ ...importCoverage, coveredThrough: null }).success,
+  false,
+  'coverage boundaries are both present or both absent',
+);
+
+assert.deepEqual(boardImageQuerySchema.parse({ fen: 'startpos' }), {
+  fen: 'startpos',
+  pov: 'white',
+  turn: 'none',
+});
+
+assert.deepEqual(importedGameSearchQuerySchema.parse({ limit: '25', rated: 'false' }), {
+  sort: 'endedAtDesc',
+  limit: 25,
+  rated: false,
+});
+assert.equal(importedGameSearchQuerySchema.safeParse({ providers: 'LICHESS,INVALID' }).success, false);
+
+assert.deepEqual(positionAnalysisLineSchema.parse({ moveUci: null, pvUci: [] }), {
+  moveUci: null,
+  pvUci: [],
+});
+assert.equal(positionAnalysisLineSchema.safeParse({ moveUci: 'e2e4' }).success, false, 'pvUci is required');
+assert.equal(positionAnalysisLineSchema.safeParse({ pvUci: null }).success, false, 'null differs from absence and arrays');
+
+const emptyFacets = {
+  accounts: [], providers: [], speeds: [], variants: [], results: [], colors: [],
+  openings: [], analysisStatuses: [], tags: [],
+};
+assert.deepEqual(importedGameFacetsResponseSchema.parse(emptyFacets), emptyFacets);
+assert.equal(importedGameFacetsResponseSchema.safeParse({ accounts: [] }).success, false);
+
+const session = {
+  version: 1,
+  sessionId: 'local-session',
+  lineId: 7,
+  sublineHash: 'hash',
+  sublineKeyVersion: 1,
+  courseContentRevision: 3,
+  sideToTrain: 'WHITE',
+  startingFen: 'startpos',
+  startedAt: '2026-07-12T12:00:00.000Z',
+  completedAt: null,
+  status: 'IN_PROGRESS',
+  nextMoveIndex: 0,
+  expectedMoveIndex: 0,
+  currentFen: 'startpos',
+  lastMoveUci: null,
+  completed: false,
+  completedEarly: false,
+  counters: { mistakesCount: 0, totalExpectedMoves: 0, correctMoves: 0, accuracy: null },
+  events: [],
+};
+assert.deepEqual(serializableTrainingSessionSchema.parse(session), session);
+assert.equal(
+  serializableTrainingSessionSchema.safeParse({ ...session, version: 2 }).success,
+  false,
+  'persisted training versions are explicit',
+);
+
+const manifest = {
+  manifestSchemaVersion: 1,
+  bundleSchemaVersion: 1,
+  minimumSupportedAppVersion: null,
+  generatedAt: '2026-07-12T12:00:00.000Z',
+  courses: [],
+};
+assert.deepEqual(mobileSyncManifestSchema.parse(manifest), manifest);
+assert.equal(
+  mobileSyncManifestSchema.safeParse({ ...manifest, generatedAt: 'not-a-date' }).success,
+  false,
+);
+
+assert.deepEqual(performanceByRatingQuerySchema.parse({ from: '2026-04-14', to: '2026-07-14', minRating: '600' }), {
+  from: '2026-04-14',
+  to: '2026-07-14',
+  minRating: 600,
+});
+assert.equal(
+  performanceByRatingQuerySchema.safeParse({ from: '2026-07-15', to: '2026-07-14' }).success,
+  false,
+);
+assert.equal(
+  performanceByRatingQuerySchema.safeParse({ from: '2999-01-01' }).success,
+  false,
+  'from-only queries validate against the effective default to date',
+);
+assert.equal(performanceByRatingQuerySchema.safeParse({ minRating: '-1' }).success, false);
+const performanceReport = {
+  range: { from: '2026-04-14', to: '2026-07-14' },
+  items: [{
+    provider: 'LICHESS',
+    speed: 'blitz',
+    type: 'LICHESS_BLITZ',
+    ratingFrom: 1200,
+    ratingTo: 1299,
+    games: 10,
+    analysedGames: 8,
+    accuracyGames: 7,
+    wdl: { wins: 5, draws: 2, losses: 3 },
+    whiteWdl: { wins: 3, draws: 1, losses: 1 },
+    blackWdl: { wins: 2, draws: 1, losses: 2 },
+    scorePercent: 60,
+    openingSuccess: 3,
+    openingTrouble: 2,
+    wasWinningAndLost: 1,
+    wasLosingAndWon: 1,
+    flaggedInWinningPosition: 0,
+    opponentFlaggedInWinningPosition: 1,
+    slowBleedLosses: 1,
+    slowBleedWins: 2,
+    averageAccuracy: 78.4,
+  }],
+};
+assert.deepEqual(performanceByRatingResponseSchema.parse(performanceReport), performanceReport);
+
+assert.deepEqual(openingExplorerQuerySchema.parse({}), { fen: 'startpos' });
+const openingExplorerResponse = {
+  fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+  normalizedFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -',
+  dataset: {
+    source: 'LICHESS_MASTERS',
+    profileVersion: 1,
+    sinceYear: 2000,
+    untilYear: 2026,
+    movesLimit: 12,
+    topGamesLimit: 15,
+  },
+  cache: {
+    status: 'REFRESHED',
+    fetchedAt: '2026-07-15T12:00:00.000Z',
+    expiresAt: '2026-08-14T12:00:00.000Z',
+  },
+  opening: null,
+  games: { total: 12, whiteWins: 5, draws: 4, blackWins: 3 },
+  moves: [{
+    uci: 'e2e4',
+    san: 'e4',
+    averageRating: 2510,
+    games: { total: 8, whiteWins: 4, draws: 3, blackWins: 1 },
+    opening: { eco: 'B00', name: "King's Pawn Game" },
+    representativeGame: null,
+  }],
+  topGames: [{
+    id: 'game-id',
+    moveUci: 'e2e4',
+    winner: 'WHITE',
+    white: { name: 'White Player', rating: 2700 },
+    black: { name: 'Black Player', rating: null },
+    year: 2025,
+    month: '2025-05',
+  }],
+};
+assert.deepEqual(openingExplorerResponseSchema.parse(openingExplorerResponse), openingExplorerResponse);
+assert.equal(
+  openingExplorerResponseSchema.safeParse({ ...openingExplorerResponse, cache: { status: 'MISS' } }).success,
+  false,
+);
+
+assert.deepEqual(openingStrugglesQuerySchema.parse({
+  mode: 'repeatedMistakes',
+  from: '2026-01-01',
+  minOccurrences: '7',
+}), {
+  mode: 'repeatedMistakes',
+  from: '2026-01-01',
+  minGames: 5,
+  minLossRate: 60,
+  minOccurrences: 7,
+  minAverageCentipawnLoss: 60,
+  minEvaluatedGames: 5,
+  maxAverageUserEvalCp: -80,
+  maxPly: 20,
+  limit: 100,
+});
+assert.equal(openingStrugglesQuerySchema.safeParse({ mode: 'unknown' }).success, false);
+
+const openingStrugglesReport = {
+  totalFilteredGames: 6,
+  indexedFilteredGames: 6,
+  maxPly: 20,
+  limit: 100,
+  mode: 'badPositions',
+  minEvaluatedGames: 5,
+  maxAverageUserEvalCp: -80,
+  items: [{
+    key: 'WHITE:d2d4 e7e5 c2c4',
+    parentKey: 'WHITE:d2d4 e7e5',
+    userColor: 'WHITE',
+    movesUci: ['d2d4', 'e7e5', 'c2c4'],
+    ply: 3,
+    analysisGameId: 42,
+    totalReachGames: 6,
+    metricGames: 6,
+    wins: 1,
+    draws: 1,
+    losses: 4,
+    winRate: 16.7,
+    lossRate: 66.7,
+    scorePct: 25,
+    analysedMoveCount: 6,
+    averageCentipawnLoss: 154,
+    evalGames: 6,
+    avgUserEvalCp: -108,
+    bestUserEvalCp: -40,
+    worstUserEvalCp: -180,
+    afterPositionAnalysisId: 7,
+    afterPositionNormalizedFen: 'fen',
+    afterPositionBestScoreCpWhite: -108,
+    afterPositionBestMateWhite: null,
+    courseCoverage: {
+      status: 'MY_DEVIATION',
+      coveredPlies: 2,
+      deviationPly: 3,
+      courses: [{ id: 3, name: 'White repertoire' }],
+      expectedMoveSans: ['dxe5'],
+    },
+  }],
+};
+assert.deepEqual(openingStrugglesResponseSchema.parse(openingStrugglesReport), openingStrugglesReport);
+assert.equal(
+  openingStrugglesResponseSchema.safeParse({
+    ...openingStrugglesReport,
+    items: [{ ...openingStrugglesReport.items[0], courseCoverage: { ...openingStrugglesReport.items[0].courseCoverage, status: 'UNKNOWN' } }],
+  }).success,
+  false,
+);
+
+console.log('Shared contract tests passed.');

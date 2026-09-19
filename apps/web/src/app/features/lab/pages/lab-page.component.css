@@ -1,0 +1,85 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.lab-page {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.lab-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 0.75rem;
+}
+
+.lab-menu-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+  text-decoration: none;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.lab-menu-item:hover {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-action-soft);
+}
+
+.lab-menu-item:focus-visible {
+  outline: 3px solid var(--ui-focus-outline);
+  outline-offset: 2px;
+}
+
+.lab-menu-copy {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.lab-menu-copy strong {
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.lab-menu-copy small {
+  color: var(--ui-text-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.lab-menu-type {
+  flex: 0 0 auto;
+  padding: 0.24rem 0.5rem;
+  border-radius: 999px;
+  background: var(--ui-surface);
+  color: var(--ui-action-strong);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 520px) {
+  .lab-menu-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lab-menu-item {
+    transition: none;
+  }
+}

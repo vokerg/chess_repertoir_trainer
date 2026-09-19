@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" role="img" aria-labelledby="title desc">
+  <title id="title">Phase 0C signed-in home review sheet</title>
+  <desc id="desc">Desktop and mobile visual composition for the Chess Repertoire Trainer signed-in home.</desc>
+  <defs>
+    <style>
+      .bg{fill:#eef3f0}.surface{fill:#fff;stroke:#cbd7d2}.muted{fill:#f7f9f8;stroke:#cbd7d2}.graphite{fill:#172321}.graphite2{fill:#22312e}.mint{fill:#47b89c}.mintSoft{fill:#dff3ed}.text{fill:#172321;font-family:Arial,sans-serif}.sub{fill:#63716d;font-family:Arial,sans-serif}.white{fill:#f4f8f6;font-family:Arial,sans-serif}.mono{fill:#1f7865;font-family:monospace}.label{fill:#1f7865;font-family:Arial,sans-serif;font-weight:700;letter-spacing:2px}.h1{font-size:34px;font-weight:600}.h2{font-size:21px;font-weight:600}.body{font-size:13px}.small{font-size:10px}.tiny{font-size:8px}.shadow{filter:url(#shadow)}
+    </style>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#172321" flood-opacity=".10"/></filter>
+  </defs>
+
+  <rect width="1600" height="1100" class="bg"/>
+  <text x="70" y="65" class="text h1">Phase 0C · Signed-in home</text>
+  <text x="70" y="94" class="sub body">Contract-grounded composition using existing account, game, course and progress data.</text>
+
+  <g transform="translate(70 135)">
+    <rect width="1120" height="850" rx="24" class="surface shadow"/>
+    <rect width="190" height="850" rx="24" class="graphite"/>
+    <rect x="166" width="24" height="850" class="graphite"/>
+
+    <rect x="24" y="24" width="42" height="42" rx="11" class="mint"/>
+    <path d="M38 54V35M38 43H49M49 43V33M49 43V55M49 55H59" fill="none" stroke="#172321" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="38" cy="56" r="3.5" class="graphite"/><circle cx="49" cy="31" r="3.5" class="graphite"/><circle cx="61" cy="55" r="3.5" class="graphite"/>
+    <text x="76" y="39" class="white body" font-weight="700">Chess Repertoire</text>
+    <text x="76" y="55" fill="#47b89c" font-family="Arial,sans-serif" font-size="8" font-weight="700" letter-spacing="2">TRAINER</text>
+
+    <g transform="translate(20 94)">
+      <rect width="150" height="38" rx="9" fill="#294039"/>
+      <circle cx="19" cy="19" r="5" class="mint"/><text x="36" y="24" class="white body">Home</text>
+      <g class="sub body"><text x="36" y="74">Study</text><text x="36" y="116">Courses</text><text x="36" y="158">Games</text><text x="36" y="200">Openings</text><text x="36" y="242">Progress</text></g>
+      <line x1="0" y1="270" x2="150" y2="270" stroke="#ffffff" stroke-opacity=".1"/>
+      <g class="sub body"><text x="36" y="310">Analysis</text><text x="36" y="352">Settings</text></g>
+    </g>
+
+    <circle cx="42" cy="798" r="17" class="graphite2"/><text x="33" y="802" fill="#47b89c" font-family="Arial,sans-serif" font-size="9" font-weight="700">VK</text>
+    <text x="68" y="794" class="white small" font-weight="700">Viktor</text><text x="68" y="809" fill="#8ea19b" font-family="Arial,sans-serif" font-size="8">Synced 2h ago</text>
+
+    <g transform="translate(225 45)">
+      <text x="0" y="0" class="label tiny">YOUR CHESS, CONNECTED</text>
+      <text x="0" y="44" class="text h1">Good evening, Viktor.</text>
+      <text x="0" y="72" class="sub body">Here is what changed in your chess data—and the most useful next move.</text>
+      <text x="788" y="65" class="mono small">View all activity →</text>
+
+      <g transform="translate(0 105)">
+        <rect width="570" height="245" rx="17" class="surface shadow"/>
+        <text x="24" y="28" class="label tiny">CONTINUE</text>
+        <rect x="490" y="16" width="58" height="23" rx="12" class="mintSoft"/><text x="507" y="31" class="mono tiny">Study</text>
+        <text x="24" y="65" class="sub small">Sicilian Defence · Black repertoire</text>
+        <text x="24" y="101" class="text h2">Review 6 weak sublines before</text><text x="24" y="128" class="text h2">your next game.</text>
+        <text x="24" y="154" class="sub small">Recent attempts dropped below the stable threshold.</text>
+        <g transform="translate(408 72)"><text x="0" y="0" class="text h2" font-family="monospace">6</text><text x="0" y="16" class="sub tiny">weak sublines</text><text x="0" y="50" class="text h2" font-family="monospace">68%</text><text x="0" y="66" class="sub tiny">pass rate</text><text x="0" y="100" class="text h2" font-family="monospace">21</text><text x="0" y="116" class="sub tiny">attempts</text></g>
+        <line x1="24" y1="181" x2="546" y2="181" stroke="#cbd7d2"/>
+        <rect x="24" y="198" width="154" height="34" rx="9" class="mint"/><text x="48" y="220" class="text small" font-weight="700">Start focused training</text>
+        <text x="200" y="220" class="mono small">Open course</text>
+      </g>
+
+      <g transform="translate(590 105)">
+        <rect width="305" height="245" rx="17" class="surface"/>
+        <text x="18" y="28" class="label tiny">RECENT PROGRESS</text>
+        <text x="18" y="65" class="sub small">Rapid rating</text><text x="185" y="67" class="text h2" font-family="monospace">1,684</text><text x="253" y="67" class="mono small">+34</text>
+        <path d="M18 130 C58 122 75 138 110 110 C145 82 175 106 210 74 C245 44 265 63 286 34" fill="none" stroke="#47b89c" stroke-width="4" stroke-linecap="round"/>
+        <path d="M18 130 C58 122 75 138 110 110 C145 82 175 106 210 74 C245 44 265 63 286 34 L286 145 L18 145 Z" fill="#47b89c" fill-opacity=".12"/>
+        <g transform="translate(18 158)"><rect width="80" height="45" rx="9" class="muted"/><text x="10" y="17" class="sub tiny">Games</text><text x="10" y="34" class="text small" font-family="monospace">34</text><rect x="92" width="80" height="45" rx="9" class="muted"/><text x="102" y="17" class="sub tiny">Score</text><text x="102" y="34" class="text small" font-family="monospace">58%</text><rect x="184" width="103" height="45" rx="9" class="muted"/><text x="194" y="17" class="sub tiny">Training</text><text x="194" y="34" class="text small" font-family="monospace">21 attempts</text></g>
+        <text x="18" y="226" class="mono small">Open progress dashboard →</text>
+      </g>
+
+      <g transform="translate(0 370)">
+        <rect width="895" height="200" rx="17" class="surface"/>
+        <text x="20" y="28" class="label tiny">DETERMINISTIC, NOT GENERIC</text><text x="20" y="56" class="text h2">Recommended next</text>
+        <g transform="translate(20 78)">
+          <rect width="270" height="98" rx="12" fill="#f5fbf8" stroke="#78c9b4"/><rect x="12" y="12" width="31" height="31" rx="9" class="mintSoft"/><text x="20" y="31" class="mono tiny">01</text><text x="55" y="22" class="label tiny">ANALYSIS BACKLOG</text><text x="55" y="44" class="text body" font-weight="700">Analyse 11 recent games</text><text x="55" y="64" class="sub tiny">Imported without completed analysis.</text><text x="242" y="53" class="mono body">→</text>
+          <rect x="286" width="270" height="98" rx="12" class="muted"/><rect x="298" y="12" width="31" height="31" rx="9" class="mintSoft"/><text x="306" y="31" class="mono tiny">02</text><text x="341" y="22" class="label tiny">RECENT GAME</text><text x="341" y="44" class="text body" font-weight="700">Review the Caro-Kann loss</text><text x="341" y="64" class="sub tiny">Latest completed analysis.</text><text x="528" y="53" class="mono body">→</text>
+          <rect x="572" width="303" height="98" rx="12" class="muted"/><rect x="584" y="12" width="31" height="31" rx="9" class="mintSoft"/><text x="592" y="31" class="mono tiny">03</text><text x="627" y="22" class="label tiny">REPERTOIRE</text><text x="627" y="44" class="text body" font-weight="700">Train 12 new sublines</text><text x="627" y="64" class="sub tiny">Active branches not attempted yet.</text><text x="846" y="53" class="mono body">→</text>
+        </g>
+      </g>
+
+      <g transform="translate(0 590)">
+        <rect width="570" height="180" rx="17" class="surface"/><text x="20" y="28" class="label tiny">WORKSPACES</text><text x="20" y="56" class="text h2">Go directly to the work</text>
+        <g transform="translate(20 78)" class="text small"><rect width="165" height="38" rx="9" class="muted"/><text x="16" y="24">◎  Study</text><rect x="177" width="165" height="38" rx="9" class="muted"/><text x="193" y="24">≡  Games</text><rect x="354" width="176" height="38" rx="9" class="muted"/><text x="370" y="24">⑂  Openings</text><rect y="50" width="165" height="38" rx="9" class="muted"/><text x="16" y="74">▦  Courses</text><rect x="177" y="50" width="165" height="38" rx="9" class="muted"/><text x="193" y="74">◇  Analysis</text><rect x="354" y="50" width="176" height="38" rx="9" class="muted"/><text x="370" y="74">↗  Progress</text></g>
+        <rect x="590" width="305" height="180" rx="17" class="surface"/><text x="610" y="28" class="label tiny">LATEST SIGNALS</text><text x="610" y="56" class="text h2">Recent activity</text><circle cx="619" cy="88" r="4" class="mint"/><text x="632" y="91" class="text small">Rapid win analysed</text><text x="850" y="91" class="sub tiny">2h</text><line x1="610" y1="105" x2="875" y2="105" stroke="#cbd7d2"/><circle cx="619" cy="126" r="4" fill="#9eafa9"/><text x="632" y="129" class="text small">12 games imported</text><text x="850" y="129" class="sub tiny">2h</text><line x1="610" y1="143" x2="875" y2="143" stroke="#cbd7d2"/><circle cx="619" cy="162" r="4" fill="#b97426"/><text x="632" y="165" class="text small">8 weak sublines</text><text x="850" y="165" class="sub tiny">now</text>
+      </g>
+    </g>
+  </g>
+
+  <g transform="translate(1250 170)">
+    <text x="0" y="-25" class="text h2">Mobile composition</text>
+    <rect width="280" height="710" rx="30" class="surface shadow"/>
+    <rect width="280" height="58" rx="30" class="graphite"/><rect y="30" width="280" height="28" class="graphite"/>
+    <rect x="14" y="13" width="32" height="32" rx="9" class="mint"/><text x="57" y="34" class="white small" font-weight="700">Chess Repertoire</text><circle cx="250" cy="29" r="15" class="graphite2"/><text x="241" y="33" fill="#47b89c" font-family="Arial,sans-serif" font-size="8" font-weight="700">VK</text>
+    <g transform="translate(15 82)">
+      <text x="0" y="0" class="label tiny">YOUR CHESS, CONNECTED</text><text x="0" y="31" class="text h2">Good evening, Viktor.</text><text x="0" y="52" class="sub tiny">What changed—and the best next move.</text>
+      <rect y="75" width="250" height="185" rx="14" class="surface" stroke="#cbd7d2"/><text x="16" y="96" class="label tiny">CONTINUE</text><text x="16" y="124" class="sub tiny">Sicilian Defence · Black repertoire</text><text x="16" y="151" class="text body" font-weight="700">Review 6 weak sublines</text><text x="16" y="169" class="sub tiny">Recent attempts are below stable.</text><g transform="translate(16 190)"><text x="0" y="0" class="text small" font-family="monospace">6 weak</text><text x="72" y="0" class="text small" font-family="monospace">68%</text><text x="132" y="0" class="text small" font-family="monospace">21 attempts</text></g><rect x="16" y="214" width="218" height="32" rx="9" class="mint"/><text x="73" y="235" class="text small" font-weight="700">Start focused training</text>
+      <text x="0" y="294" class="label tiny">RECOMMENDED NEXT</text>
+      <rect y="308" width="250" height="65" rx="12" fill="#f5fbf8" stroke="#78c9b4"/><text x="14" y="329" class="label tiny">ANALYSIS</text><text x="14" y="350" class="text small" font-weight="700">Analyse 11 recent games</text><text x="224" y="343" class="mono body">→</text>
+      <rect y="382" width="250" height="65" rx="12" class="muted"/><text x="14" y="403" class="label tiny">RECENT GAME</text><text x="14" y="424" class="text small" font-weight="700">Review the Caro-Kann loss</text><text x="224" y="417" class="mono body">→</text>
+      <text x="0" y="480" class="label tiny">WORKSPACES</text>
+      <g transform="translate(0 494)" class="text small"><rect width="120" height="45" rx="10" class="muted"/><text x="14" y="27">◎  Study</text><rect x="130" width="120" height="45" rx="10" class="muted"/><text x="144" y="27">≡  Games</text><rect y="55" width="120" height="45" rx="10" class="muted"/><text x="14" y="82">⑂  Openings</text><rect x="130" y="55" width="120" height="45" rx="10" class="muted"/><text x="144" y="82">▦  Courses</text></g>
+      <rect y="610" width="250" height="50" rx="12" class="surface" stroke="#cbd7d2"/><text x="14" y="630" class="sub tiny">Rapid rating</text><text x="14" y="649" class="text small" font-family="monospace" font-weight="700">1,684</text><text x="72" y="649" class="mono tiny">+34</text><text x="210" y="640" class="mono body">→</text>
+    </g>
+  </g>
+
+  <text x="70" y="1048" class="sub small">Navigation framing is illustrative. Exact mobile navigation remains open; the home content hierarchy is the review focus.</text>
+</svg>

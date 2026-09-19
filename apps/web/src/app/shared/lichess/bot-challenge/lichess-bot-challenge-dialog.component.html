@@ -1,0 +1,87 @@
+@if (store.open()) {
+  <div class="bot-challenge-overlay" (click)="store.close()">
+    <section
+      class="bot-challenge-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="bot-challenge-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="dialog-header">
+        <div>
+          <p class="eyebrow">Lichess</p>
+          <h2 id="bot-challenge-title">Challenge bot</h2>
+        </div>
+        <button type="button" class="secondary" (click)="store.close()">Close</button>
+      </header>
+
+      @if (store.loadingOptions()) {
+        <p class="status-note">Loading bots...</p>
+      } @else {
+        <div class="challenge-grid">
+          <label>
+            Bot
+            <select
+              [ngModel]="store.username()"
+              (ngModelChange)="store.setUsername($event)"
+            >
+              @for (bot of store.options(); track bot.username) {
+                <option [value]="bot.username">{{ bot.label }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            Color
+            <select
+              [ngModel]="store.color()"
+              (ngModelChange)="store.setColor($event)"
+            >
+              <option value="white">White</option>
+              <option value="black">Black</option>
+              <option value="random">Random</option>
+            </select>
+          </label>
+
+          <label>
+            Minutes
+            <input
+              type="number"
+              min="1"
+              step="1"
+              [ngModel]="store.limit() / 60"
+              (ngModelChange)="store.setLimit($event * 60)"
+            />
+          </label>
+
+          <label>
+            Increment
+            <input
+              type="number"
+              min="0"
+              step="1"
+              [ngModel]="store.increment()"
+              (ngModelChange)="store.setIncrement($event)"
+            />
+          </label>
+        </div>
+      }
+
+      @if (store.error(); as error) {
+        <p class="status-error">{{ error }}</p>
+      }
+
+      <footer class="dialog-actions">
+        <button type="button" class="secondary" (click)="store.close()">Cancel</button>
+        <button
+          type="button"
+          class="primary"
+          [disabled]="!store.canChallenge() || store.loadingOptions()"
+          (click)="store.submit()"
+        >
+          {{ store.submitting() ? 'Creating...' : 'Challenge' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}

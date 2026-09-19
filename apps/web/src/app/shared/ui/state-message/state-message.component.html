@@ -1,0 +1,10 @@
+<div
+  class="state-message"
+  [class.state-message-loading]="tone() === 'loading'"
+  [class.state-message-empty]="tone() === 'empty'"
+  [class.state-message-error]="tone() === 'error'"
+  [attr.role]="semanticRole()"
+  [attr.aria-live]="liveMode()"
+>
+  <span class="state-message-text">{{ message() }}</span>
+</div>

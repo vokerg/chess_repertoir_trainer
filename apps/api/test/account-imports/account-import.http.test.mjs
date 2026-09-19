@@ -1,0 +1,275 @@
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import { buildApp } from '../../dist/app.js';
+import prismaModule from '../../dist/prisma.js';
+import { createAccountImportRepository } from '../../dist/modules/account-imports/account-import.repository.prisma.js';
+
+const prisma = prismaModule.default;
+const repository = createAccountImportRepository(prisma);
+const suffix = randomUUID();
+const createdAccountIds = [];
+let createdDevUserId;
+let otherUserId;
+
+try {
+  const existingDevUser = await prisma.appUser.findUnique({
+    where: { authProvider_authSubject: { authProvider: 'dev', authSubject: 'dev-single-user' } },
+  });
+  const devUser = existingDevUser ?? await prisma.appUser.create({
+    data: { displayName: 'Local user', authProvider: 'dev', authSubject: 'dev-single-user' },
+  });
+  if (!existingDevUser) createdDevUserId = devUser.id;
+  const userId = devUser.id;
+
+  const ownAccount = await prisma.externalAccount.create({
+    data: { userId, provider: 'LICHESS', username: `onb-012-http-${suffix}` },
+  });
+  createdAccountIds.push(ownAccount.id);
+  const compatibilityAccount = await prisma.externalAccount.create({
+    data: { userId, provider: 'CHESS_COM', username: `onb-015-http-${suffix}` },
+  });
+  createdAccountIds.push(compatibilityAccount.id);
+  const fullHistoryAccount = await prisma.externalAccount.create({
+    data: { userId, provider: 'LICHESS', username: `onb-015-full-history-${suffix}` },
+  });
+  createdAccountIds.push(fullHistoryAccount.id);
+
+  const otherUser = await prisma.appUser.create({
+    data: {
+      displayName: 'ONB-012 foreign user',
+      authProvider: 'test',
+      authSubject: `onb-012-http-foreign-${suffix}`,
+    },
+  });
+  otherUserId = otherUser.id;
+  const otherAccount = await prisma.externalAccount.create({
+    data: {
+      userId: otherUser.id,
+      provider: 'LICHESS',
+      username: `onb-012-http-foreign-${suffix}`,
+    },
+  });
+
+  const foreignRun = await repository.createRun(runInput(otherUser.id, otherAccount.id));
+
+  const app = await buildApp({ logger: false, authConfig: { mode: 'dev-single-user', userId } });
+  try {
+    await app.ready();
+
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/me/account-imports',
+      payload: {
+        accountId: ownAccount.id,
+        mode: 'BOUNDED_INITIAL',
+        scope: { variant: 'STANDARD', speeds: ['BLITZ', 'RAPID'], rated: 'BOTH' },
+        requestedFrom: '2026-05-01T00:00:00.000Z',
+        requestedTo: '2026-08-01T00:00:00.000Z',
+      },
+    });
+    assert.equal(create.statusCode, 202);
+    const created = create.json().importRun;
+    assert.equal(created.accountId, ownAccount.id);
+    assert.equal(created.source, 'USER_ACTION');
+    assert.equal(created.status, 'QUEUED');
+    assert.equal(typeof created.startedAt, 'string', 'persisted import start compatibility is preserved');
+    assert.equal(created.priority, 100);
+    assert.deepEqual(created.games, {
+      seen: 0,
+      matchedScope: 0,
+      imported: 0,
+      duplicate: 0,
+      updated: 0,
+      skipped: 0,
+      skippedOutOfScope: 0,
+      failed: 0,
+    });
+
+    const duplicateCreate = await app.inject({
+      method: 'POST',
+      url: '/api/me/account-imports',
+      payload: {
+        accountId: ownAccount.id,
+        mode: 'BOUNDED_INITIAL',
+        scope: { variant: 'STANDARD', speeds: ['BLITZ'], rated: 'BOTH' },
+        requestedFrom: '2026-06-01T00:00:00.000Z',
+        requestedTo: '2026-08-01T00:00:00.000Z',
+      },
+    });
+    assert.equal(duplicateCreate.statusCode, 409);
+    assert.equal(duplicateCreate.json().code, 'ACCOUNT_IMPORT_ACTIVE');
+
+    const list = await app.inject({ method: 'GET', url: '/api/me/account-imports?limit=10' });
+    assert.equal(list.statusCode, 200);
+    assert.deepEqual(list.json().items.map((run) => run.id), [created.id]);
+
+    const foreignDetail = await app.inject({
+      method: 'GET',
+      url: `/api/me/account-imports/${foreignRun.id}`,
+    });
+    assert.equal(foreignDetail.statusCode, 404, 'account import detail is ownership scoped');
+
+    const pause = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${created.id}/pause`,
+    });
+    assert.equal(pause.statusCode, 200);
+    assert.equal(pause.json().importRun.status, 'PAUSED');
+
+    const resume = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${created.id}/resume`,
+    });
+    assert.equal(resume.statusCode, 200);
+    assert.equal(resume.json().importRun.status, 'QUEUED');
+
+    const cancel = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${created.id}/cancel`,
+    });
+    assert.equal(cancel.statusCode, 200);
+    assert.equal(cancel.json().importRun.status, 'CANCELLED');
+
+    const retry = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${created.id}/retry`,
+    });
+    assert.equal(retry.statusCode, 202);
+    const retryRun = retry.json().importRun;
+    assert.equal(retryRun.retryOfImportRunId, created.id);
+    assert.equal(retryRun.status, 'QUEUED');
+    assert.equal(retryRun.source, 'USER_ACTION');
+    assert.deepEqual(retryRun.scope, created.scope);
+    assert.equal(retryRun.requestedFrom, created.requestedFrom);
+    assert.equal(retryRun.requestedTo, created.requestedTo);
+
+    const activeList = await app.inject({
+      method: 'GET',
+      url: '/api/me/account-imports?active=true&limit=10',
+    });
+    assert.equal(activeList.statusCode, 200);
+    assert.deepEqual(activeList.json().items.map((run) => run.id), [retryRun.id]);
+
+    const invalidRetry = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${retryRun.id}/retry`,
+    });
+    assert.equal(invalidRetry.statusCode, 409);
+    assert.equal(invalidRetry.json().code, 'ACCOUNT_IMPORT_INVALID_STATE');
+
+    const compatibilitySync = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${compatibilityAccount.id}/sync`,
+    });
+    assert.equal(compatibilitySync.statusCode, 202);
+    const compatibilityRun = compatibilitySync.json().importRun;
+    assert.equal(compatibilityRun.accountId, compatibilityAccount.id);
+    assert.equal(compatibilityRun.mode, 'BOUNDED_INITIAL');
+    assert.equal(compatibilityRun.source, 'ACCOUNT_REFRESH');
+    assert.equal(compatibilityRun.status, 'QUEUED');
+    assert.deepEqual(compatibilityRun.scope, {
+      variant: 'STANDARD',
+      speeds: ['BULLET', 'BLITZ', 'RAPID'],
+      rated: 'BOTH',
+    });
+    assert.equal(
+      Date.parse(compatibilityRun.requestedTo) - Date.parse(compatibilityRun.requestedFrom) > 80 * 24 * 60 * 60 * 1000,
+      true,
+      'initial compatibility refresh is bounded to roughly three calendar months',
+    );
+
+    const duplicateCompatibilitySync = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${compatibilityAccount.id}/sync`,
+    });
+    assert.equal(duplicateCompatibilitySync.statusCode, 409);
+    assert.equal(duplicateCompatibilitySync.json().code, 'ACCOUNT_IMPORT_ACTIVE');
+
+    const compatibilityCancel = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${compatibilityRun.id}/cancel`,
+    });
+    assert.equal(compatibilityCancel.statusCode, 200);
+
+    const compatibilityRetry = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${compatibilityRun.id}/retry`,
+    });
+    assert.equal(compatibilityRetry.statusCode, 202);
+    const compatibilityRetryRun = compatibilityRetry.json().importRun;
+    assert.equal(compatibilityRetryRun.retryOfImportRunId, compatibilityRun.id);
+    assert.equal(compatibilityRetryRun.source, 'ACCOUNT_REFRESH');
+
+    const compatibilityRetryCancel = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${compatibilityRetryRun.id}/cancel`,
+    });
+    assert.equal(compatibilityRetryCancel.statusCode, 200);
+
+    const backfillWithoutCoverage = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${compatibilityAccount.id}/backfill`,
+    });
+    assert.equal(backfillWithoutCoverage.statusCode, 409);
+    assert.equal(backfillWithoutCoverage.json().code, 'ACCOUNT_IMPORT_INVALID_RANGE');
+
+    const fullHistory = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${fullHistoryAccount.id}/import-all-history`,
+    });
+    assert.equal(fullHistory.statusCode, 202, fullHistory.body);
+    const fullHistoryRun = fullHistory.json().importRun;
+    assert.equal(fullHistoryRun.accountId, fullHistoryAccount.id);
+    assert.equal(fullHistoryRun.mode, 'FULL_HISTORY');
+    assert.equal(fullHistoryRun.source, 'USER_ACTION');
+    assert.equal(fullHistoryRun.requestedFrom, '2013-01-01T00:00:00.070Z');
+    assert.equal(Date.parse(fullHistoryRun.requestedTo) > Date.parse(fullHistoryRun.requestedFrom), true);
+
+    const duplicateFullHistory = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${fullHistoryAccount.id}/import-all-history`,
+    });
+    assert.equal(duplicateFullHistory.statusCode, 409);
+    assert.equal(duplicateFullHistory.json().code, 'ACCOUNT_IMPORT_ACTIVE');
+
+    const fullHistoryCancel = await app.inject({
+      method: 'POST',
+      url: `/api/me/account-imports/${fullHistoryRun.id}/cancel`,
+    });
+    assert.equal(fullHistoryCancel.statusCode, 200);
+
+    const chessComFullHistory = await app.inject({
+      method: 'POST',
+      url: `/api/me/accounts/${compatibilityAccount.id}/import-all-history`,
+    });
+    assert.equal(chessComFullHistory.statusCode, 409);
+    assert.equal(chessComFullHistory.json().code, 'ACCOUNT_IMPORT_INVALID_RANGE');
+  } finally {
+    await app.close();
+  }
+} finally {
+  if (createdAccountIds.length > 0) {
+    await prisma.externalAccount.deleteMany({ where: { id: { in: createdAccountIds } } });
+  }
+  if (otherUserId !== undefined) {
+    await prisma.appUser.deleteMany({ where: { id: otherUserId } });
+  }
+  if (createdDevUserId !== undefined) {
+    await prisma.appUser.deleteMany({ where: { id: createdDevUserId } });
+  }
+  await prisma.$disconnect();
+}
+
+function runInput(userId, accountId) {
+  return {
+    userId,
+    accountId,
+    mode: 'BOUNDED_INITIAL',
+    source: 'USER_ACTION',
+    scope: { variant: 'STANDARD', speeds: ['BLITZ', 'RAPID'], rated: 'BOTH' },
+    requestedFrom: new Date('2026-05-01T00:00:00.000Z'),
+    requestedTo: new Date('2026-08-01T00:00:00.000Z'),
+    priority: 100,
+    windowsTotal: null,
+  };
+}

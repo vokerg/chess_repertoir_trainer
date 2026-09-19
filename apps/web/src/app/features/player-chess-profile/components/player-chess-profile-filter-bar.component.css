@@ -1,0 +1,224 @@
+:host {
+  display: block;
+}
+
+.profile-filter-stack {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.profile-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(180px, 1fr) minmax(190px, 1fr) auto auto;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.profile-field {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.profile-field > span,
+.profile-field legend {
+  color: var(--ui-text-muted);
+  font-size: 0.8rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+}
+
+.profile-field.compact input,
+.profile-field.compact select {
+  padding-block: 0.7rem;
+}
+
+.profile-colors {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.profile-toggle-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.2rem;
+  padding: 0.22rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
+}
+
+.profile-toggle-group button {
+  min-height: 40px;
+  padding: 0.58rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: calc(var(--ui-radius-control) - 2px);
+  background: transparent;
+  color: var(--ui-text-muted);
+  font-weight: 750;
+}
+
+.profile-toggle-group button:hover:not(.active) {
+  background: var(--ui-surface-quiet);
+  color: var(--ui-text);
+}
+
+.profile-toggle-group button.active {
+  border-color: var(--ui-border);
+  background: var(--ui-surface);
+  color: var(--ui-action-strong);
+  box-shadow: var(--ui-shadow-soft);
+}
+
+.profile-toggle-group button:focus-visible,
+.profile-picker > summary:focus-visible,
+.profile-clear-rating:focus-visible {
+  outline: 3px solid var(--ui-focus-outline);
+  outline-offset: 2px;
+}
+
+.profile-recalculate {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.profile-filter-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.profile-picker {
+  position: relative;
+}
+
+.profile-picker > summary {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  cursor: pointer;
+  list-style: none;
+  padding: 0.58rem 0.9rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  font-weight: 750;
+}
+
+.profile-picker > summary:hover,
+.profile-picker[open] > summary {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+
+.profile-picker[open] > summary {
+  color: var(--ui-action-strong);
+}
+
+.profile-picker > summary::-webkit-details-marker {
+  display: none;
+}
+
+.profile-picker-panel,
+.profile-rating-grid {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  min-width: min(360px, calc(100vw - 48px));
+  padding: var(--space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface-overlay);
+  box-shadow: var(--ui-shadow-overlay);
+}
+
+.profile-picker-panel {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.profile-picker-panel label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  color: var(--ui-text);
+}
+
+.profile-picker-panel input {
+  width: auto;
+  accent-color: var(--ui-action-strong);
+}
+
+.profile-rating-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  min-width: min(520px, calc(100vw - 48px));
+}
+
+.profile-clear-rating {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.profile-custom-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 240px));
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--ui-border);
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.workbenchSingleColumnMaxPx (980). */
+@media (max-width: 980px) {
+  .profile-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-recalculate {
+    width: max-content;
+  }
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx (640). */
+@media (max-width: 640px) {
+  .profile-filter-grid,
+  .profile-custom-range,
+  .profile-rating-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-recalculate {
+    width: 100%;
+  }
+
+  .profile-filter-secondary {
+    display: grid;
+  }
+
+  .profile-picker {
+    width: 100%;
+  }
+
+  .profile-picker > summary {
+    width: 100%;
+    border-radius: var(--ui-radius-control);
+  }
+
+  .profile-picker-panel,
+  .profile-rating-grid {
+    position: static;
+    min-width: 0;
+    margin-top: var(--space-2);
+    box-shadow: none;
+  }
+
+  .profile-clear-rating {
+    grid-column: auto;
+  }
+}

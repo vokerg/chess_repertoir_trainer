@@ -1,0 +1,15 @@
+@if (warnings().length) {
+  <ul class="admin-warning-list" [attr.aria-label]="ariaLabel()">
+    @for (warning of warnings(); track warning.code + ':' + warning.evidence.metric) {
+      <li class="admin-warning">
+        <code class="admin-warning-code">{{ warning.code }}</code>
+        <span class="admin-warning-evidence">
+          {{ warning.evidence.metric }}: observed {{ warning.evidence.observed }}
+          {{ warning.evidence.unit }}; threshold {{ warning.evidence.threshold }}
+          {{ warning.evidence.unit }}.
+        </span>
+        <span class="admin-warning-policy">Policy {{ warning.policyVersion }}</span>
+      </li>
+    }
+  </ul>
+}

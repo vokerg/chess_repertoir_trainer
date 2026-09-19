@@ -1,0 +1,30 @@
+<div class="profile-conclusion-grid">
+  @for (conclusion of conclusions(); track conclusion.id) {
+    <article
+      class="profile-conclusion"
+      [class.selected]="selectedIndex() === conclusion.index"
+      [class.positive]="conclusion.positive"
+      [class.negative]="conclusion.negative"
+    >
+      <div class="profile-conclusion-meta">
+        <span class="profile-conclusion-kind">{{ conclusion.kindLabel }}</span>
+        <span>{{ conclusion.evidenceLabel }}</span>
+      </div>
+      <h3>{{ conclusion.summary }}</h3>
+      <p>
+        {{ conclusion.sampleLabel }}
+        @if (conclusion.metricLabel) {
+          · {{ conclusion.metricLabel }}
+        }
+      </p>
+      <button
+        type="button"
+        class="profile-evidence-button"
+        [attr.aria-pressed]="selectedIndex() === conclusion.index"
+        (click)="selectConclusion.emit(conclusion.index)"
+      >
+        {{ selectedIndex() === conclusion.index ? 'Evidence shown' : 'Inspect evidence' }}
+      </button>
+    </article>
+  }
+</div>

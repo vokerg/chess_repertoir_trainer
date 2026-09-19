@@ -1,0 +1,111 @@
+# ONB-020 — Implement account and imported-game destructive lifecycle coordinator
+
+Status: DONE
+
+Priority: P0
+
+Order: 170
+
+Delivery class: Implementation
+
+Planning maturity: Delivered through PR #408 after repeated adversarial self-review of the coordinator, destructive phases, cancellation/drain, compatibility cutover, restart semantics, deployment configuration, and PostgreSQL validation
+
+GitHub issue: [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260)
+
+Claimed by: ChatGPT / ONB-020 implementation session
+
+Implementation branch: `onb-020/issue-260-account-game-destructive-lifecycle`
+
+Claimed at: 2026-09-01
+
+Claim scope: account/game destructive lifecycle coordinator over delivered ONB-019 primitives; bounded preview/execution, fencing/drain, un-analysis/un-index/account purge/delete phases, existing route cutover, and focused lifecycle/race/restart validation; no whole-user deletion, shared-position cleanup, or administrator UI
+
+Promoted at: 2026-08-26 through merged-task completion reconciliation
+
+## Outcome
+
+Implement restart-safe un-analysis, un-indexing, account-data purge, and external-account deletion over the ONB-004 contract and delivered ONB-019 operation/fence/audit foundation.
+
+## Dependencies
+
+- ONB-004 / #151 accepted, including both self-review addenda — complete.
+- ONB-019 / #259 operation, fence, synchronous commit guard, failure-state, audit, and provenance foundation — complete through PR #386.
+- ONB-011/012 durable import lifecycle and ONB-015 sync cutover — complete.
+- ONB-017/018 preparation persistence/control for parent and child cancellation acknowledgement — complete.
+- ONB-005 before administrator mutation exposure — complete as policy input; administrator adapters remain ONB-024-owned.
+- Consumed by ONB-021 / #261.
+
+## In scope
+
+- Bounded preview counts and execute services for `UNANALYSE_GAMES`, `UNINDEX_GAMES`, `PURGE_ACCOUNT_DATA`, and `DELETE_EXTERNAL_ACCOUNT`.
+- Persisted scope fences before cancellation or destructive writes.
+- Preparation/import/job cancellation requests and drain checks, including zero target `JobTask.workKey` claims before execution.
+- Verification that every direct synchronous writer uses the ONB-019 guarded commit boundary; no AI/tag/tactical/scenario/provider write may commit after a fence.
+- Forward-only checkpointed phases with deterministic game-id batching and idempotent retry.
+- Stop/failure handling that permits terminal cancellation only before the first destructive mutation and retains the fence/checkpoint afterward.
+- Un-analysis deletion/clearing rules for runs, snapshots, AI review, ply classifications, all tactical versions/processed markers, and tag recomputation.
+- Retention of shared Position/PositionAnalysis, tactical feedback, and self-contained scenario-training snapshots during un-analysis.
+- Un-index as un-analysis followed by ply/index removal and provenance-aware local opening reset.
+- Account purge of imported games, copied scenario data, exact coverage/current import pointers, rating statistics, and sync frontiers while retaining the account, terminal `ImportRun` history, and independent OAuth connection.
+- Source-preserving purge order: select target game IDs and delete scenario sessions/attempts while `importedGameId`/`tacticalDetectionId` still identify the source, before game/detection cascades can set those links null.
+- Postcondition verification that no copied target-game scenario personal data remains.
+- Verification that retained terminal import runs cannot be resumed or counted as current coverage.
+- Account deletion as purge plus bounded audit snapshot, final account removal, default-account cleanup, and cascade removal of account-owned import history.
+- Thin authenticated preview/execute/status routes.
+- Deprecation/cutover of immediate `DELETE /api/me/accounts/:id` and raw cursor reset.
+- Canonical documentation and focused large-fixture/race/restart tests.
+
+## Out of scope
+
+- Whole-user deletion and device-local purge.
+- Shared Position cleanup.
+- Administrator authorization/UI.
+- Provider adapter redesign.
+
+## Acceptance criteria
+
+- No operation reports success while a target import claim or game-task work key remains active.
+- Active fences reject new target sync/import/job/preparation work.
+- A direct synchronous writer started before fence creation cannot commit afterward unless it already held the conflicting short guard before fence creation committed.
+- Failed/paused partial operations retain their resource fence and resume from deterministic checkpoints; they cannot become terminal `CANCELLED` after destructive execution begins.
+- Un-analysis retains shared engine analysis and non-analysis tags.
+- Un-index cannot leave current per-game analysis evidence.
+- Scenario sessions sourced from target games are deleted before relational source links can be nulled by game/detection cascade.
+- Account purge leaves a reusable account with no imported games, copied scenario data, exact coverage/current pointer, rating stats, or sync frontier, while retaining terminal import execution history.
+- Account deletion removes the account and account-owned terminal import history after lifecycle audit snapshot.
+- Account deletion no longer performs one immediate unfenced cascade.
+- Bounded transactions and memory hold for large-account fixtures.
+
+## Required validation
+
+- Per-action row matrix integration tests.
+- Running index/analysis/process/tag job cancellation races.
+- Direct AI/tag/tactical/scenario writer guarded-commit races.
+- Durable import and preparation cancellation acknowledgement tests.
+- Cross-request idempotency and stale-preview tests.
+- Failure before/after first destructive mutation and durable fence-retention tests.
+- Operation crash/restart after every phase boundary.
+- Shared Position/PositionAnalysis retention tests.
+- Tactical feedback/scenario retention tests for un-analysis.
+- Scenario-source deletion-before-SetNull race/order test for account purge.
+- Post-purge copied-personal-scenario verification test.
+- Opening provenance reset tests.
+- Account purge retained-terminal-run/current-coverage separation test.
+- Account delete terminal-run cascade plus audit-snapshot test.
+- Large-account batch and database-pressure tests.
+
+## Claim rule
+
+Before claim, re-inspect current Prisma migrations, lifecycle repository/service contracts, ONB-015 account routes, preparation drain projections, and any active lifecycle branches. Preserve the ONB-019 lock order and transactional destructive-entrypoint conventions.
+
+## Completion
+
+Implementation report: `north-star/onboarding/reports/ONB-020-2026-09-01-account-game-destructive-lifecycle.md`
+
+Runtime pull request: [#408](https://github.com/vokerg/chess_repertoir_trainer/pull/408)
+
+Validation: the exact final PR head is required to pass the full repository CI against current `main` before squash merge.
+
+Residual ownership: ONB-021 owns whole-user/mobile purge; ONB-024 owns administrator exposure; ONB-026 owns shared-position cleanup; Angular destructive-account UX may consume the lifecycle API separately without restoring direct unfenced delete.
+
+Completed at: 2026-09-01

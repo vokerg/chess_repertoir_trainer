@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Identity, navigation, and signed-in home prototype for Chess Repertoire Trainer."
+    />
+    <title>Chess Repertoire Trainer — Sol identity prototype</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-direction="instrument">
+    <svg class="icon-sprite" aria-hidden="true">
+      <defs>
+        <symbol id="nav-home" viewBox="0 0 24 24">
+          <path d="M4 11.2 12 4l8 7.2v7.3A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5Z" />
+          <path d="M9 20v-6h6v6" />
+          <circle class="glyph-signal" cx="12" cy="4" r="1.35" />
+        </symbol>
+        <symbol id="nav-study" viewBox="0 0 24 24">
+          <path d="M4 5.5c2.8-.7 5.5-.2 8 1.5v12c-2.5-1.7-5.2-2.2-8-1.5Z" />
+          <path d="M20 5.5c-2.8-.7-5.5-.2-8 1.5v12c2.5-1.7 5.2-2.2 8-1.5Z" />
+          <circle class="glyph-signal" cx="12" cy="7" r="1.25" />
+        </symbol>
+        <symbol id="nav-courses" viewBox="0 0 24 24">
+          <path d="m5 7 7-3 7 3-7 3Z" />
+          <path d="m5 12 7 3 7-3" />
+          <path d="m5 17 7 3 7-3" />
+          <circle class="glyph-signal" cx="19" cy="7" r="1.25" />
+        </symbol>
+        <symbol id="nav-games" viewBox="0 0 24 24">
+          <rect x="3.5" y="3.5" width="17" height="17" rx="3" />
+          <path d="M9.2 3.5v17M14.8 3.5v17M3.5 9.2h17M3.5 14.8h17" />
+          <circle class="glyph-signal" cx="17.7" cy="6.3" r="1.35" />
+        </symbol>
+        <symbol id="nav-openings" viewBox="0 0 24 24">
+          <path d="M12 20V9M12 13c0-3.5-2.4-5.5-6-5.5M12 16c0-4.8 2.7-7.5 6.5-7.5" />
+          <circle cx="6" cy="7.5" r="2" />
+          <circle cx="18.5" cy="8.5" r="2" />
+          <circle class="glyph-signal" cx="12" cy="20" r="1.4" />
+        </symbol>
+        <symbol id="nav-builder" viewBox="0 0 24 24">
+          <circle cx="6" cy="7" r="2" />
+          <circle cx="6" cy="17" r="2" />
+          <circle cx="17" cy="12" r="2" />
+          <path d="M8 7h2a3 3 0 0 1 3 3v2M8 17h2a3 3 0 0 0 3-3v-2M17 7v10M14.5 9.5h5" />
+          <circle class="glyph-signal" cx="17" cy="12" r="1.25" />
+        </symbol>
+        <symbol id="nav-progress" viewBox="0 0 24 24">
+          <path d="M4 19.5h16M6 16v-3M11 16V9M16 16V5" />
+          <path d="m5 9 5-3 4 2 5-5" />
+          <circle class="glyph-signal" cx="19" cy="3" r="1.35" />
+        </symbol>
+        <symbol id="nav-analysis" viewBox="0 0 24 24">
+          <rect x="3.5" y="3.5" width="13" height="13" rx="2.5" />
+          <path d="M10 3.5v13M3.5 10h13m-.7 5.8L21 21" />
+          <circle class="glyph-signal" cx="10" cy="10" r="1.35" />
+        </symbol>
+        <symbol id="nav-settings" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16" />
+          <circle cx="9" cy="6" r="2" />
+          <circle cx="16" cy="12" r="2" />
+          <circle cx="7" cy="18" r="2" />
+          <circle class="glyph-signal" cx="16" cy="12" r="1.15" />
+        </symbol>
+
+        <symbol id="nav-library" viewBox="0 0 24 24">
+          <rect x="5" y="4" width="14" height="16" rx="2.5" />
+          <path d="M9 4v16M12 8h4M12 12h4M12 16h2" />
+          <circle class="glyph-signal" cx="16" cy="8" r="1.2" />
+        </symbol>
+        <symbol id="nav-puzzle" viewBox="0 0 24 24">
+          <path
+            d="M5 5h5a2.5 2.5 0 1 1 4 0h5v5a2.5 2.5 0 1 1 0 4v5h-5a2.5 2.5 0 1 0-4 0H5v-5a2.5 2.5 0 1 1 0-4Z"
+          />
+          <circle class="glyph-signal" cx="19" cy="5" r="1.25" />
+        </symbol>
+        <symbol id="nav-missed" viewBox="0 0 24 24">
+          <circle cx="11" cy="13" r="7" />
+          <circle cx="11" cy="13" r="3" />
+          <path d="m15.5 8.5 5-5M17 3.5h3.5V7" />
+          <circle class="glyph-signal" cx="11" cy="13" r="1.25" />
+        </symbol>
+        <symbol id="nav-shield" viewBox="0 0 24 24">
+          <path d="M12 3 20 6v5.5c0 4.5-3 7.7-8 9.5-5-1.8-8-5-8-9.5V6Z" />
+          <path d="m8.5 12 2.2 2.2 4.8-5" />
+          <circle class="glyph-signal" cx="12" cy="3" r="1.25" />
+        </symbol>
+        <symbol id="nav-opening-analysis" viewBox="0 0 24 24">
+          <path d="M5 19V8m0 2h4a4 4 0 0 1 4 4" />
+          <circle cx="5" cy="7" r="2" />
+          <circle cx="15.5" cy="15.5" r="4" />
+          <path d="m18.5 18.5 2.5 2.5" />
+          <circle class="glyph-signal" cx="5" cy="7" r="1.2" />
+        </symbol>
+        <symbol id="nav-opening-struggles" viewBox="0 0 24 24">
+          <path d="M4 5v14h16M7 9l4 3 3-2 4 6" />
+          <path d="M18 13v3h-3" />
+          <circle class="glyph-signal" cx="11" cy="12" r="1.25" />
+        </symbol>
+        <symbol id="nav-performance" viewBox="0 0 24 24">
+          <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+          <path d="M6.5 14h2.3l2-5 2.7 7 1.8-4h2.2" />
+          <circle class="glyph-signal" cx="10.8" cy="9" r="1.2" />
+        </symbol>
+        <symbol id="nav-profile" viewBox="0 0 24 24">
+          <path
+            d="M9 8.5C9 6.6 10.3 5 12 5s3 1.6 3 3.5c0 1.4-.7 2.6-1.7 3.2l3.2 3.8H7.5l3.2-3.8A3.8 3.8 0 0 1 9 8.5Z"
+          />
+          <path d="M6 19h12M7.5 15.5 6 19M16.5 15.5 18 19" />
+          <circle class="glyph-signal" cx="12" cy="5" r="1.25" />
+        </symbol>
+        <symbol id="nav-lab" viewBox="0 0 24 24">
+          <path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3" />
+          <path d="M7.2 16h9.6" />
+          <circle class="glyph-signal" cx="10" cy="16" r="1.25" />
+        </symbol>
+        <symbol id="nav-import" viewBox="0 0 24 24">
+          <circle cx="9" cy="7" r="3" />
+          <path d="M3.5 19a5.5 5.5 0 0 1 11 0M18 6v9m-3-3 3 3 3-3" />
+          <circle class="glyph-signal" cx="18" cy="15" r="1.2" />
+        </symbol>
+        <symbol id="nav-link" viewBox="0 0 24 24">
+          <path d="m9.5 14.5-1.4 1.4a3.5 3.5 0 0 1-5-5l3-3a3.5 3.5 0 0 1 5 0" />
+          <path d="m14.5 9.5 1.4-1.4a3.5 3.5 0 0 1 5 5l-3 3a3.5 3.5 0 0 1-5 0M8.5 15.5l7-7" />
+          <circle class="glyph-signal" cx="12" cy="12" r="1.3" />
+        </symbol>
+        <symbol id="nav-appearance" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="4" />
+          <path
+            d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"
+          />
+          <path d="M12 8v8a4 4 0 0 0 0-8Z" />
+          <circle class="glyph-signal" cx="12" cy="12" r="1.15" />
+        </symbol>
+      </defs>
+    </svg>
+    <a class="skip-link" href="#prototype-main">Skip to prototype content</a>
+
+    <header class="prototype-toolbar" aria-label="Prototype controls">
+      <div class="toolbar-title">
+        <span>SOL / IDENTITY STUDY 03</span>
+        <strong data-direction-title>Instrument — repertoire as an analytical tool</strong>
+      </div>
+      <div class="toolbar-switches">
+        <div class="toolbar-control-set">
+          <span>Direction</span>
+          <div class="toolbar-controls" role="group" aria-label="Visual direction">
+            <button type="button" class="active" data-direction="instrument" aria-pressed="true">
+              Instrument
+            </button>
+            <button type="button" data-direction="editorial" aria-pressed="false">
+              Opening book
+            </button>
+            <button type="button" data-direction="control" aria-pressed="false">
+              Control room
+            </button>
+          </div>
+        </div>
+        <div class="toolbar-control-set">
+          <span>Rail</span>
+          <div class="toolbar-controls" role="group" aria-label="Prototype state">
+            <button type="button" class="active" data-mode="expanded" aria-pressed="true">
+              Expanded
+            </button>
+            <button type="button" data-mode="collapsed" aria-pressed="false">Collapsed</button>
+            <button type="button" data-mode="study" aria-pressed="false">Study open</button>
+            <button type="button" data-mode="compact" aria-pressed="false">Compact</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="prototype-main" class="prototype-stage">
+      <section class="app-frame" aria-label="Chess Repertoire Trainer signed-in home">
+        <aside class="rail" aria-label="Primary application navigation">
+          <div class="rail-brand-row">
+            <a class="brand-lockup" href="#home" aria-label="Chess Repertoire Trainer home">
+              <span class="brand-symbol" aria-hidden="true">
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+              </span>
+              <span><strong>Chess Repertoire</strong><small>TRAINER</small></span>
+            </a>
+            <button
+              class="rail-toggle"
+              data-action="collapse"
+              type="button"
+              aria-label="Collapse navigation rail"
+            >
+              ‹
+            </button>
+          </div>
+
+          <nav class="rail-navigation" aria-label="Main navigation">
+            <div class="rail-group">
+              <p class="rail-group-label">Start</p>
+              <a class="rail-item active" href="#home" aria-current="page">
+                <span class="route-icon" aria-hidden="true"
+                  ><svg class="navigation-glyph"><use href="#nav-home"></use></svg
+                ></span>
+                <span class="route-copy"><strong>Home</strong><small>Your next move</small></span>
+              </a>
+              <button
+                class="rail-item rail-parent"
+                data-action="nav-menu"
+                data-target="study"
+                type="button"
+                aria-expanded="false"
+              >
+                <span class="route-icon" aria-hidden="true"
+                  ><svg class="navigation-glyph"><use href="#nav-study"></use></svg
+                ></span>
+                <span class="route-copy"
+                  ><strong>Study</strong><small>Train your lines</small></span
+                >
+                <span class="route-disclosure" aria-hidden="true">⌄</span>
+              </button>
+              <div class="rail-children" data-menu="study" aria-label="Study destinations">
+                <a href="#library"
+                  ><span class="child-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-library"></use></svg></span
+                  ><span
+                    ><strong>Repertoire library</strong><small>61 active sublines</small></span
+                  ></a
+                >
+                <a href="#puzzles"
+                  ><span class="child-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-puzzle"></use></svg></span
+                  ><span><strong>Puzzles</strong><small>Pattern training</small></span></a
+                >
+                <a href="#missed"
+                  ><span class="child-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-missed"></use></svg></span
+                  ><span><strong>Missed shots</strong><small>From analysed games</small></span></a
+                >
+                <a href="#blunders"
+                  ><span class="child-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-shield"></use></svg></span
+                  ><span
+                    ><strong>Avoid blunders</strong><small>Practice safer choices</small></span
+                  ></a
+                >
+              </div>
+              <a class="rail-item" href="#courses">
+                <span class="route-icon" aria-hidden="true"
+                  ><svg class="navigation-glyph"><use href="#nav-courses"></use></svg
+                ></span>
+                <span class="route-copy"
+                  ><strong>Courses</strong><small>Build your repertoire</small></span
+                >
+              </a>
+            </div>
+
+            <div class="rail-group">
+              <p class="rail-group-label">Understand</p>
+              <a class="rail-item" href="#games">
+                <span class="route-icon" aria-hidden="true"
+                  ><svg class="navigation-glyph"><use href="#nav-games"></use></svg
+                ></span>
+                <span class="route-copy"
+                  ><strong>Games</strong><small>Review imported play</small></span
+                >
+              </a>
+              <button
+                class="rail-item rail-parent"
+                data-action="nav-menu"
+                data-target="openings"
+                type="button"
+                aria-expanded="false"
+              >
+                <span class="route-icon" aria-hidden="true"
+                  ><svg class="navigation-glyph"><use href="#nav-openings"></use></svg
+                ></span>
+                <span class="route-copy"
+                  ><strong>Openings</strong><small>Explore positions</small></span
+                >
+                <span class="route-disclosure" aria-hidden="true">⌄</span>
+              </button>
+              <div class="rail-children" data-menu="openings" aria-label="Openings destinations">
+                <a href="#opening-analysis"
+                  ><span class="child-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph">
+                      <use href="#nav-opening-analysis"></use></svg></span
+                  ><span
+                    ><strong>Opening analysis</strong><small>Explore next moves</small></span
+                  ></a
+                >
+                <a href="#opening-struggles"
+                  ><span class="child-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph">
+                      <use href="#nav-opening-struggles"></use></svg></span
+                  ><span
+                    ><strong>Opening struggles</strong><small>Find costly lines</small></span
+                  ></a
+                >
+              </div>
+              <a class="rail-item" href="#builder">
+                <span class="route-icon" aria-hidden="true"
+                  ><svg class="navigation-glyph"><use href="#nav-builder"></use></svg
+                ></span>
+                <span class="route-copy"
+                  ><strong>Builder</strong><small>Shape new lines</small></span
+                >
+              </a>
+              <button
+                class="rail-item rail-parent"
+                data-action="nav-menu"
+                data-target="progress"
+                type="button"
+                aria-expanded="false"
+              >
+                <span class="route-icon" aria-hidden="true"
+                  ><svg class="navigation-glyph"><use href="#nav-progress"></use></svg
+                ></span>
+                <span class="route-copy"
+                  ><strong>Progress</strong><small>Read the evidence</small></span
+                >
+                <span class="route-disclosure" aria-hidden="true">⌄</span>
+              </button>
+              <div class="rail-children" data-menu="progress" aria-label="Progress destinations">
+                <a href="#account-performance"
+                  ><span class="child-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-performance"></use></svg></span
+                  ><span
+                    ><strong>Account performance</strong><small>Ratings and results</small></span
+                  ></a
+                >
+                <a href="#chess-profile"
+                  ><span class="child-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-profile"></use></svg></span
+                  ><span
+                    ><strong>Chess profile</strong><small>Strengths and evidence</small></span
+                  ></a
+                >
+              </div>
+            </div>
+
+            <div class="rail-group rail-utility-group">
+              <p class="rail-group-label">Workspace</p>
+              <button
+                class="rail-item rail-parent quiet"
+                data-action="nav-menu"
+                data-target="tools"
+                type="button"
+                aria-expanded="false"
+              >
+                <span class="route-icon" aria-hidden="true"
+                  ><svg class="navigation-glyph"><use href="#nav-analysis"></use></svg
+                ></span>
+                <span class="route-copy"
+                  ><strong>Tools</strong><small>Analysis and experiments</small></span
+                >
+                <span class="route-disclosure" aria-hidden="true">⌄</span>
+              </button>
+              <div class="rail-children" data-menu="tools" aria-label="Tools destinations">
+                <a href="#analysis"
+                  ><span class="child-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-analysis"></use></svg></span
+                  ><span
+                    ><strong>Analysis board</strong><small>Free board and engine</small></span
+                  ></a
+                >
+                <a class="quiet-child" href="#lab"
+                  ><span class="child-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-lab"></use></svg></span
+                  ><span><strong>Lab</strong><small>Experimental reports</small></span></a
+                >
+              </div>
+              <button
+                class="rail-item rail-parent quiet"
+                data-action="nav-menu"
+                data-target="settings"
+                type="button"
+                aria-expanded="false"
+              >
+                <span class="route-icon" aria-hidden="true"
+                  ><svg class="navigation-glyph"><use href="#nav-settings"></use></svg
+                ></span>
+                <span class="route-copy"
+                  ><strong>Settings</strong><small>Accounts and display</small></span
+                >
+                <span class="route-disclosure" aria-hidden="true">⌄</span>
+              </button>
+              <div class="rail-children" data-menu="settings" aria-label="Settings destinations">
+                <a href="#import-accounts"
+                  ><span class="child-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-import"></use></svg></span
+                  ><span><strong>Import accounts</strong><small>Sources and sync</small></span></a
+                >
+                <a href="#lichess"
+                  ><span class="child-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-link"></use></svg></span
+                  ><span
+                    ><strong>Lichess integration</strong><small>OAuth connection</small></span
+                  ></a
+                >
+                <a href="#appearance"
+                  ><span class="child-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-appearance"></use></svg></span
+                  ><span><strong>Appearance</strong><small>Display preferences</small></span></a
+                >
+              </div>
+            </div>
+          </nav>
+
+          <div class="rail-account">
+            <span class="account-avatar" aria-hidden="true">VK</span>
+            <span class="account-copy"
+              ><strong>Viktor</strong><small>dmtrigrecov · synced</small></span
+            >
+            <button type="button" aria-label="Open account menu">•••</button>
+          </div>
+        </aside>
+
+        <section class="workspace">
+          <header class="workspace-bar">
+            <div class="workspace-context">
+              <span class="live-indicator" aria-hidden="true"></span>
+              <span>Home</span>
+              <i aria-hidden="true">/</i>
+              <strong>Tuesday, 4 August</strong>
+            </div>
+            <div class="workspace-actions">
+              <span class="sync-copy">Lichess synced 2 min ago</span>
+              <button type="button">Refresh</button>
+              <button class="command-button" type="button" aria-label="Open command menu">
+                <kbd>⌘</kbd><kbd>K</kbd>
+              </button>
+            </div>
+          </header>
+
+          <div class="home-page" id="home">
+            <header class="home-heading">
+              <div>
+                <p class="eyebrow">YOUR CHESS, CONNECTED</p>
+                <h1>Good evening, Viktor.</h1>
+                <p>Keep the repertoire sharp. Let your recent games decide what comes next.</p>
+              </div>
+              <div class="home-status" aria-label="Current repertoire status">
+                <span><i aria-hidden="true"></i>REPERTOIRE ACTIVE</span>
+                <strong>2 courses</strong>
+                <small>83 games in the last 30 days</small>
+              </div>
+            </header>
+
+            <section class="session-board" aria-labelledby="session-title">
+              <div class="session-copy">
+                <div class="session-label">
+                  <span>01</span>
+                  <p>NEXT SESSION</p>
+                </div>
+                <h2 id="session-title">Train the lines<br />that cost you points.</h2>
+                <p class="session-description">
+                  Your D4 repertoire has 18 weak sublines. Start with the positions appearing most
+                  often in your games.
+                </p>
+                <div class="session-actions">
+                  <a class="primary-action" href="#train"
+                    >Train 18 lines <span aria-hidden="true">→</span></a
+                  >
+                  <a class="secondary-action" href="#scope">Change scope</a>
+                </div>
+              </div>
+
+              <div class="line-analysis" aria-label="Representative repertoire line">
+                <header>
+                  <span>QUEEN'S GAMBIT DECLINED</span>
+                  <strong>D35</strong>
+                </header>
+                <div class="move-strip" aria-label="Move sequence">
+                  <span><small>1.</small>d4</span><span>d5</span><span><small>2.</small>c4</span
+                  ><span>e6</span><span><small>3.</small>Nc3</span><span>Nf6</span>
+                </div>
+                <div class="variation-map">
+                  <div class="variation-row selected">
+                    <i aria-hidden="true"></i
+                    ><span><strong>4. Nf3</strong><small>Main repertoire line</small></span
+                    ><em>71%</em>
+                  </div>
+                  <div class="variation-row">
+                    <i aria-hidden="true"></i
+                    ><span><strong>4. cxd5</strong><small>Exchange variation</small></span
+                    ><em>54%</em>
+                  </div>
+                  <div class="variation-row danger">
+                    <i aria-hidden="true"></i
+                    ><span><strong>4. Bg5</strong><small>Needs reinforcement</small></span
+                    ><em>31%</em>
+                  </div>
+                </div>
+                <footer>
+                  <span>Repertoire depth <strong>11 ply</strong></span
+                  ><span>Last trained <strong>6 days ago</strong></span>
+                </footer>
+              </div>
+
+              <div class="session-metrics" aria-label="Session summary">
+                <div><span>Weak lines</span><strong>18</strong><small>highest priority</small></div>
+                <div>
+                  <span>Course mastery</span><strong>64%</strong><small>+6 this month</small>
+                </div>
+                <div>
+                  <span>Expected time</span><strong>14m</strong><small>focused session</small>
+                </div>
+              </div>
+            </section>
+
+            <div class="home-modules">
+              <section class="attention-module" aria-labelledby="attention-title">
+                <header class="module-heading">
+                  <div>
+                    <p class="eyebrow">RECOMMENDED NEXT</p>
+                    <h2 id="attention-title">What needs attention</h2>
+                  </div>
+                  <a href="#all">View all <span aria-hidden="true">→</span></a>
+                </header>
+                <div class="attention-list">
+                  <a href="#review-games"
+                    ><span class="attention-index">01</span
+                    ><span class="attention-main"
+                      ><strong>Review 12 unanalysed games</strong
+                      ><small>New evidence for openings and training</small></span
+                    ><span class="attention-tag warning">12 waiting</span
+                    ><b aria-hidden="true">↗</b></a
+                  >
+                  <a href="#continue-course"
+                    ><span class="attention-index">02</span
+                    ><span class="attention-main"
+                      ><strong>Continue Sicil for the kill</strong
+                      ><small>Two sections are ready for review</small></span
+                    ><span class="attention-tag">2 sections</span><b aria-hidden="true">↗</b></a
+                  >
+                  <a href="#missed-shots"
+                    ><span class="attention-index">03</span
+                    ><span class="attention-main"
+                      ><strong>Revisit missed tactical shots</strong
+                      ><small>Positions collected from recent games</small></span
+                    ><span class="attention-tag danger">7 positions</span
+                    ><b aria-hidden="true">↗</b></a
+                  >
+                </div>
+              </section>
+
+              <section class="evidence-module" id="progress" aria-labelledby="evidence-title">
+                <header class="module-heading inverse-heading">
+                  <div>
+                    <p class="eyebrow">RECENT EVIDENCE</p>
+                    <h2 id="evidence-title">Form is moving up.</h2>
+                  </div>
+                  <a href="#progress-page">Open progress <span aria-hidden="true">→</span></a>
+                </header>
+                <div class="score-summary">
+                  <div>
+                    <span>30-DAY SCORE</span><strong>58%</strong><small>47W · 3D · 33L</small>
+                  </div>
+                  <em>+7</em>
+                </div>
+                <div class="form-chart" aria-label="Recent score trend">
+                  <div style="--value: 38%"><span>W1</span></div>
+                  <div style="--value: 52%"><span>W2</span></div>
+                  <div style="--value: 45%"><span>W3</span></div>
+                  <div style="--value: 67%"><span>W4</span></div>
+                  <div class="current" style="--value: 74%"><span>NOW</span></div>
+                </div>
+                <div class="evidence-footer">
+                  <span><strong>325</strong> training attempts</span
+                  ><span><strong>18</strong> weak sublines</span>
+                </div>
+              </section>
+            </div>
+
+            <section class="workspace-launcher" aria-labelledby="launcher-title">
+              <div>
+                <p class="eyebrow">WORKSPACES</p>
+                <h2 id="launcher-title">Go directly to the board.</h2>
+              </div>
+              <nav aria-label="Workspace shortcuts">
+                <a href="#library"
+                  ><span class="launcher-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-study"></use></svg></span
+                  ><strong>Study</strong><small>Train repertoire lines</small><b>↗</b></a
+                >
+                <a href="#games"
+                  ><span class="launcher-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-games"></use></svg></span
+                  ><strong>Games</strong><small>Review imported play</small><b>↗</b></a
+                >
+                <a href="#openings"
+                  ><span class="launcher-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-openings"></use></svg></span
+                  ><strong>Openings</strong><small>Explore positions</small><b>↗</b></a
+                >
+                <a href="#analysis"
+                  ><span class="launcher-icon" aria-hidden="true"
+                    ><svg class="navigation-glyph"><use href="#nav-analysis"></use></svg></span
+                  ><strong>Analysis</strong><small>Open the free board</small><b>↗</b></a
+                >
+              </nav>
+            </section>
+
+            <footer class="identity-footer">
+              <span>CHESS REPERTOIRE TRAINER</span>
+              <strong>Turn played positions into prepared decisions.</strong>
+              <span>SOL / 03</span>
+            </footer>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="prototype-note">
+      <strong>Direction:</strong>
+      <span data-direction-note
+        >A balanced analytical workspace: one decisive dark session surface with supporting light
+        evidence modules.</span
+      >
+      The Decision Grid mark, icon family, native UI typography, and graphite/mint tokens remain
+      fixed across all three options.
+    </footer>
+    <script src="prototype.js"></script>
+  </body>
+</html>

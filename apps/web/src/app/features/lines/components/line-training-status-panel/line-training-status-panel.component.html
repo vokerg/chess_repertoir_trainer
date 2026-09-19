@@ -1,0 +1,74 @@
+<section class="status-panel">
+  <div class="status-panel-header">
+    <div>
+      <span class="eyebrow">Position evidence</span>
+      <strong>{{ line().name }} sublines</strong>
+      <p>Select the exact variations to drill, or train the whole repertoire line.</p>
+    </div>
+    <div class="status-panel-actions">
+      <button type="button" class="secondary" (click)="trainWholeLine.emit()">
+        Train whole line
+      </button>
+      <button
+        type="button"
+        class="primary"
+        [disabled]="selectedHashes().length === 0"
+        (click)="drillSelected.emit()"
+      >
+        Drill selected{{ selectedHashes().length ? ' (' + selectedHashes().length + ')' : '' }}
+      </button>
+      <a class="compact-action secondary" [routerLink]="['/lines', line().id, 'edit']">Edit tree</a>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p class="status-note" aria-live="polite">Loading subline status...</p>
+  } @else if (error()) {
+    <p class="status-error" role="alert">{{ error() }}</p>
+  } @else if (sublines().length === 0) {
+    <div class="empty-state">No active sublines for this line.</div>
+  } @else {
+    <div class="subline-table-wrap">
+      <table class="subline-table">
+        <thead>
+          <tr>
+            <th scope="col">Select</th>
+            <th scope="col">Status</th>
+            <th scope="col">Move sequence</th>
+            <th scope="col">Recent</th>
+            <th scope="col">Pass rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (subline of sublines(); track subline.hash) {
+            <tr>
+              <td>
+                <input
+                  type="checkbox"
+                  [attr.aria-label]="'Select subline ' + subline.moveText"
+                  [checked]="isSelected(subline.hash)"
+                  (change)="toggleSubline.emit(subline.hash)"
+                />
+              </td>
+              <td>
+                <span
+                  class="status-chip"
+                  [class.new]="subline.status === 'NEW'"
+                  [class.weak]="subline.status === 'WEAK'"
+                  [class.review]="subline.status === 'REVIEW'"
+                  [class.stable]="subline.status === 'STABLE'"
+                  [class.strong]="subline.status === 'STRONG'"
+                >
+                  {{ trainingStatusLabel(subline.status) }}
+                </span>
+              </td>
+              <td class="move-text">{{ subline.moveText }}</td>
+              <td class="numeric-cell">{{ subline.recentAttempts }}</td>
+              <td class="numeric-cell">{{ percentLabel(subline.passRate) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

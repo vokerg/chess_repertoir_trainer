@@ -1,0 +1,381 @@
+@if (auth.isSignedIn()) {
+  <aside
+    class="desktop-rail"
+    [class.desktop-rail-collapsed]="railCollapsed()"
+    aria-label="Primary application navigation"
+  >
+    <div class="rail-brand-row">
+      <a routerLink="/home" class="rail-brand-link" aria-label="Chess Repertoire Trainer home">
+        @if (railCollapsed()) {
+          <app-brand-mark variant="grid" [size]="42" />
+        } @else {
+          <app-brand-lockup tone="inverse" markVariant="grid" [markSize]="42" />
+        }
+      </a>
+      <button
+        type="button"
+        class="rail-collapse-button"
+        [attr.aria-label]="railCollapsed() ? 'Expand navigation rail' : 'Collapse navigation rail'"
+        [attr.title]="railCollapsed() ? 'Expand navigation rail' : 'Collapse navigation rail'"
+        [attr.aria-expanded]="!railCollapsed()"
+        (click)="toggleRail()"
+      >
+        <span aria-hidden="true">{{ railCollapsed() ? '›' : '‹' }}</span>
+      </button>
+    </div>
+
+    <nav class="rail-nav" aria-label="Main navigation">
+      <div class="rail-section-label">Start</div>
+      @for (item of primaryNavItems; track item.id) {
+        @if (item.id === 'games') {
+          <div class="rail-section-label rail-section-label-understand">Understand</div>
+        }
+        <div
+          class="rail-nav-node"
+          [class.rail-nav-node-active]="isNavActive(item)"
+          [class.rail-nav-node-open]="isNavFlyoutOpen(item)"
+        >
+          <a
+            [routerLink]="item.link"
+            class="rail-nav-link"
+            [class.rail-nav-link-quiet]="item.quiet"
+            [attr.aria-current]="isNavActive(item) ? 'page' : null"
+            [attr.title]="railCollapsed() ? item.label : null"
+            (click)="closeNavFlyout()"
+          >
+            <span class="rail-nav-icon"><app-nav-icon [name]="item.icon" /></span>
+            <span class="rail-nav-copy">
+              <span class="rail-nav-label">{{ item.label }}</span>
+              @if (item.description) {
+                <small class="rail-nav-description">{{ item.description }}</small>
+              }
+            </span>
+          </a>
+
+          @if (item.children) {
+            <button
+              type="button"
+              class="rail-nav-disclosure"
+              [attr.aria-label]="
+                (isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'
+              "
+              [attr.title]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
+              [attr.aria-haspopup]="railCollapsed() ? 'menu' : null"
+              [attr.aria-expanded]="isNavFlyoutOpen(item)"
+              [attr.aria-controls]="navFlyoutId(item)"
+              (click)="toggleNavFlyout(item)"
+            >
+              <span class="rail-nav-disclosure-icon" aria-hidden="true"></span>
+            </button>
+          }
+
+          @if (item.children && !railCollapsed()) {
+            <div
+              [id]="navFlyoutId(item)"
+              class="rail-inline-accordion"
+              [class.rail-inline-accordion-open]="isNavFlyoutOpen(item)"
+              [attr.aria-hidden]="!isNavFlyoutOpen(item)"
+            >
+              <div class="rail-inline-accordion-clip">
+                <div
+                  class="rail-inline-children"
+                  role="group"
+                  [attr.aria-label]="item.label + ' submenu'"
+                >
+                  @for (child of item.children; track child.id) {
+                    <a
+                      [routerLink]="child.link"
+                      class="rail-inline-item"
+                      [class.rail-inline-item-active]="isNavActive(child)"
+                      [class.rail-inline-item-quiet]="child.quiet"
+                      [attr.aria-current]="isNavActive(child) ? 'page' : null"
+                      [attr.title]="child.description ?? null"
+                      (click)="closeNavFlyout()"
+                    >
+                      <span class="rail-inline-icon"><app-nav-icon [name]="child.icon" /></span>
+                      <span class="rail-inline-copy">
+                        <span class="rail-inline-label">{{ child.label }}</span>
+                        @if (child.description) {
+                          <small class="rail-inline-description">{{ child.description }}</small>
+                        }
+                      </span>
+                    </a>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (item.children && railCollapsed() && isNavFlyoutOpen(item)) {
+            <div [id]="navFlyoutId(item)" class="rail-flyout" role="menu">
+              <div class="rail-flyout-heading">{{ item.label }}</div>
+              @for (child of item.children; track child.id) {
+                <a
+                  [routerLink]="child.link"
+                  class="rail-flyout-item"
+                  [class.rail-flyout-item-active]="isNavActive(child)"
+                  [class.rail-flyout-item-quiet]="child.quiet"
+                  [attr.aria-current]="isNavActive(child) ? 'page' : null"
+                  role="menuitem"
+                  (click)="closeNavFlyout()"
+                >
+                  <span class="rail-flyout-icon"><app-nav-icon [name]="child.icon" /></span>
+                  <span class="rail-flyout-copy">
+                    <strong>{{ child.label }}</strong>
+                    @if (child.description) {
+                      <small>{{ child.description }}</small>
+                    }
+                  </span>
+                </a>
+              }
+            </div>
+          }
+        </div>
+      }
+    </nav>
+
+    <div class="rail-workspace-label">Workspace</div>
+    <nav class="rail-nav rail-nav-workspace" aria-label="Workspace navigation">
+      @for (item of workspaceNavItems; track item.id) {
+        <div
+          class="rail-nav-node"
+          [class.rail-nav-node-active]="isNavActive(item)"
+          [class.rail-nav-node-open]="isNavFlyoutOpen(item)"
+        >
+          <a
+            [routerLink]="item.link"
+            class="rail-nav-link"
+            [class.rail-nav-link-quiet]="item.quiet"
+            [attr.aria-current]="isNavActive(item) ? 'page' : null"
+            [attr.title]="railCollapsed() ? item.label : null"
+            (click)="closeNavFlyout()"
+          >
+            <span class="rail-nav-icon"><app-nav-icon [name]="item.icon" /></span>
+            <span class="rail-nav-copy">
+              <span class="rail-nav-label">{{ item.label }}</span>
+              @if (item.description) {
+                <small class="rail-nav-description">{{ item.description }}</small>
+              }
+            </span>
+          </a>
+
+          @if (item.children) {
+            <button
+              type="button"
+              class="rail-nav-disclosure"
+              [attr.aria-label]="
+                (isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'
+              "
+              [attr.title]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
+              [attr.aria-haspopup]="railCollapsed() ? 'menu' : null"
+              [attr.aria-expanded]="isNavFlyoutOpen(item)"
+              [attr.aria-controls]="navFlyoutId(item)"
+              (click)="toggleNavFlyout(item)"
+            >
+              <span class="rail-nav-disclosure-icon" aria-hidden="true"></span>
+            </button>
+          }
+
+          @if (item.children && !railCollapsed()) {
+            <div
+              [id]="navFlyoutId(item)"
+              class="rail-inline-accordion"
+              [class.rail-inline-accordion-open]="isNavFlyoutOpen(item)"
+              [attr.aria-hidden]="!isNavFlyoutOpen(item)"
+            >
+              <div class="rail-inline-accordion-clip">
+                <div
+                  class="rail-inline-children"
+                  role="group"
+                  [attr.aria-label]="item.label + ' submenu'"
+                >
+                  @for (child of item.children; track child.id) {
+                    <a
+                      [routerLink]="child.link"
+                      class="rail-inline-item"
+                      [class.rail-inline-item-active]="isNavActive(child)"
+                      [class.rail-inline-item-quiet]="child.quiet"
+                      [attr.aria-current]="isNavActive(child) ? 'page' : null"
+                      [attr.title]="child.description ?? null"
+                      (click)="closeNavFlyout()"
+                    >
+                      <span class="rail-inline-icon"><app-nav-icon [name]="child.icon" /></span>
+                      <span class="rail-inline-copy">
+                        <span class="rail-inline-label">{{ child.label }}</span>
+                        @if (child.description) {
+                          <small class="rail-inline-description">{{ child.description }}</small>
+                        }
+                      </span>
+                    </a>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (item.children && railCollapsed() && isNavFlyoutOpen(item)) {
+            <div [id]="navFlyoutId(item)" class="rail-flyout rail-flyout-up" role="menu">
+              <div class="rail-flyout-heading">{{ item.label }}</div>
+              @for (child of item.children; track child.id) {
+                <a
+                  [routerLink]="child.link"
+                  class="rail-flyout-item"
+                  [class.rail-flyout-item-active]="isNavActive(child)"
+                  [class.rail-flyout-item-quiet]="child.quiet"
+                  [attr.aria-current]="isNavActive(child) ? 'page' : null"
+                  role="menuitem"
+                  (click)="closeNavFlyout()"
+                >
+                  <span class="rail-flyout-icon"><app-nav-icon [name]="child.icon" /></span>
+                  <span class="rail-flyout-copy">
+                    <strong>{{ child.label }}</strong>
+                    @if (child.description) {
+                      <small>{{ child.description }}</small>
+                    }
+                  </span>
+                </a>
+              }
+            </div>
+          }
+        </div>
+      }
+    </nav>
+
+    <div class="rail-account">
+      @if (auth.isDevAuth()) {
+        <span class="rail-account-icon" aria-hidden="true"><app-nav-icon name="account" /></span>
+      } @else {
+        <app-clerk-user-button />
+      }
+      <span class="rail-account-copy">
+        <strong>{{ auth.displayName() }}</strong>
+        <small>{{ auth.isDevAuth() ? 'Development account' : 'Account and sign out' }}</small>
+      </span>
+    </div>
+  </aside>
+
+  <header class="mobile-header">
+    <a routerLink="/home" class="mobile-brand-link" aria-label="Chess Repertoire Trainer home">
+      <app-brand-lockup markVariant="grid" [markSize]="36" collapseAtMobile />
+    </a>
+  </header>
+
+  <nav class="mobile-primary-nav" aria-label="Primary mobile navigation">
+    @for (item of mobilePrimaryNavItems; track item.id) {
+      <a
+        [routerLink]="item.link"
+        class="mobile-primary-nav-item"
+        [class.mobile-primary-nav-item-active]="isNavActive(item)"
+        [attr.aria-current]="isNavActive(item) ? 'page' : null"
+        (click)="closeMobileMenu()"
+      >
+        <span class="mobile-primary-nav-icon"><app-nav-icon [name]="item.icon" /></span>
+        <span class="mobile-primary-nav-label">{{ item.label }}</span>
+      </a>
+    }
+    <button
+      #mobileMoreButton
+      type="button"
+      class="mobile-primary-nav-item mobile-more-button"
+      [class.mobile-primary-nav-item-active]="isMobileMoreActive() || mobileMenuOpen()"
+      [attr.aria-current]="isMobileMoreActive() ? 'page' : null"
+      [attr.aria-expanded]="mobileMenuOpen()"
+      aria-controls="mobile-main-menu"
+      aria-label="Open all destinations"
+      (click)="toggleMobileMenu()"
+    >
+      <span class="mobile-primary-nav-icon"><app-nav-icon name="more" /></span>
+      <span class="mobile-primary-nav-label">More</span>
+    </button>
+  </nav>
+
+  @if (railCollapsed() && openNavId()) {
+    <button
+      type="button"
+      class="rail-flyout-backdrop"
+      aria-label="Close navigation submenu"
+      (click)="closeNavFlyout()"
+    ></button>
+  }
+
+  <dialog
+    #mobileMenuDialog
+    id="mobile-main-menu"
+    class="mobile-menu-sheet"
+    aria-label="All application destinations"
+    (cancel)="handleMobileMenuCancel($event)"
+    (close)="handleMobileMenuClosed()"
+    (pointerdown)="handleMobileMenuBackdropPointerDown($event)"
+  >
+    <div class="mobile-menu-header">
+      <div>
+        <p class="mobile-menu-kicker">All destinations</p>
+        <app-brand-lockup markVariant="grid" [markSize]="36" />
+      </div>
+      <button
+        #mobileMenuCloseButton
+        type="button"
+        class="mobile-menu-close"
+        aria-label="Close all destinations"
+        (click)="closeMobileMenu(true)"
+      >
+        <span></span>
+      </button>
+    </div>
+    <nav class="mobile-nav-groups" aria-label="All application destinations">
+      @for (group of mainNavItems; track group.id) {
+        <section class="mobile-nav-group">
+          <h3 class="mobile-nav-group-title">{{ group.label }}</h3>
+          <div class="mobile-nav">
+            @for (item of navChildren(group); track item.id) {
+              <a
+                [routerLink]="item.link"
+                class="mobile-nav-item"
+                [class.mobile-nav-item-active]="isNavActive(item)"
+                [class.mobile-nav-item-quiet]="item.quiet"
+                [attr.aria-current]="isNavActive(item) ? 'page' : null"
+                (click)="closeMobileMenu()"
+              >
+                <span class="mobile-nav-icon"><app-nav-icon [name]="item.icon" /></span>
+                <span class="mobile-nav-copy">
+                  <span class="mobile-nav-label">{{ item.label }}</span>
+                  @if (item.description) {
+                    <span class="mobile-nav-description">{{ item.description }}</span>
+                  }
+                </span>
+              </a>
+            }
+          </div>
+        </section>
+      }
+    </nav>
+    <div class="mobile-auth-status">
+      <span class="auth-name">{{ auth.displayName() }}</span>
+      @if (!auth.isDevAuth()) {
+        <app-clerk-user-button />
+      }
+    </div>
+  </dialog>
+} @else {
+  <aside class="desktop-rail desktop-rail-auth" aria-label="Authentication navigation">
+    <a routerLink="/" class="rail-brand-link" aria-label="Chess Repertoire Trainer landing page">
+      <app-brand-lockup tone="inverse" markVariant="grid" [markSize]="42" />
+    </a>
+    <nav class="rail-nav" aria-label="Authentication navigation">
+      @for (item of authNavItems; track item.id) {
+        <div class="rail-nav-node" [class.rail-nav-node-active]="isNavActive(item)">
+          <a
+            [routerLink]="item.link"
+            class="rail-nav-link"
+            [attr.aria-current]="isNavActive(item) ? 'page' : null"
+          >
+            <span class="rail-nav-icon"><app-nav-icon [name]="item.icon" /></span>
+            <span class="rail-nav-copy">
+              <span class="rail-nav-label">{{ item.label }}</span>
+            </span>
+          </a>
+        </div>
+      }
+    </nav>
+  </aside>
+}

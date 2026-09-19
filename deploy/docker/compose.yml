@@ -1,0 +1,55 @@
+name: chess-repertoire-trainer
+
+x-app-service: &app-service
+  image: "${IMAGE_REPOSITORY:-ghcr.io/vokerg/chess-repertoir-trainer}:${IMAGE_TAG:-latest}"
+  restart: unless-stopped
+
+services:
+  web:
+    <<: *app-service
+    command: ["nginx", "-g", "daemon off;"]
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+  api:
+    <<: *app-service
+    command: ["npm", "run", "start", "--workspace=apps/api"]
+    user: node
+    init: true
+    env_file:
+      - path: ./stack.env
+        required: true
+    environment:
+      PORT: "3000"
+      TINI_KILL_PROCESS_GROUP: "1"
+    expose:
+      - "3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    stop_grace_period: 45s
+
+  worker:
+    <<: *app-service
+    command: ["npm", "run", "start:worker", "--workspace=apps/api"]
+    user: node
+    init: true
+    env_file:
+      - path: ./stack.env
+        required: true
+    environment:
+      STOCKFISH_ENGINE: wasm
+      TINI_KILL_PROCESS_GROUP: "1"
+    stop_grace_period: 45s

@@ -1,0 +1,261 @@
+import { signal } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
+import type { UiFactItem } from '../../../shared/ui/fact-grid/fact-grid.component';
+import type { AccountImportRun, ExternalAccount } from '../data-access/accounts.models';
+import { dateLabel } from '../helpers/account-labels';
+import { AccountsStore } from '../state/accounts.store';
+import { AccountsPageComponent } from './accounts-page.component';
+
+describe('AccountsPageComponent', () => {
+  let fixture: ComponentFixture<AccountsPageComponent>;
+  let store: jasmine.SpyObj<AccountsStore>;
+  let confirmDialog: jasmine.SpyObj<ConfirmDialogService>;
+
+  const account: ExternalAccount = {
+    id: 7,
+    userId: 1,
+    provider: 'LICHESS',
+    username: 'tester',
+    displayName: 'Training account',
+    providerUserId: null,
+    isActive: true,
+    isDefaultProgressAccount: false,
+    lastSyncAt: '2026-08-05T04:00:00.000Z',
+    syncCursorTime: '2026-08-01T00:00:00.000Z',
+    lastSyncRunId: null,
+    createdAt: '2026-07-01T00:00:00.000Z',
+    updatedAt: '2026-08-05T04:00:00.000Z',
+  };
+  const run = importRun();
+
+  beforeEach(async () => {
+    store = jasmine.createSpyObj<AccountsStore>(
+      'AccountsStore',
+      [
+        'initialize',
+        'updateForm',
+        'createAccount',
+        'resetForm',
+        'syncActiveAccounts',
+        'syncAccount',
+        'backfillAccount',
+        'importAllHistory',
+        'pauseImport',
+        'resumeImport',
+        'cancelImport',
+        'retryImport',
+        'importRunForAccount',
+        'isImportActive',
+        'isImportControlling',
+        'setDefaultProgressAccount',
+        'toggleActive',
+        'openLifecycle',
+        'closeLifecycle',
+        'setLifecycleAction',
+        'setLifecycleConfirmation',
+        'previewLifecycle',
+        'executeLifecycle',
+        'refreshLifecycle',
+        'stopLifecycle',
+      ],
+      {
+        form: signal({ provider: 'LICHESS' as const, username: '', displayName: '' }),
+        saving: signal(false),
+        loading: signal(false),
+        accounts: signal([account]),
+        error: signal<string | null>('Import service unavailable.'),
+        notice: signal<string | null>('Account refresh queued.'),
+        syncingAllAccounts: signal(false),
+        syncingAccountId: signal<number | null>(null),
+        backfillingAccountId: signal<number | null>(null),
+        importingAllHistoryAccountId: signal<number | null>(null),
+        controllingImportRunId: signal<number | null>(null),
+        settingDefaultProgressAccountId: signal<number | null>(null),
+        lifecycleAccountId: signal<number | null>(null),
+        lifecycleAction: signal('PURGE_ACCOUNT_DATA' as const),
+        lifecycleConfirmation: signal(''),
+        lifecyclePreview: signal(null),
+        lifecycleOperation: signal(null),
+        lifecycleBusy: signal(false),
+        lifecycleError: signal<string | null>(null),
+      },
+    );
+    confirmDialog = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', ['confirm']);
+    confirmDialog.confirm.and.resolveTo(true);
+    store.initialize.and.resolveTo();
+    store.importRunForAccount.withArgs(account.id).and.returnValue(run);
+    store.isImportActive.withArgs(account.id).and.returnValue(true);
+    store.isImportControlling.and.returnValue(false);
+
+    await TestBed.configureTestingModule({
+      imports: [AccountsPageComponent],
+      providers: [provideRouter([]), { provide: ConfirmDialogService, useValue: confirmDialog }],
+    })
+      .overrideComponent(AccountsPageComponent, {
+        set: { providers: [{ provide: AccountsStore, useValue: store }] },
+      })
+      .compileComponents();
+
+    fixture = TestBed.createComponent(AccountsPageComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  });
+
+  afterEach(() => fixture.destroy());
+
+  it('renders persisted import evidence instead of raw cursor state', () => {
+    const root = fixture.nativeElement as HTMLElement;
+    const buttons = buttonLabels(root);
+
+    expect(root.textContent).toContain('Import status');
+    expect(root.textContent).toContain('Last completed');
+    expect(root.textContent).not.toContain('Import cursor');
+    expect(root.textContent).toContain('Importing · Forward refresh');
+    expect(root.textContent).toContain('10 seen · 3 imported · 4 already present · 0 failed');
+    expect(buttons).toContain('Pause');
+    expect(buttons).toContain('Cancel');
+    expect(buttons).not.toContain('Index blitz/rapid games');
+    expect(buttons).not.toContain('Analyse indexed games');
+  });
+
+  it('does not present failed settlement as a successful completion', () => {
+    store.importRunForAccount.withArgs(account.id).and.returnValue({
+      ...run,
+      status: 'FAILED',
+      completedAt: '2026-08-20T12:00:00.000Z',
+      errorCode: 'TEST_FAILURE',
+      error: 'Import failed.',
+    });
+    fixture.detectChanges();
+
+    const lastCompleted = page().accountFactsById()[account.id]
+      .find((fact) => fact.id === 'last-import');
+    expect(lastCompleted?.value).toBe(dateLabel(account.lastSyncAt));
+  });
+
+  it('keeps historical expansion explicit and raw cursor reset absent', () => {
+    const root = fixture.nativeElement as HTMLElement;
+    const buttons = buttonLabels(root);
+
+    expect(buttons).toContain('Load 3 older months');
+    expect(buttons).toContain('Import all supported history');
+    expect(buttons).not.toContain('Reset import cursor');
+    expect(rootText()).toContain('Lichess variants and other time controls are outside this importer.');
+    expect(rootText()).toContain('explicit all-history action is currently available for Lichess accounts only.');
+    expect(rootText()).toContain('newest bounded three-month window');
+    expect(rootText()).toContain('2013-01-01');
+  });
+
+  it('confirms before queueing all supported Lichess history', async () => {
+    await page().confirmImportAllHistory(account);
+
+    expect(confirmDialog.confirm).toHaveBeenCalledOnceWith(jasmine.objectContaining({
+      title: 'Import all supported history?',
+      confirmLabel: 'Import all history',
+    }));
+    expect(store.importAllHistory).toHaveBeenCalledOnceWith(account);
+  });
+
+  it('places lifecycle actions on the visible account and keeps them behind the preview flow', () => {
+    const deleteButton = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    ).find((button) => button.textContent?.includes('Delete connected account')) as HTMLButtonElement | undefined;
+
+    expect(deleteButton).toBeDefined();
+    expect(deleteButton?.disabled).toBeFalse();
+    expect(buttonLabels(fixture.nativeElement as HTMLElement)).toContain('Purge account data');
+    expect(rootText()).toContain('Account ID');
+  });
+
+  it('opens the lifecycle controls for the account whose action was selected', () => {
+    const purgeButton = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    ).find((button) => button.textContent?.includes('Purge account data')) as HTMLButtonElement;
+
+    purgeButton.click();
+    fixture.detectChanges();
+
+    expect(store.openLifecycle).toHaveBeenCalledOnceWith(account, 'PURGE_ACCOUNT_DATA');
+  });
+
+  it('renders dynamic errors, notices, and import progress with live-region semantics', () => {
+    const root = fixture.nativeElement as HTMLElement;
+    const alert = root.querySelector('[role="alert"]');
+    const politeStatuses = root.querySelectorAll('[role="status"][aria-live="polite"]');
+
+    expect(alert?.textContent).toContain('Import service unavailable.');
+    expect(
+      Array.from(politeStatuses).some((status) => status.textContent?.includes('Account refresh queued.')),
+    ).toBeTrue();
+    expect(root.querySelector('.sync-result[role="status"]')).not.toBeNull();
+  });
+
+  it('runs the header refresh action through bulk durable queueing', () => {
+    page().headerActions()[0].run();
+
+    expect(store.syncActiveAccounts).toHaveBeenCalled();
+  });
+
+  function page(): {
+    headerActions(): readonly { run: () => void }[];
+    accountFactsById(): Readonly<Record<number, readonly UiFactItem[]>>;
+    confirmImportAllHistory(account: ExternalAccount): Promise<void>;
+  } {
+    return fixture.componentInstance as unknown as {
+      headerActions(): readonly { run: () => void }[];
+      accountFactsById(): Readonly<Record<number, readonly UiFactItem[]>>;
+      confirmImportAllHistory(account: ExternalAccount): Promise<void>;
+    };
+  }
+
+  function rootText(): string {
+    return (fixture.nativeElement as HTMLElement).textContent ?? '';
+  }
+});
+
+function importRun(): AccountImportRun {
+  return {
+    id: 8,
+    accountId: 7,
+    provider: 'LICHESS',
+    mode: 'INCREMENTAL_FORWARD',
+    source: 'ACCOUNT_REFRESH',
+    status: 'RUNNING',
+    scopeVersion: 1,
+    scopeHash: 'scope-7',
+    scope: { variant: 'STANDARD', speeds: ['BULLET', 'BLITZ', 'RAPID'], rated: 'BOTH' },
+    requestedFrom: '2026-08-01T00:00:00.000Z',
+    requestedTo: '2026-08-05T04:00:00.000Z',
+    retryOfImportRunId: null,
+    priority: 100,
+    windows: { total: 2, completed: 1 },
+    games: {
+      seen: 10,
+      matchedScope: 7,
+      imported: 3,
+      duplicate: 4,
+      updated: 0,
+      skipped: 3,
+      skippedOutOfScope: 3,
+      failed: 0,
+    },
+    lastProgressAt: '2026-08-05T03:55:00.000Z',
+    retryAt: null,
+    rateLimitUntil: null,
+    createdAt: '2026-08-05T03:45:00.000Z',
+    updatedAt: '2026-08-05T03:55:00.000Z',
+    startedAt: '2026-08-05T03:45:00.000Z',
+    completedAt: null,
+    errorCode: null,
+    error: null,
+  };
+}
+
+function buttonLabels(root: HTMLElement): string[] {
+  return Array.from(root.querySelectorAll('button')).map(
+    (button) => button.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+  );
+}

@@ -1,0 +1,128 @@
+<section class="opening-page stack">
+  <app-page-header
+    title="Opening analysis"
+    [subtitle]="pageSubtitle()"
+    [stats]="headerStats()"
+    [actions]="headerActions()"
+  />
+
+  <app-panel class="opening-line-toolbar">
+    <app-copyable-line
+      name="Line"
+      label="Copy"
+      [line]="store.lineLabel()"
+      [trail]="true"
+      [segments]="lineTrailMoves()"
+      [currentSegment]="store.history().length"
+      [link]="['/analysis']"
+      [queryParams]="analysisQueryParams()"
+      (segmentSelected)="store.goToPly($event)"
+    />
+  </app-panel>
+
+  <app-analysis-workbench
+    class="opening-workbench"
+    [currentFen]="store.currentFen()"
+    [side]="store.boardSide()"
+    [blackPerspective]="store.blackPerspective()"
+    [lastMove]="store.lastMove()"
+    [boardPositionVersion]="store.boardPositionVersion()"
+    [analysis]="store.engine()"
+    [engineVisible]="store.engineVisible()"
+    [engineLinesSelectable]="true"
+    [showTreePanel]="false"
+    [showDangerZone]="false"
+    [showNextNavigation]="false"
+    [showEndNavigation]="false"
+    [canGoBackward]="store.history().length > 0"
+    keyboardHint="Keyboard: Left arrow to go back, Home for start"
+    (boardMove)="store.playBoardMove($event)"
+    (engineMoveSelected)="store.playBoardMove($event)"
+    (goStart)="store.resetBoard()"
+    (goPrevious)="store.goBack()"
+  >
+    <div analysisWorkbenchLeftExtra class="opening-left-stack">
+      <app-course-position-suggestions-widget
+        [fen]="store.currentFen()"
+        (moveSelected)="store.playBoardMove($event.moveUci)"
+      />
+    </div>
+
+    <div analysisWorkbenchSideBeforeTree class="opening-primary-evidence">
+      <app-position-game-moves-panel
+        title="Next moves from your games"
+        subtitle="Continue from this exact position using your indexed evidence."
+        [analysis]="store.analysis()"
+        [loading]="store.loading()"
+        [error]="store.error()"
+        [filters]="store.filters()"
+        [facets]="store.facets()"
+        [filtersCollapsedInitially]="true"
+        [compact]="true"
+        [initialVisibleMoveCount]="6"
+        [showPositionWdl]="false"
+        (filtersChange)="store.setFilters($event)"
+        (applyFilters)="store.refresh()"
+        (resetFilters)="store.resetFilters()"
+        (refresh)="store.refresh()"
+        (moveSelected)="store.playNextMove($event)"
+      />
+    </div>
+
+    <div analysisWorkbenchSideExtra class="opening-secondary-evidence">
+      <app-opening-evidence-tabs
+        [activeTab]="store.activeEvidenceTab()"
+        (tabChange)="store.selectEvidenceTab($event)"
+      >
+        @switch (store.activeEvidenceTab()) {
+          @case ('performance') {
+            <app-position-performance-panel
+              [performance]="store.performance()"
+              [loading]="store.performanceLoading()"
+              [embedded]="true"
+              [selectableTags]="true"
+              [selectedTagCodes]="store.filters().tagCodes"
+              (tagSelected)="store.toggleTagFilter($event)"
+            />
+          }
+          @case ('masters') {
+            <app-masters-explorer-widget
+              [fen]="store.currentFen()"
+              [embedded]="true"
+              (moveSelected)="store.playBoardMove($event)"
+            />
+          }
+          @case ('peers') {
+            <app-lichess-games-explorer-widget
+              [fen]="store.currentFen()"
+              [embedded]="true"
+              (moveSelected)="store.playBoardMove($event)"
+            />
+          }
+          @case ('last-games') {
+            <app-position-top-games
+              [games]="store.topGames()"
+              [loading]="store.topGamesLoading()"
+              title="Last games in this position"
+              subtitle="Most recent indexed games reaching this exact position."
+              [resetKey]="store.currentFen()"
+            />
+          }
+        }
+      </app-opening-evidence-tabs>
+
+      <app-game-filter-breakdown-panel
+        title="My openings in this position"
+        subtitle="Grouped by assigned opening. Select one to narrow the evidence."
+        [items]="openingBreakdownItems()"
+        [selectedKeys]="selectedOpeningKeys()"
+        [loading]="store.breakdownsLoading()"
+        [error]="store.breakdownsError()"
+        emptyText="No assigned openings found for this position."
+        (itemSelected)="selectOpening($event)"
+      />
+    </div>
+  </app-analysis-workbench>
+
+  <app-lichess-bot-challenge-dialog />
+</section>

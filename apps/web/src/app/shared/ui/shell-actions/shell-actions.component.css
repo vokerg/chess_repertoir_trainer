@@ -1,0 +1,115 @@
+:host {
+  display: contents;
+}
+
+.ui-shell-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ui-shell-stat,
+.ui-shell-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  padding: 0.45rem 0.75rem;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ui-shell-stat {
+  gap: 0.4rem;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+}
+
+.ui-shell-stat-label,
+.ui-shell-stat-value {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.ui-shell-stat-label {
+  color: var(--ui-text-muted);
+  letter-spacing: 0.04em;
+}
+
+.ui-shell-stat-value {
+  font-weight: 900;
+}
+
+.ui-shell-action {
+  padding: 0.5rem 0.8rem;
+  background: var(--ui-action);
+  color: var(--ui-action-ink);
+  text-decoration: none;
+  box-shadow: var(--ui-shadow-soft);
+}
+
+.ui-shell-action:hover:not(.disabled) {
+  border-color: var(--ui-action-hover);
+  background: var(--ui-action-hover);
+}
+
+.ui-shell-action.danger {
+  border-color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+  box-shadow: none;
+}
+
+.ui-shell-action.danger:hover:not(.disabled) {
+  border-color: var(--ui-danger);
+  background: var(--ui-danger);
+  color: #ffffff;
+}
+
+.ui-shell-action:focus-visible {
+  outline: 3px solid var(--ui-focus-outline);
+  outline-offset: 2px;
+}
+
+.ui-shell-toggle {
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+  box-shadow: none;
+}
+
+.ui-shell-toggle:hover:not(.disabled) {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-action-soft);
+}
+
+.ui-shell-toggle.active {
+  border-color: var(--ui-action);
+  background: var(--ui-action-soft);
+  color: var(--ui-action-strong);
+  box-shadow: none;
+}
+
+.ui-shell-action.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
+@media (max-width: 640px) {
+  .ui-shell-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-shell-action {
+    transition: none;
+  }
+}

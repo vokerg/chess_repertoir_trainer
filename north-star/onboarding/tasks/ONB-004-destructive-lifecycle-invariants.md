@@ -1,0 +1,121 @@
+# ONB-004 — Define safe purge, un-index, un-analyse, and user deletion invariants
+
+Status: DONE
+
+Priority: P0
+
+Order: 40
+
+Delivery class: Research
+
+Planning maturity: Completed through squash-merged PR #263
+
+GitHub issue: [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151)
+
+Claimed by: ChatGPT/Codex research session for `vokerg`
+
+Claim branch: `onb-004/issue-151-destructive-lifecycle-invariants`
+
+Claimed at: 2026-08-02
+
+Claim scope: re-inspect current Prisma relations, destructive account/user paths, imported-game derived writes, durable jobs/import/preparation control, mobile synchronization, and ownership/cascade tests; produce the exact lifecycle matrix and active-worker protocol; reconcile decisions/open questions/queue and allocate bounded implementation tasks; no production destructive endpoint, UI, or data deletion
+
+## Outcome
+
+Produce an exact model-by-model lifecycle contract and active-writer protocol for account purge, account deletion/recreation, un-index, un-analyse, and whole-user deletion.
+
+## Why this task exists
+
+Full account cascade is partly available, but partial reset spans raw games, plies, analysis snapshots, tags, tactical data, AI reviews, training references, opening provenance, job history, synchronous writers, offline devices, and shared Position data.
+
+## Current repository anchors inspected
+
+- `apps/api/prisma/schema.prisma`
+- relevant migrations for imported games, courses/training, tactical/scenario, jobs, AI review, and mobile sync
+- `apps/api/src/routes/externalAccounts.ts`
+- `apps/api/src/services/externalAccountService.ts`
+- `apps/api/src/services/lichessConnectionService.ts`
+- `apps/api/src/auth/current-app-user.service.ts`
+- `apps/api/src/modules/jobs/`
+- imported-game indexing, analysis, tagging, tactical detection, AI review, and scenario-training services
+- mobile local-user/offline/outbox persistence
+- ownership/cascade tests
+
+## Dependencies
+
+- ONB-000.
+- Coordinated action/audit shape with ONB-005 and cleanup boundary with ONB-006.
+- Consumed ONB-002 active-import and ONB-003 acknowledged preparation-cancellation boundaries.
+
+## In scope
+
+- Delete/retain/clear/recompute/block matrix for every affected model/field.
+- Definitions for purge, delete account, un-index, un-analyse, delete user.
+- Active job/import/preparation fencing and cancellation acknowledgement.
+- Commit-side fence behavior for synchronous writers and auth resolution.
+- Opening provenance requirement.
+- Preview, typed confirmation, idempotency, audit, batching, retry, cancellation, partial-failure, and durable-fence policy.
+- Whole-user receipt/tombstone/mobile next-contact behavior.
+- User-facing versus admin-only boundaries.
+- Implementation task allocation.
+
+## Out of scope
+
+- Production destructive endpoint or UI.
+- Actual data deletion.
+- Orphan Position cleanup implementation.
+- Hardcoded admin credentials.
+
+## Questions owned
+
+Resolved in:
+
+- `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`;
+- `reports/ONB-004-2026-08-02-self-review-addendum.md`;
+- `reports/ONB-004-2026-08-02-second-self-review-addendum.md`.
+
+The addenda are normative where they correct the parent report. Implementation-local naming and tuning are delegated to ONB-019/020/021. Administrator authorization/retention policy remains with ONB-005; shared Position cleanup remains with ONB-006.
+
+## Acceptance criteria result
+
+- Each action has an unambiguous model/field outcome: satisfied by the five-action contract, lifecycle matrix, and normative import-history correction.
+- Active executors cannot mutate target data after success: satisfied by persisted fences, acknowledged durable claims, zero target work keys, guarded synchronous commits, and auth-resolution rejection.
+- Shared Position retention is explicit: satisfied; Position/PositionAnalysis/cache are retained and ONB-006 owns cleanup.
+- User deletion is visibly broader than account purge: satisfied, including courses/training, puzzle state, OAuth state/token cleanup, identity tombstone, receipt retrieval, and mobile purge.
+- Partial failure and retry are defined: satisfied by forward-only checkpoints, pre-mutation-only cancellation, and durable fence retention after partial execution.
+- Large-data transaction strategy is reviewed: satisfied by deterministic bounded phases and final parent cleanup.
+- Required cascade/race/idempotency tests are enumerated: satisfied in the reports and ONB-019/020/021 task files, including scenario-source ordering and post-deletion receipt lookup.
+
+## Required validation result
+
+- Full current Prisma relation audit performed.
+- Derived analysis/tag/tactical/AI/scenario writes traced.
+- Running job, durable import/preparation, synchronous writer, auth recreation, partial failure, and mobile offline scenarios modelled.
+- Relevant migration and ownership/cascade contracts inspected.
+- First self-review corrected synchronous commit fencing and account-purge terminal import-history semantics.
+- Second self-review corrected scenario source-preservation order, cancellation/failure fence retention, auth-resolution behavior, tombstone ordering, and post-delete receipt retrieval.
+- GitHub Actions CI run `30748024881` / #1804 passed lint, build, audits, architecture guardrails, migrations, and the full test suite on final head `16947156e40f292e4aa5e6597c814ad4c9f36bb8`.
+- Local build/tests were unavailable because this runtime could not resolve `github.com`.
+
+## Completion updates
+
+- Main report and two self-review addenda added.
+- ONB-019 / #259, ONB-020 / #260, and ONB-021 / #261 allocated and hardened.
+- Queue, status, roadmap, decisions, open questions, issue mapping, and dependent task boundaries reconciled.
+- Production code, schema, migration, route, worker, provider, Angular, and mobile behavior unchanged.
+
+## Completion
+
+Report: `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`
+
+First self-review addendum: `reports/ONB-004-2026-08-02-self-review-addendum.md`
+
+Second self-review addendum: `reports/ONB-004-2026-08-02-second-self-review-addendum.md`
+
+Implementation tasks: ONB-019 / #259, ONB-020 / #260, and ONB-021 / #261
+
+Pull request: [#263](https://github.com/vokerg/chess_repertoir_trainer/pull/263)
+
+Squash commit: `32db655a100ef1a55264b4d3739e2b7c38e72ee4`
+
+Completed at: 2026-08-02

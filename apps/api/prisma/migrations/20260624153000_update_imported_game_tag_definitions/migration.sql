@@ -1,0 +1,21 @@
+UPDATE "GameTagDefinition"
+SET "name" = 'QUICK_WIN'
+WHERE "code" = 81;
+
+UPDATE "GameTagDefinition"
+SET "name" = 'QUICK_LOSS'
+WHERE "code" = 82;
+
+INSERT INTO "GameTagDefinition" ("code", "name") VALUES
+  (126, 'OPENING_TROUBLE'),
+  (127, 'WON_FROM_WORSE_POSITION'),
+  (128, 'LOST_FROM_BETTER_POSITION'),
+  (129, 'COMEBACK_WIN'),
+  (130, 'COMEBACK_DRAW'),
+  (131, 'OPPONENT_MISSED_CHANCE'),
+  (132, 'OPPONENT_MISSED_KNOCKOUT'),
+  (133, 'FOUND_KNOCKOUT'),
+  (134, 'PUNISHED_OPPONENT_BLUNDER'),
+  (135, 'EARLY_MISTAKE')
+ON CONFLICT ("code") DO UPDATE
+SET "name" = EXCLUDED."name";

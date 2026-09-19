@@ -1,0 +1,38 @@
+.games-page {
+  width: min(100%, 1680px);
+  margin-inline: auto;
+  gap: clamp(1rem, 1.8vw, 1.35rem);
+}
+
+.games-filter-workspace {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.route-filter-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  align-items: baseline;
+  border: 1px solid color-mix(in srgb, var(--ui-info) 26%, var(--ui-border));
+  border-radius: var(--ui-radius-control);
+  padding: 0.62rem 0.8rem;
+  background: var(--ui-info-soft);
+  color: var(--ui-info);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.route-filter-summary strong {
+  color: var(--ui-text);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.mobileMaxPx. */
+@media (max-width: 760px) {
+  .games-page {
+    gap: 0.9rem;
+  }
+}

@@ -1,0 +1,15 @@
+<div class="review-mode-tabs" role="group" aria-label="Course review mode">
+  @for (tab of tabs(); track tab.id) {
+    <button
+      type="button"
+      [class.active]="activeMode() === tab.id"
+      [attr.aria-pressed]="activeMode() === tab.id"
+      (click)="modeChange.emit(tab.id)"
+    >
+      {{ tab.label }}
+      @if (tab.count !== null) {
+        <span>{{ tab.count }}</span>
+      }
+    </button>
+  }
+</div>

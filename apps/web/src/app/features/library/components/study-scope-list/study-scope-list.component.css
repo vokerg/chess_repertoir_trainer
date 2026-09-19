@@ -1,0 +1,127 @@
+﻿:host,
+.scope-group {
+  display: block;
+  min-width: 0;
+}
+
+.scope-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.scope-header h3 {
+  margin: 0;
+  color: var(--ui-text);
+  font-size: 0.84rem;
+  letter-spacing: 0.01em;
+}
+
+.scope-header span {
+  color: var(--ui-text-subtle);
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.75rem;
+}
+
+.study-list {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.study-row {
+  display: grid;
+  grid-template-columns: 0.5rem minmax(0, 1fr);
+  gap: 0.6rem;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-control);
+  padding: 0.65rem;
+  background: transparent;
+  color: var(--ui-text);
+  box-shadow: none;
+  text-align: left;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.study-row:hover:not(:disabled) {
+  border-color: var(--ui-border);
+  background: var(--ui-surface-muted);
+  transform: none;
+}
+
+.study-row-active,
+.study-row-active:hover:not(:disabled) {
+  border-color: var(--ui-action);
+  background: var(--ui-action-soft);
+}
+
+.scope-marker {
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-top: 0.3rem;
+  border-radius: 999px;
+  background: var(--ui-border-strong);
+}
+
+.study-row-active .scope-marker {
+  background: var(--ui-action-strong);
+}
+
+.scope-copy,
+.scope-copy strong,
+.scope-copy small,
+.scope-copy span {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.scope-copy strong {
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.scope-copy small {
+  margin-top: 0.18rem;
+  color: var(--ui-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.scope-copy span {
+  margin-top: 0.3rem;
+  color: var(--ui-text-subtle);
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.study-row-active .scope-copy span {
+  color: var(--ui-action-strong);
+}
+
+.study-state {
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: var(--ui-radius-control);
+  padding: 0.75rem;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.study-state-error {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--ui-danger) 30%, var(--ui-border));
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .study-row {
+    transition: none;
+  }
+}

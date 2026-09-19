@@ -1,0 +1,296 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
+import { AccountProfileCoachReadComponent } from '../components/account-profile-coach-read.component';
+import { AccountProfileEvidenceComponent } from '../components/account-profile-evidence.component';
+import { AccountProfileGameShapeComponent } from '../components/account-profile-game-shape.component';
+import { AccountProfileProgressComponent } from '../components/account-profile-progress.component';
+import { AccountProfileSignalCardsComponent } from '../components/account-profile-signal-cards.component';
+import { RatingHistoryChartComponent } from '../components/rating-history-chart.component';
+import { AccountsApiService } from '../data-access/accounts-api.service';
+import {
+  AccountPerformanceStatsResponse,
+  AccountRatingHistoryResponse,
+  AccountRatingStatsResponse,
+  ExternalAccount,
+  RatingRangeKey,
+  RatingSpeed,
+  RatingSpeedFilter,
+} from '../data-access/accounts.models';
+import { providerLabel } from '../helpers/account-labels';
+import { getRatingHistoryRangeQuery } from '../helpers/rating-history-ranges';
+
+@Component({
+  selector: 'app-account-detail-page',
+  standalone: true,
+  imports: [
+    RouterLink,
+    PanelComponent,
+    StateMessageComponent,
+    AccountProfileSignalCardsComponent,
+    AccountProfileCoachReadComponent,
+    AccountProfileGameShapeComponent,
+    AccountProfileProgressComponent,
+    AccountProfileEvidenceComponent,
+    RatingHistoryChartComponent,
+  ],
+  providers: [AccountsApiService],
+  templateUrl: './account-detail-page.component.html',
+  styleUrl: './account-detail-page.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class AccountDetailPageComponent implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly accountsApi = inject(AccountsApiService);
+  private requestId = 0;
+  private ratingStatsRequestId = 0;
+  private performanceStatsRequestId = 0;
+
+  protected readonly accountId = signal<number | null>(null);
+  protected readonly accounts = signal<ExternalAccount[]>([]);
+  protected readonly accountsLoading = signal(false);
+  protected readonly accountsError = signal<string | null>(null);
+  protected readonly account = signal<ExternalAccount | null>(null);
+  protected readonly accountLoading = signal(false);
+  protected readonly accountError = signal<string | null>(null);
+  protected readonly ratingStats = signal<AccountRatingStatsResponse | null>(null);
+  protected readonly ratingStatsLoading = signal(false);
+  protected readonly ratingStatsError = signal<string | null>(null);
+  protected readonly performanceStats = signal<AccountPerformanceStatsResponse | null>(null);
+  protected readonly performanceStatsLoading = signal(false);
+  protected readonly performanceStatsError = signal<string | null>(null);
+  protected readonly history = signal<AccountRatingHistoryResponse | null>(null);
+  protected readonly historyLoading = signal(false);
+  protected readonly historyError = signal<string | null>(null);
+  protected readonly selectedRange = signal<RatingRangeKey>('1Y');
+  protected readonly selectedSpeed = signal<RatingSpeedFilter>('all');
+  protected readonly pageTitle = computed(() => {
+    const account = this.account();
+    return account ? account.displayName || account.username : 'Account';
+  });
+  protected readonly profilePeriodLabel = computed(() => {
+    const labels: Record<RatingRangeKey, string> = {
+      '1M': 'Last 30 days',
+      '3M': 'Last 3 months',
+      '6M': 'Last 6 months',
+      YTD: 'Year to date',
+      '1Y': 'Last 12 months',
+      '3Y': 'Last 3 years',
+      '5Y': 'Last 5 years',
+      ALL: 'All time',
+    };
+    return labels[this.selectedRange()];
+  });
+  protected readonly profileScopeLabel = computed(() => {
+    const speed = this.selectedSpeed();
+    if (speed === 'all') return 'all imported games';
+    return `${speed[0].toUpperCase()}${speed.slice(1)} games`;
+  });
+  protected readonly accountOptions = computed(() =>
+    [...this.accounts()].sort(
+      (left, right) =>
+        Number(Boolean(right.isDefaultProgressAccount)) -
+          Number(Boolean(left.isDefaultProgressAccount)) ||
+        providerLabel(left.provider).localeCompare(providerLabel(right.provider)) ||
+        left.username.localeCompare(right.username),
+    ),
+  );
+  ngOnInit(): void {
+    void this.loadAccounts();
+
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const id = Number(params.get('accountId'));
+      if (!Number.isInteger(id) || id <= 0) {
+        this.accountId.set(null);
+        this.account.set(null);
+        this.ratingStats.set(null);
+        this.performanceStats.set(null);
+        this.history.set(null);
+        this.accountError.set('Invalid account id.');
+        return;
+      }
+
+      this.accountId.set(id);
+      void this.loadAccount(id);
+      void this.loadRatingStats(id);
+      void this.loadPerformanceStats(id);
+      void this.loadHistory(id);
+    });
+  }
+
+  protected onSelectedRangeChange(range: RatingRangeKey): void {
+    this.selectedRange.set(range);
+    const id = this.accountId();
+    if (id) {
+      void this.loadPerformanceStats(id);
+      void this.loadHistory(id);
+    }
+  }
+
+  protected onSelectedSpeedChange(speed: RatingSpeedFilter): void {
+    this.selectedSpeed.set(speed);
+    const id = this.accountId();
+    if (id) {
+      void this.loadPerformanceStats(id);
+      void this.loadHistory(id);
+    }
+  }
+
+  protected accountOptionLabel(account: ExternalAccount): string {
+    const label = `${providerLabel(account.provider)} @${account.username}`;
+    return account.isDefaultProgressAccount ? `${label} (default)` : label;
+  }
+
+  protected providerLabel(provider: ExternalAccount['provider']): string {
+    return providerLabel(provider);
+  }
+
+  protected accountInitials(account: ExternalAccount): string {
+    const source = (account.displayName || account.username).trim();
+    const words = source.split(/\s+/).filter(Boolean);
+    return (words.length > 1 ? `${words[0][0]}${words[1][0]}` : source.slice(0, 2)).toUpperCase();
+  }
+
+  protected accountYear(createdAt: string | null | undefined): string {
+    if (!createdAt) return '—';
+    return new Intl.DateTimeFormat(undefined, { year: 'numeric' }).format(new Date(createdAt));
+  }
+
+  protected syncLabel(lastSyncAt: string | null | undefined): string {
+    if (!lastSyncAt) return 'Sync not recorded';
+
+    const elapsedMinutes = Math.max(
+      1,
+      Math.round((Date.now() - new Date(lastSyncAt).getTime()) / 60_000),
+    );
+    if (elapsedMinutes < 60) return `Synced ${elapsedMinutes}m ago`;
+    const elapsedHours = Math.round(elapsedMinutes / 60);
+    if (elapsedHours < 48) return `Synced ${elapsedHours}h ago`;
+    return `Synced ${Math.round(elapsedHours / 24)}d ago`;
+  }
+
+  protected onAccountSelectionChange(value: string): void {
+    const id = Number(value);
+    if (Number.isInteger(id) && id > 0 && id !== this.accountId()) {
+      void this.router.navigate(['/progress/accounts', id]);
+    }
+  }
+
+  private async loadAccounts(): Promise<void> {
+    this.accountsLoading.set(true);
+    this.accountsError.set(null);
+
+    try {
+      this.accounts.set(await firstValueFrom(this.accountsApi.getAccounts()));
+    } catch (error) {
+      this.accounts.set([]);
+      this.accountsError.set(this.errorMessage(error, 'Unable to load accounts.'));
+    } finally {
+      this.accountsLoading.set(false);
+    }
+  }
+
+  private async loadAccount(accountId: number): Promise<void> {
+    this.accountLoading.set(true);
+    this.accountError.set(null);
+
+    try {
+      this.account.set(await firstValueFrom(this.accountsApi.getAccount(accountId)));
+    } catch (error) {
+      this.account.set(null);
+      this.accountError.set(this.errorMessage(error, 'Unable to load account.'));
+    } finally {
+      this.accountLoading.set(false);
+    }
+  }
+
+  private async loadRatingStats(accountId: number): Promise<void> {
+    const currentRequest = ++this.ratingStatsRequestId;
+    this.ratingStatsLoading.set(true);
+    this.ratingStatsError.set(null);
+
+    try {
+      const stats = await firstValueFrom(this.accountsApi.getRatingStats(accountId));
+      if (currentRequest === this.ratingStatsRequestId) this.ratingStats.set(stats);
+    } catch (error) {
+      if (currentRequest === this.ratingStatsRequestId) {
+        this.ratingStats.set(null);
+        this.ratingStatsError.set(this.errorMessage(error, 'Unable to load rating stats.'));
+      }
+    } finally {
+      if (currentRequest === this.ratingStatsRequestId) this.ratingStatsLoading.set(false);
+    }
+  }
+
+  private async loadPerformanceStats(accountId: number): Promise<void> {
+    const currentRequest = ++this.performanceStatsRequestId;
+    this.performanceStatsLoading.set(true);
+    this.performanceStatsError.set(null);
+
+    try {
+      const stats = await firstValueFrom(
+        this.accountsApi.getPerformanceStats(accountId, this.ratingQuery()),
+      );
+      if (currentRequest === this.performanceStatsRequestId) this.performanceStats.set(stats);
+    } catch (error) {
+      if (currentRequest === this.performanceStatsRequestId) {
+        this.performanceStats.set(null);
+        this.performanceStatsError.set(
+          this.errorMessage(error, 'Unable to load performance stats.'),
+        );
+      }
+    } finally {
+      if (currentRequest === this.performanceStatsRequestId)
+        this.performanceStatsLoading.set(false);
+    }
+  }
+
+  private async loadHistory(accountId: number): Promise<void> {
+    const currentRequest = ++this.requestId;
+    this.historyLoading.set(true);
+    this.historyError.set(null);
+
+    try {
+      const history = await firstValueFrom(
+        this.accountsApi.getRatingHistory(accountId, this.ratingQuery()),
+      );
+      if (currentRequest === this.requestId) this.history.set(history);
+    } catch (error) {
+      if (currentRequest === this.requestId) {
+        this.history.set(null);
+        this.historyError.set(this.errorMessage(error, 'Unable to load rating history.'));
+      }
+    } finally {
+      if (currentRequest === this.requestId) this.historyLoading.set(false);
+    }
+  }
+
+  private ratingQuery() {
+    return {
+      ...getRatingHistoryRangeQuery(this.selectedRange()),
+      speeds: this.selectedSpeed() === 'all' ? undefined : [this.selectedSpeed() as RatingSpeed],
+    };
+  }
+
+  private errorMessage(error: unknown, fallback: string): string {
+    if (error instanceof HttpErrorResponse) {
+      const message = error.error?.message || error.error?.error;
+      return typeof message === 'string' ? message : fallback;
+    }
+    return fallback;
+  }
+}

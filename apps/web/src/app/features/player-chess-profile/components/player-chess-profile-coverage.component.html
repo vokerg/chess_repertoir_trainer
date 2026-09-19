@@ -1,0 +1,35 @@
+<div class="profile-summary-grid">
+  @for (stat of coverage().summaryStats; track stat.id) {
+    <article>
+      <span>{{ stat.label }}</span>
+      <strong>{{ stat.value }}</strong>
+      <small>{{ stat.detail }}</small>
+    </article>
+  }
+</div>
+
+<div class="profile-coverage-list">
+  @for (bar of coverage().coverageBars; track bar.id) {
+    <div>
+      <div class="profile-coverage-heading">
+        <span>{{ bar.label }}</span>
+        <strong>{{ bar.valueLabel }}</strong>
+      </div>
+      <div
+        class="profile-coverage-track"
+        role="img"
+        [attr.aria-label]="bar.label + ' ' + bar.valueLabel"
+      >
+        <span [style.width.%]="bar.percent"></span>
+      </div>
+    </div>
+  }
+</div>
+
+@if (coverage().notes.length > 0) {
+  <ul class="profile-coverage-notes">
+    @for (note of coverage().notes; track note) {
+      <li>{{ note }}</li>
+    }
+  </ul>
+}

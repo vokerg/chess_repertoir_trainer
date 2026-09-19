@@ -1,0 +1,7 @@
+INSERT INTO "GameTagDefinition" ("code", "name") VALUES
+  (143, 'WON_FROM_OPENING'),
+  (144, 'LOST_FROM_OPENING'),
+  (145, 'WON_FROM_MIDDLEGAME'),
+  (146, 'LOST_FROM_MIDDLEGAME')
+ON CONFLICT ("code") DO UPDATE
+SET "name" = EXCLUDED."name";

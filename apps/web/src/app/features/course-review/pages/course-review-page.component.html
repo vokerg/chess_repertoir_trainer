@@ -1,0 +1,151 @@
+<section class="course-review-page stack">
+  <a
+    [routerLink]="store.course()?.id ? ['/courses', store.course()!.id] : ['/courses']"
+    class="subtle-link"
+  >
+    &larr; Back to course
+  </a>
+
+  <app-page-header
+    [title]="store.course()?.name || 'Course review'"
+    subtitle="Compare imported games with this course and identify where the repertoire needs attention."
+    [stats]="headerStats()"
+  />
+
+  <app-course-review-mode-tabs
+    [tabs]="modeTabs()"
+    [activeMode]="store.activeMode()"
+    (modeChange)="selectMode($event)"
+  />
+
+  <app-panel
+    class="review-filter-panel"
+    title="Review scope"
+    subtitle="The same imported-game filters are preserved while you switch between review modes."
+  >
+    <div class="review-filter-content">
+      <button
+        type="button"
+        class="review-filter-toggle secondary"
+        (click)="store.toggleFilters()"
+        [attr.aria-expanded]="!store.filtersCollapsed()"
+      >
+        <span>Game filters</span>
+        <small>{{ store.filterSummary() }}</small>
+        <strong>{{ store.filtersCollapsed() ? 'Show' : 'Hide' }}</strong>
+      </button>
+
+      @if (!store.filtersCollapsed()) {
+        <app-game-filter-panel
+          [filters]="store.gameFilters()"
+          [facets]="store.facets()"
+          [loading]="store.loading()"
+          [lockedUserColor]="store.lockedUserColor()"
+          [showActions]="false"
+          (filtersChange)="store.setGameFilters($event)"
+        />
+      }
+
+      <div class="review-criteria">
+        @if (store.activeMode() === 'COURSE_ENDINGS') {
+          <div class="stack review-criteria-copy">
+            <label for="review-min-games" class="metric-label">Minimum games</label>
+            <p class="field-hint">
+              Count distinct games with the same opponent continuation after a course ending.
+            </p>
+          </div>
+          <input
+            id="review-min-games"
+            type="number"
+            min="1"
+            max="1000"
+            step="1"
+            [ngModel]="store.minGames()"
+            (ngModelChange)="store.setMinGames($event)"
+          />
+        } @else {
+          <div class="stack review-criteria-copy">
+            <label for="review-min-covered-plies" class="metric-label">Minimum course overlap</label>
+            <p class="field-hint">
+              Only review games after this many half-moves matched the course.
+            </p>
+          </div>
+          <input
+            id="review-min-covered-plies"
+            type="number"
+            min="0"
+            max="20"
+            step="1"
+            [ngModel]="store.minCoveredPlies()"
+            (ngModelChange)="store.setMinCoveredPlies($event)"
+          />
+        }
+
+        <div class="review-actions">
+          <button
+            type="button"
+            class="primary"
+            (click)="store.applyFilters()"
+            [disabled]="!store.canLoad()"
+          >
+            {{ actionLabel() }}
+          </button>
+          <button
+            type="button"
+            class="secondary"
+            (click)="store.resetFilters()"
+            [disabled]="store.loading()"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+    </div>
+  </app-panel>
+
+  @if (store.error(); as error) {
+    <app-state-message tone="error" [message]="error" />
+  }
+
+  @if (store.course()?.hasMixedSides && store.activeMode() !== 'COURSE_ENDINGS') {
+    <p class="status-note">
+      This course contains both White and Black lines. Review works best for a single-side repertoire.
+    </p>
+  }
+
+  @if (store.activeMode() === 'COURSE_ENDINGS') {
+    @if (store.endings()) {
+      <app-course-review-issue-list
+        [title]="resultTitle()"
+        [subtitle]="resultSubtitle()"
+        [emptyMessage]="emptyMessage()"
+        [findings]="store.activeFindings()"
+        [courseId]="store.course()?.id ?? null"
+        [courseName]="store.course()?.name ?? ''"
+        [endingFilters]="store.endings()?.filters ?? null"
+        [filterSummary]="store.filterSummary()"
+      />
+    } @else if (store.loading()) {
+      <app-state-message tone="loading" message="Checking course endings against indexed games..." />
+    }
+  } @else {
+    @if (store.review(); as review) {
+      @if (review.conflicts.length > 0) {
+        <app-course-review-conflicts [conflicts]="review.conflicts" />
+      }
+
+      <app-course-review-issue-list
+        [title]="resultTitle()"
+        [subtitle]="resultSubtitle()"
+        [emptyMessage]="emptyMessage()"
+        [findings]="store.activeFindings()"
+        [courseId]="store.course()?.id ?? null"
+        [courseName]="store.course()?.name ?? ''"
+        [reviewFilters]="review.filters"
+        [filterSummary]="store.filterSummary()"
+      />
+    } @else if (store.loading()) {
+      <app-state-message tone="loading" message="Reviewing imported games..." />
+    }
+  }
+</section>

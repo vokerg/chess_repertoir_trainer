@@ -1,0 +1,68 @@
+<div class="select-menu" [class.select-menu-open]="open()">
+  <button
+    #trigger
+    type="button"
+    class="select-menu-trigger"
+    role="combobox"
+    aria-haspopup="listbox"
+    [id]="controlId"
+    [attr.aria-label]="ariaLabel()"
+    [attr.aria-controls]="panelId"
+    [attr.aria-expanded]="open()"
+    [disabled]="disabled()"
+    (click)="toggle()"
+    (keydown)="onTriggerKeydown($event)"
+  >
+    @if (selectedOption()?.marker; as marker) {
+      <span
+        [class]="markerClasses(marker)"
+        aria-hidden="true"
+      ></span>
+    }
+    <span class="select-menu-value">{{ selectedOption()?.label || placeholder() }}</span>
+    <span class="select-menu-chevron" aria-hidden="true"></span>
+  </button>
+
+  @if (open()) {
+    <div
+      class="select-menu-panel"
+      [class.select-menu-panel-end]="panelAlign() === 'end'"
+      [id]="panelId"
+      role="listbox"
+      [attr.aria-label]="ariaLabel()"
+      [attr.aria-labelledby]="controlId"
+    >
+      @for (option of options(); track option.value; let index = $index) {
+        <button
+          #optionButton
+          type="button"
+          class="select-menu-option"
+          role="option"
+          [class.select-menu-option-active]="activeIndex() === index"
+          [class.select-menu-option-selected]="option.value === value()"
+          [attr.aria-selected]="option.value === value()"
+          [attr.aria-disabled]="option.disabled || null"
+          [disabled]="option.disabled"
+          [tabIndex]="activeIndex() === index ? 0 : -1"
+          (click)="select(option)"
+          (keydown)="onOptionKeydown($event, index)"
+        >
+          <span class="select-menu-check" aria-hidden="true">
+            @if (option.value === value()) { ✓ }
+          </span>
+          <span class="select-menu-option-marker-slot" aria-hidden="true">
+            @if (option.marker; as marker) {
+              <span [class]="markerClasses(marker)"></span>
+            }
+          </span>
+          <span class="select-menu-option-copy">
+            <span class="select-menu-option-label">{{ option.label }}</span>
+            @if (option.caption) {
+              <span class="select-menu-option-caption">{{ option.caption }}</span>
+            }
+          </span>
+        </button>
+      }
+    </div>
+  }
+</div>

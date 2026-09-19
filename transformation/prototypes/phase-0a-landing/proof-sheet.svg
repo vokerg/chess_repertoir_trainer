@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="940" viewBox="0 0 1440 940" role="img" aria-labelledby="title desc">
+  <title id="title">Chess Repertoire Trainer Phase 0A visual proof</title>
+  <desc id="desc">Identity proof with the Node Branch mark, graphite and mint palette, and the landing-page hero composition.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#172321" flood-opacity="0.12"/>
+    </filter>
+    <pattern id="board" width="64" height="64" patternUnits="userSpaceOnUse">
+      <rect width="64" height="64" fill="#DCE7E2"/>
+      <rect width="32" height="32" fill="#738D83"/>
+      <rect x="32" y="32" width="32" height="32" fill="#738D83"/>
+    </pattern>
+  </defs>
+
+  <rect width="1440" height="940" fill="#EEF3F0"/>
+  <rect width="1440" height="78" fill="#172321"/>
+
+  <g transform="translate(62 17)">
+    <rect width="44" height="44" rx="11" fill="#172321" stroke="#2C413B"/>
+    <g fill="none" stroke="#47B89C" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13 34V12M13 20H24M24 20V10M24 20V30M24 30H35"/>
+    </g>
+    <g fill="#47B89C"><circle cx="13" cy="35" r="4"/><circle cx="24" cy="9" r="4"/><circle cx="36" cy="30" r="4"/></g>
+    <text x="57" y="20" fill="#F4F8F6" font-family="Arial, sans-serif" font-size="16" font-weight="700">Chess Repertoire</text>
+    <text x="57" y="37" fill="#47B89C" font-family="Arial, sans-serif" font-size="9" font-weight="700" letter-spacing="2">TRAINER</text>
+  </g>
+
+  <g font-family="Arial, sans-serif" fill="#B9C7C2" font-size="13">
+    <text x="658" y="45">Workflow</text><text x="753" y="45">Product</text><text x="838" y="45">Progress</text>
+  </g>
+  <rect x="1242" y="19" width="136" height="40" rx="10" fill="#47B89C"/>
+  <text x="1310" y="44" text-anchor="middle" fill="#071713" font-family="Arial, sans-serif" font-size="13" font-weight="700">Start building</text>
+
+  <g transform="translate(62 148)" font-family="Arial, sans-serif">
+    <text fill="#23836D" font-size="11" font-weight="700" letter-spacing="2">YOUR CHESS, CONNECTED</text>
+    <text y="70" fill="#172321" font-size="68" font-weight="600" letter-spacing="-4">
+      <tspan x="0">Turn your games into a</tspan>
+      <tspan x="0" dy="68">repertoire you actually train.</tspan>
+    </text>
+    <text y="235" fill="#63716D" font-size="18">
+      <tspan x="0">Import your games, uncover recurring weaknesses, strengthen your courses</tspan>
+      <tspan x="0" dy="29">and practise the positions that matter in real play.</tspan>
+    </text>
+    <rect y="303" width="234" height="50" rx="11" fill="#47B89C"/>
+    <text x="117" y="334" text-anchor="middle" fill="#071713" font-size="14" font-weight="700">Start building your repertoire</text>
+    <rect x="248" y="303" width="146" height="50" rx="11" fill="none" stroke="#9EAFA9"/>
+    <text x="321" y="334" text-anchor="middle" fill="#172321" font-size="14" font-weight="700">See the workflow</text>
+  </g>
+
+  <g transform="translate(785 130)" filter="url(#shadow)" font-family="Arial, sans-serif">
+    <rect width="590" height="450" rx="18" fill="#FFFFFF" stroke="#CBD7D2"/>
+    <rect width="590" height="40" rx="18" fill="#F6F8F7"/>
+    <rect y="24" width="590" height="16" fill="#F6F8F7"/>
+    <circle cx="18" cy="20" r="4" fill="#BAC7C2"/><circle cx="31" cy="20" r="4" fill="#BAC7C2"/><circle cx="44" cy="20" r="4" fill="#BAC7C2"/>
+    <text x="62" y="24" fill="#63716D" font-size="10">Opening intelligence</text>
+    <line x1="0" y1="40" x2="590" y2="40" stroke="#CBD7D2"/>
+    <text x="18" y="64" fill="#23836D" font-size="8" font-weight="700" letter-spacing="1.5">COURSE REVIEW</text>
+    <text x="18" y="82" fill="#172321" font-size="14" font-weight="700">Sicilian Defence</text>
+    <rect x="484" y="54" width="88" height="24" rx="12" fill="#DFF3ED"/>
+    <text x="528" y="70" text-anchor="middle" fill="#23836D" font-size="9" font-weight="700">8 gaps found</text>
+    <line x1="0" y1="96" x2="590" y2="96" stroke="#CBD7D2"/>
+
+    <rect x="18" y="114" width="250" height="250" rx="12" fill="url(#board)" stroke="#CBD7D2"/>
+    <text x="48" y="156" fill="#172321" font-size="29">♜</text><text x="226" y="156" fill="#172321" font-size="29">♚</text>
+    <text x="143" y="219" fill="#172321" font-size="29">♞</text><text x="108" y="251" fill="#172321" font-size="29">♟</text>
+    <text x="206" y="314" fill="#FFFFFF" font-size="29">♔</text><text x="48" y="344" fill="#FFFFFF" font-size="29">♖</text>
+    <text x="178" y="284" fill="#FFFFFF" font-size="29">♘</text><text x="116" y="314" fill="#FFFFFF" font-size="29">♙</text>
+
+    <rect x="286" y="114" width="286" height="151" rx="12" fill="#FFFFFF" stroke="#CBD7D2"/>
+    <text x="302" y="136" fill="#23836D" font-size="8" font-weight="700" letter-spacing="1.3">COURSE GAP</text>
+    <text x="553" y="136" text-anchor="end" fill="#23836D" font-size="9" font-family="monospace">14 games</text>
+    <text x="302" y="163" fill="#172321" font-size="15" font-weight="700">
+      <tspan x="302">9...Be7 is common in your games,</tspan><tspan x="302" dy="20">but the course stops here.</tspan>
+    </text>
+    <text x="302" y="212" fill="#63716D" font-size="10">Add the continuation before it becomes another surprise.</text>
+    <rect x="302" y="232" width="250" height="7" rx="4" fill="#E2E8E5"/><rect x="302" y="232" width="180" height="7" rx="4" fill="#47B89C"/>
+
+    <rect x="286" y="277" width="286" height="70" rx="12" fill="#F7F9F8" stroke="#CBD7D2"/>
+    <text x="302" y="298" fill="#23836D" font-size="8" font-weight="700" letter-spacing="1.3">RECOMMENDED NEXT</text>
+    <text x="302" y="321" fill="#172321" font-size="12" font-weight="700">Add the continuation, then train both responses.</text>
+    <circle cx="548" cy="312" r="14" fill="#DFF3ED"/><text x="548" y="317" text-anchor="middle" fill="#23836D" font-size="16">→</text>
+
+    <g transform="translate(286 360)">
+      <rect width="88" height="62" rx="10" fill="#F7F9F8" stroke="#CBD7D2"/><rect x="99" width="88" height="62" rx="10" fill="#F7F9F8" stroke="#CBD7D2"/><rect x="198" width="88" height="62" rx="10" fill="#F7F9F8" stroke="#CBD7D2"/>
+      <text x="12" y="25" fill="#172321" font-family="monospace" font-size="18" font-weight="700">184</text><text x="12" y="43" fill="#63716D" font-size="8">games reviewed</text>
+      <text x="111" y="25" fill="#172321" font-family="monospace" font-size="18" font-weight="700">12</text><text x="111" y="43" fill="#63716D" font-size="8">weak lines</text>
+      <text x="210" y="25" fill="#172321" font-family="monospace" font-size="18" font-weight="700">82%</text><text x="210" y="43" fill="#63716D" font-size="8">review accuracy</text>
+    </g>
+  </g>
+
+  <g transform="translate(62 670)" font-family="Arial, sans-serif">
+    <text fill="#23836D" font-size="11" font-weight="700" letter-spacing="2">NODE BRANCH GEOMETRY V1</text>
+    <text y="36" fill="#172321" font-size="30" font-weight="600">One mark, tested across product contexts.</text>
+    <g transform="translate(0 70)">
+      <rect width="150" height="150" rx="20" fill="#FFFFFF" stroke="#CBD7D2"/>
+      <rect x="43" y="31" width="64" height="64" rx="16" fill="#172321"/>
+      <g transform="translate(43 31)" fill="none" stroke="#47B89C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 49V18M18 29H34M34 29V15M34 29V44M34 44H50"/></g>
+      <g transform="translate(43 31)" fill="#47B89C"><circle cx="18" cy="50" r="5.5"/><circle cx="34" cy="14" r="5.5"/><circle cx="51" cy="44" r="5.5"/></g>
+      <text x="75" y="126" text-anchor="middle" fill="#63716D" font-size="11">Normal badge</text>
+    </g>
+    <g transform="translate(170 70)">
+      <rect width="150" height="150" rx="20" fill="#172321"/>
+      <rect x="43" y="31" width="64" height="64" rx="16" fill="#47B89C"/>
+      <g transform="translate(43 31)" fill="none" stroke="#172321" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 49V18M18 29H34M34 29V15M34 29V44M34 44H50"/></g>
+      <g transform="translate(43 31)" fill="#172321"><circle cx="18" cy="50" r="5.5"/><circle cx="34" cy="14" r="5.5"/><circle cx="51" cy="44" r="5.5"/></g>
+      <text x="75" y="126" text-anchor="middle" fill="#B9C7C2" font-size="11">Reversed badge</text>
+    </g>
+    <g transform="translate(340 70)">
+      <rect width="310" height="150" rx="20" fill="#FFFFFF" stroke="#CBD7D2"/>
+      <text x="24" y="30" fill="#63716D" font-size="10" font-weight="700" letter-spacing="1.2">SMALL-SIZE TEST</text>
+      <g transform="translate(32 55)">
+        <rect width="16" height="16" rx="4" fill="#172321"/><rect x="48" y="-4" width="24" height="24" rx="6" fill="#172321"/><rect x="104" y="-8" width="32" height="32" rx="8" fill="#172321"/><rect x="168" y="-16" width="48" height="48" rx="12" fill="#172321"/>
+        <circle cx="8" cy="8" r="2" fill="#47B89C"/><circle cx="60" cy="8" r="3" fill="#47B89C"/><circle cx="120" cy="8" r="4" fill="#47B89C"/><circle cx="192" cy="8" r="6" fill="#47B89C"/>
+        <text x="8" y="48" text-anchor="middle" fill="#63716D" font-size="9">16</text><text x="60" y="48" text-anchor="middle" fill="#63716D" font-size="9">24</text><text x="120" y="48" text-anchor="middle" fill="#63716D" font-size="9">32</text><text x="192" y="48" text-anchor="middle" fill="#63716D" font-size="9">48 px</text>
+      </g>
+    </g>
+  </g>
+
+  <g transform="translate(755 682)" font-family="Arial, sans-serif">
+    <text fill="#23836D" font-size="11" font-weight="700" letter-spacing="2">PROVISIONAL PALETTE</text>
+    <g transform="translate(0 42)">
+      <rect width="140" height="112" rx="16" fill="#172321"/><text x="16" y="78" fill="#F4F8F6" font-size="13" font-weight="700">Graphite</text><text x="16" y="97" fill="#AAB9B4" font-size="10">#172321</text>
+      <rect x="154" width="140" height="112" rx="16" fill="#47B89C"/><text x="170" y="78" fill="#071713" font-size="13" font-weight="700">Signal mint</text><text x="170" y="97" fill="#174B3F" font-size="10">#47B89C</text>
+      <rect x="308" width="140" height="112" rx="16" fill="#EEF3F0" stroke="#CBD7D2"/><text x="324" y="78" fill="#172321" font-size="13" font-weight="700">Workspace</text><text x="324" y="97" fill="#63716D" font-size="10">#EEF3F0</text>
+      <rect x="462" width="140" height="112" rx="16" fill="#FFFFFF" stroke="#CBD7D2"/><text x="478" y="78" fill="#172321" font-size="13" font-weight="700">Surface</text><text x="478" y="97" fill="#63716D" font-size="10">#FFFFFF</text>
+    </g>
+    <text y="190" fill="#63716D" font-size="13">Static Phase 0A proof · responsive source prototype included in the repository.</text>
+  </g>
+</svg>

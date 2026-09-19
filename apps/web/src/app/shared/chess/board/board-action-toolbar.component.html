@@ -1,0 +1,68 @@
+<div class="board-action-row">
+  @if (showStart()) {
+    <button
+      type="button"
+      class="compact-action secondary"
+      (click)="goStart.emit()"
+      [disabled]="!canGoBackward()"
+      title="Home"
+    >
+      &#x23ee; {{ startLabel() }}
+    </button>
+  }
+  @if (showPrevious()) {
+    <button
+      type="button"
+      class="compact-action secondary"
+      (click)="goPrevious.emit()"
+      [disabled]="!canGoBackward()"
+      title="Left arrow"
+    >
+      &larr; {{ previousLabel() }}
+    </button>
+  }
+  @if (showNext()) {
+    <button
+      type="button"
+      class="compact-action secondary"
+      (click)="goNext.emit()"
+      [disabled]="!canGoForward()"
+      title="Right arrow"
+    >
+      {{ nextLabel() }} &rarr;
+    </button>
+  }
+  @if (showEnd()) {
+    <button
+      type="button"
+      class="compact-action secondary"
+      (click)="goEnd.emit()"
+      [disabled]="!(canGoEnd() ?? canGoForward())"
+      title="End"
+    >
+      {{ endLabel() }} &#x23ed;
+    </button>
+  }
+
+  @if (showFlip()) {
+    <button
+      type="button"
+      class="compact-action secondary"
+      (click)="flip.emit()"
+    >
+      Flip board
+    </button>
+  }
+
+  @if (fen(); as currentFen) {
+    <app-copyable-fen
+      class="fen-copy-group"
+      [fen]="currentFen"
+      accessibleName="Current FEN"
+    />
+  }
+
+  @if (keyboardHint(); as hint) {
+    <span class="keyboard-hint">{{ hint }}</span>
+  }
+</div>

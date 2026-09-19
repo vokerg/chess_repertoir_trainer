@@ -1,0 +1,77 @@
+# Onboarding and Data Lifecycle Status
+
+Last updated: 2026-09-11
+
+## Program state
+
+`IMPLEMENTATION_IN_PROGRESS`
+
+Program tracker: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
+
+The durable account-import, provider, preparation, onboarding-readiness, account-sync cutover, and destructive-lifecycle persistence foundations are delivered. ONB-009 lifecycle commands are implemented on runtime PR #406 and remain in review pending acceptance/merge. ONB-026 bounded shared-position cleanup is implemented on PR #412 and is in review pending maintainer acceptance; its live PostgreSQL migration, trigger, concurrency, and benchmark evidence is recorded in the task report. Remaining implementation is concentrated in functional onboarding UI, destructive execution, opportunistic stale refresh, whole-user deletion, and administrator mutation adapters.
+
+## Delivered foundations
+
+- ONB-000 through ONB-007 — program, product lifecycle, import/backfill, preparation orchestration, destructive-lifecycle, administration, cleanup, and throughput contracts.
+- ONB-016 / #224 — lightweight onboarding experience blueprint.
+- ONB-017 / #253 — preparation execution persistence/admission.
+- ONB-018 / #254 — preparation reconciliation/control.
+- ONB-011 / #199 through ONB-014 / #202 — durable account-import persistence/API/worker plus bounded Lichess and Chess.com adapters.
+- **ONB-008 / #193 — DONE.** Server-owned onboarding disposition/readiness projection delivered through PR #398, squash `512c248689f41a1164be3da63dc22cc97041614b`.
+- **ONB-015 / #203 — DONE.** Normal account sync cut over to durable imports through PR #400, squash `c89442fbe8945854f0d6d7545e947beb7bebccfe`.
+- **ONB-019 / #259 — DONE.** Destructive lifecycle persistence/fence/audit/provenance foundation delivered through PR #386, squash `d9175c5d60448399b7297393afc55db747717ce2`.
+- ONB-022 / #272 and ONB-023 / #273 — administrator authorization/read-only diagnostics and Angular diagnostics.
+
+Detailed historical validation remains in task files and append-only reports.
+
+## Under review
+
+- **ONB-009 / #194 — REVIEW.** Authenticated onboarding start/skip/finish/pause/resume/cancel/retry/restart/expansion commands are implemented on branch `onb-009/issue-194-lifecycle-commands`, runtime PR #406. The implementation remains open until review acceptance and squash merge.
+- **ONB-026 / #280 — REVIEW.** Bounded shared-position cleanup is implemented on `onb-026/issue-280-orphan-position-cleanup`, runtime PR #412. Exact-head CI/review validation remains before acceptance/merge.
+
+## Ready implementation
+
+- **ONB-025 / #276 — READY.** Opportunistic stale-account refresh on authenticated application bootstrap over the delivered durable refresh path; recheck ONB-010/020 integration surfaces before claim.
+- **ONB-020 / #260 — READY.** Account/game destructive coordinator over delivered ONB-019 fences/operations and the completed account-import/preparation stack.
+
+## Allocated but not ready
+
+- ONB-010 / #195 — `PROPOSED`; depends on accepted/merged ONB-009 for the functional onboarding/Home command surface.
+- ONB-021 / #261 — `PROPOSED`; depends on ONB-020 for account/game destructive execution before whole-user/mobile purge.
+- ONB-024 / #274 — `REVIEW`; account/game controls consume merged ONB-020 and use preview-bound typed confirmation plus normal authenticated administrator capability. Whole-user and shared-position actions remain deferred to ONB-021/026.
+
+## Current critical boundaries
+
+- Normal account refresh no longer performs provider traversal inside the account HTTP request. Durable `ACCOUNT_REFRESH` import runs and persisted projections are authoritative.
+- ONB-009 command acceptance is server-owned and durable; browser presence is not required for provider/import/preparation reconciliation after acceptance.
+- Historical expansion offers bounded durable backfill plus an explicit full supported Lichess-history action. Normal refresh remains bounded, and deprecated raw cursor reset remains only a compatibility field-reset route until ONB-020 performs the final destructive/compatibility cutover.
+- Normal product account deletion remains disabled until ONB-020 replaces the legacy immediate backend DELETE with the canonical fenced coordinator.
+- ONB-019 provides lifecycle fences and guarded-commit primitives; it does not itself execute destructive row phases.
+- Terminal job status alone is not drain proof. Destructive work must also prove provider/import claims and relevant `JobTask.workKey` values are clear.
+- Shared `Position` cleanup remains separate from account/user lifecycle work and belongs to ONB-026.
+- Public ETA remains disabled until the accepted ONB-007 production-telemetry eligibility gates are satisfied.
+- Final visual/accessibility polish remains coordinated with the Visual Transformation track rather than duplicated inside functional onboarding tasks.
+
+## Canonical ownership
+
+- ONB-008: delivered disposition/readiness projection.
+- ONB-009: onboarding lifecycle commands, currently under review in PR #406.
+- ONB-010: functional Angular onboarding/Home re-entry.
+- ONB-015: delivered normal account-sync cutover and preparation handoff.
+- ONB-019: delivered destructive lifecycle persistence/fences/audit/provenance.
+- ONB-020/021: destructive account/game and whole-user execution.
+- ONB-025: authenticated stale-account refresh trigger.
+- ONB-026: bounded orphan shared-position cleanup, currently under review in PR #412.
+- ONB-024: administrator lifecycle adapters over canonical services.
+
+## Latest reconciled validation
+
+- ONB-008: final runtime head `d303c692883f9d7354167c7618853a76f80022c9`, CI #3149 / run `32653248564`, squash `512c248689f41a1164be3da63dc22cc97041614b`.
+- ONB-019: final runtime head `c6db4e2b4a40629a5abe11c08b1bb657a3b99518`, CI #3013 / run `32115505177`, squash `d9175c5d60448399b7297393afc55db747717ce2`.
+- ONB-015: runtime head `5a2b6348ee516c477c9353020fd90f365f2cc25a` passed CI #3155 / run `32692461730`; final PR head `fc2aa0d08afebbc952cf5a55693ee99f77b7d29c` passed CI #3156 / run `32692956344`; squash `c89442fbe8945854f0d6d7545e947beb7bebccfe`.
+- ONB-009: runtime PR #406 is in exact-head CI/review validation; final validation evidence is recorded in its task/report and PR checks before handoff.
+- ONB-026: implementation/review fixes are on PR #412; the migration is applied against PostgreSQL `server_version_num=170011`, and the focused trigger, concurrency, lifecycle, worker, command-orchestration, and bounded benchmark suite passed. The latest passing benchmark observed transaction p90 `314.97ms`, uncontended lock p90 `144.80ms`, and lock-wait p90 `248.44ms`, below the accepted `1000ms`/`250ms` limits. A full production-scale manual sweep was intentionally not run against the shared ~1.07M-position database; the task report records that residual and the unrelated full-API shared-state test failure.
+
+## Next deterministic action
+
+Complete ONB-009 / #194 and ONB-026 / #280 review and acceptance/merge before marking those implementation tracks delivered. For independent new work, **ONB-025 / #276** is the lowest-order unclaimed `READY` task, followed by ONB-020.

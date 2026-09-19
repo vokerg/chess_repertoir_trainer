@@ -1,0 +1,303 @@
+<section class="accounts-page stack">
+  <app-page-header
+    title="Import accounts"
+    subtitle="Manage import sources and durable background game refreshes."
+    [actions]="headerActions()"
+  />
+
+  <app-panel title="Add import source" subtitle="Use the public username for a Lichess or Chess.com account. The first refresh is intentionally limited to a recent window.">
+    <form class="account-form" (ngSubmit)="store.createAccount()">
+      <label class="account-field">
+        <span>Provider</span>
+        <select
+          [ngModel]="store.form().provider"
+          (ngModelChange)="store.updateForm('provider', $event)"
+          name="provider"
+        >
+          <option value="LICHESS">Lichess</option>
+          <option value="CHESS_COM">Chess.com</option>
+        </select>
+      </label>
+
+      <label class="account-field">
+        <span>Username</span>
+        <input
+          [ngModel]="store.form().username"
+          (ngModelChange)="store.updateForm('username', $event)"
+          name="username"
+          placeholder="e.g. magnuscarlsen"
+          autocomplete="off"
+          required
+        />
+      </label>
+
+      <label class="account-field">
+        <span>Display name</span>
+        <input
+          [ngModel]="store.form().displayName"
+          (ngModelChange)="store.updateForm('displayName', $event)"
+          name="displayName"
+          placeholder="Optional label"
+          autocomplete="off"
+        />
+      </label>
+
+      <div class="account-form-actions">
+        <button type="submit" class="primary" [disabled]="store.saving() || !store.form().username.trim()">
+          {{ store.saving() ? 'Adding...' : 'Add account' }}
+        </button>
+        <button type="button" class="secondary" (click)="store.resetForm()" [disabled]="store.saving()">Clear</button>
+      </div>
+    </form>
+  </app-panel>
+
+  <app-panel
+    title="Imported accounts"
+    subtitle="Jobs continue in the worker after you navigate away and restore here after reload."
+    [stats]="accountStats()"
+  >
+    <aside class="import-boundary" aria-labelledby="import-boundary-title">
+      <h3 id="import-boundary-title">What gets imported</h3>
+      <p>
+        The normal importer reads finished standard Bullet, Blitz, and Rapid games, both rated and casual.
+        Lichess variants and other time controls are outside this importer.
+      </p>
+      <p>The explicit all-history action is currently available for Lichess accounts only.</p>
+      <ul>
+        <li><strong>Refresh games</strong> queues only the newest bounded three-month window.</li>
+        <li><strong>Load 3 older months</strong> queues one adjacent older window.</li>
+        <li><strong>Import all supported history</strong> queues Lichess games from 2013-01-01 (its earliest supported export boundary) through now. It may take a while, but it runs in the background.</li>
+      </ul>
+    </aside>
+    @if (store.error(); as error) {
+      <app-state-message tone="error" [message]="error" />
+    }
+    @if (store.notice()) {
+      <p class="status-note" role="status" aria-live="polite">{{ store.notice() }}</p>
+    }
+    @if (store.loading() && store.accounts().length === 0) {
+      <app-state-message tone="loading" message="Loading accounts and import progress..." />
+    }
+    @if (store.syncingAllAccounts()) {
+      <p class="status-note" role="status" aria-live="polite">Queueing refreshes across active accounts...</p>
+    }
+
+    @if (!store.loading() && !store.error() && store.accounts().length === 0) {
+      <app-state-message
+        tone="empty"
+        message="No accounts configured yet. Add a Lichess or Chess.com username above, then queue the first refresh."
+      />
+    }
+
+    @if (store.accounts().length > 0) {
+      <div class="accounts-list">
+        @for (account of store.accounts(); track account.id) {
+          <article class="account-card">
+            <div class="account-card-main">
+              <div class="account-title-row">
+                <span class="provider-pill" [ngClass]="providerClass(account.provider)">{{ providerLabel(account.provider) }}</span>
+                <span class="account-state-pill" [class.account-state-inactive]="!account.isActive">
+                  {{ account.isActive ? 'Active' : 'Inactive' }}
+                </span>
+                @if (account.isDefaultProgressAccount) {
+                  <span class="account-default-pill">Default progress</span>
+                }
+              </div>
+
+              <h4 class="account-title">
+                <a [routerLink]="['/progress/accounts', account.id]">{{ account.displayName || account.username }}</a>
+              </h4>
+              <p class="accounts-muted account-username">&#64;{{ account.username }}</p>
+
+              <app-fact-grid
+                [items]="accountFactsById()[account.id]"
+                [ariaLabel]="'Account import facts for ' + account.username"
+                [columns]="3"
+                [compactColumns]="1"
+              />
+
+              @if (store.importRunForAccount(account.id); as run) {
+                <div class="sync-result" role="status" aria-live="polite">
+                  <strong>{{ importStatusLabel(run.status) }} · {{ importModeLabel(run) }}</strong>
+                  <span>{{ importRangeLabel(run) }}</span>
+                  <span>{{ importProgressLabel(run) }}</span>
+                  @if (run.error) {
+                    <span>{{ run.error }}</span>
+                  }
+
+                  @if (canPause(run) || canResume(run) || canCancel(run) || canRetry(run)) {
+                    <div
+                      class="sync-workflow-actions"
+                      role="group"
+                      [attr.aria-label]="'Import controls for ' + account.username"
+                    >
+                      @if (canPause(run)) {
+                        <button
+                          type="button"
+                          class="secondary"
+                          (click)="store.pauseImport(run)"
+                          [disabled]="store.isImportControlling(run.id)"
+                        >Pause</button>
+                      }
+                      @if (canResume(run)) {
+                        <button
+                          type="button"
+                          class="secondary"
+                          (click)="store.resumeImport(run)"
+                          [disabled]="store.isImportControlling(run.id)"
+                        >Resume</button>
+                      }
+                      @if (canCancel(run)) {
+                        <button
+                          type="button"
+                          class="secondary"
+                          (click)="store.cancelImport(run)"
+                          [disabled]="store.isImportControlling(run.id)"
+                        >Cancel</button>
+                      }
+                      @if (canRetry(run)) {
+                        <button
+                          type="button"
+                          class="secondary"
+                          (click)="store.retryImport(run)"
+                          [disabled]="store.isImportControlling(run.id)"
+                        >Retry</button>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <div class="account-card-actions">
+              <div
+                class="account-primary-actions"
+                role="group"
+                [attr.aria-label]="'Import actions for ' + account.username"
+              >
+                <button
+                  type="button"
+                  class="primary"
+                  (click)="store.syncAccount(account)"
+                  [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.isImportActive(account.id) || !account.isActive"
+                >
+                  {{ store.isImportActive(account.id) ? 'Refresh in background' : store.syncingAccountId() === account.id ? 'Queueing...' : 'Refresh games' }}
+                </button>
+              </div>
+
+              <details class="account-options">
+                <summary>Account options</summary>
+                <div
+                  class="account-options-actions"
+                  role="group"
+                  [attr.aria-label]="'Account options for ' + account.username"
+                >
+                  <button
+                    type="button"
+                    class="secondary"
+                    (click)="store.backfillAccount(account)"
+                    [disabled]="store.backfillingAccountId() === account.id || store.importingAllHistoryAccountId() === account.id || store.isImportActive(account.id) || !account.isActive"
+                  >
+                    {{ store.backfillingAccountId() === account.id ? 'Queueing...' : 'Load 3 older months' }}
+                  </button>
+                  @if (account.provider === 'LICHESS') {
+                    <button
+                      type="button"
+                      class="secondary full-history-button"
+                      (click)="confirmImportAllHistory(account)"
+                      [disabled]="store.importingAllHistoryAccountId() === account.id || store.backfillingAccountId() === account.id || store.isImportActive(account.id) || !account.isActive"
+                    >
+                      {{ store.importingAllHistoryAccountId() === account.id ? 'Queueing...' : 'Import all supported history' }}
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="secondary default-account-button"
+                    [class.default-account-button-active]="account.isDefaultProgressAccount"
+                    (click)="store.setDefaultProgressAccount(account)"
+                    [disabled]="store.settingDefaultProgressAccountId() === account.id"
+                    [attr.aria-pressed]="account.isDefaultProgressAccount ? 'true' : 'false'"
+                  >
+                    <span aria-hidden="true">{{ account.isDefaultProgressAccount ? '★' : '☆' }}</span>
+                    {{ account.isDefaultProgressAccount ? 'Default progress account' : 'Make default for progress' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="secondary"
+                    (click)="store.toggleActive(account)"
+                    [disabled]="store.isImportActive(account.id)"
+                  >
+                    {{ account.isActive ? 'Disable account' : 'Enable account' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="secondary account-purge-button"
+                    (click)="store.openLifecycle(account, 'PURGE_ACCOUNT_DATA')"
+                  >Purge account data</button>
+                  <button
+                    type="button"
+                    class="secondary account-delete-button"
+                    (click)="store.openLifecycle(account, 'DELETE_EXTERNAL_ACCOUNT')"
+                  >Delete connected account</button>
+                </div>
+              </details>
+            </div>
+
+            @if (store.lifecycleAccountId() === account.id) {
+              <section
+                class="account-lifecycle"
+                [attr.aria-labelledby]="'account-lifecycle-title-' + account.id"
+              >
+                <div class="account-lifecycle-heading">
+                  <div>
+                    <h4 [id]="'account-lifecycle-title-' + account.id">Lifecycle controls</h4>
+                    <p>
+                      Preview the exact impact for
+                      <strong>{{ providerLabel(account.provider) }} &#64;{{ account.username }}</strong>
+                      before anything can be accepted.
+                    </p>
+                  </div>
+                  <button type="button" class="secondary" (click)="store.closeLifecycle()">
+                    Close
+                  </button>
+                </div>
+                <div class="account-lifecycle-form">
+                  <label>
+                    Action
+                    <select
+                      [ngModel]="store.lifecycleAction()"
+                      (ngModelChange)="store.setLifecycleAction($event)"
+                    >
+                      <option value="PURGE_ACCOUNT_DATA">Purge account data</option>
+                      <option value="DELETE_EXTERNAL_ACCOUNT">Delete connected account</option>
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    class="secondary"
+                    [disabled]="store.lifecycleBusy()"
+                    (click)="store.previewLifecycle()"
+                  >
+                    Preview impact
+                  </button>
+                </div>
+                <app-data-lifecycle-safety
+                  [targetLabel]="providerLabel(account.provider) + ' @' + account.username + ' (Account ID ' + account.id + ')'"
+                  [preview]="store.lifecyclePreview()"
+                  [operation]="store.lifecycleOperation()"
+                  [confirmation]="store.lifecycleConfirmation()"
+                  [busy]="store.lifecycleBusy()"
+                  [error]="store.lifecycleError()"
+                  (confirmationChange)="store.setLifecycleConfirmation($event)"
+                  (execute)="store.executeLifecycle()"
+                  (refresh)="store.refreshLifecycle()"
+                  (stop)="store.stopLifecycle()"
+                />
+              </section>
+            }
+          </article>
+        }
+      </div>
+    }
+  </app-panel>
+</section>

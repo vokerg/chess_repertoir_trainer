@@ -1,0 +1,55 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.copyable-text {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.copyable-label {
+  color: var(--ui-text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.copyable-field {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  padding: 0.48rem 0.7rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copyable-button ::ng-deep button {
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  padding: 0.48rem 0.7rem;
+  background: var(--ui-surface-quiet);
+  color: var(--ui-text-muted);
+  box-shadow: none;
+  font-size: 0.78rem;
+}
+
+.copyable-button ::ng-deep button:hover:not(:disabled) {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+}
+
+.copyable-button ::ng-deep button:focus-visible {
+  outline: 3px solid var(--ui-focus-outline);
+  outline-offset: 2px;
+}

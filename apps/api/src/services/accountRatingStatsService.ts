@@ -1,0 +1,465 @@
+import { Prisma } from '@prisma/client';
+import prisma from '../prisma';
+import { ExternalAccountService, ExternalProvider } from './externalAccountService';
+import {
+  AccountRatingHistoryData,
+  RatingSpeed,
+  buildAccountRatingHistoryData,
+} from './accountRatingHistoryService';
+import {
+  AccountPerformanceStatsData,
+  PerformanceGame,
+  buildAccountPerformanceStatsData,
+} from './accountPerformanceStatsService';
+import {
+  STANDARD_IMPORTED_GAME_VARIANTS,
+  isStandardImportedGameVariant,
+} from '../modules/imported-games/imported-game-workflow-eligibility';
+import { assertDataLifecycleWriteAllowed } from '../modules/data-lifecycle/data-lifecycle.guard';
+
+export type RatingStatsSpeed = RatingSpeed;
+export type DashboardPeriodKey = '1M' | '3M' | '6M' | 'YTD' | '1Y' | '3Y' | '5Y' | 'ALL';
+
+export interface AccountRatingStatsPeak {
+  rating: number;
+  ratingAt: string;
+  gameId: number;
+}
+
+export interface AccountRatingStatsYearlyPeak extends AccountRatingStatsPeak {
+  year: number;
+}
+
+export interface AccountRatingStatsMilestone {
+  rating: number;
+  reachedAt: string;
+  actualRating: number;
+  gameId: number;
+}
+
+export interface AccountRatingStatsSpeedProjection {
+  key: RatingStatsSpeed;
+  label: 'Bullet' | 'Blitz' | 'Rapid';
+  gamesCount: number;
+  current: AccountRatingStatsPeak | null;
+  highest: AccountRatingStatsPeak | null;
+  yearlyHighs: AccountRatingStatsYearlyPeak[];
+  milestones: AccountRatingStatsMilestone[];
+}
+
+export interface AccountRatingStatsProjection {
+  version: 3;
+  ratingSource: 'gameRecordedRating';
+  speeds: AccountRatingStatsSpeedProjection[];
+}
+
+export interface AccountDashboardProjection {
+  version: 4;
+  ratingStats: AccountRatingStatsProjection;
+  ratingHistory: AccountRatingHistoryData;
+  performanceByPeriod: Record<DashboardPeriodKey, AccountPerformanceStatsData>;
+}
+
+export interface AccountRatingStatsResponse {
+  account: {
+    id: number;
+    provider: ExternalProvider;
+    username: string;
+    displayName?: string | null;
+  };
+  computedAt: string;
+  gamesCount: number;
+  data: AccountRatingStatsProjection;
+}
+
+const SPEEDS: readonly RatingStatsSpeed[] = ['bullet', 'blitz', 'rapid'];
+const PERIODS: readonly DashboardPeriodKey[] = ['1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', 'ALL'];
+
+const SPEED_LABELS: Record<RatingStatsSpeed, 'Bullet' | 'Blitz' | 'Rapid'> = {
+  bullet: 'Bullet',
+  blitz: 'Blitz',
+  rapid: 'Rapid',
+};
+
+const MILESTONES = Array.from({ length: 16 }, (_, index) => 1000 + index * 100);
+
+type AccountSummary = {
+  id: number;
+  provider: string;
+  username: string;
+  displayName?: string | null;
+};
+
+type DatabaseClockRow = {
+  now: Date;
+};
+
+type ImportedRatingGame = {
+  id: number;
+  endedAt: Date | null;
+  speedCategory: string | null;
+  variant: string | null;
+  userColor: string | null;
+  whiteRating: number | null;
+  blackRating: number | null;
+  opponentUsername?: string | null;
+  resultForUser?: string | null;
+  providerUrl?: string | null;
+  timeControlRaw: string | null;
+  timeControlInitial: number | null;
+  timeControlIncrement: number | null;
+};
+
+function getUserRating(game: Pick<ImportedRatingGame, 'userColor' | 'whiteRating' | 'blackRating'>) {
+  if (game.userColor === 'WHITE') return game.whiteRating;
+  if (game.userColor === 'BLACK') return game.blackRating;
+  return null;
+}
+
+function isRatingSpeed(value: string | null): value is RatingStatsSpeed {
+  return value === 'bullet' || value === 'blitz' || value === 'rapid';
+}
+
+function yearKey(date: Date) {
+  return date.getUTCFullYear();
+}
+
+function isEarlierPeak(left: AccountRatingStatsPeak, right: AccountRatingStatsPeak) {
+  return left.rating > right.rating || (left.rating === right.rating && left.ratingAt < right.ratingAt);
+}
+
+function toPeak(game: { id: number; endedAt: Date }, rating: number): AccountRatingStatsPeak {
+  return {
+    rating,
+    ratingAt: game.endedAt.toISOString(),
+    gameId: game.id,
+  };
+}
+
+function buildRatingStatsProjection(games: ImportedRatingGame[]): { gamesCount: number; data: AccountRatingStatsProjection } {
+  const bySpeed = new Map<
+    RatingStatsSpeed,
+    {
+      gamesCount: number;
+      current: AccountRatingStatsPeak | null;
+      highest: AccountRatingStatsPeak | null;
+      yearlyHighs: Map<number, AccountRatingStatsYearlyPeak>;
+      milestones: Map<number, AccountRatingStatsMilestone>;
+    }
+  >();
+
+  for (const speed of SPEEDS) {
+    bySpeed.set(speed, {
+      gamesCount: 0,
+      current: null,
+      highest: null,
+      yearlyHighs: new Map(),
+      milestones: new Map(),
+    });
+  }
+
+  for (const game of games) {
+    if (
+      !game.endedAt
+      || !isRatingSpeed(game.speedCategory)
+      || !isStandardImportedGameVariant(game.variant)
+    ) continue;
+
+    const rating = getUserRating(game);
+    if (rating === null) continue;
+
+    const speedStats = bySpeed.get(game.speedCategory);
+    if (!speedStats) continue;
+
+    speedStats.gamesCount += 1;
+
+    const peak = toPeak({ id: game.id, endedAt: game.endedAt }, rating);
+    speedStats.current = peak;
+
+    if (!speedStats.highest || isEarlierPeak(peak, speedStats.highest)) {
+      speedStats.highest = peak;
+    }
+
+    const year = yearKey(game.endedAt);
+    const yearlyPeak = { ...peak, year };
+    const currentYearlyPeak = speedStats.yearlyHighs.get(year);
+    if (!currentYearlyPeak || isEarlierPeak(yearlyPeak, currentYearlyPeak)) {
+      speedStats.yearlyHighs.set(year, yearlyPeak);
+    }
+
+    for (const milestone of MILESTONES) {
+      if (rating >= milestone && !speedStats.milestones.has(milestone)) {
+        speedStats.milestones.set(milestone, {
+          rating: milestone,
+          reachedAt: game.endedAt.toISOString(),
+          actualRating: rating,
+          gameId: game.id,
+        });
+      }
+    }
+  }
+
+  const speeds = SPEEDS.map((speed) => {
+    const stats = bySpeed.get(speed)!;
+    return {
+      key: speed,
+      label: SPEED_LABELS[speed],
+      gamesCount: stats.gamesCount,
+      current: stats.current,
+      highest: stats.highest,
+      yearlyHighs: Array.from(stats.yearlyHighs.values()).sort((left, right) => left.year - right.year),
+      milestones: Array.from(stats.milestones.values()).sort((left, right) => left.rating - right.rating),
+    };
+  });
+
+  return {
+    gamesCount: speeds.reduce((total, speed) => total + speed.gamesCount, 0),
+    data: {
+      version: 3,
+      ratingSource: 'gameRecordedRating',
+      speeds,
+    },
+  };
+}
+
+function dateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function startOfUtcDay(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function addUtcMonths(date: Date, months: number): Date {
+  const next = startOfUtcDay(date);
+  next.setUTCMonth(next.getUTCMonth() + months);
+  return next;
+}
+
+function addUtcYears(date: Date, years: number): Date {
+  const next = startOfUtcDay(date);
+  next.setUTCFullYear(next.getUTCFullYear() + years);
+  return next;
+}
+
+function periodRange(period: DashboardPeriodKey, now: Date): { from?: string; to?: string } {
+  if (period === 'ALL') return {};
+
+  const to = startOfUtcDay(now);
+  const from =
+    period === '1M'
+      ? addUtcMonths(to, -1)
+      : period === '3M'
+        ? addUtcMonths(to, -3)
+        : period === '6M'
+          ? addUtcMonths(to, -6)
+          : period === 'YTD'
+            ? new Date(Date.UTC(to.getUTCFullYear(), 0, 1))
+            : period === '1Y'
+              ? addUtcYears(to, -1)
+              : period === '3Y'
+                ? addUtcYears(to, -3)
+                : addUtcYears(to, -5);
+
+  return {
+    from: dateOnly(from),
+    to: dateOnly(to),
+  };
+}
+
+function inPeriod(game: { endedAt: Date | null }, range: { from?: string; to?: string }) {
+  if (!game.endedAt) return false;
+  if (range.from && game.endedAt < new Date(range.from)) return false;
+  if (range.to && game.endedAt >= new Date(Date.parse(range.to) + 24 * 60 * 60 * 1000)) return false;
+  return true;
+}
+
+function buildDashboardProjection(games: ImportedRatingGame[], now = new Date()): { gamesCount: number; data: AccountDashboardProjection } {
+  const ratingStats = buildRatingStatsProjection(games);
+  const ratingHistory = buildAccountRatingHistoryData(games, SPEEDS);
+  const performanceByPeriod = Object.fromEntries(
+    PERIODS.map((period) => {
+      const range = periodRange(period, now);
+      const periodGames = games.filter((game) => inPeriod(game, range)) as PerformanceGame[];
+      return [
+        period,
+        buildAccountPerformanceStatsData(periodGames, {
+          ...range,
+          speeds: [...SPEEDS],
+        }),
+      ];
+    }),
+  ) as Record<DashboardPeriodKey, AccountPerformanceStatsData>;
+
+  return {
+    gamesCount: ratingStats.gamesCount,
+    data: {
+      version: 4,
+      ratingStats: ratingStats.data,
+      ratingHistory,
+      performanceByPeriod,
+    },
+  };
+}
+
+function getStoredProjection(data: Prisma.JsonValue): AccountDashboardProjection | null {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+  return (data as { version?: unknown }).version === 4 ? (data as unknown as AccountDashboardProjection) : null;
+}
+
+function toResponse(
+  account: AccountSummary,
+  stats: { computedAt: Date; gamesCount: number; data: Prisma.JsonValue },
+): AccountRatingStatsResponse {
+  const dashboard = getStoredProjection(stats.data);
+  return {
+    account: {
+      id: account.id,
+      provider: account.provider as ExternalProvider,
+      username: account.username,
+      displayName: account.displayName,
+    },
+    computedAt: stats.computedAt.toISOString(),
+    gamesCount: stats.gamesCount,
+    data: dashboard ? dashboard.ratingStats : (stats.data as unknown as AccountRatingStatsProjection),
+  };
+}
+
+async function readDatabaseClock(): Promise<Date> {
+  const rows = await prisma.$queryRaw<DatabaseClockRow[]>(Prisma.sql`
+    SELECT NOW() AS "now"
+  `);
+  const now = rows[0]?.now;
+  if (!now) throw new Error('Could not read database clock for account rating projection.');
+  return now;
+}
+
+export const AccountRatingStatsService = {
+  recomputeForAccount: async (userId: number, accountId: number): Promise<AccountRatingStatsResponse | null> => {
+    const snapshotStartedAt = await readDatabaseClock();
+    const account = await ExternalAccountService.getForUser(userId, accountId);
+    if (!account) return null;
+
+    const games = await prisma.importedGame.findMany({
+      where: {
+        userId,
+        accountId,
+        endedAt: { not: null },
+        speedCategory: { in: [...SPEEDS] },
+        OR: [
+          { variant: null },
+          { variant: { in: [...STANDARD_IMPORTED_GAME_VARIANTS] } },
+        ],
+        userColor: { in: ['WHITE', 'BLACK'] },
+      },
+      select: {
+        id: true,
+        endedAt: true,
+        speedCategory: true,
+        variant: true,
+        userColor: true,
+        whiteRating: true,
+        blackRating: true,
+        opponentUsername: true,
+        resultForUser: true,
+        providerUrl: true,
+        timeControlRaw: true,
+        timeControlInitial: true,
+        timeControlIncrement: true,
+      },
+      orderBy: [{ endedAt: 'asc' }, { id: 'asc' }],
+    });
+
+    const projection = buildDashboardProjection(games);
+    const persisted = await prisma.$transaction(async (transaction) => {
+      await assertDataLifecycleWriteAllowed(transaction, {
+        userId,
+        accountId,
+        snapshotStartedAt,
+      });
+      const currentAccount = await transaction.externalAccount.findFirst({
+        where: { id: accountId, userId },
+        select: {
+          id: true,
+          provider: true,
+          username: true,
+          displayName: true,
+        },
+      });
+      if (!currentAccount) return null;
+
+      const clockRows = await transaction.$queryRaw<DatabaseClockRow[]>(Prisma.sql`
+        SELECT NOW() AS "now"
+      `);
+      const computedAt = clockRows[0]?.now;
+      if (!computedAt) throw new Error('Could not read database clock for account rating projection.');
+
+      const stats = await transaction.accountRatingStats.upsert({
+        where: { accountId },
+        update: {
+          computedAt,
+          gamesCount: projection.gamesCount,
+          data: projection.data as unknown as Prisma.InputJsonValue,
+        },
+        create: {
+          accountId,
+          computedAt,
+          gamesCount: projection.gamesCount,
+          data: projection.data as unknown as Prisma.InputJsonValue,
+        },
+      });
+      return { account: currentAccount, stats };
+    });
+    if (!persisted) return null;
+
+    return toResponse(persisted.account, persisted.stats);
+  },
+
+  getForAccount: async (userId: number, accountId: number): Promise<AccountRatingStatsResponse | null> => {
+    const account = await ExternalAccountService.getForUser(userId, accountId);
+    if (!account) return null;
+
+    const stats = await prisma.accountRatingStats.findUnique({
+      where: { accountId },
+    });
+
+    if (stats && getStoredProjection(stats.data)) return toResponse(account, stats);
+
+    if (!stats) {
+      const [coverage, retainedCompletedDurableImport, ratingRelevantGame] = await Promise.all([
+        prisma.accountImportCoverage.findFirst({
+          where: { accountId },
+          select: { id: true },
+        }),
+        prisma.importRun.findFirst({
+          where: {
+            userId,
+            accountId,
+            status: 'COMPLETED',
+            mode: { not: 'LEGACY_SYNC' },
+          },
+          select: { id: true },
+        }),
+        prisma.importedGame.findFirst({
+          where: {
+            userId,
+            accountId,
+            endedAt: { not: null },
+            speedCategory: { in: [...SPEEDS] },
+            OR: [
+              { variant: null },
+              { variant: { in: [...STANDARD_IMPORTED_GAME_VARIANTS] } },
+            ],
+            userColor: { in: ['WHITE', 'BLACK'] },
+          },
+          select: { id: true },
+        }),
+      ]);
+
+      if (retainedCompletedDurableImport && !coverage) return null;
+      if (!ratingRelevantGame) return null;
+    }
+
+    return AccountRatingStatsService.recomputeForAccount(userId, accountId);
+  },
+};

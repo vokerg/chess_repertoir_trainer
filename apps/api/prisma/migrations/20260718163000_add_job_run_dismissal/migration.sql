@@ -1,0 +1,2 @@
+ALTER TABLE "JobRun"
+ADD COLUMN "dismissedAt" TIMESTAMP(3);

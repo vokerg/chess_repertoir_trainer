@@ -1,0 +1,27 @@
+<span class="coverage-tooltip">
+  <button
+    #trigger
+    type="button"
+    class="coverage-icon"
+    [class]="'coverage-icon ' + item().courseCoverage.status.toLowerCase()"
+    [attr.aria-label]="ariaLabel()"
+    [attr.aria-describedby]="tooltipId()"
+    [attr.popovertarget]="tooltipId()"
+    (pointerenter)="showMousePopover($event)"
+    (pointerleave)="hideMousePopover($event)"
+  >
+    <span aria-hidden="true">{{ icon() }}</span>
+  </button>
+  <span
+    #popover
+    class="coverage-popover"
+    role="tooltip"
+    popover="auto"
+    [id]="tooltipId()"
+    (toggle)="positionPopover()"
+  >
+    <strong>{{ statusLabel() }}</strong>
+    <p>{{ explanation() }}</p>
+    <small>{{ item().courseCoverage.coveredPlies }} covered plies</small>
+  </span>
+</span>

@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="960" viewBox="0 0 1440 960" role="img" aria-labelledby="title desc">
+  <title id="title">Chess Repertoire Trainer Phase 0A review refinement</title>
+  <desc id="desc">Review sheet with complete Node Branch small-size tests, palette contrast evidence, typography samples, and the remaining Phase 0A decision gate.</desc>
+
+  <defs>
+    <symbol id="badge-normal" viewBox="0 0 64 64">
+      <rect width="64" height="64" rx="16" fill="#172321"/>
+      <g fill="none" stroke="#47B89C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 49V18M18 29H34M34 29V15M34 29V44M34 44H50"/>
+      </g>
+      <g fill="#47B89C">
+        <circle cx="18" cy="50" r="5.5"/>
+        <circle cx="34" cy="14" r="5.5"/>
+        <circle cx="51" cy="44" r="5.5"/>
+      </g>
+    </symbol>
+
+    <symbol id="badge-reversed" viewBox="0 0 64 64">
+      <rect width="64" height="64" rx="16" fill="#47B89C"/>
+      <g fill="none" stroke="#172321" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 49V18M18 29H34M34 29V15M34 29V44M34 44H50"/>
+      </g>
+      <g fill="#172321">
+        <circle cx="18" cy="50" r="5.5"/>
+        <circle cx="34" cy="14" r="5.5"/>
+        <circle cx="51" cy="44" r="5.5"/>
+      </g>
+    </symbol>
+
+    <symbol id="mark-mono" viewBox="0 0 64 64">
+      <g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 49V18M18 29H34M34 29V15M34 29V44M34 44H50"/>
+      </g>
+      <g fill="currentColor">
+        <circle cx="18" cy="50" r="5.5"/>
+        <circle cx="34" cy="14" r="5.5"/>
+        <circle cx="51" cy="44" r="5.5"/>
+      </g>
+    </symbol>
+
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#172321" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="1440" height="960" fill="#EEF3F0"/>
+
+  <g font-family="'IBM Plex Sans', Inter, Arial, sans-serif">
+    <text x="64" y="72" fill="#1F7865" font-size="12" font-weight="700" letter-spacing="2.2">PHASE 0A REVIEW REFINEMENT</text>
+    <text x="64" y="126" fill="#172321" font-size="44" font-weight="600" letter-spacing="-1.8">Identity proof corrected for a real decision review.</text>
+    <text x="64" y="162" fill="#63716D" font-size="17">Complete mark rendering at favicon and rail sizes, objective palette evidence, and an explicit approval gate.</text>
+
+    <g transform="translate(64 214)">
+      <rect width="820" height="362" rx="22" fill="#FFFFFF" stroke="#CBD7D2" filter="url(#soft-shadow)"/>
+      <text x="28" y="42" fill="#1F7865" font-size="11" font-weight="700" letter-spacing="1.8">COMPLETE SMALL-SIZE TEST</text>
+      <text x="28" y="78" fill="#172321" font-size="25" font-weight="600">The full Node Branch geometry is rendered at every size.</text>
+      <text x="28" y="105" fill="#63716D" font-size="13">The previous proof-sheet row rendered only a single node and could not validate the mark.</text>
+
+      <text x="28" y="152" fill="#63716D" font-size="11" font-weight="700" letter-spacing="1.2">NORMAL BADGE</text>
+      <use href="#badge-normal" x="190" y="132" width="16" height="16"/>
+      <use href="#badge-normal" x="270" y="128" width="24" height="24"/>
+      <use href="#badge-normal" x="354" y="124" width="32" height="32"/>
+      <use href="#badge-normal" x="450" y="116" width="48" height="48"/>
+      <text x="198" y="184" text-anchor="middle" fill="#63716D" font-size="10">16 px</text>
+      <text x="282" y="184" text-anchor="middle" fill="#63716D" font-size="10">24 px</text>
+      <text x="370" y="184" text-anchor="middle" fill="#63716D" font-size="10">32 px</text>
+      <text x="474" y="184" text-anchor="middle" fill="#63716D" font-size="10">48 px</text>
+
+      <text x="28" y="228" fill="#63716D" font-size="11" font-weight="700" letter-spacing="1.2">REVERSED BADGE</text>
+      <rect x="174" y="204" width="350" height="70" rx="14" fill="#172321"/>
+      <use href="#badge-reversed" x="190" y="231" width="16" height="16"/>
+      <use href="#badge-reversed" x="270" y="227" width="24" height="24"/>
+      <use href="#badge-reversed" x="354" y="223" width="32" height="32"/>
+      <use href="#badge-reversed" x="450" y="215" width="48" height="48"/>
+
+      <text x="28" y="318" fill="#63716D" font-size="11" font-weight="700" letter-spacing="1.2">MONOCHROME MARK</text>
+      <g color="#172321">
+        <use href="#mark-mono" x="190" y="298" width="16" height="16"/>
+        <use href="#mark-mono" x="270" y="294" width="24" height="24"/>
+        <use href="#mark-mono" x="354" y="290" width="32" height="32"/>
+        <use href="#mark-mono" x="450" y="282" width="48" height="48"/>
+      </g>
+
+      <rect x="566" y="128" width="220" height="188" rx="16" fill="#F7F9F8" stroke="#CBD7D2"/>
+      <text x="590" y="158" fill="#172321" font-size="13" font-weight="700">Review observation</text>
+      <text x="590" y="187" fill="#63716D" font-size="12">
+        <tspan x="590">The mark remains identifiable at</tspan>
+        <tspan x="590" dy="20">16 px, but the badge treatment is</tspan>
+        <tspan x="590" dy="20">stronger than the standalone mark</tspan>
+        <tspan x="590" dy="20">for favicon and collapsed-rail use.</tspan>
+      </text>
+      <text x="590" y="286" fill="#1F7865" font-size="12" font-weight="700">Recommendation: keep geometry v1.</text>
+    </g>
+
+    <g transform="translate(914 214)">
+      <rect width="462" height="362" rx="22" fill="#172321" filter="url(#soft-shadow)"/>
+      <text x="28" y="42" fill="#47B89C" font-size="11" font-weight="700" letter-spacing="1.8">PALETTE EVIDENCE</text>
+      <text x="28" y="78" fill="#F4F8F6" font-size="25" font-weight="600">One provisional value needs revision.</text>
+      <text x="28" y="106" fill="#AEBDB8" font-size="13">WCAG contrast ratios calculated from the recorded hex values.</text>
+
+      <g transform="translate(28 136)">
+        <rect width="406" height="62" rx="12" fill="#EEF3F0"/>
+        <text x="18" y="26" fill="#23836D" font-size="12" font-weight="700">Current strong mint #23836D</text>
+        <text x="18" y="46" fill="#63716D" font-size="11">on workspace #EEF3F0</text>
+        <text x="380" y="38" text-anchor="end" fill="#B34D4D" font-family="ui-monospace, monospace" font-size="16" font-weight="700">4.12:1</text>
+      </g>
+
+      <g transform="translate(28 212)">
+        <rect width="406" height="62" rx="12" fill="#EEF3F0"/>
+        <text x="18" y="26" fill="#1F7865" font-size="12" font-weight="700">Candidate strong mint #1F7865</text>
+        <text x="18" y="46" fill="#63716D" font-size="11">on workspace #EEF3F0</text>
+        <text x="380" y="38" text-anchor="end" fill="#1F7865" font-family="ui-monospace, monospace" font-size="16" font-weight="700">4.76:1</text>
+      </g>
+
+      <text x="28" y="310" fill="#F4F8F6" font-size="12" font-weight="700">Recommendation</text>
+      <text x="28" y="334" fill="#AEBDB8" font-size="12">Revise the strong-mint text token before locking D-302.</text>
+    </g>
+
+    <g transform="translate(64 612)">
+      <rect width="720" height="276" rx="22" fill="#FFFFFF" stroke="#CBD7D2"/>
+      <text x="28" y="42" fill="#1F7865" font-size="11" font-weight="700" letter-spacing="1.8">TYPOGRAPHY AND WORDMARK</text>
+
+      <g transform="translate(28 72)">
+        <use href="#badge-normal" width="54" height="54"/>
+        <text x="72" y="24" fill="#172321" font-size="22" font-weight="650" letter-spacing="-0.3">Chess Repertoire</text>
+        <text x="72" y="48" fill="#1F7865" font-size="10" font-weight="800" letter-spacing="2.4">TRAINER</text>
+      </g>
+
+      <text x="28" y="164" fill="#172321" font-size="34" font-weight="560" letter-spacing="-1.3">Turn games into trainable decisions.</text>
+      <text x="28" y="198" fill="#63716D" font-size="14">Interface text stays compact; analytical values use a monospaced treatment.</text>
+      <text x="28" y="238" fill="#172321" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20">+0.42   82%   184 games   9...Be7</text>
+      <text x="28" y="262" fill="#63716D" font-size="11">Font loading is still outside this static checkpoint; proportions remain provisional.</text>
+    </g>
+
+    <g transform="translate(814 612)">
+      <rect width="562" height="276" rx="22" fill="#22312E"/>
+      <text x="28" y="42" fill="#47B89C" font-size="11" font-weight="700" letter-spacing="1.8">DECISION GATE</text>
+      <text x="28" y="80" fill="#F4F8F6" font-size="24" font-weight="600">Approve or revise before the next prototype.</text>
+
+      <g transform="translate(28 112)">
+        <circle cx="8" cy="7" r="5" fill="#47B89C"/>
+        <text x="26" y="12" fill="#F4F8F6" font-size="13" font-weight="700">D-301 — Node Branch geometry v1</text>
+        <text x="26" y="34" fill="#AEBDB8" font-size="12">Recommended for approval with badge-first 16 px usage.</text>
+
+        <circle cx="8" cy="72" r="5" fill="#C7802F"/>
+        <text x="26" y="77" fill="#F4F8F6" font-size="13" font-weight="700">D-302 — Production palette</text>
+        <text x="26" y="99" fill="#AEBDB8" font-size="12">Revise strong-mint text value; keep remaining values provisional.</text>
+
+        <circle cx="8" cy="137" r="5" fill="#47B89C"/>
+        <text x="26" y="142" fill="#F4F8F6" font-size="13" font-weight="700">D-303 — Landing copy and composition</text>
+        <text x="26" y="164" fill="#AEBDB8" font-size="12">Recommend retaining the current structure for the next entry-point proofs.</text>
+      </g>
+
+      <text x="28" y="252" fill="#47B89C" font-size="12" font-weight="700">Stop after review. Do not begin Angular implementation.</text>
+    </g>
+
+    <text x="64" y="930" fill="#63716D" font-size="12">Static review artifact · no runtime application behavior or production assets changed.</text>
+  </g>
+</svg>

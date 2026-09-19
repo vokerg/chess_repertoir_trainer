@@ -1,0 +1,74 @@
+.bot-challenge-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--ui-chrome) 48%, transparent);
+}
+
+.bot-challenge-dialog {
+  width: min(560px, 100%);
+  max-height: min(760px, calc(100vh - 2rem));
+  overflow: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-large);
+  padding: 1.25rem;
+  background: var(--ui-surface-overlay);
+  box-shadow: var(--ui-shadow-overlay);
+  color: var(--ui-text);
+}
+
+.dialog-header,
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dialog-header h2,
+.eyebrow {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--ui-text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.challenge-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+.challenge-grid label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--ui-text-muted);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.dialog-actions {
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 620px) {
+  .bot-challenge-dialog {
+    border-radius: var(--ui-radius-panel);
+    padding: 1rem;
+  }
+
+  .challenge-grid {
+    grid-template-columns: 1fr;
+  }
+}

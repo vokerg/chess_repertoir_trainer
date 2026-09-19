@@ -1,0 +1,125 @@
+# Onboarding and Data Lifecycle Open Questions
+
+Last updated: 2026-09-11
+
+Every material question has one owning task. Completed-task design and review history remains in its task file and append-only reports; this file tracks only unresolved implementation/product questions that can still affect future work.
+
+## Recently resolved by merged implementation
+
+### ONB-008 / #193 — disposition/readiness projection
+
+Resolved by PR #398, final head `d303c692883f9d7354167c7618853a76f80022c9`, CI #3149, and the ONB-008 implementation/completion reports.
+
+The server-owned projection vocabulary, bounded evidence shape, ownership/lineage fencing, legacy adoption, fixed-denominator progress behavior, tactical readiness policy/versioning, action intents, and malformed cross-user import-link behavior are no longer open ONB-008 questions.
+
+No ONB-008-owned question remains open.
+
+### ONB-015 / #203 — account-sync cutover/preparation handoff
+
+Resolved by PR #400, the 2026-08-24 thorough self-review addendum, final CI #3156, and the ONB-015 completion record.
+
+The durable account-refresh compatibility contract, explicit bounded backfill, preparation handoff, refresh retry/admission policy, source-isolated sync frontier, lifecycle-fenced rating/activity reconciliation, purge-epoch non-resurrection behavior, Angular persisted import state, and worker-first rollout/rollback contract are no longer open ONB-015 questions.
+
+Final destructive DELETE/reset compatibility removal is intentionally **not** an ONB-015 question; it belongs to ONB-020.
+
+No ONB-015-owned question remains open.
+
+### ONB-019 / #259 — destructive lifecycle foundation
+
+Resolved by PR #386, both ONB-019 self-review addenda, final CI #3013, and the ONB-019 completion record.
+
+Operation/fence persistence, overlap serialization, commit-side writer guards, idempotent preview binding, first-destructive-commit atomicity, forward-only claimed-state movement, identity/user lock ordering, audit/provenance/tombstone foundations, and durable action/scope consistency are no longer open ONB-019 questions.
+
+Operation-specific destructive row execution remains owned by ONB-020/021, not ONB-019.
+
+No ONB-019-owned question remains open.
+
+## Resolved by implementation under review
+
+### ONB-009 / #194 — onboarding lifecycle commands
+
+Runtime PR #406 resolves the implementation-local API decisions that were previously open:
+
+- routes are grouped under authenticated `/api/me/onboarding` start/skip and owned run control/recovery/expansion endpoints;
+- duplicate accepted commands return the persisted run/disposition with an explicit idempotent result rather than inventing a second workflow;
+- expansion uses the shared `OLDER_HISTORY`, `INCLUDE_BULLET`, and `ADD_ACCOUNT` payload vocabulary with `accountId` only for the additional-account case;
+- skip and finish persist explicit disposition reasons, and finish is limited to ONB-008-advertised finishable attention outcomes;
+- pause/cancel preserve ONB-018 requested-versus-acknowledged semantics, while resume/retry also cover the linked-import attention actions advertised by ONB-008;
+- restart creates linked immutable `RECOVERY` work and expansion creates immutable `EXPANSION` work rather than reopening historical scope.
+
+No ONB-009-owned design question remains open. Review acceptance and merge are execution gates, not unresolved product/API decisions. ONB-009 does not redefine ONB-008 readiness or ONB-019/020 destructive lifecycle state.
+
+## ONB-010 / #195 — functional Angular onboarding/Home
+
+Still owned by ONB-010:
+
+- final transformed shared-primitives implementation base at claim time;
+- exact Home versus `/onboarding` split at compact widths;
+- product polling/cache cadence over the server projection;
+- Angular component/store decomposition;
+- accepted prototype/review artifact and copy/component handoff;
+- final responsive/accessibility handoff boundary with Visual Transformation #133.
+
+The browser must consume ONB-008/009 contracts rather than infer lifecycle, progress, readiness, or ETA.
+
+## ONB-020 / #260 — account/game destructive coordinator
+
+Still owned by ONB-020:
+
+- exact bounded phase decomposition and checkpoints for un-analysis, un-index, account purge, and account deletion;
+- measured game-batch/query/lock limits within ONB-007 budgets;
+- exact authenticated preview/execute/status route shape over ONB-019 operations;
+- drain integration details across import, preparation, and job work keys;
+- final compatibility cutover/removal timing for immediate account DELETE and raw cursor reset;
+- verified row-retention/deletion matrix and postcondition checks, especially copied scenario data and retained terminal import history after purge.
+
+ONB-020 must reuse ONB-019 fences/transactions and cannot create a parallel lifecycle state machine.
+
+## ONB-021 / #261 — whole-user deletion/mobile purge
+
+Still owned by ONB-021:
+
+- current mobile offline/outbox purge contract and exact next-contact deleted-state handshake;
+- bounded whole-user deletion phase/checkpoint decomposition after ONB-020 account cleanup is available;
+- exact post-delete receipt/status capability shape that cannot reprovision an `AppUser`;
+- provider-token revocation failure handling versus mandatory local token/state deletion;
+- multi-device stale-outbox rejection/purge ordering.
+
+ONB-021 remains blocked on ONB-020 delivery.
+
+## ONB-024 / #274 — administrator lifecycle controls
+
+Still owned by ONB-024:
+
+- whether a separate step-up challenge should ever be added as an optional deployment policy; it is not required by the current lifecycle flow;
+- exact administrator capability/action mapping over the final ONB-020/021/026 services;
+- bounded administrator audit list/detail projection and retention configuration;
+- whether/when administrator whole-user deletion is explicitly enabled by a separate support/policy decision.
+
+Administrator execution uses the canonical lifecycle services with preview-bound typed confirmation and server-side administrator capability checks; separate Clerk reverification is not a dependency.
+
+## ONB-025 / #276 — stale-account refresh trigger
+
+Still owned by ONB-025:
+
+- final command route/name in the delivered account-import module;
+- persisted automatic-refresh cooldown and failed-attempt backoff representation;
+- exact bounded per-account result vocabulary for fresh/already-active/fenced/failed cases;
+- root/session bootstrap integration point that runs once per authenticated application session without moving orchestration into `auth.plugin.ts`;
+- interaction with inactive/deleted/fenced accounts as ONB-020 changes account lifecycle behavior.
+
+The 24-hour rolling cooldown is the accepted initial policy; browser-local timestamps and cron scheduling are not options.
+
+## ONB-026 / #280 — orphan shared-position cleanup
+
+The implementation is under review in [PR #412](https://github.com/vokerg/chess_repertoir_trainer/pull/412). Validation recorded in the task report confirms PostgreSQL `server_version_num=170011`, applies the migration, and passes the trigger, forced-concurrency, bounded-query-plan, and p50/p90 performance checks. The remaining release questions are:
+
+- target-environment rollback assessment and maintainer acceptance of the applied migration;
+- whether a complete manual command sweep is required on a controlled disposable database; the shared local target contains approximately 1.07 million positions, so the diagnostic sweep was stopped after bounded progress was confirmed;
+- resolution of the unrelated full-API account-import admission fixture, which depends on isolated database state rather than ONB-026.
+
+If deployed PostgreSQL cannot support the required transition-relation contract, ONB-026 returns to design review rather than weakening the database-owned reset invariant.
+
+## Decisions ledger reassessment
+
+`DECISIONS.md` was reassessed for ONB-009. The implementation resolves its local route/payload/idempotency/control vocabulary within already accepted ONB-001/003/008/016/017/018/019 boundaries, so no new cross-program architecture decision entry is required.

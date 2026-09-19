@@ -1,0 +1,14 @@
+<dl
+  class="fact-grid"
+  [class.fact-grid-highlighted]="highlighted()"
+  [style.--fact-grid-columns]="columns()"
+  [style.--fact-grid-compact-columns]="compactColumns()"
+  [attr.aria-label]="ariaLabel()"
+>
+  @for (item of items(); track item.id) {
+    <div class="fact-item" [class.fact-item-mono]="item.mono">
+      <dt>{{ item.label }}</dt>
+      <dd>{{ item.value }}</dd>
+    </div>
+  }
+</dl>

@@ -1,0 +1,106 @@
+<article class="collection-card issue-card">
+  <a
+    class="issue-board issue-board-link"
+    [routerLink]="['/analysis']"
+    [queryParams]="analysisQueryParams()"
+    aria-label="Analyze this position"
+  >
+    <app-board-image
+      [fen]="finding().positionFen"
+      [pov]="finding().boardPov"
+      turn="auto"
+      [alt]="finding().title"
+    />
+  </a>
+
+  <div class="issue-content stack">
+    @if (finding().sequence; as sequence) {
+      <div class="position-label">
+        <span class="metric-label">{{ finding().sequenceLabel }}</span>
+        <strong class="move-sequence">{{ sequence }}</strong>
+      </div>
+    } @else {
+      <span class="metric-label">Position</span>
+    }
+
+    <div>
+      <h3 class="collection-title">{{ finding().title }}</h3>
+      <p class="collection-description">{{ finding().description }}</p>
+    </div>
+
+    <app-copyable-fen
+      [fen]="finding().positionFen"
+      accessibleName="Displayed position FEN"
+    />
+
+    @if (finding().lineReferences.length > 0) {
+      <div class="line-reference-list">
+        @for (
+          lineRef of finding().lineReferences;
+          track lineRef.lineId + ':' + lineRef.anchorKind + ':' + lineRef.nodeId
+        ) {
+          <div class="line-reference-item">
+            <a [routerLink]="['/chapters', lineRef.chapterId, 'lines']">{{ lineRef.lineName }}</a>
+            @if (builderQueryParams(lineRef); as queryParams) {
+              <a
+                class="builder-link"
+                [routerLink]="['/builder']"
+                [queryParams]="queryParams"
+              >
+                {{ builderActionLabel() }}
+              </a>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <div class="collection-actions">
+      <a
+        class="subtle-link"
+        [routerLink]="['/analysis']"
+        [queryParams]="analysisQueryParams()"
+      >
+        Analyze position
+      </a>
+    </div>
+
+    <div class="issue-summary">
+      <span>
+        {{ finding().countLabel }} {{ finding().count }}
+        {{ finding().count === 1 ? 'game' : 'games' }}
+      </span>
+      <span class="pill">
+        {{ finding().results.win }}W {{ finding().results.draw }}D {{ finding().results.loss }}L
+      </span>
+    </div>
+
+    <div class="example-list">
+      @for (example of finding().examples; track example.gameId) {
+        <div class="example-row">
+          <span>
+            {{ example.endedAt | date: 'mediumDate' }} vs
+            {{ example.opponentUsername || 'Unknown opponent' }}
+            @if (example.resultForUser) {
+              <span class="pill">{{ example.resultForUser }}</span>
+            }
+          </span>
+          <div class="collection-actions">
+            <a [routerLink]="['/games', example.gameId]">Open review</a>
+            <a
+              [routerLink]="['/analysis']"
+              [queryParams]="exampleAnalysisQueryParams(example)"
+            >
+              Analyze position
+            </a>
+            @if (example.providerUrl) {
+              <a [href]="example.providerUrl" target="_blank" rel="noopener noreferrer">
+                Open on {{ example.provider }}
+              </a>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</article>

@@ -1,0 +1,54 @@
+@if (visible()) {
+  <app-panel
+    class="game-insights-panel"
+    [title]="title()"
+    [actions]="panelActions()"
+  >
+    @if (!collapsed()) {
+      @if (hasTabs()) {
+        <div class="insight-tabs" role="tablist" aria-label="Game insights">
+          <button
+            type="button"
+            role="tab"
+            [class.active]="activeTab() === 'TACTICS'"
+            [attr.aria-selected]="activeTab() === 'TACTICS'"
+            (click)="selectTab('TACTICS')"
+          >
+            Tactics
+            <span>{{ findings().length }}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [class.active]="activeTab() === 'AI_REVIEW'"
+            [attr.aria-selected]="activeTab() === 'AI_REVIEW'"
+            (click)="selectTab('AI_REVIEW')"
+          >
+            AI review
+          </button>
+        </div>
+      }
+
+      <div class="insight-body">
+        @if (hasTactics() && (!hasTabs() || activeTab() === 'TACTICS')) {
+          <app-game-tactical-findings
+            [gameId]="gameId()"
+            [findings]="findings()"
+            [loading]="findingsLoading()"
+            [error]="findingsError()"
+            (retry)="retryFindings.emit()"
+            (moveSelected)="moveSelected.emit($event)"
+          />
+        }
+
+        @if (hasReview() && (!hasTabs() || activeTab() === 'AI_REVIEW')) {
+          <app-game-ai-review-widget
+            [review]="review()"
+            [selectedPlyNumber]="selectedPlyNumber()"
+            (moveSelected)="moveSelected.emit($event)"
+          />
+        }
+      </div>
+    }
+  </app-panel>
+}

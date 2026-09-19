@@ -1,0 +1,40 @@
+<app-analysis-workbench
+  [tree]="tree()"
+  [selectedNodeId]="selectedNodeId()"
+  [currentFen]="currentFen()"
+  [side]="side()"
+  [blackPerspective]="blackPerspective()"
+  [lastMove]="lastMove()"
+  [arrows]="arrows()"
+  [boardPositionVersion]="boardPositionVersion()"
+  [analysis]="analysis()"
+  [savedScoreCpWhite]="savedScoreCpWhite()"
+  [canGoBackward]="canGoBackward()"
+  [canGoForward]="canGoForward()"
+  treeTitle="Move tree"
+  [deleteDisabled]="deleteDisabled()"
+  [deleting]="deleting()"
+  [showDangerZone]="showDangerZone()"
+  (boardMove)="boardMove.emit($event)"
+  (nodeSelected)="nodeSelected.emit($event)"
+  (goStart)="goStart.emit()"
+  (goPrevious)="goPrevious.emit()"
+  (goNext)="goNext.emit()"
+  (goEnd)="goEnd.emit()"
+  (deleteSelectedSubtree)="deleteSelectedSubtree.emit()"
+>
+  <app-panel analysisWorkbenchSideExtra>
+    <app-game-evaluation-graph
+      [tree]="tree()"
+      [selectedNodeId]="selectedNodeId()"
+      [blackPerspective]="blackPerspective()"
+      (nodeSelected)="nodeSelected.emit($event)"
+    />
+  </app-panel>
+
+  <app-course-position-suggestions-widget
+    analysisWorkbenchSideExtra
+    [fen]="currentFen()"
+    (moveSelected)="boardMove.emit($event.moveUci)"
+  />
+</app-analysis-workbench>
