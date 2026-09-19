@@ -25,7 +25,7 @@ for (const [, modelName, body] of modelBlocks) {
   );
   assert.match(
     appUserRelations[0][1],
-    /onDelete:\\s*Cascade/,
+    /onDelete:\s*Cascade/,
     `${modelName} must cascade from AppUser so final identity deletion cannot be blocked`,
   );
   appUserOwnedModels.push(modelName);
