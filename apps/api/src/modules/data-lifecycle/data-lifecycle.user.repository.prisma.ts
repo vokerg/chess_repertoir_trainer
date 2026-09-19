@@ -139,7 +139,6 @@ export function createUserDataLifecycleRepository(
         database.scenarioTrainingSession.count({ where: { userId } }),
         database.importRun.count({ where: { userId } }),
         database.jobRun.count({ where: { userId } }),
-        database.importRun.count({ where: { userId } }),
         database.dataPreparationRun.count({ where: { userId } }),
       ]);
       return dataLifecyclePreviewCountsSchema.parse({
