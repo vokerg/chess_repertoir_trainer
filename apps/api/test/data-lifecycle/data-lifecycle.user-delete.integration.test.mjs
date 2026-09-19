@@ -163,7 +163,7 @@ try {
   await prisma.dataPreparationRun.create({
     data: {
       userId: user.id,
-      purpose: 'ONB_021_TEST',
+      purpose: 'ONBOARDING',
       status: 'COMPLETED',
       recipeVersion: 1,
       recipeJson: {},
