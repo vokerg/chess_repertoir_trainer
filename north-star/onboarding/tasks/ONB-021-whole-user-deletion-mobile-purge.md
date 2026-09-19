@@ -1,6 +1,6 @@
 # ONB-021 — Implement whole-user deletion and mobile purge handshake
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P0
 
@@ -95,8 +95,8 @@ Implement whole-application-user deletion as a durable operation that drains ser
 
 ## Completion
 
-Report: none
+Report: `north-star/onboarding/reports/ONB-021-2026-09-19-whole-user-deletion-mobile-purge.md`
 
-Pull request: none
+Pull request: [#426](https://github.com/vokerg/chess_repertoir_trainer/pull/426)
 
 Completed at: none
