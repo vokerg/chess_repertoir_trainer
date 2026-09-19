@@ -26,6 +26,7 @@ Canonical documents in `docs/` describe current runtime architecture and operati
 
 ## Operational guides
 
+- [Orphan position removal SQL review](operations/orphan-position-removal-review.sql): read-only counts and a rolled-back bounded deletion example; human review is required before any destructive use.
 - [API conventions](api-conventions.md): route and service conventions.
 - [API contracts](api-contracts.md): shared HTTP schema ownership.
 - [OpenAPI](openapi.md): generated documentation rules.
