@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const cwd = process.cwd();
-const schema = await readFile(path.join(cwd, 'prisma/schema.prisma'), 'utf8');
+const apiRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const schema = await readFile(path.join(apiRoot, 'prisma/schema.prisma'), 'utf8');
 const userRepository = await readFile(
-  path.join(cwd, 'src/modules/data-lifecycle/data-lifecycle.user.repository.prisma.ts'),
+  path.join(apiRoot, 'src/modules/data-lifecycle/data-lifecycle.user.repository.prisma.ts'),
   'utf8',
 );
 
