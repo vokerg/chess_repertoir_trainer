@@ -511,7 +511,7 @@ export function createUserDataLifecycleWorker(
   ): Promise<void> {
     const readiness = await userRepository.verifyFinalDeleteReady(operation.targetUserId);
     if (!readiness.ok) {
-      throw new Error('DATA_LIFECYCLE_RESIDUAL_ROWS_REMAIN');
+      throw new Error('DATA_LIFECYCLE_VERIFICATION_FAILED');
     }
 
     await lifecycleRepository.runDestructiveTransaction({
