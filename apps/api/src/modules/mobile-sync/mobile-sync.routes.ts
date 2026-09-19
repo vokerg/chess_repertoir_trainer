@@ -40,6 +40,8 @@ const mobileSyncModule: FastifyPluginAsyncZod = async (app) => {
       response: {
         200: mobileSyncManifestSchema,
         401: unauthorizedResponseSchema,
+        410: dataLifecycleIdentityBlockedResponseSchema,
+        423: dataLifecycleIdentityBlockedResponseSchema,
       },
     },
   }, async (request, reply) => {
@@ -59,6 +61,8 @@ const mobileSyncModule: FastifyPluginAsyncZod = async (app) => {
         400: validationErrorResponseSchema,
         401: unauthorizedResponseSchema,
         404: mobileSyncErrorSchema,
+        410: dataLifecycleIdentityBlockedResponseSchema,
+        423: dataLifecycleIdentityBlockedResponseSchema,
       },
     },
   }, async (request, reply) => {
@@ -80,6 +84,8 @@ const mobileSyncModule: FastifyPluginAsyncZod = async (app) => {
         200: mobileTrainingAttemptBatchResponseSchema,
         400: validationErrorResponseSchema,
         401: unauthorizedResponseSchema,
+        410: dataLifecycleIdentityBlockedResponseSchema,
+        423: dataLifecycleIdentityBlockedResponseSchema,
       },
     },
   }, async (request, reply) => {
