@@ -405,6 +405,7 @@ export function createUserDataLifecycleRepository(
         database.lichessPuzzleRound.count({ where: { userId } }),
         database.scenarioTrainingSession.count({ where: { userId } }),
         database.jobRun.count({ where: { userId } }),
+        database.importRun.count({ where: { userId } }),
         database.dataPreparationRun.count({ where: { userId } }),
         database.oAuthLoginState.count({ where: { userId } }),
         database.lichessConnection.count({ where: { userId } }),
