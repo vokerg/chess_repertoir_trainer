@@ -61,11 +61,8 @@ assert.deepEqual(
 
 for (const modelName of appUserOwnedModels) {
   const delegate = modelName[0].toLowerCase() + modelName.slice(1);
-  assert.match(
-    userRepository,
-    new RegExp(
-      `database\\.${delegate}\\.count\\\\?\\(\\{ where: \\{ userId \\} \\}\\)`,
-    ),
+  assert.ok(
+    userRepository.includes(`database.${delegate}.count({ where: { userId } })`),
     `${modelName} must participate in the pre-delete/post-delete ownership verification map`,
   );
 }
