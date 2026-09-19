@@ -1,8 +1,0 @@
-button {
-  width: auto;
-  min-height: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-}
