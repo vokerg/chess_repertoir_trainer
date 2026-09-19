@@ -136,6 +136,7 @@ export function createUserDataLifecycleRepository(
         database.scenarioTrainingSession.count({ where: { userId } }),
         database.importRun.count({ where: { userId } }),
         database.jobRun.count({ where: { userId } }),
+        database.importRun.count({ where: { userId } }),
         database.dataPreparationRun.count({ where: { userId } }),
       ]);
       return dataLifecyclePreviewCountsSchema.parse({
@@ -382,6 +383,7 @@ export function createUserDataLifecycleRepository(
         puzzleRounds,
         scenarioSessions,
         jobRuns,
+        importRuns,
         preparationRuns,
         oauthStates,
         lichessConnections,
@@ -425,6 +427,7 @@ export function createUserDataLifecycleRepository(
         puzzleRounds,
         scenarioSessions,
         jobRuns,
+        importRuns,
         preparationRuns,
         oauthStates,
         lichessConnections,
