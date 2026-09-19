@@ -104,6 +104,9 @@ export interface UserDataLifecycleRepository {
     transaction: Prisma.TransactionClient,
     userId: number,
   ): Promise<UserIdentityForDeletion>;
+  verifyFinalDeleteReady(
+    userId: number,
+  ): Promise<{ ok: boolean; checks: Record<string, number | boolean> }>;
   verifyDeleted(userId: number): Promise<{ ok: boolean; checks: Record<string, number | boolean> }>;
 }
 
@@ -372,81 +375,95 @@ export function createUserDataLifecycleRepository(
       return { provider: user.authProvider, externalSubject: user.authSubject };
     },
 
-    async verifyDeleted(userId) {
+    async verifyFinalDeleteReady(userId) {
       validateUserId(userId);
-      const [
-        users,
-        accounts,
-        games,
-        courses,
-        trainingSessions,
-        puzzleRounds,
-        scenarioSessions,
-        jobRuns,
-        importRuns,
-        preparationRuns,
-        oauthStates,
-        lichessConnections,
-        aiReviews,
-        tacticalDetections,
-        tacticalProcessedGames,
-        tacticalFeedback,
-        tacticalRuns,
-        trainingSublineAttempts,
-        reviewStates,
-        puzzleReviewStates,
-        activityAggregates,
-      ] = await Promise.all([
-        database.appUser.count({ where: { id: userId } }),
-        database.externalAccount.count({ where: { userId } }),
-        database.importedGame.count({ where: { userId } }),
-        database.course.count({ where: { userId } }),
-        database.trainingSession.count({ where: { userId } }),
-        database.lichessPuzzleRound.count({ where: { userId } }),
-        database.scenarioTrainingSession.count({ where: { userId } }),
-        database.jobRun.count({ where: { userId } }),
-        database.importRun.count({ where: { userId } }),
-        database.dataPreparationRun.count({ where: { userId } }),
-        database.oAuthLoginState.count({ where: { userId } }),
-        database.lichessConnection.count({ where: { userId } }),
-        database.importedGameAiReview.count({ where: { userId } }),
-        database.tacticalDetection.count({ where: { userId } }),
-        database.tacticalDetectionProcessedGame.count({ where: { userId } }),
-        database.tacticalDetectionFeedback.count({ where: { userId } }),
-        database.tacticalDetectionRun.count({ where: { userId } }),
-        database.trainingSublineAttempt.count({ where: { userId } }),
-        database.repertoireSublineReviewState.count({ where: { userId } }),
-        database.lichessPuzzleReviewState.count({ where: { userId } }),
-        database.userActivityDailyAggregate.count({ where: { userId } }),
-      ]);
-      const checks = {
-        users,
-        accounts,
-        games,
-        courses,
-        trainingSessions,
-        puzzleRounds,
-        scenarioSessions,
-        jobRuns,
-        importRuns,
-        preparationRuns,
-        oauthStates,
-        lichessConnections,
-        aiReviews,
-        tacticalDetections,
-        tacticalProcessedGames,
-        tacticalFeedback,
-        tacticalRuns,
-        trainingSublineAttempts,
-        reviewStates,
-        puzzleReviewStates,
-        activityAggregates,
-      };
+      const checks = await countUserOwnedRows(database, userId);
       return {
         ok: Object.values(checks).every((count) => count === 0),
         checks,
       };
     },
+
+    async verifyDeleted(userId) {
+      validateUserId(userId);
+      const [users, ownedChecks] = await Promise.all([
+        database.appUser.count({ where: { id: userId } }),
+        countUserOwnedRows(database, userId),
+      ]);
+      const checks = { users, ...ownedChecks };
+      return {
+        ok: Object.values(checks).every((count) => count === 0),
+        checks,
+      };
+    }
+  };
+}
+
+async function countUserOwnedRows(database: UserLifecycleDatabase, userId: number) {
+  const [
+    accounts,
+    games,
+    courses,
+    trainingSessions,
+    puzzleRounds,
+    scenarioSessions,
+    jobRuns,
+    importRuns,
+    preparationRuns,
+    oauthStates,
+    lichessConnections,
+    aiReviews,
+    tacticalDetections,
+    tacticalProcessedGames,
+    tacticalFeedback,
+    tacticalRuns,
+    trainingSublineAttempts,
+    reviewStates,
+    puzzleReviewStates,
+    activityAggregates,
+  ] = await Promise.all([
+    database.externalAccount.count({ where: { userId } }),
+    database.importedGame.count({ where: { userId } }),
+    database.course.count({ where: { userId } }),
+    database.trainingSession.count({ where: { userId } }),
+    database.lichessPuzzleRound.count({ where: { userId } }),
+    database.scenarioTrainingSession.count({ where: { userId } }),
+    database.jobRun.count({ where: { userId } }),
+    database.importRun.count({ where: { userId } }),
+    database.dataPreparationRun.count({ where: { userId } }),
+    database.oAuthLoginState.count({ where: { userId } }),
+    database.lichessConnection.count({ where: { userId } }),
+    database.importedGameAiReview.count({ where: { userId } }),
+    database.tacticalDetection.count({ where: { userId } }),
+    database.tacticalDetectionProcessedGame.count({ where: { userId } }),
+    database.tacticalDetectionFeedback.count({ where: { userId } }),
+    database.tacticalDetectionRun.count({ where: { userId } }),
+    database.trainingSublineAttempt.count({ where: { userId } }),
+    database.repertoireSublineReviewState.count({ where: { userId } }),
+    database.lichessPuzzleReviewState.count({ where: { userId } }),
+    database.userActivityDailyAggregate.count({ where: { userId } }),
+  ]);
+  return {
+    accounts,
+    games,
+    courses,
+    trainingSessions,
+    puzzleRounds,
+    scenarioSessions,
+    jobRuns,
+    importRuns,
+    preparationRuns,
+    oauthStates,
+    lichessConnections,
+    aiReviews,
+    tacticalDetections,
+    tacticalProcessedGames,
+    tacticalFeedback,
+    tacticalRuns,
+    trainingSublineAttempts,
+    reviewStates,
+    puzzleReviewStates,
+    activityAggregates,
   };
 }
 
