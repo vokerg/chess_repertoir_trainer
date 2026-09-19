@@ -46,6 +46,9 @@ const workerConfig = {
 const logger = { info() {}, warn() {}, error() {} };
 let operationId;
 let userId;
+let sharedPositionId;
+let sharedPuzzleId;
+let sharedTagCode;
 
 try {
   const provider = 'onb-021-user-delete';
@@ -74,6 +77,99 @@ try {
       pgn: '1. e4 e5',
     },
   });
+  const sharedPosition = await prisma.position.create({
+    data: {
+      positionKey: Buffer.from(randomUUID().replaceAll('-', ''), 'hex'),
+      normalizedFen: '8/8/8/8/8/8/8/K6k w - - 0 1',
+    },
+  });
+  sharedPositionId = sharedPosition.id;
+  await prisma.importedGamePly.create({
+    data: {
+      importedGameId: game.id,
+      positionId: sharedPosition.id,
+      plyNumber: 0,
+      moveUci: 'a1a2',
+    },
+  });
+  await prisma.positionAnalysis.create({
+    data: {
+      positionId: sharedPosition.id,
+      bestMoveUci: 'a1a2',
+      lines: [],
+    },
+  });
+  await prisma.mastersExplorerCache.create({
+    data: {
+      positionId: sharedPosition.id,
+      source: 'ONB_021_TEST',
+      profileVersion: 1,
+      sinceYear: 2000,
+      untilYear: 2026,
+      movesLimit: 10,
+      topGamesLimit: 5,
+      payload: {},
+      fetchedAt: new Date(),
+      expiresAt: new Date(Date.now() + 60_000),
+    },
+  });
+  sharedTagCode = 2_000_000 + user.id;
+  await prisma.gameTagDefinition.create({
+    data: {
+      code: sharedTagCode,
+      name: `ONB-021 shared tag ${suffix}`,
+    },
+  });
+  sharedPuzzleId = `p${suffix.replaceAll('-', '').slice(0, 15)}`;
+  await prisma.lichessPuzzle.create({
+    data: {
+      id: sharedPuzzleId,
+      gameId: 'abcdefgh',
+      gamePgn: '1. e4 e5',
+      initialPly: 0,
+      startFen: '8/8/8/8/8/8/8/K6k w - - 0 1',
+      lastMoveUci: 'a1a2',
+      sideToMove: 'WHITE',
+      solutionUci: ['a1a2'],
+      themes: ['onb021'],
+      rating: 1500,
+      plays: 1,
+    },
+  });
+  await prisma.lichessPuzzleRound.create({
+    data: {
+      userId: user.id,
+      puzzleId: sharedPuzzleId,
+      source: 'ONB_021_TEST',
+      angle: 'shared-retention',
+      currentFen: '8/8/8/8/8/8/8/K6k w - - 0 1',
+      moveAttempts: [],
+    },
+  });
+  await prisma.lichessPuzzleReviewState.create({
+    data: {
+      userId: user.id,
+      puzzleId: sharedPuzzleId,
+    },
+  });
+  await prisma.importRun.create({
+    data: {
+      userId: user.id,
+      accountId: account.id,
+      provider: 'LICHESS',
+      status: 'COMPLETED',
+    },
+  });
+  await prisma.dataPreparationRun.create({
+    data: {
+      userId: user.id,
+      purpose: 'ONB_021_TEST',
+      status: 'COMPLETED',
+      recipeVersion: 1,
+      recipeJson: {},
+    },
+  });
+
   const jobRun = await prisma.jobRun.create({
     data: {
       userId: user.id,
@@ -126,7 +222,9 @@ try {
   assert.equal(preview.scope.resourceType, 'USER');
   assert.equal(preview.previewCounts.accounts, 1);
   assert.equal(preview.previewCounts.games, 1);
+  assert.equal(preview.previewCounts.importRuns, 1);
   assert.equal(preview.previewCounts.jobRuns, 1);
+  assert.equal(preview.previewCounts.preparationRuns, 1);
 
   const credentials = {
     previewToken: preview.previewToken,
@@ -207,6 +305,20 @@ try {
   assert.equal(await prisma.jobRun.count({ where: { userId: user.id } }), 0);
   assert.equal(await prisma.oAuthLoginState.count({ where: { userId: user.id } }), 0);
   assert.equal(await prisma.lichessConnection.count({ where: { userId: user.id } }), 0);
+  assert.equal(await prisma.importRun.count({ where: { userId: user.id } }), 0);
+  assert.equal(await prisma.dataPreparationRun.count({ where: { userId: user.id } }), 0);
+  assert.equal(await prisma.lichessPuzzleRound.count({ where: { userId: user.id } }), 0);
+  assert.equal(await prisma.lichessPuzzleReviewState.count({ where: { userId: user.id } }), 0);
+  assert.equal(await prisma.position.count({ where: { id: sharedPosition.id } }), 1);
+  assert.equal(await prisma.positionAnalysis.count({ where: { positionId: sharedPosition.id } }), 1);
+  assert.equal(await prisma.mastersExplorerCache.count({ where: { positionId: sharedPosition.id } }), 1);
+  assert.equal(await prisma.gameTagDefinition.count({ where: { code: sharedTagCode } }), 1);
+  assert.equal(await prisma.lichessPuzzle.count({ where: { id: sharedPuzzleId } }), 1);
+  const storedOperation = await prisma.dataLifecycleOperation.findUniqueOrThrow({
+    where: { id: operationId },
+    select: { verificationJson: true },
+  });
+  assert.equal(storedOperation.verificationJson?.checks?.importRuns, 0);
   assert.equal(
     await prisma.deletedAuthIdentityTombstone.count({ where: { operationId } }),
     1,
@@ -244,6 +356,17 @@ try {
   if (userId !== undefined) {
     await prisma.oAuthLoginState.deleteMany({ where: { userId } });
     await prisma.appUser.deleteMany({ where: { id: userId } });
+  }
+  if (sharedPositionId !== undefined) {
+    await prisma.mastersExplorerCache.deleteMany({ where: { positionId: sharedPositionId } });
+    await prisma.positionAnalysis.deleteMany({ where: { positionId: sharedPositionId } });
+    await prisma.position.deleteMany({ where: { id: sharedPositionId } });
+  }
+  if (sharedPuzzleId !== undefined) {
+    await prisma.lichessPuzzle.deleteMany({ where: { id: sharedPuzzleId } });
+  }
+  if (sharedTagCode !== undefined) {
+    await prisma.gameTagDefinition.deleteMany({ where: { code: sharedTagCode } });
   }
   await prisma.$disconnect();
 }
