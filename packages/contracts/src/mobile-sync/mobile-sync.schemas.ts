@@ -6,6 +6,11 @@ import {
   serializableTrainingSublineSchema,
 } from '../training';
 
+export const mobileSessionProbeSchema = z.object({
+  ok: z.literal(true),
+});
+export type MobileSessionProbeDto = z.infer<typeof mobileSessionProbeSchema>;
+
 export const mobileManifestCourseSchema = z.object({
   courseId: z.number().int().positive(),
   name: z.string().min(1),

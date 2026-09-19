@@ -68,6 +68,10 @@ export function CourseLibraryScreen() {
       await refreshMobileManifest(db, session.activeUser.appUserId, token);
       await loadLocalState();
     } catch (error) {
+      if (await session.handleApiError(error)) {
+        setMessage(null);
+        return;
+      }
       mobileLogger.error('course-library', 'Manifest refresh failed', error);
       if (!silent) setMessage(error instanceof Error ? error.message : 'Course refresh failed.');
     } finally {
@@ -104,6 +108,10 @@ export function CourseLibraryScreen() {
       await downloadMobileCourse(db, session.activeUser.appUserId, courseId, token);
       await loadLocalState();
     } catch (error) {
+      if (await session.handleApiError(error)) {
+        setMessage(null);
+        return;
+      }
       mobileLogger.error('course-library', 'Course download failed', error);
       setMessage(error instanceof Error ? error.message : 'Course download failed.');
       await loadLocalState();

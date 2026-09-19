@@ -14,6 +14,7 @@ import labModule from '../modules/lab/lab.routes';
 import jobsModule from '../modules/jobs/job-run.routes';
 import accountImportModule from '../modules/account-imports/account-import.routes';
 import dataLifecycleModule from '../modules/data-lifecycle/data-lifecycle.account-game.routes';
+import userDataLifecycleModule from '../modules/data-lifecycle/data-lifecycle.user.routes';
 import adminModule, { type AdminModuleOptions } from '../modules/admin/admin.routes';
 import externalAccountsRoutes from './externalAccounts';
 import {
@@ -57,6 +58,7 @@ export default function registerRoutes(app: FastifyInstance, options: RegisterRo
   app.register(jobsModule);
   app.register(accountImportModule);
   app.register(dataLifecycleModule);
+  app.register(userDataLifecycleModule);
   app.register(adminModule, options.admin);
   app.register(repertoireCoverageModule);
   app.register(mcpModule);

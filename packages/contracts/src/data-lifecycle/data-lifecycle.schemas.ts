@@ -131,6 +131,13 @@ export type AccountGameDataLifecyclePreviewRequest = z.infer<
   typeof accountGameDataLifecyclePreviewRequestSchema
 >;
 
+export const wholeUserDataLifecyclePreviewRequestSchema = z.object({
+  action: z.literal('DELETE_APP_USER'),
+}).strict();
+export type WholeUserDataLifecyclePreviewRequest = z.infer<
+  typeof wholeUserDataLifecyclePreviewRequestSchema
+>;
+
 export const dataLifecycleExecuteRequestSchema = z.object({
   previewToken: z.string().min(16).max(512),
   confirmationPhrase: z.string().min(1).max(120),
@@ -164,6 +171,46 @@ export const dataLifecyclePreviewResponseSchema = dataLifecycleOperationResponse
   previewToken: z.string().min(16),
 });
 export type DataLifecyclePreviewResponse = z.infer<typeof dataLifecyclePreviewResponseSchema>;
+
+export const wholeUserDataLifecycleExecuteResponseSchema =
+  dataLifecycleOperationResponseSchema.extend({
+    receiptToken: z.string().min(16).nullable(),
+  });
+export type WholeUserDataLifecycleExecuteResponse = z.infer<
+  typeof wholeUserDataLifecycleExecuteResponseSchema
+>;
+
+export const dataLifecycleReceiptStatusRequestSchema = z.object({
+  receiptToken: z.string().min(16).max(512),
+}).strict();
+export type DataLifecycleReceiptStatusRequest = z.infer<
+  typeof dataLifecycleReceiptStatusRequestSchema
+>;
+
+export const dataLifecycleReceiptStatusResponseSchema = z.object({
+  operationId: z.number().int().positive(),
+  action: z.literal('DELETE_APP_USER'),
+  status: dataLifecycleOperationStatusSchema,
+  terminalResult: dataLifecycleTerminalResultSchema.nullable(),
+  completedAt: z.string().datetime().nullable(),
+  purgeLocalData: z.literal(true),
+});
+export type DataLifecycleReceiptStatusResponse = z.infer<
+  typeof dataLifecycleReceiptStatusResponseSchema
+>;
+
+export const dataLifecycleIdentityBlockedResponseSchema = z.object({
+  error: z.string(),
+  code: z.enum([
+    'DATA_LIFECYCLE_DELETION_IN_PROGRESS',
+    'DATA_LIFECYCLE_IDENTITY_DELETED',
+  ]),
+  operationId: z.number().int().positive(),
+  purgeLocalData: z.literal(true),
+});
+export type DataLifecycleIdentityBlockedResponse = z.infer<
+  typeof dataLifecycleIdentityBlockedResponseSchema
+>;
 
 export const dataLifecycleErrorResponseSchema = z.object({
   error: z.string(),

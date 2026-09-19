@@ -8,10 +8,16 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { AppState } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
+import {
+  getMobileSessionProbe,
+  isMobileDeletionSignal,
+} from '../api/mobile-api-client';
 import { mobileLogger } from '../diagnostics/mobile-logger';
 import {
   activateAuthenticatedUser,
+  deleteLocalUser,
   loadUnlockedLocalUser,
   lockLocalUser,
   type LocalUser,
@@ -23,6 +29,7 @@ type MobileSessionContextValue = {
   canSync: boolean;
   activeUser: LocalUser | null;
   getApiToken: () => Promise<string | null>;
+  handleApiError: (error: unknown) => Promise<boolean>;
   signOutAndLock: () => Promise<void>;
 };
 
@@ -40,17 +47,66 @@ export function MobileSessionProvider({ children }: { children: ReactNode }) {
   const displayName = user?.fullName ?? user?.username ?? null;
   const email = user?.primaryEmailAddress?.emailAddress ?? null;
 
+  const purgeDeletedAccount = useCallback(async (appUserId: string | null): Promise<void> => {
+    if (appUserId) {
+      await deleteLocalUser(db, appUserId);
+    }
+    setActiveUser(null);
+    if (auth.isLoaded && auth.isSignedIn) {
+      await clerk.signOut();
+    }
+    mobileLogger.info('mobile-session', 'Purged local account data after server deletion signal');
+  }, [auth.isLoaded, auth.isSignedIn, clerk, db]);
+
+  const handleApiError = useCallback(async (error: unknown): Promise<boolean> => {
+    if (!isMobileDeletionSignal(error)) return false;
+    await purgeDeletedAccount(activeUser?.appUserId ?? clerkUserId);
+    return true;
+  }, [activeUser?.appUserId, clerkUserId, purgeDeletedAccount]);
+
+  const verifyServerSession = useCallback(async (): Promise<boolean> => {
+    if (!auth.isLoaded || !auth.isSignedIn || !clerkUserId) return true;
+    let token: string | null = null;
+    try {
+      token = await auth.getToken();
+    } catch (error) {
+      mobileLogger.warn('mobile-session', 'Could not obtain API token for deletion probe', {
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return true;
+    }
+    if (!token) return true;
+
+    try {
+      await getMobileSessionProbe(token);
+      return true;
+    } catch (error) {
+      if (isMobileDeletionSignal(error)) {
+        await purgeDeletedAccount(clerkUserId);
+        return false;
+      }
+      mobileLogger.warn('mobile-session', 'Could not complete server session probe; retaining offline access', {
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return true;
+    }
+  }, [auth, clerkUserId, purgeDeletedAccount]);
+
   useEffect(() => {
     if (!auth.isLoaded) return;
     let cancelled = false;
     setIsReady(false);
     setActiveUser(null);
 
-    const resolveUser = auth.isSignedIn && clerkUserId
-      ? activateAuthenticatedUser(db, { appUserId: clerkUserId, displayName, email })
-      : loadUnlockedLocalUser(db);
+    const resolveUser = async (): Promise<LocalUser | null> => {
+      if (auth.isSignedIn && clerkUserId) {
+        if (!await verifyServerSession()) return null;
+        return activateAuthenticatedUser(db, { appUserId: clerkUserId, displayName, email });
+      }
+      return loadUnlockedLocalUser(db);
+    };
 
-    void resolveUser
+    void resolveUser()
       .then((localUser) => {
         if (!cancelled) setActiveUser(localUser);
       })
@@ -64,7 +120,24 @@ export function MobileSessionProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [auth.isLoaded, auth.isSignedIn, clerkUserId, db, displayName, email]);
+  }, [
+    auth.isLoaded,
+    auth.isSignedIn,
+    clerkUserId,
+    db,
+    displayName,
+    email,
+    verifyServerSession,
+  ]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && auth.isLoaded && auth.isSignedIn && clerkUserId) {
+        void verifyServerSession();
+      }
+    });
+    return () => subscription.remove();
+  }, [auth.isLoaded, auth.isSignedIn, clerkUserId, verifyServerSession]);
 
   const isAuthenticated = Boolean(auth.isLoaded && auth.isSignedIn && clerkUserId);
   const canSync = Boolean(isAuthenticated && activeUser?.appUserId === clerkUserId);
@@ -95,8 +168,17 @@ export function MobileSessionProvider({ children }: { children: ReactNode }) {
     canSync,
     activeUser,
     getApiToken,
+    handleApiError,
     signOutAndLock,
-  }), [activeUser, canSync, getApiToken, isAuthenticated, isReady, signOutAndLock]);
+  }), [
+    activeUser,
+    canSync,
+    getApiToken,
+    handleApiError,
+    isAuthenticated,
+    isReady,
+    signOutAndLock,
+  ]);
 
   return <MobileSessionContext.Provider value={value}>{children}</MobileSessionContext.Provider>;
 }
