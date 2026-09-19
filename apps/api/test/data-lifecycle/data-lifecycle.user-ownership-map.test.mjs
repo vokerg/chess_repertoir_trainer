@@ -15,7 +15,7 @@ const appUserOwnedModels = [];
 
 for (const [, modelName, body] of modelBlocks) {
   if (modelName === 'AppUser') continue;
-  const appUserRelations = [...body.matchAll(/\\bAppUser\\b\\s+@relation\\(([^)]*)\\)/g)];
+  const appUserRelations = [...body.matchAll(/\bAppUser\b\s+@relation\(([^)]*)\)/g)];
   if (appUserRelations.length === 0) continue;
 
   assert.equal(
