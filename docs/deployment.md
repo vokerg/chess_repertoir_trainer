@@ -216,6 +216,23 @@ WEB_CLERK_PUBLISHABLE_KEY=pk_...
 
 The web build generates `apps/web/src/app/app-config.ts`. In local development the API base defaults to `/api`, which works with the Angular proxy; production must use the deployed API URL.
 
+### Selective Vercel production builds
+
+Automatic Vercel Git deployment remains enabled only for `main`. The repository-level `ignoreCommand` runs `bash scripts/vercel-ignore-build.sh` before a production build and skips the build when the commits being compared contain no web-affecting changes.
+
+The web-affecting paths are:
+
+- `apps/web/**`;
+- `packages/chess-domain/**`, because the Angular app imports `chess-domain` through its TypeScript path mapping;
+- `packages/contracts/**`;
+- root web/build inputs: `package.json`, `package-lock.json`, `angular.json`, `tsconfig.base.json`, `.nvmrc`, and `vercel.json`.
+
+API-only, mobile-only, documentation-only, and other unrelated merges to `main` therefore do not create a new Vercel build. GitHub Actions still runs its normal CI checks.
+
+The ignore script compares the deployment commit with its parent, matching Vercel's documented path-filter pattern. Because every merged `main` commit is evaluated independently, an irrelevant commit can be skipped without losing a later web-affecting change. If the parent commit or diff cannot be evaluated, the script continues the build rather than risking a stale production deployment.
+
+Vercel Ignored Build Step exit codes are intentionally inverted from many CI conventions: exit code `0` skips the build; a non-zero code continues it.
+
 ## Native mobile configuration and distribution
 
 Create the Expo environment from the workspace example:
