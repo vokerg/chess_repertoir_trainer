@@ -229,7 +229,7 @@ The web-affecting paths are:
 
 API-only, mobile-only, documentation-only, and other unrelated merges to `main` therefore do not create a new Vercel build. GitHub Actions still runs its normal CI checks.
 
-The ignore script prefers Vercel's `VERCEL_GIT_PREVIOUS_SHA` when available so it compares against the last successful deployment. It falls back to the deployment commit's parent when that variable is unavailable. If the comparison base cannot be resolved from Vercel's shallow clone, or if the diff cannot be evaluated, the script continues the build rather than risking a stale production deployment.
+The ignore script compares the deployment commit with its parent, matching Vercel's documented path-filter pattern. Because every merged `main` commit is evaluated independently, an irrelevant commit can be skipped without losing a later web-affecting change. If the parent commit or diff cannot be evaluated, the script continues the build rather than risking a stale production deployment.
 
 Vercel Ignored Build Step exit codes are intentionally inverted from many CI conventions: exit code `0` skips the build; a non-zero code continues it.
 

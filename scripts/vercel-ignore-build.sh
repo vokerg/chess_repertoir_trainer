@@ -5,29 +5,22 @@ set -u -o pipefail
 #   exit 0 => skip the build
 #   exit non-zero => continue the build
 #
-# Prefer the last successful deployment SHA when Vercel exposes it. If that
-# commit is outside Vercel's shallow clone, build conservatively rather than
-# risk skipping a required production deployment.
+# Vercel clones the latest Git history with limited depth. Comparing the
+# deploying commit to its parent is sufficient here because every main commit
+# is evaluated independently and only current-commit web-affecting changes
+# should trigger a new production build.
 
 HEAD_SHA="${VERCEL_GIT_COMMIT_SHA:-HEAD}"
-PREVIOUS_SHA="${VERCEL_GIT_PREVIOUS_SHA:-}"
 
 if ! git rev-parse --verify "${HEAD_SHA}^{commit}" >/dev/null 2>&1; then
   echo "Unable to resolve the deployment commit; continuing the Vercel build."
   exit 1
 fi
 
-if [[ -n "${PREVIOUS_SHA}" ]]; then
-  if git rev-parse --verify "${PREVIOUS_SHA}^{commit}" >/dev/null 2>&1; then
-    BASE_SHA="${PREVIOUS_SHA}"
-  else
-    echo "Previous successful deployment commit is outside the shallow clone; continuing the Vercel build."
-    exit 1
-  fi
-elif git rev-parse --verify "${HEAD_SHA}^" >/dev/null 2>&1; then
+if git rev-parse --verify "${HEAD_SHA}^" >/dev/null 2>&1; then
   BASE_SHA="${HEAD_SHA}^"
 else
-  echo "No comparison commit is available; continuing the Vercel build."
+  echo "No parent commit is available; continuing the Vercel build."
   exit 1
 fi
 
