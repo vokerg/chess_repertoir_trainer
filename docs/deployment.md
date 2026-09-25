@@ -74,9 +74,15 @@ AUTH_MODE=clerk
 CLERK_JWT_ISSUER=https://<your-clerk-domain>
 CLERK_JWKS_URL=https://<your-clerk-domain>/.well-known/jwks.json
 CLERK_AUTHORIZED_PARTIES=<Vercel web origin>
+DATA_LIFECYCLE_IDENTITY_HMAC_KEY=<stable secret shared with the worker>
+DATA_LIFECYCLE_IDENTITY_HMAC_KEY_VERSION=1
+DATA_LIFECYCLE_AUDIT_HMAC_KEY=<independent stable secret shared with the worker>
+DATA_LIFECYCLE_AUDIT_HMAC_KEY_VERSION=1
 ```
 
 Add the provider and OAuth variables used by the enabled product features; `.env.example` is the source list. Stockfish and persistent-worker tuning belong on the worker service rather than the API service.
+
+Keep the lifecycle keys from the original deployment when changing databases or hosts. Deleted-identity tombstones contain HMAC hashes, not the secret; replacing the version 1 identity key cannot verify existing tombstones. Configure both lifecycle keys with the same values and versions on the API and worker, including any previous keys required by persisted records.
 
 Notes:
 
@@ -105,7 +111,7 @@ npm ci && npm run build:domain && npm run build:contracts && npm run build:api
 npm run start:worker --workspace=apps/api
 ```
 
-The worker needs the same `DATABASE_URL`, `DIRECT_URL`, and `NODE_ENV` values as the API. It does not need `PORT`, CORS, Clerk JWT verification, or browser-origin settings because it does not serve HTTP traffic.
+The worker needs the same `DATABASE_URL`, `DIRECT_URL`, `NODE_ENV`, and lifecycle HMAC keys as the API. It does not need `PORT`, CORS, Clerk JWT verification, or browser-origin settings because it does not serve HTTP traffic.
 
 The worker executes all four imported-game job kinds. Analysis and complete-processing jobs require Stockfish configuration in the worker environment:
 
