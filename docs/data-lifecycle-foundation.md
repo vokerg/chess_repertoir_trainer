@@ -90,6 +90,8 @@ HMAC configuration is versioned for rotation:
 
 The current key must be explicitly configured before previous keys are accepted. Previous-key versions must be strictly lower than the current version; they are verification-only and cannot silently become the signing key. For deleted identities, every persisted tombstone key version for a provider must remain present in the configured keyring while that tombstone is authoritative. Missing historical versions fail provisioning closed rather than silently recreating an identity that can no longer be verified.
 
+The API entry point loads `.env` before importing modules that construct the lifecycle keyrings. After a database migration, configure the original key for every persisted tombstone version; a replacement secret with the same version cannot verify existing tombstones.
+
 ## ONB-021 whole-user deletion consumer
 
 ONB-021 implements `DELETE_APP_USER` over USER scope. Preview is authenticated and non-fencing. Execute revalidates the preview under the lifecycle user lock, installs the USER fence, and returns an opaque receipt capability before background execution proceeds. A narrow read-only auth resolver is used only for retries of that exact deletion execute route, so an already-fenced or already-deleted identity can recover the same operation/receipt without updating or recreating `AppUser`. Ordinary authenticated routes continue to fail closed with a typed deletion-in-progress or deleted-identity response.
