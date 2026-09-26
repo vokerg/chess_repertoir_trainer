@@ -17,6 +17,8 @@ import {
 
 const DELETED_IDENTITY_LOCK_NAMESPACE = 17_000_260;
 
+class MissingDeletedIdentityKeyError extends Error {}
+
 interface TombstoneRow {
   operationId: number;
 }
@@ -72,7 +74,16 @@ export function createDeletedIdentityGuard(
     async assertCanProvision(transaction, provider, externalSubject) {
       validateIdentity(provider, externalSubject);
       await lockIdentity(transaction, provider, externalSubject);
-      const tombstone = await findTombstone(transaction, keyring, provider, externalSubject);
+      let tombstone: TombstoneRow | null;
+      try {
+        tombstone = await findTombstone(transaction, keyring, provider, externalSubject);
+      } catch (error) {
+        if (
+          error instanceof MissingDeletedIdentityKeyError
+          && await canResolveEstablishedIdentity(transaction, provider, externalSubject)
+        ) return;
+        throw error;
+      }
       if (tombstone) throw new DeletedIdentityBlockedError(tombstone.operationId);
     },
 
@@ -153,26 +164,61 @@ async function findTombstone(
     .map((row) => row.identityKeyVersion)
     .filter((version) => !keyring.hasVersion(version))
     .sort((left, right) => left - right);
+  const digests = keyring.candidates(identityValue(provider, externalSubject), 'deleted-identity');
+  if (digests.length > 0) {
+    const tombstone = await transaction.deletedAuthIdentityTombstone.findFirst({
+      where: {
+        provider,
+        OR: digests.map((digest) => ({
+          identityKeyVersion: digest.keyVersion,
+          identityKeyHash: digest.digest,
+        })),
+      },
+      orderBy: { id: 'desc' },
+      select: { operationId: true },
+    });
+    if (tombstone) return tombstone;
+  }
   if (missingVersions.length > 0) {
-    throw new Error(
+    throw new MissingDeletedIdentityKeyError(
       `Deleted identities exist for provider ${provider} with unconfigured HMAC key version(s): ${missingVersions.join(', ')}.`,
     );
   }
-  if (!keyring.configured) return null;
+  return null;
+}
 
-  const digests = keyring.candidates(identityValue(provider, externalSubject), 'deleted-identity');
-  if (digests.length === 0) return null;
-  return transaction.deletedAuthIdentityTombstone.findFirst({
-    where: {
-      provider,
-      OR: digests.map((digest) => ({
-        identityKeyVersion: digest.keyVersion,
-        identityKeyHash: digest.digest,
-      })),
-    },
-    orderBy: { id: 'desc' },
-    select: { operationId: true },
+async function canResolveEstablishedIdentity(
+  transaction: Prisma.TransactionClient,
+  provider: string,
+  externalSubject: string,
+): Promise<boolean> {
+  // The caller holds the same identity lock as final deletion. Deletion inserts
+  // its tombstone and removes AppUser atomically, so this never creates a user.
+  const existing = await transaction.appUser.findUnique({
+    where: { authProvider_authSubject: { authProvider: provider, authSubject: externalSubject } },
+    select: { id: true, createdAt: true },
   });
+  if (!existing) return false;
+
+  const oldestTombstone = await transaction.deletedAuthIdentityTombstone.findFirst({
+    where: { provider },
+    orderBy: { createdAt: 'asc' },
+    select: { createdAt: true },
+  });
+  // Only accounts established before any retained deletion qualify. A row
+  // created after a deletion could itself be an incorrectly reprovisioned identity.
+  if (!oldestTombstone || existing.createdAt >= oldestTombstone.createdAt) return false;
+
+  const deleted = await transaction.$queryRaw<TombstoneRow[]>(Prisma.sql`
+    SELECT tombstone."operationId"
+    FROM "DeletedAuthIdentityTombstone" AS tombstone
+    JOIN "DataLifecycleOperation" AS operation ON operation."id" = tombstone."operationId"
+    WHERE tombstone."provider" = ${provider}
+      AND operation."targetUserId" = ${existing.id}
+    LIMIT 1
+  `);
+  if (deleted[0]) throw new DeletedIdentityBlockedError(deleted[0].operationId);
+  return true;
 }
 
 async function findReceiptStatusByOperationId(
