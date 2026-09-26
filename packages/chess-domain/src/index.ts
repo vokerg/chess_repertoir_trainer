@@ -4,6 +4,7 @@ export * from './training-engine';
 export * from './training';
 export * from './pgn-export';
 export * from './position';
+export * from './position-binary';
 export * from './move-classification';
 export * from './move-sequence';
 export * from './repertoire-graph';

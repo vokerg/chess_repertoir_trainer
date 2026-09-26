@@ -6,6 +6,8 @@ Position analysis stores reusable engine results for a normalized chess position
 
 `Position` is the canonical position row. Its `normalizedFen` ignores halfmove and fullmove counters, and its unique `positionKey` dedupes equivalent positions.
 
+Nullable `Position.positionData` supports a [reversible 34-byte storage pilot](operations/position-data-pilot.md). It has no index or uniqueness constraint and is used only by the bounded maintenance script; application imports, analysis, lookups and cleanup retain their existing behavior.
+
 `PositionAnalysis` is one cached analysis row per position. It can be compact or rich:
 
 - Compact rows store scalar best move/eval only: `bestMoveUci`, `bestScoreCpWhite`, and `bestMateWhite`. Their database `lines` value is SQL `NULL`. Imported-game analysis uses compact depth 12, MultiPV 1, and one PV move for classification.
