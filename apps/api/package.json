@@ -25,6 +25,8 @@
     "db:rewrite-position-keys-128": "ts-node --transpile-only src/scripts/rewrite-position-keys-to-128-bit.ts",
     "predb:pilot-position-data": "npm --prefix ../.. run build:domain && prisma generate --schema prisma/schema.prisma",
     "db:pilot-position-data": "ts-node src/scripts/pilot-backfill-position-data.ts",
+    "predb:compare-position-codecs": "npm --prefix ../.. run build:domain",
+    "db:compare-position-codecs": "ts-node src/scripts/compare-position-codecs.ts",
     "predb:backfill-imported-ply-move-codes": "npm --prefix ../.. run build:domain",
     "db:backfill-imported-ply-move-codes": "ts-node src/scripts/backfill-imported-ply-move-codes.ts",
     "predb:restore-imported-ply-move-uci": "npm --prefix ../.. run build:domain",

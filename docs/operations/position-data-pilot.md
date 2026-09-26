@@ -59,3 +59,66 @@ Three stored samples, with exact equality between original and decoded FEN:
 | 1 | 34 | `1B1R4/p1P4p/1p4k1/6p1/8/2P1r3/PP6/6K1 b - -` | `1B1R4/p1P4p/1p4k1/6p1/8/2P1r3/PP6/6K1 b - -` |
 | 2 | 34 | `1B1R4/p1P4p/1p4k1/6p1/8/2P3r1/PP3K2/8 b - -` | `1B1R4/p1P4p/1p4k1/6p1/8/2P3r1/PP3K2/8 b - -` |
 | 3 | 34 | `1B1R4/p1P4p/1p4k1/6p1/8/2P3r1/PP6/6K1 w - -` | `1B1R4/p1P4p/1p4k1/6p1/8/2P3r1/PP6/6K1 w - -` |
+
+## Experimental compact codec
+
+`packages/chess-domain/src/position-binary-compact.ts` exports `encodeNormalizedFenCompact` and `decodeNormalizedFenCompact`. This is a second experimental codec, not a replacement for the fixed pilot format. The baseline file, API names and tests remain unchanged. No application lookup, database write, Prisma schema, migration, index, ply relation or dependency changed for this experiment.
+
+The compact payload is `10 + ceil(pieceCount / 2)` bytes:
+
+- Bytes 0..7: **little-endian** 64-bit occupancy bitmap. Square `a1=0, ..., h8=63` sets bit `square % 8` in byte `floor(square / 8)`, with the least significant bit first. No 64-bit arithmetic or platform-dependent byte order is needed.
+- Next `ceil(pieceCount / 2)` bytes: occupied squares strictly in ascending square order, using the baseline codes `1..12`. The first piece occupies the **low nibble**, the second the **high nibble**. Codes `0` and `13..15` are invalid. For an odd count, the unused high nibble must be zero.
+- Final two bytes: the unchanged baseline side/castling metadata and en-passant metadata. Bits 5..7 of side/castling must be zero; EP is zero or square index plus one and must also satisfy FEN rank/side rules.
+
+The experimental codec delegates canonical FEN validation and piece/metadata semantics to the unchanged fixed codec, packing and unpacking its bytes in memory. It rejects a length inconsistent with occupancy, bad codes, nonzero padding and invalid decoded FEN. It additionally rejects more than 32 occupied squares to guarantee the requested **26-byte maximum**. Normal chess positions cannot gain pieces through promotion; promotion replaces a pawn. Artificial FENs accepted by the baseline validator can exceed 32 pieces and are outside this experimental codec's supported range. Two kings use **11 bytes**; 24 pieces use **22 bytes**; the starting position uses **26 bytes**.
+
+## Read-only comparison
+
+```bash
+npm run db:compare-position-codecs --workspace=apps/api
+```
+
+The pre-script builds the domain package. The comparison accepts no arguments; `--all` is intentionally omitted. A PostgreSQL read-only transaction makes one bounded SELECT of `positionData IS NOT NULL`, ordered by `id ASC`, with `LIMIT 100`. It uses SQL window averages over precisely those selected rows for stored fixed payload lengths and FEN field storage. No data-changing or schema SQL is issued; `SET TRANSACTION READ ONLY` is the only transaction configuration statement.
+
+Each row's original FEN must equal both decoded encodings, its existing `positionData` must match the fixed codec byte for byte, and compact decode/re-encode must reproduce the compact bytes exactly. Any failure aborts with the ID, original and decoded FENs and a failure count. Size statistics, distributions and three samples are computed only from the bounded selection. Median is the central size or mean of the two central sizes; p90 uses nearest rank (`ceil(0.9 * rowCount)`). Empty selections return zero rows/failures and null size/projection estimates. The projection population is explicitly 771,646, and projected compact bytes are rounded to the nearest byte.
+
+The domain suite passed **191 tests across 16 files**. Compact tests cover known bytes, all occupancy bits and piece codes, counts 2..32 and the over-limit rejection, both nibbles, all castling/side/EP combinations, reserved bytes, malformed/truncated/extra payloads, odd padding and deterministic played-game round trips. `npm run build:api`, the database-free API comparison tests (`position-codec-comparison.test.mjs`), architecture/hygiene checks and whitespace checks passed. The comparison tests check the read-only SQL and bounded selection, statistics/percentiles/projections, empty/small samples, preserved input bytes, failure diagnostics and rejected CLI overrides. Existing database-mutating pilot tests were not rerun against Neon. Full repository build/test/lint and web/mobile validation were skipped for this experiment.
+
+### Real pilot-row comparison, 2026-09-26
+
+Exactly the same **100 pilot rows, IDs 1..100**, were inspected read-only with **zero failures**. All stored baseline payloads were still 34 bytes. Average FEN field storage remained 46.18 bytes.
+
+| Metric | Observed value |
+| --- | ---: |
+| Minimum compact bytes | 12 |
+| Average compact bytes | 17.78 |
+| Median compact bytes | 18 |
+| P90 compact bytes | 21 |
+| Maximum compact bytes | 23 |
+| Average piece count | 15.19 |
+| Average fixed payload bytes | 34 |
+| Average raw savings per position | 16.22 bytes (47.71%) |
+
+| Compact bytes | Positions |
+| ---: | ---: |
+| 12 | 6 |
+| 13 | 10 |
+| 15 | 10 |
+| 16 | 2 |
+| 17 | 8 |
+| 18 | 16 |
+| 19 | 15 |
+| 20 | 22 |
+| 21 | 1 |
+| 22 | 6 |
+| 23 | 4 |
+
+Unlisted sizes have zero observations. Extrapolating the observed mean to 771,646 positions yields **26,235,964 raw fixed bytes**, **13,719,866 projected raw compact bytes**, and **12,516,098 projected raw bytes saved** (about 12.52 decimal MB). These are application payload estimates, not measured PostgreSQL heap/index savings. Compact values were never stored in PostgreSQL.
+
+| id | Piece count | Fixed bytes | Compact bytes | normalizedFen = decoded compact FEN |
+| ---: | ---: | ---: | ---: | --- |
+| 1 | 13 | 34 | 17 | `1B1R4/p1P4p/1p4k1/6p1/8/2P1r3/PP6/6K1 b - -` |
+| 2 | 13 | 34 | 17 | `1B1R4/p1P4p/1p4k1/6p1/8/2P3r1/PP3K2/8 b - -` |
+| 3 | 13 | 34 | 17 | `1B1R4/p1P4p/1p4k1/6p1/8/2P3r1/PP6/6K1 w - -` |
+
+The improvement is material enough to justify evaluating this as the successor to the fixed pilot: even the 32-piece maximum saves 8 bytes (23.53%). However, the first 100 IDs average only 15.19 pieces and were not randomly sampled. Their 47.71% reduction cannot establish the complete table's average. A future adoption decision should validate broader data compatibility and actual PostgreSQL storage costs. This experiment stops at the read-only comparison; no compact backfill, migration, rollout or PR merge is authorized or implemented.
