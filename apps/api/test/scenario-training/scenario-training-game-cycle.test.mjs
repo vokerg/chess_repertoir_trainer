@@ -87,7 +87,7 @@ try {
         importedGameId: game.id,
         positionId: position.id,
         plyNumber: index + 1,
-        moveUci: moves[index], moveCode: encodeUciMove(moves[index]),
+         moveCode: encodeUciMove(moves[index]),
       },
     });
     chess.move({

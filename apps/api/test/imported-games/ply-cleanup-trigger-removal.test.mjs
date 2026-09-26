@@ -28,7 +28,7 @@ try {
       PRIMARY KEY ("importedGameId", "plyNumber")
     )
   `);
-  await database.importedGamePly.create({ data: { importedGameId: 1, plyNumber: 1, positionId: 1, moveUci: 'a7a8n' } });
+  await database.$executeRaw`INSERT INTO "ImportedGamePly" ("importedGameId", "plyNumber", "positionId", "moveUci") VALUES (1, 1, 1, 'a7a8n')`;
   await database.$executeRawUnsafe(`CREATE FUNCTION "${schema}".missing_candidate_reset() RETURNS trigger LANGUAGE plpgsql AS $$
     BEGIN DELETE FROM "${schema}"."PositionCleanupCandidate"; RETURN NULL; END; $$`);
   for (const [suffix, event] of [['insert', 'INSERT'], ['update', 'UPDATE']]) {
@@ -43,7 +43,7 @@ try {
     BEFORE INSERT OR UPDATE ON "${schema}"."ImportedGamePly" FOR EACH ROW
     EXECUTE FUNCTION "${schema}".test_write_guard()`);
   await assert.rejects(backfillImportedPlyMoveCodes(database, { log() {} }), /PositionCleanupCandidate.*does not exist/);
-  assert.equal((await database.importedGamePly.findFirst()).moveCode, null, 'failed update rolls back');
+  assert.equal((await database.$queryRaw`SELECT "moveCode" FROM "ImportedGamePly" WHERE "importedGameId" = 1 AND "plyNumber" = 1`)[0].moveCode, null, 'failed update rolls back');
 
   await applyRemoval();
   await applyRemoval();
@@ -55,9 +55,9 @@ try {
   `);
   assert.deepEqual(remaining.map((row) => row.name), ['ImportedGamePly_data_lifecycle_guard']);
   assert.deepEqual(await backfillImportedPlyMoveCodes(database, { log() {} }), { prevalidated: 1, updated: 1, validated: 1 });
-  assert.equal((await database.importedGamePly.findFirst()).moveCode, encodeUciMove('a7a8n'));
-  await database.importedGamePly.create({ data: { importedGameId: 1, plyNumber: 2, positionId: 1, moveUci: 'e2e4', moveCode: encodeUciMove('e2e4') } });
-  await assert.rejects(database.importedGamePly.create({ data: { importedGameId: -1, plyNumber: 1, positionId: 1, moveUci: 'e2e4' } }), /Existing write guard/);
+  assert.equal((await database.$queryRaw`SELECT "moveCode" FROM "ImportedGamePly" WHERE "importedGameId" = 1 AND "plyNumber" = 1`)[0].moveCode, encodeUciMove('a7a8n'));
+  await database.$executeRaw`INSERT INTO "ImportedGamePly" ("importedGameId", "plyNumber", "positionId", "moveUci", "moveCode") VALUES (1, 2, 1, 'e2e4', ${encodeUciMove('e2e4')})`;
+  await assert.rejects(database.$executeRaw`INSERT INTO "ImportedGamePly" ("importedGameId", "plyNumber", "positionId", "moveUci", "moveCode") VALUES (-1, 1, 1, 'e2e4', ${encodeUciMove('e2e4')})`, /Existing write guard/);
   const candidate = await database.$queryRaw(Prisma.sql`SELECT to_regclass(${`"${schema}"."PositionCleanupCandidate"`})::text AS name`);
   assert.equal(candidate[0].name, null, 'candidate table is never recreated');
   console.log('Cleanup trigger removal: resumable backfill and inserts work without candidate table; independent guard remains active.');

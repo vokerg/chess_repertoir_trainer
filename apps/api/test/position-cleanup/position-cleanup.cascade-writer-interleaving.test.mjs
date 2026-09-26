@@ -98,7 +98,7 @@ async function createAccountWithGame(user, label, plyNumber) {
       importedGameId: game.id,
       positionId: position.id,
       plyNumber,
-      moveUci: 'e2e4', moveCode: encodeUciMove('e2e4'),
+       moveCode: encodeUciMove('e2e4'),
     },
   });
   return { account, game, position };

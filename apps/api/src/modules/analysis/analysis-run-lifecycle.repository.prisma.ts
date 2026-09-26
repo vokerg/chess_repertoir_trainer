@@ -50,7 +50,7 @@ export async function getLatestGameAnalysisRunDeterministic(
   });
   return run ? { ...run, importedGame: {
     ...run.importedGame,
-    plies: run.importedGame.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })),
+    plies: run.importedGame.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) })),
   } } : null;
 }
 

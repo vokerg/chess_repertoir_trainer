@@ -1000,7 +1000,7 @@ async function recomputeTags(
   for (const game of games) {
     const tagCodes = calculateTagCodes({
       ...game,
-      plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })),
+      plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) })),
     });
     await transaction.importedGame.update({
       where: { id: game.id },

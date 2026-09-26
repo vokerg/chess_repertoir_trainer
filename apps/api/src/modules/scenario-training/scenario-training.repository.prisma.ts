@@ -197,7 +197,7 @@ export async function findGamePliesThrough(
       position: { select: { normalizedFen: true } },
     },
   });
-  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) }));
+  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) }));
 }
 
 export async function createScenarioTrainingSession(input: {

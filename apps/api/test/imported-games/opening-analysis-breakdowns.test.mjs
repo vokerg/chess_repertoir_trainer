@@ -63,7 +63,7 @@ try {
         importedGameId: game.id,
         positionId: position.id,
         plyNumber: 1,
-        moveUci: index === 3 ? 'd2d4' : 'e2e4', moveCode: encodeUciMove(index === 3 ? 'd2d4' : 'e2e4'),
+         moveCode: encodeUciMove(index === 3 ? 'd2d4' : 'e2e4'),
       },
     });
   }
@@ -132,13 +132,13 @@ try {
           importedGameId: resultLessGame.id,
           positionId: position.id,
           plyNumber: 1,
-          moveUci: 'e2e4', moveCode: encodeUciMove('e2e4'),
+           moveCode: encodeUciMove('e2e4'),
         },
         {
           importedGameId: resultLessGame.id,
           positionId: position.id,
           plyNumber: 3,
-          moveUci: 'd2d4', moveCode: encodeUciMove('d2d4'),
+           moveCode: encodeUciMove('d2d4'),
         },
       ],
     });
@@ -164,7 +164,7 @@ try {
         importedGameId: oldFamiliarityGame.id,
         positionId: position.id,
         plyNumber: 1,
-        moveUci: 'e2e4', moveCode: encodeUciMove('e2e4'),
+         moveCode: encodeUciMove('e2e4'),
       },
     });
 

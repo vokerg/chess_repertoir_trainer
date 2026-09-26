@@ -66,7 +66,7 @@ try {
       importedGameId: game.id,
       positionId: position.id,
       plyNumber: 1,
-      moveUci: 'e2e4', moveCode: encodeUciMove('e2e4'),
+       moveCode: encodeUciMove('e2e4'),
     },
   });
 

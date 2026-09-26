@@ -403,7 +403,7 @@ export async function findImportedGamesForOpeningStruggles(
       },
     },
   });
-  return rows.map((game) => ({ ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })) }));
+  return rows.map((game) => ({ ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) })) }));
 }
 
 export async function findImportedGameById(userId: number, id: number) {
@@ -411,7 +411,7 @@ export async function findImportedGameById(userId: number, id: number) {
     where: { id, userId },
     select: importedGameDetailSelect,
   });
-  return game ? { ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })) } : null;
+  return game ? { ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) })) } : null;
 }
 
 export async function getImportedGamePgn(userId: number, id: number) {

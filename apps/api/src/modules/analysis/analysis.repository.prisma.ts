@@ -59,7 +59,7 @@ function decodeCompactRun(run: StoredCompactRun) {
     ...run,
     importedGame: {
       ...run.importedGame,
-      plies: run.importedGame.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })),
+      plies: run.importedGame.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) })),
     },
   };
 }
@@ -683,7 +683,7 @@ export async function getImportedGamePliesForAnalysisSummary(userId: number, gam
       },
     },
   });
-  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) }));
+  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) }));
 }
 
 export async function getImportedGamePliesForBatchAnalysis(userId: number, gameId: number) {
@@ -718,5 +718,5 @@ export async function getImportedGamePliesForBatchAnalysis(userId: number, gameI
       },
     },
   });
-  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) }));
+  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) }));
 }

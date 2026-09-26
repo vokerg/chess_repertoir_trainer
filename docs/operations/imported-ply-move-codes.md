@@ -1,58 +1,61 @@
-# Imported-game ply move-code rollout
+# Compact imported ply moves: rollout and recovery
 
-This is a staged storage migration for `ImportedGamePly` only. The current transition schema retains required `moveUci varchar(5)` and its composite index, adds nullable `moveCode smallint`, and adds the equivalent `(positionId, moveCode, importedGameId, plyNumber)` index for cutover. The application writes both columns and reads only the code, decoding it at repository boundaries. Services, HTTP/MCP contracts, Angular, and Expo continue to use UCI strings. Storage savings are realized after the separately gated contract phase; this release does not drop the legacy column or index.
+`ImportedGamePly` stores only required `moveCode SMALLINT` values after the contract migration. The application and HTTP contracts still expose coordinate UCI strings. The stateless `chess-domain` codec maps source/destination squares and the exact promotion suffix to a reversible integer; no dictionary or board state is needed. Course move nodes and tactical detection records retain their original UCI storage.
 
-## Codec
+## Verification before contracting
 
-`packages/chess-domain/src/uci-move-code.ts` is the only codec. Squares use `a1 = 0` through `h8 = 63`; bits 0–5 store the source, 6–11 the destination, and 12–14 the promotion (`0` none, `1` knight, `2` bishop, `3` rook, `4` queen). The result is a nonnegative PostgreSQL `SMALLINT`. Encoding and decoding reject invalid values instead of normalizing them. The codec validates coordinate syntax, distinct squares, and a lowercase `n/b/r/q` suffix; board-dependent legality is outside its scope. It does not support null moves (`0000`) or dictionary IDs. Every accepted string round-trips exactly.
+The historical expansion migrations keep `moveUci VARCHAR(5)`, add nullable `moveCode`, and add the equivalent `[positionId, moveCode, importedGameId, plyNumber]` index. The transition application dual-writes and reads codes. Do not edit those historical migrations.
 
-The exhaustive domain tests cover all 20,160 supported combinations, every 15-bit code, malformed strings, castling coordinates, en-passant coordinates, promotions, and numeric values outside the supported range.
+Before applying the contract to another existing database:
 
-## Expand, backfill, and cutover
-
-Use a maintenance window for the backfill and application cutover. Before applying anything, take the usual database backup and verify **both** `DATABASE_URL` (runtime and scripts) and `DIRECT_URL` (Prisma migrations) identify the intended database. Overriding only `DATABASE_URL` does not redirect migrations if `DIRECT_URL` still points elsewhere. For an isolated test database, set both URLs explicitly. Never print credentials into rollout logs.
-
-1. Keep the existing application release running while applying the additive expand migration `20260926120000_expand_imported_ply_move_code`. Existing rows and writers remain compatible. The second migration `20260926121000_index_imported_ply_move_code` supports the code-based cutover without removing the old index. It builds the same index shape concurrently and may safely be prepared before switching application readers. The standard `npm run db:migrate --workspace=apps/api` applies both pending migrations. Do not include a contract migration in this release.
-2. Build the new release with `npm run build:api`. Do not start its API or workers against unbackfilled data: readers deliberately reject missing/invalid codes, with no legacy fallback.
-3. Stop/drain all API and worker processes that can insert, delete, reindex, or modify plies, including scripts and external database writers. Pause scheduled imports and maintenance work. A validated scan is evidence only while that data stays stable; the script does not hold a table lock across the entire rollout.
-4. Run the one-off backfill against that database:
+1. Back up the database using the normal deployment procedure. Stop/drain **all** API and worker ply writers. A hosted API can initiate writes even without a deployed worker.
+2. Apply the expansion and cleanup-trigger-removal migrations using the intended direct database URL. Do not deploy the contract migration yet; it must follow the validated backfill.
+3. Build the domain package and run:
 
    ```bash
    npm run db:backfill-imported-ply-move-codes --workspace=apps/api
-   ```
-
-   Before writing, it scans every row in deterministic composite-primary-key batches and calls `encodeUciMove()` for each legacy string. Any unsupported value aborts before writes with `importedGameId`, `plyNumber`, `moveUci`, and `moveCode`. Investigate the identified row; do not silently truncate, lowercase, drop a suffix, or substitute a move.
-
-   The update pass selects only null codes in batches of 1,000 and issues one parameterized `UPDATE ... FROM (VALUES ...)` per batch. Updates are guarded by both identifying keys, the observed legacy string, and `moveCode IS NULL`; existing codes are never overwritten. Completed batches remain committed if a later batch fails. Restarting repeats prevalidation and resumes the remaining null rows. Memory and query payloads remain bounded; no per-row update loop or SQL copy of the bit encoding is used.
-
-   The final pass scans **all** rows, checks `decodeUciMove(moveCode) === moveUci`, and confirms the database count of null codes is zero. A mismatch or invalid code fails immediately with identifying keys and both stored values. Save the completion log with prevalidated, updated, and validated counts. Exit status zero with the final 100% equality message is required; merely finishing updates is insufficient.
-5. Run the read-only verification again while writers remain stopped:
-
-   ```bash
    npm run db:backfill-imported-ply-move-codes --workspace=apps/api -- --validate-only
    ```
 
-6. Switch **all** API and worker instances to the new application release, then resume work. Newly indexed games persist both UCI and encoded moves during transition. Verify imported-game detail/tagging, opening next-move counts, opening struggles, position/game analysis, coverage, course extensions, and tactical scenarios. Queries group/distinct on codes internally and decode to strings; repositories restore lexical UCI order where numeric order differs. Tactical detection keeps numeric evaluation filtering in SQL, then compares decoded moves with engine UCI from the same query snapshot and applies the existing missed-shot precedence within batches of at most 100 games. `MoveNode.moveUci`, `TacticalDetection.moveUci`, positions, and public contracts remain unchanged.
+   The script prevalidates every original string before writes, resumes only null codes in deterministic primary-key batches of 1,000, and performs one parameterized update per batch. Its final pass checks every row with `decodeUciMove(moveCode) === moveUci` and requires zero null codes. Unsupported values, missing/invalid codes, and mismatches abort with identifying keys. Completed batches remain committed; failed statements roll back. Preserve the successful count/equality log. The script uses raw SQL so the contracted Prisma client can still operate on a historical expanded schema.
+4. Require the codec tests and relevant full build/test/lint/architecture/hygiene checks to pass. Prepare the code-only API/worker release; stop the old release before applying DDL and start the new release afterward.
+5. Apply `20260926143000_contract_imported_ply_move_code`. In one transaction it locks the ply table, rejects null codes by making `moveCode` required, creates the equivalent code index if missing, drops only the legacy move index, and drops `moveUci`. It copies no encoding logic into SQL. Verify schema/index validity, start the new release, and check indexing, imported-game detail/tagging, opening aggregation, coverage, course extensions, and analysis.
 
-The concurrent index migration must run outside a transaction. An interrupted PostgreSQL concurrent build can leave an invalid index. Inspect `pg_index.indisvalid` for the **new** index; if invalid, drop that invalid new index concurrently, mark the failed Prisma migration rolled back using the normal migration-recovery procedure, and rerun it. Retain the legacy index throughout. Do not redesign either index in this rollout.
+A fresh empty database can apply the complete migration chain normally. For a populated expanded database, deployment tooling must not automatically apply the contract ahead of its backfill. Render's standard build command runs migrations before starting the new API, so drain the old API during this coordinated rollout. The transition release's dual-writer cannot write after the legacy column is dropped; the new code-only writer cannot insert into the old schema while its legacy column remains required.
 
-### Removed orphan-cleanup triggers
+## Storage limits and vacuum
 
-`20260926130000_remove_ply_position_cleanup_triggers` removes the earlier orphan-position cleanup INSERT/UPDATE triggers from `ImportedGamePly`. Those triggers referenced `PositionCleanupCandidate` on ordinary writes, including move-code backfill. The candidate table is not needed for compact move storage and is not recreated by this migration. The independent data-lifecycle guard remains. Once this migration is applied, rerun the resumable backfill normally; a failed update statement was rolled back by PostgreSQL.
+Check the project's storage limit and current database/index sizes **before** expansion. Keeping both columns/indexes and updating rows temporarily needs additional storage. PostgreSQL updates leave old tuple/index versions until vacuum can reclaim them.
 
-The optional orphan-position cleanup workflow no longer has its writer-side candidate-reset/advisory-lock fence. Keep it disabled (the default) until its observation/grace and concurrency guarantees are redesigned for this boundary. A transient ply reference no longer restarts a candidate’s grace clock; regression tests record this limitation. Existing historical cleanup migration files describe the former trigger behavior and remain immutable.
+If the new code index was created early and the backfill hits the storage cap, it can be temporarily dropped concurrently while retaining the original UCI column/index. The contract recreates the exact same code-index shape after validation. This is a rollout space workaround, not an index redesign. An interrupted concurrent build can leave an invalid code index; inspect `pg_index.indisvalid` and drop only that invalid new index concurrently before contract, since `IF NOT EXISTS` does not repair it. PostgreSQL truncates the long requested code-index identifier to `ImportedGamePly_positionId_moveCode_importedGameId_plyNumber_id`; use the actual catalog name when operating on it.
 
-## Contract gate (not included in this release)
+Run ordinary `VACUUM (ANALYZE)` after a large backfill. It makes dead space reusable but usually does not reduce physical file size. Dropping a column also does not rewrite existing tuples. If physical compaction is needed, `VACUUM FULL` rewrites the table, requires an exclusive lock and temporary space for the replacement heap/indexes, and must be scheduled with writers stopped. Under a tight cap, temporarily omit the code index during ply-table compaction and rebuild it afterward. Retain the primary key and verify the restored index before resuming traffic. Do not delete live data to make the rollout fit.
 
-Create a **separate reviewed release/PR** only after retaining evidence that:
+The large `ImportedGamePosition` table is the current Prisma `Position` model (`@@map`), referenced by plies, analysis, and caches. It is not an obsolete duplicate. Remove other tables only after proving they are retired through runtime references, foreign keys, and deployment consumers; an empty table or disabled optional workflow is insufficient evidence.
 
-- Domain codec tests and the full relevant build/test/lint/architecture/hygiene checks pass.
-- Backfill verification on the actual target database proves zero nulls and exact round-trip equality for 100% of rows.
-- All deployed readers use codes, all writers are compatible with the next schema, and API/domain representations still expose UCI strings.
-- Application cutover and the new composite index have been verified.
+## Exact UCI restoration
 
-Stop/drain writers again and repeat `--validate-only` immediately before contracting. Remove the transitional legacy write from `replacePlyRowsForGame` and update persistence fixtures, then change the Prisma model to `moveCode Int @db.SmallInt`, remove `moveUci` and its index, and retain the existing code-based index. Generate the destructive migration only at that point. Its DDL must make `moveCode` non-null, drop **only** the legacy composite index, and drop `ImportedGamePly.moveUci`. The DDL should be transactional and reject null codes before dropping anything. Round-trip verification belongs to the canonical TypeScript codec; do not implement a second SQL codec in a migration.
+Once every code is valid, **the original UCI string can always be recovered exactly** with `decodeUciMove()`, including every promotion piece. The old column is not needed as a permanent recovery copy.
 
-The dual-writing transition application cannot run after the column drop. Stop it, verify stable data, apply the contract migration, and start the code-only writer release. Preserve the verification log and the previous-column backup alongside the deployment record. Local fixture validation cannot substitute for evidence about existing production rows.
+To recreate the legacy column for a rollback or inspection:
 
-Before contraction, rollback to the old application is possible because the legacy column/index remain and new writers maintain them. Such a rollback can create null codes; repeat the backfill and full verification before attempting cutover again. After contraction, the old application requires a reviewed reverse expansion/backfill or restoration from backup; do not attempt an automatic rollback that assumes the dropped column exists.
+1. Stop all ply writers and ensure storage headroom for the restored strings and any legacy index. An export or application-level decode does not require recreating database storage.
+2. From the contracted release run:
+
+   ```bash
+   npm run db:restore-imported-ply-move-uci --workspace=apps/api
+   ```
+
+   The script validates every code before any mutation, adds nullable `moveUci VARCHAR(5)` if absent, and restores missing strings in deterministic batches using only `decodeUciMove()`. It never overwrites an existing string. Restarting resumes null strings. It verifies every restored string against its code, fails with identifying keys on mismatch, and makes the restored column required only after successful validation. The codes and primary keys stay unchanged. Tests cover multi-batch restoration, interrupted runs, all promotions, invalid codes, and conflicting existing strings.
+3. If rolling back to the previous dual-writing release, recreate its legacy composite index when needed and deploy that release before resuming writers. Do not start the current code-only writer while the restored UCI column is required. A release predating `moveCode` also requires a reviewed nullable-code rollback; it cannot satisfy the required compact column on new writes.
+4. Reconcile Prisma schema/migration state as a deliberate rollback operation; restoration does not silently mark the contract migration unapplied. To return to compact storage, pause writers, rerun the historical script with `--validate-only`, repeat the reviewed contract DDL, and start the code-only release.
+
+## Removed orphan-cleanup triggers
+
+`20260926130000_remove_ply_position_cleanup_triggers` removes the orphan-position cleanup INSERT/UPDATE triggers from `ImportedGamePly`. They referenced `PositionCleanupCandidate` on ordinary writes, including backfill. The candidate table is not needed for move encoding and is not recreated. The independent data-lifecycle guard remains.
+
+Keep optional orphan cleanup disabled (the default) until its observation/grace and concurrency guarantees are redesigned without the writer-side candidate reset/advisory fence. A transient ply reference no longer restarts the candidate grace clock; regression tests record this limitation. Historical cleanup migrations remain immutable.
+
+## Target-database validation record
+
+On 2026-09-26, the configured Neon database contained 882,113 plies. After temporarily dropping the new code index to free approximately 62 MB, the resumable run filled the remaining 156,113 codes and validated **all 882,113 rows with zero nulls and 100% exact UCI equality**. The database was approximately 435 MB before database-wide vacuum. This record verifies the backfill; schema/deployment completion must be recorded separately.

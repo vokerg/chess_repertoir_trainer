@@ -81,7 +81,7 @@ try {
     data: { positionKey: Buffer.from(randomUUID().replaceAll('-', ''), 'hex'), normalizedFen: `summary-${suffix}` },
   });
   await prisma.importedGamePly.create({
-    data: { importedGameId: games[0].id, positionId: position.id, plyNumber: 1, moveUci: 'e2e4', moveCode: encodeUciMove('e2e4'), classificationCode: 6 },
+    data: { importedGameId: games[0].id, positionId: position.id, plyNumber: 1,  moveCode: encodeUciMove('e2e4'), classificationCode: 6 },
   });
 
   assert.deepEqual(await summarize(), {

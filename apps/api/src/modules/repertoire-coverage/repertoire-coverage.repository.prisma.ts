@@ -117,5 +117,5 @@ export async function getCourseReviewPlies(importedGameIds: number[]) {
       position: { select: { normalizedFen: true } },
     },
   });
-  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) }));
+  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) }));
 }

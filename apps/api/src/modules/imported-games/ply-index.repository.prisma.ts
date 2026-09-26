@@ -128,7 +128,6 @@ export async function replacePlyRowsForGame(importedGameId: number, rows: Import
             importedGameId: row.importedGameId,
             plyNumber: row.plyNumber,
             positionId,
-            moveUci: row.moveUci,
             moveCode: encodeUciMove(row.moveUci),
           };
         }),

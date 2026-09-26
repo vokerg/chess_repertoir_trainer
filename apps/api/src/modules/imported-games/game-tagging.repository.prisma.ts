@@ -73,7 +73,7 @@ export async function getImportedGameForTagging(userId: number, gameId: number):
     where: { id: gameId, userId },
     select: importedGameForTaggingSelect,
   });
-  return game ? { ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })) } : null;
+  return game ? { ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) })) } : null;
 }
 
 export async function updateImportedGameTagCodes(importedGameId: number, tagCodes: number[]) {

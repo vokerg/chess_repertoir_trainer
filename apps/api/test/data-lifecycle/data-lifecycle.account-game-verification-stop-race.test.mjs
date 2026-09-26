@@ -81,7 +81,7 @@ try {
       importedGameId: game.id,
       positionId,
       plyNumber: 1,
-      moveUci: 'e2e4', moveCode: encodeUciMove('e2e4'),
+       moveCode: encodeUciMove('e2e4'),
       scoreLossCp: 50,
       classificationCode: 3,
     },

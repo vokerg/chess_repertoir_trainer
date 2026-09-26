@@ -40,13 +40,13 @@ try {
   const indexes = await database.$queryRaw(Prisma.sql`SELECT indexname FROM pg_indexes WHERE schemaname = ${schema}`);
   assert.ok(indexes.some((row) => row.indexname.includes('positionId_moveUci')), 'expand preserves legacy index');
 
-  await database.importedGamePly.update({ where: { importedGameId_plyNumber: { importedGameId: 2, plyNumber: 1007 } }, data: { moveUci: 'bad' } });
+  await database.$executeRaw`UPDATE "ImportedGamePly" SET "moveUci" = 'bad' WHERE "importedGameId" = 2 AND "plyNumber" = 1007`;
   await assert.rejects(backfillImportedPlyMoveCodes(database, options), /Pre-backfill.*importedGameId=2 plyNumber=1007 moveUci="bad" moveCode=null/);
-  assert.equal(await database.importedGamePly.count({ where: { moveCode: { not: null } } }), 0, 'prevalidation aborts before any writes, even for bad data in the last batch');
-  await database.importedGamePly.update({ where: { importedGameId_plyNumber: { importedGameId: 2, plyNumber: 1007 } }, data: { moveUci: moves[2106 % moves.length] } });
+  assert.equal(await database.$queryRaw`SELECT COUNT(*)::integer AS count FROM "ImportedGamePly" WHERE "moveCode" IS NOT NULL`.then(rows => rows[0].count), 0, 'prevalidation aborts before any writes, even for bad data in the last batch');
+  await database.$executeRaw`UPDATE "ImportedGamePly" SET "moveUci" = ${moves[2106 % moves.length]} WHERE "importedGameId" = 2 AND "plyNumber" = 1007`;
 
   // Simulate one committed batch from an interrupted earlier run.
-  const first = await database.importedGamePly.findMany({ orderBy: [{ importedGameId: 'asc' }, { plyNumber: 'asc' }], take: 1000 });
+  const first = await database.$queryRaw`SELECT * FROM "ImportedGamePly" ORDER BY "importedGameId", "plyNumber" LIMIT 1000`;
   await database.$executeRaw(Prisma.sql`
     UPDATE ${table} AS ply SET "moveCode" = input.code
     FROM (VALUES ${Prisma.join(first.map((row) => Prisma.sql`(${row.importedGameId}, ${row.plyNumber}, ${encodeUciMove(row.moveUci)})`))}) AS input(game, ply, code)
@@ -55,17 +55,17 @@ try {
   assert.deepEqual(await backfillImportedPlyMoveCodes(database, options), { prevalidated: 2107, updated: 1107, validated: 2107 });
   assert.deepEqual(await backfillImportedPlyMoveCodes(database, options), { prevalidated: 2107, updated: 0, validated: 2107 });
   assert.deepEqual(await backfillImportedPlyMoveCodes(database, { ...options, validateOnly: true }), { prevalidated: 2107, updated: 0, validated: 2107 });
-  assert.equal(await database.importedGamePly.count({ where: { moveCode: null } }), 0);
-  for (const row of await database.importedGamePly.findMany()) assert.equal(decodeUciMove(row.moveCode), row.moveUci);
+  assert.equal(await database.$queryRaw`SELECT COUNT(*)::integer AS count FROM "ImportedGamePly" WHERE "moveCode" IS NULL`.then(rows => rows[0].count), 0);
+  for (const row of await database.$queryRaw`SELECT * FROM "ImportedGamePly"`) assert.equal(decodeUciMove(row.moveCode), row.moveUci);
   assert.ok(messages.some((message) => message.includes('100% exact UCI equality')));
 
-  const key = { importedGameId_plyNumber: { importedGameId: 1, plyNumber: 1 } };
-  await database.importedGamePly.update({ where: key, data: { moveCode: encodeUciMove('e7e8q') } });
+
+  await database.$executeRaw`UPDATE "ImportedGamePly" SET "moveCode" = ${encodeUciMove('e7e8q')} WHERE "importedGameId" = 1 AND "plyNumber" = 1`;
   await assert.rejects(backfillImportedPlyMoveCodes(database, options), /Post-backfill.*importedGameId=1 plyNumber=1 moveUci="e2e4" moveCode=20276/);
-  assert.equal((await database.importedGamePly.findUnique({ where: key })).moveCode, 20276, 'existing codes are never overwritten');
-  await database.importedGamePly.update({ where: key, data: { moveCode: 32767 } });
+  assert.equal((await database.$queryRaw`SELECT "moveCode" FROM "ImportedGamePly" WHERE "importedGameId" = 1 AND "plyNumber" = 1`)[0].moveCode, 20276, 'existing codes are never overwritten');
+  await database.$executeRaw`UPDATE "ImportedGamePly" SET "moveCode" = 32767 WHERE "importedGameId" = 1 AND "plyNumber" = 1`;
   await assert.rejects(backfillImportedPlyMoveCodes(database, { ...options, validateOnly: true }), /Post-backfill.*moveCode=32767/);
-  await database.importedGamePly.update({ where: key, data: { moveCode: null } });
+  await database.$executeRaw`UPDATE "ImportedGamePly" SET "moveCode" = NULL WHERE "importedGameId" = 1 AND "plyNumber" = 1`;
   await assert.rejects(backfillImportedPlyMoveCodes(database, { ...options, validateOnly: true }), /Post-backfill.*moveCode=null/);
   console.log('Expand migration and resumable batched move-code backfill tests passed (2107 rows).');
 } finally {
