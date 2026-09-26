@@ -199,7 +199,7 @@ export function normalizeChessComGame(
   return {
     providerGameId: getProviderGameId(game),
     providerUrl: game.url ?? getPgnHeader(game.pgn, 'Link') ?? getPgnHeader(game.pgn, 'Site'),
-    pgn: game.pgn ?? null,
+    pgn: game.pgn == null ? null : removeChessComClockComments(game.pgn),
     rated: game.rated ?? null,
     variant: normalizeImportedGameVariant(game.rules ?? getPgnHeader(game.pgn, 'Variant')),
     speedCategory: game.time_class ?? null,
@@ -220,6 +220,13 @@ export function normalizeChessComGame(
     openingName: getPgnHeader(game.pgn, 'Opening'),
     openingEco: getPgnHeader(game.pgn, 'ECO'),
   };
+}
+
+function removeChessComClockComments(pgn: string): string {
+  // Consume whole comments and quoted values so embedded clock text is preserved.
+  return pgn.replace(/"(?:\\.|[^"\\])*"|;[^\r\n]*|\{[^}]*\}/g, (token) =>
+    /^\{\s*\[%clk\s+[^\]{}]+\]\s*\}$/.test(token) ? ' ' : token,
+  );
 }
 
 export function chessComGameMatchesImportScope(

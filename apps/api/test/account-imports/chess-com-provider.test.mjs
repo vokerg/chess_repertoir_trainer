@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { Chess } from 'chess.js';
 import {
   ChessComRateLimitError,
   buildChessComMonthlyArchiveUrl,
@@ -12,6 +13,8 @@ import {
 
 plannerUsesExactIntersectingMonths();
 normalizationAndScopeUseHalfOpenEpochBoundaries();
+normalizationRemovesOnlyStandaloneClockComments();
+normalizationPreservesPgnWithoutClockComments();
 archiveMonthParsingIsStrict();
 await cacheValidatorsReuseOnlyCachedBodies();
 await retryBackoffIsBounded();
@@ -79,6 +82,37 @@ function normalizationAndScopeUseHalfOpenEpochBoundaries() {
 
   const nonStandard = normalizeChessComGame({ ...gameAt('2026-02-20T00:00:00Z'), rules: 'chess960' }, account);
   assert.equal(chessComGameMatchesImportScope(nonStandard, scope, from, to), false);
+}
+
+function normalizationRemovesOnlyStandaloneClockComments() {
+  const account = { id: 7, userId: 3, provider: 'CHESS_COM', username: 'Alice' };
+  const game = gameAt('2026-02-20T00:00:00Z');
+  const headers = `${game.pgn}\n[Event "Clock example {[%clk 0:01:00]}"]\n`;
+  const movetext = '\n1. e4{[%clk 0:05:00]}e5 { [%clk 0:04:59.5] } '
+    + '2. Nf3 $1 {Develop a knight} (2. Bc4 {Other choice}) Nc6 '
+    + '{[%eval 0.2]} 3. Bb5 { [%clk 0:04:58] } a6 1-0';
+  const expectedMovetext = '\n1. e4 e5   '
+    + '2. Nf3 $1 {Develop a knight} (2. Bc4 {Other choice}) Nc6 '
+    + '{[%eval 0.2]} 3. Bb5   a6 1-0';
+  const normalized = normalizeChessComGame({ ...game, pgn: headers + movetext }, account);
+  assert.equal(normalized.pgn, headers + expectedMovetext);
+  const { pgn: _pgn, ...otherFields } = normalized;
+  const { pgn: _baselinePgn, ...baselineFields } = normalizeChessComGame(game, account);
+  assert.deepEqual(otherFields, baselineFields, 'only stored PGN changes');
+  const chess = new Chess();
+  chess.loadPgn(normalized.pgn);
+  assert.deepEqual(chess.history(), ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5', 'a6']);
+}
+
+function normalizationPreservesPgnWithoutClockComments() {
+  const account = { id: 7, userId: 3, provider: 'CHESS_COM', username: 'Alice' };
+  const game = gameAt('2026-02-20T00:00:00Z');
+  for (const pgn of [undefined, null, '', game.pgn,
+    `${game.pgn}\n\n1. e4 {A note [%clk 0:05:00]} e5 {[%clk 0:04:59] keep this note} `
+      + '2. Nf3 $1 {[%eval 0.2]} (2. Bc4) Nc6 ; Keep {[%clk 0:04:58]}\n1-0',
+  ]) {
+    assert.equal(normalizeChessComGame({ ...game, pgn }, account).pgn, pgn ?? null);
+  }
 }
 
 function archiveMonthParsingIsStrict() {

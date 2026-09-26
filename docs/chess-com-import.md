@@ -44,7 +44,7 @@ Both the durable adapter and the transitional synchronous service use one shared
 
 - `providerGameId`: `uuid` when present, otherwise game URL or PGN site/link fallback;
 - `providerUrl`: Chess.com game URL or PGN link/site fallback;
-- `pgn`: game PGN from the monthly archive payload;
+- `pgn`: game PGN from the monthly archive payload with only standalone `{[%clk ...]}` clock comments removed before storage; headers, ordinary comments, NAGs, variations, and other annotations are preserved. Existing stored PGNs are not rewritten, and Lichess handling is unchanged;
 - `rated`: `rated`;
 - `variant`: `rules` or PGN `Variant`;
 - `speedCategory`: `time_class`;
