@@ -1,3 +1,4 @@
+import { decodeUciMove } from 'chess-domain';
 import { Prisma } from '@prisma/client';
 import prisma from '../../../prisma';
 import { TacticalDetectionKind, TacticalDetectionListQuery } from './tactical-detection.schema';
@@ -5,6 +6,7 @@ import { TacticalDetectionThresholds } from './tactical-detection.constants';
 import { isTrainableUserBlunder } from './tactical-detection-policy';
 
 type Db = Prisma.TransactionClient;
+const CANDIDATE_GAME_BATCH_SIZE = 100;
 
 export interface TacticalDetectionCandidate {
   importedGameId: number;
@@ -135,8 +137,18 @@ export async function findTacticalDetectionCandidatesForGames(
   thresholds: TacticalDetectionThresholds,
 ): Promise<TacticalDetectionCandidate[]> {
   if (!gameIds.length) return [];
+  if (gameIds.length > CANDIDATE_GAME_BATCH_SIZE) {
+    const uniqueGameIds = Array.from(new Set(gameIds));
+    const candidates: TacticalDetectionCandidate[] = [];
+    for (let offset = 0; offset < uniqueGameIds.length; offset += CANDIDATE_GAME_BATCH_SIZE) {
+      candidates.push(...await findTacticalDetectionCandidatesForGames(
+        db, userId, uniqueGameIds.slice(offset, offset + CANDIDATE_GAME_BATCH_SIZE), thresholds,
+      ));
+    }
+    return candidates;
+  }
 
-  const candidates = await db.$queryRaw<TacticalDetectionCandidate[]>`
+  const candidates = await db.$queryRaw<Array<Omit<TacticalDetectionCandidate, 'moveUci'> & { moveCode: number }>>`
     WITH candidate_games AS (
       SELECT id, "userColor"
       FROM "ImportedGame"
@@ -148,11 +160,11 @@ export async function findTacticalDetectionCandidatesForGames(
       SELECT
         p."importedGameId",
         p."plyNumber",
-        p."moveUci",
+        p."moveCode",
         p."positionId",
         g."userColor",
         LEAD(p."plyNumber", 1) OVER game_order AS "nextPlyNumber",
-        LEAD(p."moveUci", 1) OVER game_order AS "nextMoveUci",
+        LEAD(p."moveCode", 1) OVER game_order AS "nextMoveCode",
         LEAD(p."positionId", 1) OVER game_order AS "nextPositionId",
         LEAD(p."positionId", 2) OVER game_order AS "secondNextPositionId"
       FROM "ImportedGamePly" p
@@ -205,7 +217,7 @@ export async function findTacticalDetectionCandidatesForGames(
         'MISSED_SHOT'::text AS kind,
         "plyNumber" AS "triggerPlyNumber",
         "nextPlyNumber" AS "userReplyPlyNumber",
-        "nextMoveUci" AS "moveUci",
+        "nextMoveCode" AS "moveCode",
         "afterTriggerBestMoveUci" AS "bestMoveUci",
         "beforeUserEval" AS "evalBeforeUserCp",
         "afterTriggerUserEval" AS "evalAfterTriggerUserCp",
@@ -220,7 +232,6 @@ export async function findTacticalDetectionCandidatesForGames(
         AND "afterTriggerUserEval" IS NOT NULL
         AND "afterReplyUserEval" IS NOT NULL
         AND "afterTriggerBestMoveUci" IS NOT NULL
-        AND LOWER("nextMoveUci") <> LOWER("afterTriggerBestMoveUci")
         AND NOT (
           "beforeUserEval" >= ${thresholds.decisiveEvalCp}
           AND "afterTriggerUserEval" >= ${thresholds.decisiveEvalCp}
@@ -243,7 +254,7 @@ export async function findTacticalDetectionCandidatesForGames(
         'PUNISHED_OPPONENT_BLUNDER'::text AS kind,
         "plyNumber" AS "triggerPlyNumber",
         "nextPlyNumber" AS "userReplyPlyNumber",
-        "nextMoveUci" AS "moveUci",
+        "nextMoveCode" AS "moveCode",
         "afterTriggerBestMoveUci" AS "bestMoveUci",
         "beforeUserEval" AS "evalBeforeUserCp",
         "afterTriggerUserEval" AS "evalAfterTriggerUserCp",
@@ -277,7 +288,7 @@ export async function findTacticalDetectionCandidatesForGames(
         'USER_BLUNDER'::text AS kind,
         e."plyNumber" AS "triggerPlyNumber",
         NULL::smallint AS "userReplyPlyNumber",
-        e."moveUci",
+        e."moveCode",
         e."beforeBestMoveUci" AS "bestMoveUci",
         e."beforeUserEval" AS "evalBeforeUserCp",
         e."afterTriggerUserEval" AS "evalAfterTriggerUserCp",
@@ -297,19 +308,13 @@ export async function findTacticalDetectionCandidatesForGames(
           AND e."afterTriggerUserEval" <= -${thresholds.decisiveEvalCp}
         )
         AND (e."beforeUserEval" - e."afterTriggerUserEval") >= ${thresholds.userBlunderDropMinCp}
-        AND NOT EXISTS (
-          SELECT 1
-          FROM missed_shots m
-          WHERE m."importedGameId" = e."importedGameId"
-            AND m."userReplyPlyNumber" = e."plyNumber"
-        )
     )
     SELECT
       "importedGameId"::int AS "importedGameId",
       kind,
       "triggerPlyNumber"::int AS "triggerPlyNumber",
       "userReplyPlyNumber"::int AS "userReplyPlyNumber",
-      "moveUci",
+      "moveCode",
       "bestMoveUci",
       "evalBeforeUserCp"::int AS "evalBeforeUserCp",
       "evalAfterTriggerUserCp"::int AS "evalAfterTriggerUserCp",
@@ -322,7 +327,7 @@ export async function findTacticalDetectionCandidatesForGames(
       kind,
       "triggerPlyNumber"::int AS "triggerPlyNumber",
       "userReplyPlyNumber"::int AS "userReplyPlyNumber",
-      "moveUci",
+      "moveCode",
       "bestMoveUci",
       "evalBeforeUserCp"::int AS "evalBeforeUserCp",
       "evalAfterTriggerUserCp"::int AS "evalAfterTriggerUserCp",
@@ -335,7 +340,7 @@ export async function findTacticalDetectionCandidatesForGames(
       kind,
       "triggerPlyNumber"::int AS "triggerPlyNumber",
       "userReplyPlyNumber"::int AS "userReplyPlyNumber",
-      "moveUci",
+      "moveCode",
       "bestMoveUci",
       "evalBeforeUserCp"::int AS "evalBeforeUserCp",
       "evalAfterTriggerUserCp"::int AS "evalAfterTriggerUserCp",
@@ -344,10 +349,16 @@ export async function findTacticalDetectionCandidatesForGames(
     FROM user_blunders
   `;
 
-  return candidates.filter(
-    (candidate) =>
-      candidate.kind !== 'USER_BLUNDER' || isTrainableUserBlunder(candidate, thresholds),
-  );
+  // Compare engine UCI only after decoding, using the same SQL snapshot. The
+  // candidate set is bounded to 100 games per query; SQL still filters evals.
+  const decoded = candidates.map(({ moveCode, ...candidate }) => ({ ...candidate, moveUci: decodeUciMove(moveCode) }))
+    .filter((candidate) => candidate.kind !== 'MISSED_SHOT'
+      || candidate.moveUci.toLowerCase() !== candidate.bestMoveUci?.toLowerCase());
+  const missedReplyKeys = new Set(decoded.filter((candidate) => candidate.kind === 'MISSED_SHOT')
+    .map((candidate) => `${candidate.importedGameId}:${candidate.userReplyPlyNumber}`));
+  return decoded.filter((candidate) => candidate.kind !== 'USER_BLUNDER'
+    || (!missedReplyKeys.has(`${candidate.importedGameId}:${candidate.triggerPlyNumber}`)
+      && isTrainableUserBlunder(candidate, thresholds)));
 }
 
 export async function insertTacticalDetections(

@@ -1,3 +1,4 @@
+import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import prismaModule from '../../dist/prisma.js';
@@ -89,7 +90,7 @@ try {
       importedGameId: game.id,
       positionId: sharedPosition.id,
       plyNumber: 0,
-      moveUci: 'a1a2',
+      moveUci: 'a1a2', moveCode: encodeUciMove('a1a2'),
     },
   });
   await prisma.positionAnalysis.create({

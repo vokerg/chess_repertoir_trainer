@@ -23,6 +23,8 @@
     "db:cleanup-position-analysis-lines": "ts-node --transpile-only src/scripts/cleanup-position-analysis-lines.ts",
     "db:cleanup-orphan-positions": "ts-node --transpile-only src/scripts/cleanup-orphan-positions.ts",
     "db:rewrite-position-keys-128": "ts-node --transpile-only src/scripts/rewrite-position-keys-to-128-bit.ts",
+    "predb:backfill-imported-ply-move-codes": "npm --prefix ../.. run build:domain",
+    "db:backfill-imported-ply-move-codes": "ts-node src/scripts/backfill-imported-ply-move-codes.ts",
     "opening-book:update": "ts-node --transpile-only src/scripts/update-opening-book.ts",
     "opening-book:classification-audit": "ts-node --transpile-only src/scripts/audit-opening-classification.ts",
     "opening-book:classification-game-audit": "ts-node --transpile-only src/scripts/audit-imported-game-opening-classification.ts",

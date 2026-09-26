@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { moveClassificationCodeFromLegacy } from 'chess-domain';
+import { moveClassificationCodeFromLegacy, decodeUciMove } from 'chess-domain';
 import prisma from '../../prisma';
 import { ImportedGameSearchQuery, ImportedGameSummaryQuery } from './imported-games.schemas';
 
@@ -23,7 +23,7 @@ const latestAnalysisRunSelect = {
 
 const importedGamePlySelect = {
   plyNumber: true,
-  moveUci: true,
+  moveCode: true,
   scoreLossCp: true,
   classificationCode: true,
   position: {
@@ -98,7 +98,10 @@ export const importedGameDetailSelect = {
 
 export type ImportedGameListRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameListSelect }>;
 export type ImportedGameSearchRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameSearchSelect }>;
-export type ImportedGameDetailRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameDetailSelect }>;
+type StoredImportedGameDetailRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameDetailSelect }>;
+export type ImportedGameDetailRow = Omit<StoredImportedGameDetailRow, 'plies'> & {
+  plies: Array<Omit<StoredImportedGameDetailRow['plies'][number], 'moveCode'> & { moveUci: string }>;
+};
 
 export interface ImportedGameSummaryAggregateRows {
   total: number;
@@ -120,7 +123,7 @@ export interface ImportedGameSummaryAggregateRows {
 
 const openingStrugglesPlySelect = {
   plyNumber: true,
-  moveUci: true,
+  moveCode: true,
   scoreLossCp: true,
   position: {
     select: {
@@ -147,7 +150,10 @@ const openingStrugglesGameSelect = {
   },
 } as const;
 
-export type OpeningStrugglesGameRow = Prisma.ImportedGameGetPayload<{ select: typeof openingStrugglesGameSelect }>;
+type StoredOpeningStrugglesGameRow = Prisma.ImportedGameGetPayload<{ select: typeof openingStrugglesGameSelect }>;
+export type OpeningStrugglesGameRow = Omit<StoredOpeningStrugglesGameRow, 'plies'> & {
+  plies: Array<Omit<StoredOpeningStrugglesGameRow['plies'][number], 'moveCode'> & { moveUci: string }>;
+};
 
 function inFilter(values?: string[]) {
   return values && values.length ? { in: values } : undefined;
@@ -385,7 +391,7 @@ export async function findImportedGamesForOpeningStruggles(
   query: ImportedGameSummaryQuery,
   maxPly: number,
 ) {
-  return prisma.importedGame.findMany({
+  const rows = await prisma.importedGame.findMany({
     where: buildImportedGameWhere(userId, query),
     orderBy: { id: 'asc' },
     select: {
@@ -397,13 +403,15 @@ export async function findImportedGamesForOpeningStruggles(
       },
     },
   });
+  return rows.map((game) => ({ ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })) }));
 }
 
 export async function findImportedGameById(userId: number, id: number) {
-  return prisma.importedGame.findFirst({
+  const game = await prisma.importedGame.findFirst({
     where: { id, userId },
     select: importedGameDetailSelect,
   });
+  return game ? { ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })) } : null;
 }
 
 export async function getImportedGamePgn(userId: number, id: number) {
