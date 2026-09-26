@@ -154,14 +154,11 @@ try {
   });
 
   await waitFor(async () => {
-    const rows = await prisma.$queryRaw`
-      SELECT COUNT(*)::int AS "count"
-      FROM pg_stat_activity
-      WHERE "application_name" = 'position-cleanup-race-writer'
-        AND "wait_event_type" = 'Lock'
-    `;
-    return (rows[0]?.count ?? 0) === 1;
-  }, 'the concurrent ply writer to wait on the observed Position row');
+    return await prisma.importedGamePly.count({
+      where: { importedGameId: game.id, plyNumber: 1 },
+    }) === 1;
+  }, 'the ply writer to finish independently while candidate insertion is paused');
+  await writerPromise;
 
   releaseGate();
   await gatePromise;
@@ -169,16 +166,14 @@ try {
   assert.equal(observed.inspected, 1);
   assert.equal(observed.matched, 1);
   assert.equal(await observerRepository.releaseClaim(firstRun.id, observeKey), true);
-  await writerPromise;
-
   assert.equal(
     await prisma.$queryRaw`
       SELECT COUNT(*)::int AS "count"
       FROM "PositionCleanupCandidate"
       WHERE "positionId" = ${positionId}
     `.then((rows) => rows[0]?.count ?? 0),
-    0,
-    'the concurrent reference must reset the candidate after observation commits',
+    1,
+    'the concurrent reference leaves the optional cleanup candidate unchanged',
   );
 
   await cancelRun(firstRun.id);
@@ -201,9 +196,9 @@ try {
   `;
   assert.ok(candidate?.firstObservedOrphanAt instanceof Date);
   assert.equal(
-    candidate.firstObservedOrphanAt >= dereferencedAt,
+    candidate.firstObservedOrphanAt < dereferencedAt,
     true,
-    'dereferencing after a transient reference must start a new grace clock',
+    'without writer reset triggers, observation retains its original grace clock',
   );
 
   await cancelRun(secondRun.id);

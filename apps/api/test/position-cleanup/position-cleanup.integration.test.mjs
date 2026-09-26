@@ -87,7 +87,7 @@ try {
       { importedGameId: game.id, positionId: p2.id, plyNumber: 2, moveUci: 'e7e5' , moveCode: encodeUciMove('e7e5')},
     ],
   });
-  assert.equal(await candidateCount([p1.id, p2.id]), 0, 'multi-row INSERT trigger must reset all referenced candidates');
+  assert.equal(await candidateCount([p1.id, p2.id]), 2, 'ply inserts leave optional cleanup candidates unchanged');
 
   const p3 = await createPosition('update');
   await insertCandidate(p3.id, oldObservedAt);
@@ -95,7 +95,7 @@ try {
     where: { importedGameId_plyNumber: { importedGameId: game.id, plyNumber: 1 } },
     data: { positionId: p3.id },
   });
-  assert.equal(await candidateCount([p3.id]), 0, 'UPDATE transition trigger must reset the new position candidate');
+  assert.equal(await candidateCount([p3.id]), 1, 'position changes leave optional cleanup candidates unchanged');
 
   const p4 = await createPosition('duplicate');
   await insertCandidate(p4.id, oldObservedAt);
@@ -105,7 +105,7 @@ try {
       { importedGameId: game.id, positionId: p4.id, plyNumber: 4, moveUci: 'b8c6' , moveCode: encodeUciMove('b8c6')},
     ],
   });
-  assert.equal(await candidateCount([p4.id]), 0, 'duplicate transition ids must remain idempotent');
+  assert.equal(await candidateCount([p4.id]), 1, 'duplicate references leave optional cleanup candidates unchanged');
 
   await insertCandidate(p4.id, oldObservedAt);
   await prisma.importedGamePly.update({
@@ -114,8 +114,8 @@ try {
   });
   assert.equal(
     await candidateCount([p4.id]),
-    0,
-    'UPDATE trigger must still idempotently reset a stale candidate when positionId is unchanged',
+    1,
+    'move updates leave optional cleanup candidates unchanged',
   );
 
   const p5 = await createPosition('rollback');
@@ -129,7 +129,7 @@ try {
     }),
     /ROLLBACK_TRIGGER_TEST/,
   );
-  assert.equal(await candidateCount([p5.id]), 1, 'reference write and trigger reset must roll back together');
+  assert.equal(await candidateCount([p5.id]), 1, 'rolled-back reference write leaves the candidate unchanged');
   assert.equal(
     await prisma.importedGamePly.count({ where: { importedGameId: game.id, plyNumber: 5 } }),
     0,

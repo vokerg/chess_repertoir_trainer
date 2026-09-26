@@ -162,9 +162,8 @@ try {
     },
   });
 
-  // Writer-first: a test-only AFTER INSERT trigger sleeps after the production
-  // candidate-reset trigger has run but before the writer transaction commits. Cleanup
-  // must wait behind the writer's ordinary RowExclusive lock, then see the committed
+  // Writer-first: a test-only AFTER INSERT trigger sleeps before the writer
+  // transaction commits. Cleanup must wait behind the writer's ordinary RowExclusive lock, then see the committed
   // reference and leave the Position intact.
   await prisma.$executeRawUnsafe(`
     CREATE OR REPLACE FUNCTION position_cleanup_test_pause_reindex()
@@ -208,7 +207,7 @@ try {
   writerFirstPromise = undefined;
   assert.equal(writerFirstResult.pliesIndexed, 1);
   assert.equal(await writerFirstCleanupPromise, true);
-  const writerFirstCompleted = await service.status(writerFirstRun.id);
+  const writerFirstCompleted = await finishRun(writerFirstRun.id);
   assert.equal(writerFirstCompleted.status, 'COMPLETED');
   assert.equal(writerFirstCompleted.positionsDeleted, 0);
   assert.equal(await prisma.position.count({ where: { id: writerFirst.position.id } }), 1);
