@@ -92,6 +92,8 @@ The current key must be explicitly configured before previous keys are accepted.
 
 The API entry point loads `.env` before importing modules that construct the lifecycle keyrings. After a database migration, configure the original key for every persisted tombstone version; a replacement secret with the same version cannot verify existing tombstones.
 
+A missing historical identity key does not disable established accounts indiscriminately. Under the deletion identity lock, ordinary authentication may resolve an existing `AppUser` that predates the provider's oldest retained tombstone and is not targeted by any tombstone operation. Known matching tombstones still block access, and the normal user lifecycle fence still applies. This exception never creates an `AppUser`; identities without a qualifying existing row and deletion receipt lookup still require the historical keys. Final deletion writes the tombstone and removes `AppUser` in the same transaction.
+
 ## ONB-021 whole-user deletion consumer
 
 ONB-021 implements `DELETE_APP_USER` over USER scope. Preview is authenticated and non-fencing. Execute revalidates the preview under the lifecycle user lock, installs the USER fence, and returns an opaque receipt capability before background execution proceeds. A narrow read-only auth resolver is used only for retries of that exact deletion execute route, so an already-fenced or already-deleted identity can recover the same operation/receipt without updating or recreating `AppUser`. Ordinary authenticated routes continue to fail closed with a typed deletion-in-progress or deleted-identity response.

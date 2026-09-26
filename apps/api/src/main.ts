@@ -1,3 +1,4 @@
+// App imports construct lifecycle keyrings, so load the environment first.
 import 'dotenv/config';
 import { buildApp } from './app';
 
