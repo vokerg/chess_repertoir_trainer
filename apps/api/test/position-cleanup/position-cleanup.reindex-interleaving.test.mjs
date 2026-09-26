@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { Chess } from 'chess.js';
+import { decodeNormalizedFenCompact, normalizeFenForPosition } from 'chess-domain';
 import { PrismaClient } from '@prisma/client';
 import prismaModule from '../../dist/prisma.js';
 import { replacePlyRowsForGame } from '../../dist/modules/imported-games/ply-index.repository.prisma.js';
@@ -71,7 +73,15 @@ async function createFixture(label) {
       pgn: '1. e4 e5',
     },
   });
-  const normalizedFen = `position-cleanup-reindex-${label}-${suffix}`;
+  // Exercise the real Position writer with a valid, independently played FEN.
+  const chess = new Chess();
+  let seed = Number.parseInt(randomUUID().slice(0, 8), 16);
+  for (let ply = 0; ply < 40 && !chess.isGameOver(); ply += 1) {
+    const moves = chess.moves();
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    chess.move(moves[seed % moves.length]);
+  }
+  const normalizedFen = normalizeFenForPosition(chess.fen());
   normalizedFens.push(normalizedFen);
   const positionKey = positionKeyForNormalizedFen(normalizedFen);
   const position = await prisma.position.create({
@@ -292,6 +302,7 @@ try {
   assert.ok(replacementPly);
   assert.notEqual(replacementPly.positionId, cleanupFirst.position.id, 'reindex should recreate the deleted shared Position');
   assert.equal(replacementPly.position.normalizedFen, cleanupFirst.normalizedFen);
+  assert.equal(decodeNormalizedFenCompact(replacementPly.position.positionDataCompact), cleanupFirst.normalizedFen);
 
   const cleanupFirstCompleted = await finishRun(cleanupFirstRun.id);
   assert.equal(cleanupFirstCompleted.status, 'COMPLETED');

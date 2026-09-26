@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { encodeUciMove } from 'chess-domain';
+import { encodeNormalizedFenCompact, encodeUciMove } from 'chess-domain';
 import prisma from '../../prisma';
 import {
   assertPositionKeyMatchesFen,
@@ -73,6 +73,7 @@ export async function replacePlyRowsForGame(importedGameId: number, rows: Import
         data: uniquePositions.map((position) => ({
           normalizedFen: position.normalizedFen,
           positionKey: new Uint8Array(position.positionKey),
+          positionDataCompact: new Uint8Array(encodeNormalizedFenCompact(position.normalizedFen)),
         })),
         skipDuplicates: true,
       });
