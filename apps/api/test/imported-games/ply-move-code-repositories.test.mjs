@@ -39,11 +39,10 @@ try {
   const stored = await prisma.importedGamePly.findMany({ where: { importedGameId: game.id }, orderBy: { plyNumber: 'asc' } });
   for (const [index, row] of stored.entries()) {
     assert.equal(row.moveCode, encodeUciMove(moves[index]), 'new indexed plies store compact codes');
-    assert.equal(row.moveUci, moves[index], 'transition dual write keeps rollback possible');
+    assert.equal(Object.hasOwn(row, 'moveUci'), false, 'stored plies contain only encoded moves');
   }
   const positionId = stored[0].positionId;
-  // Deliberately poison the old field to prove every reader uses the code.
-  await prisma.importedGamePly.updateMany({ where: { importedGameId: game.id }, data: { moveUci: 'e2e4' } });
+  // The legacy field is absent; repository boundaries must still expose UCI strings.
   assertUciPlies((await findImportedGameById(userId, game.id)).plies, moves);
   assert.equal(await findImportedGameById(userId + 1, game.id), null, 'ownership stays at the repository boundary');
   assertUciPlies((await getImportedGameForTagging(userId, game.id)).plies, moves);
@@ -88,7 +87,7 @@ try {
     await prisma.positionAnalysis.create({ data: { positionId: position.id, bestScoreCpWhite: score, bestMoveUci: index === 2 ? 'A7A8Q' : 'e2e4' } });
     await prisma.importedGamePly.create({ data: {
       importedGameId: tacticalGame.id, plyNumber: index + 1, positionId: position.id,
-      moveUci: 'e2e4', moveCode: encodeUciMove(index === 2 ? 'a7a8q' : 'e2e4'),
+       moveCode: encodeUciMove(index === 2 ? 'a7a8q' : 'e2e4'),
     } });
   }
   let tactical = await findTacticalDetectionCandidatesForGames(prisma, userId, [tacticalGame.id], tacticalDetectionThresholds);

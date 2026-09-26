@@ -69,7 +69,7 @@ export async function findCourseExtensionCandidatePlies(
     ],
     select: candidatePlySelect,
   });
-  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) }))
+  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) }))
     .sort((a, b) => a.positionId - b.positionId || a.moveUci.localeCompare(b.moveUci)
       || a.importedGameId - b.importedGameId || a.plyNumber - b.plyNumber);
 }

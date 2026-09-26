@@ -131,7 +131,7 @@ async function createIndexedGame(accountId, providerGameId, openingProvenance, o
       importedGameId: game.id,
       positionId: position.id,
       plyNumber: 1,
-      moveUci: 'e2e4', moveCode: encodeUciMove('e2e4'),
+       moveCode: encodeUciMove('e2e4'),
       scoreLossCp: 80,
       classificationCode: 4,
     },

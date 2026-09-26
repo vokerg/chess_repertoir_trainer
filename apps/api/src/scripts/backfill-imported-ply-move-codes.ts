@@ -43,7 +43,9 @@ async function validate(database: PrismaClient, roundTrip: boolean, log: (messag
     log(`${roundTrip ? 'Round-trip' : 'UCI'} validated ${validated} plies`);
   }
   if (roundTrip) {
-    const remaining = await database.importedGamePly.count({ where: { moveCode: null } });
+    const [{ remaining }] = await database.$queryRaw<Array<{ remaining: number }>>`
+      SELECT COUNT(*)::integer AS remaining FROM "ImportedGamePly" WHERE "moveCode" IS NULL
+    `;
     if (remaining !== 0) throw new Error(`Post-backfill validation failed: ${remaining} plies have moveCode IS NULL`);
   }
   return validated;

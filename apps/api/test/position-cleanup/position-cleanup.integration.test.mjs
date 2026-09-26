@@ -83,8 +83,8 @@ try {
 
   await prisma.importedGamePly.createMany({
     data: [
-      { importedGameId: game.id, positionId: p1.id, plyNumber: 1, moveUci: 'e2e4' , moveCode: encodeUciMove('e2e4')},
-      { importedGameId: game.id, positionId: p2.id, plyNumber: 2, moveUci: 'e7e5' , moveCode: encodeUciMove('e7e5')},
+      { importedGameId: game.id, positionId: p1.id, plyNumber: 1,  moveCode: encodeUciMove('e2e4')},
+      { importedGameId: game.id, positionId: p2.id, plyNumber: 2,  moveCode: encodeUciMove('e7e5')},
     ],
   });
   assert.equal(await candidateCount([p1.id, p2.id]), 2, 'ply inserts leave optional cleanup candidates unchanged');
@@ -101,8 +101,8 @@ try {
   await insertCandidate(p4.id, oldObservedAt);
   await prisma.importedGamePly.createMany({
     data: [
-      { importedGameId: game.id, positionId: p4.id, plyNumber: 3, moveUci: 'g1f3' , moveCode: encodeUciMove('g1f3')},
-      { importedGameId: game.id, positionId: p4.id, plyNumber: 4, moveUci: 'b8c6' , moveCode: encodeUciMove('b8c6')},
+      { importedGameId: game.id, positionId: p4.id, plyNumber: 3,  moveCode: encodeUciMove('g1f3')},
+      { importedGameId: game.id, positionId: p4.id, plyNumber: 4,  moveCode: encodeUciMove('b8c6')},
     ],
   });
   assert.equal(await candidateCount([p4.id]), 1, 'duplicate references leave optional cleanup candidates unchanged');
@@ -110,7 +110,7 @@ try {
   await insertCandidate(p4.id, oldObservedAt);
   await prisma.importedGamePly.update({
     where: { importedGameId_plyNumber: { importedGameId: game.id, plyNumber: 3 } },
-    data: { moveUci: 'g1h3' , moveCode: encodeUciMove('g1h3')},
+    data: {  moveCode: encodeUciMove('g1h3')},
   });
   assert.equal(
     await candidateCount([p4.id]),
@@ -123,7 +123,7 @@ try {
   await assert.rejects(
     prisma.$transaction(async (transaction) => {
       await transaction.importedGamePly.create({
-        data: { importedGameId: game.id, positionId: p5.id, plyNumber: 5, moveUci: 'f1b5' , moveCode: encodeUciMove('f1b5')},
+        data: { importedGameId: game.id, positionId: p5.id, plyNumber: 5,  moveCode: encodeUciMove('f1b5')},
       });
       throw new Error('ROLLBACK_TRIGGER_TEST');
     }),

@@ -25,6 +25,8 @@
     "db:rewrite-position-keys-128": "ts-node --transpile-only src/scripts/rewrite-position-keys-to-128-bit.ts",
     "predb:backfill-imported-ply-move-codes": "npm --prefix ../.. run build:domain",
     "db:backfill-imported-ply-move-codes": "ts-node src/scripts/backfill-imported-ply-move-codes.ts",
+    "predb:restore-imported-ply-move-uci": "npm --prefix ../.. run build:domain",
+    "db:restore-imported-ply-move-uci": "ts-node src/scripts/restore-imported-ply-move-uci.ts",
     "opening-book:update": "ts-node --transpile-only src/scripts/update-opening-book.ts",
     "opening-book:classification-audit": "ts-node --transpile-only src/scripts/audit-opening-classification.ts",
     "opening-book:classification-game-audit": "ts-node --transpile-only src/scripts/audit-imported-game-opening-classification.ts",

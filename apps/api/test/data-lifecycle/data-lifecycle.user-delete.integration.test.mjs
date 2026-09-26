@@ -90,7 +90,7 @@ try {
       importedGameId: game.id,
       positionId: sharedPosition.id,
       plyNumber: 0,
-      moveUci: 'a1a2', moveCode: encodeUciMove('a1a2'),
+       moveCode: encodeUciMove('a1a2'),
     },
   });
   await prisma.positionAnalysis.create({

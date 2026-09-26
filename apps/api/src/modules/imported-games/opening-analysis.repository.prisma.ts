@@ -143,9 +143,9 @@ export async function findOpeningNextMoves(
 
   // Numeric move-code order differs from the previous lexical UCI order.
   return {
-    occurrences: occurrences.map(({ moveCode, ...row }) => ({ ...row, moveUci: decodeUciMove(moveCode!) }))
+    occurrences: occurrences.map(({ moveCode, ...row }) => ({ ...row, moveUci: decodeUciMove(moveCode) }))
       .sort((a, b) => a.moveUci.localeCompare(b.moveUci) || a.plyNumber - b.plyNumber),
-    distinctGames: distinctGames.map(({ moveCode, ...row }) => ({ ...row, moveUci: decodeUciMove(moveCode!) }))
+    distinctGames: distinctGames.map(({ moveCode, ...row }) => ({ ...row, moveUci: decodeUciMove(moveCode) }))
       .sort((a, b) => a.moveUci.localeCompare(b.moveUci) || a.importedGameId - b.importedGameId),
   };
 }
@@ -173,7 +173,7 @@ export async function findOpeningTopGames(
       },
     },
   });
-  return rows.map((game) => ({ ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })) }));
+  return rows.map((game) => ({ ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) })) }));
 }
 
 export async function findOpeningPerformanceGames(
