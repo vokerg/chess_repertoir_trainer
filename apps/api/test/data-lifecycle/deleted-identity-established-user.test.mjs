@@ -69,4 +69,22 @@ for (const existing of [null, { id: 1, createdAt: deletionDate }, { id: 1, creat
   );
 }
 
+{
+  const { calls, transaction, database } = fixture();
+  const fullyConfigured = new LifecycleHmacKeyring([{ version: 1, secret: 'test-historical-key' }]);
+  await createDeletedIdentityGuard(database, fullyConfigured).assertCanProvision(transaction, 'clerk', 'active-user');
+  assert.deepEqual(calls, ['identity-lock']);
+}
+
+{
+  const { calls, transaction, database } = fixture();
+  const databaseFailure = new Error('Database unavailable');
+  transaction.deletedAuthIdentityTombstone.findMany = async () => { throw databaseFailure; };
+  await assert.rejects(
+    createDeletedIdentityGuard(database, missingKeys).assertCanProvision(transaction, 'clerk', 'active-user'),
+    (error) => error === databaseFailure,
+  );
+  assert.deepEqual(calls, ['identity-lock']);
+}
+
 console.log('Established identity resolution with missing historical keys tests passed.');

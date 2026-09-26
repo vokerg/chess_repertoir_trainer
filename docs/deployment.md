@@ -84,6 +84,8 @@ Add the provider and OAuth variables used by the enabled product features; `.env
 
 Keep the lifecycle keys from the original deployment when changing databases or hosts. Deleted-identity tombstones contain HMAC hashes, not the secret; replacing the version 1 identity key cannot verify existing tombstones. Configure both lifecycle keys with the same values and versions on the API and worker, including any previous keys required by persisted records.
 
+Budget database connections across every API and worker process when changing providers. A pooled endpoint (such as a Neon `-pooler` host) and a direct PostgreSQL endpoint do not have equivalent connection limits. For a small direct database, set an explicit Prisma `connection_limit` in each process's `DATABASE_URL`, leaving capacity for database services, migrations, and other clients. For example, `?sslmode=require&connection_limit=3&pool_timeout=20` caps each process at three connections and waits up to 20 seconds for a free pooled connection. This is a local-development starting point, not a production sizing recommendation; choose production limits using the database's available connection budget and load testing. Keep `DIRECT_URL` suitable for migrations.
+
 Notes:
 
 - Render injects its own port at runtime; it may override the documented value.
