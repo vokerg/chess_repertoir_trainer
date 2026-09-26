@@ -1,3 +1,4 @@
+import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import prismaModule from '../../dist/prisma.js';
@@ -43,7 +44,7 @@ try {
         importedGameId: game.id,
         positionId: positions[0].id,
         plyNumber: 1,
-        moveUci: 'e2e4',
+        moveUci: 'e2e4', moveCode: encodeUciMove('e2e4'),
         scoreLossCp: 15,
         classificationCode: 2,
       },
@@ -51,13 +52,13 @@ try {
         importedGameId: game.id,
         positionId: positions[1].id,
         plyNumber: 2,
-        moveUci: 'e7e5',
+        moveUci: 'e7e5', moveCode: encodeUciMove('e7e5'),
       },
       {
         importedGameId: game.id,
         positionId: positions[2].id,
         plyNumber: 3,
-        moveUci: 'g1f3',
+        moveUci: 'g1f3', moveCode: encodeUciMove('g1f3'),
       },
     ],
   });

@@ -13,3 +13,4 @@ export * from './stockfish-analysis';
 export * from './candidate-ranking';
 export * from './opponent-preparation';
 export * from './builder-session';
+export * from './uci-move-code';

@@ -479,12 +479,14 @@ model ImportedGamePly {
 
   plyNumber Int    @db.SmallInt
   moveUci   String @db.VarChar(5)
+  moveCode  Int?   @db.SmallInt
 
   scoreLossCp        Int? @db.SmallInt
   classificationCode Int? @db.SmallInt
 
   @@id([importedGameId, plyNumber])
   @@index([positionId, moveUci, importedGameId, plyNumber])
+  @@index([positionId, moveCode, importedGameId, plyNumber])
 }
 
 model ImportRun {

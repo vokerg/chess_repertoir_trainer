@@ -1,3 +1,4 @@
+import { decodeUciMove } from 'chess-domain';
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
 import { positionKeyForNormalizedFen } from '../positions/position-key';
@@ -23,13 +24,16 @@ const openingTopGameSelect = {
   plies: {
     select: {
       plyNumber: true,
-      moveUci: true,
+      moveCode: true,
     },
   },
 } as const;
 
 export type OpeningAnalysisGameRow = Prisma.ImportedGameGetPayload<{ select: typeof openingAnalysisGameSelect }>;
-export type OpeningTopGameRow = Prisma.ImportedGameGetPayload<{ select: typeof openingTopGameSelect }>;
+type StoredOpeningTopGameRow = Prisma.ImportedGameGetPayload<{ select: typeof openingTopGameSelect }>;
+export type OpeningTopGameRow = Omit<StoredOpeningTopGameRow, 'plies'> & {
+  plies: Array<Omit<StoredOpeningTopGameRow['plies'][number], 'moveCode'> & { moveUci: string }>;
+};
 
 export interface OpeningPositionRow {
   id: number;
@@ -115,17 +119,17 @@ export async function findOpeningNextMoves(
   const where = matchingPlyWhere(userId, query, positionId);
   const [occurrences, distinctGames] = await Promise.all([
     prisma.importedGamePly.groupBy({
-      by: ['moveUci', 'plyNumber'],
+      by: ['moveCode', 'plyNumber'],
       where,
       _count: { _all: true },
-      orderBy: [{ moveUci: 'asc' }, { plyNumber: 'asc' }],
+      orderBy: [{ moveCode: 'asc' }, { plyNumber: 'asc' }],
     }),
     prisma.importedGamePly.findMany({
       where,
-      distinct: ['moveUci', 'importedGameId'],
-      orderBy: [{ moveUci: 'asc' }, { importedGameId: 'asc' }, { plyNumber: 'asc' }],
+      distinct: ['moveCode', 'importedGameId'],
+      orderBy: [{ moveCode: 'asc' }, { importedGameId: 'asc' }, { plyNumber: 'asc' }],
       select: {
-        moveUci: true,
+        moveCode: true,
         importedGameId: true,
         importedGame: {
           select: {
@@ -137,7 +141,13 @@ export async function findOpeningNextMoves(
     }),
   ]);
 
-  return { occurrences, distinctGames };
+  // Numeric move-code order differs from the previous lexical UCI order.
+  return {
+    occurrences: occurrences.map(({ moveCode, ...row }) => ({ ...row, moveUci: decodeUciMove(moveCode!) }))
+      .sort((a, b) => a.moveUci.localeCompare(b.moveUci) || a.plyNumber - b.plyNumber),
+    distinctGames: distinctGames.map(({ moveCode, ...row }) => ({ ...row, moveUci: decodeUciMove(moveCode!) }))
+      .sort((a, b) => a.moveUci.localeCompare(b.moveUci) || a.importedGameId - b.importedGameId),
+  };
 }
 
 export async function findOpeningTopGames(
@@ -146,7 +156,7 @@ export async function findOpeningTopGames(
   positionId: number,
   limit: number,
 ): Promise<OpeningTopGameRow[]> {
-  return prisma.importedGame.findMany({
+  const rows = await prisma.importedGame.findMany({
     where: matchingGameWhere(userId, query, positionId),
     orderBy: [{ endedAt: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }],
     take: limit,
@@ -158,11 +168,12 @@ export async function findOpeningTopGames(
         take: 1,
         select: {
           plyNumber: true,
-          moveUci: true,
+          moveCode: true,
         },
       },
     },
   });
+  return rows.map((game) => ({ ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })) }));
 }
 
 export async function findOpeningPerformanceGames(

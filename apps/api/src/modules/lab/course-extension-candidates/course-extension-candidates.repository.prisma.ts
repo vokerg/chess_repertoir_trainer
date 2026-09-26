@@ -1,3 +1,4 @@
+import { decodeUciMove } from 'chess-domain';
 import { Prisma } from '@prisma/client';
 import prisma from '../../../prisma';
 import {
@@ -10,7 +11,7 @@ const candidatePlySelect = {
   positionId: true,
   importedGameId: true,
   plyNumber: true,
-  moveUci: true,
+  moveCode: true,
   position: { select: { normalizedFen: true } },
   importedGame: {
     select: {
@@ -26,9 +27,8 @@ const candidatePlySelect = {
   },
 } as const;
 
-export type CourseExtensionCandidatePlyRow = Prisma.ImportedGamePlyGetPayload<{
-  select: typeof candidatePlySelect;
-}>;
+type StoredCandidatePlyRow = Prisma.ImportedGamePlyGetPayload<{ select: typeof candidatePlySelect }>;
+export type CourseExtensionCandidatePlyRow = Omit<StoredCandidatePlyRow, 'moveCode'> & { moveUci: string };
 
 export interface CourseExtensionPositionRow {
   id: number;
@@ -55,18 +55,21 @@ export async function findCourseExtensionCandidatePlies(
   filters: ImportedGameSummaryQuery,
 ): Promise<CourseExtensionCandidatePlyRow[]> {
   if (positionIds.length === 0) return [];
-  return prisma.importedGamePly.findMany({
+  const rows = await prisma.importedGamePly.findMany({
     where: {
       positionId: { in: positionIds },
       importedGame: buildImportedGameWhere(userId, filters),
     },
-    distinct: ['positionId', 'moveUci', 'importedGameId'],
+    distinct: ['positionId', 'moveCode', 'importedGameId'],
     orderBy: [
       { positionId: 'asc' },
-      { moveUci: 'asc' },
+      { moveCode: 'asc' },
       { importedGameId: 'asc' },
       { plyNumber: 'asc' },
     ],
     select: candidatePlySelect,
   });
+  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) }))
+    .sort((a, b) => a.positionId - b.positionId || a.moveUci.localeCompare(b.moveUci)
+      || a.importedGameId - b.importedGameId || a.plyNumber - b.plyNumber);
 }

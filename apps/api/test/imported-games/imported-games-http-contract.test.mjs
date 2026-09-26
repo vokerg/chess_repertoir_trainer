@@ -1,3 +1,4 @@
+import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { buildApp } from '../../dist/app.js';
@@ -122,8 +123,8 @@ try {
   });
   await prisma.importedGamePly.createMany({
     data: [
-      { importedGameId: game.id, positionId: firstPosition.id, plyNumber: 1, moveUci: 'e2e4', scoreLossCp: 0, classificationCode: 1 },
-      { importedGameId: game.id, positionId: legacyPosition.id, plyNumber: 2, moveUci: 'e7e5', scoreLossCp: 12, classificationCode: 2 },
+      { importedGameId: game.id, positionId: firstPosition.id, plyNumber: 1, moveUci: 'e2e4', moveCode: encodeUciMove('e2e4'), scoreLossCp: 0, classificationCode: 1 },
+      { importedGameId: game.id, positionId: legacyPosition.id, plyNumber: 2, moveUci: 'e7e5', moveCode: encodeUciMove('e7e5'), scoreLossCp: 12, classificationCode: 2 },
     ],
   });
   await prisma.gameAnalysisRun.create({

@@ -1,3 +1,4 @@
+import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { performance } from 'node:perf_hooks';
 import { randomUUID } from 'node:crypto';
@@ -214,7 +215,7 @@ try {
         importedGameId: game.id,
         positionId: position.id,
         plyNumber: offset + index + 1,
-        moveUci: 'e2e4',
+        moveUci: 'e2e4', moveCode: encodeUciMove('e2e4'),
       })),
     });
   }

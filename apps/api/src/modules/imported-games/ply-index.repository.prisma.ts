@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { encodeUciMove } from 'chess-domain';
 import prisma from '../../prisma';
 import {
   assertPositionKeyMatchesFen,
@@ -12,7 +13,8 @@ export type ImportedGameForPlyIndex = {
   plyIndexError: string | null;
 };
 
-export type ImportedGamePlyCreateInput = Pick<Prisma.ImportedGamePlyCreateManyInput, 'importedGameId' | 'plyNumber' | 'moveUci'> & {
+export type ImportedGamePlyCreateInput = Pick<Prisma.ImportedGamePlyCreateManyInput, 'importedGameId' | 'plyNumber'> & {
+  moveUci: string;
   normalizedFen: string;
   positionKey: Buffer;
 };
@@ -127,6 +129,7 @@ export async function replacePlyRowsForGame(importedGameId: number, rows: Import
             plyNumber: row.plyNumber,
             positionId,
             moveUci: row.moveUci,
+            moveCode: encodeUciMove(row.moveUci),
           };
         }),
       });

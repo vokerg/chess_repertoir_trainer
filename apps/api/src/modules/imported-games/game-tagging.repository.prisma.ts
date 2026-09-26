@@ -1,3 +1,4 @@
+import { decodeUciMove } from 'chess-domain';
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
 
@@ -37,7 +38,7 @@ const importedGameForTaggingSelect = {
     orderBy: { plyNumber: 'asc' as const },
     select: {
       plyNumber: true,
-      moveUci: true,
+      moveCode: true,
       scoreLossCp: true,
       classificationCode: true,
       position: {
@@ -56,9 +57,10 @@ const importedGameForTaggingSelect = {
   },
 } as const;
 
-export type ImportedGameForTagging = Prisma.ImportedGameGetPayload<{
-  select: typeof importedGameForTaggingSelect;
-}>;
+type StoredImportedGameForTagging = Prisma.ImportedGameGetPayload<{ select: typeof importedGameForTaggingSelect }>;
+export type ImportedGameForTagging = Omit<StoredImportedGameForTagging, 'plies'> & {
+  plies: Array<Omit<StoredImportedGameForTagging['plies'][number], 'moveCode'> & { moveUci: string }>;
+};
 
 export async function getGameTagDefinitions() {
   return prisma.gameTagDefinition.findMany({
@@ -67,10 +69,11 @@ export async function getGameTagDefinitions() {
 }
 
 export async function getImportedGameForTagging(userId: number, gameId: number): Promise<ImportedGameForTagging | null> {
-  return prisma.importedGame.findFirst({
+  const game = await prisma.importedGame.findFirst({
     where: { id: gameId, userId },
     select: importedGameForTaggingSelect,
   });
+  return game ? { ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })) } : null;
 }
 
 export async function updateImportedGameTagCodes(importedGameId: number, tagCodes: number[]) {

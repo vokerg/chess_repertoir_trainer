@@ -1,3 +1,4 @@
+import { decodeUciMove } from 'chess-domain';
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
 
@@ -8,7 +9,7 @@ const compactGameAnalysisRunInclude = {
         orderBy: { plyNumber: 'asc' as const },
         select: {
           plyNumber: true,
-          moveUci: true,
+          moveCode: true,
           scoreLossCp: true,
           classificationCode: true,
           position: {
@@ -35,7 +36,7 @@ export async function getLatestGameAnalysisRunDeterministic(
   userId: number,
   importedGameId: number,
 ) {
-  return prisma.gameAnalysisRun.findFirst({
+  const run = await prisma.gameAnalysisRun.findFirst({
     where: {
       importedGameId,
       importedGame: { userId },
@@ -47,6 +48,10 @@ export async function getLatestGameAnalysisRunDeterministic(
     ],
     include: compactGameAnalysisRunInclude,
   });
+  return run ? { ...run, importedGame: {
+    ...run.importedGame,
+    plies: run.importedGame.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })),
+  } } : null;
 }
 
 export interface ImportedGameAnalysisExecutionState {

@@ -1,3 +1,4 @@
+import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
@@ -52,7 +53,7 @@ try {
       importedGameId: game.id,
       positionId: position.id,
       plyNumber: 1,
-      moveUci: 'e2e4',
+      moveUci: 'e2e4', moveCode: encodeUciMove('e2e4'),
     },
   });
 

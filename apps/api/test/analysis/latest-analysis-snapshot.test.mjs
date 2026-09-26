@@ -1,3 +1,4 @@
+import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
@@ -207,7 +208,7 @@ try {
           importedGameId: game.id,
           positionId: position.id,
           plyNumber: 1,
-          moveUci: 'a1a2',
+          moveUci: 'a1a2', moveCode: encodeUciMove('a1a2'),
           scoreLossCp: 12,
           classificationCode: 2,
         },
@@ -215,7 +216,7 @@ try {
           importedGameId: game.id,
           positionId: position.id,
           plyNumber: 2,
-          moveUci: 'h1h2',
+          moveUci: 'h1h2', moveCode: encodeUciMove('h1h2'),
           scoreLossCp: 8,
           classificationCode: 2,
         },

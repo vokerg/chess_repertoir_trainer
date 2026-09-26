@@ -1,3 +1,4 @@
+import { decodeUciMove } from 'chess-domain';
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
 import {
@@ -106,14 +107,15 @@ export async function getCourseReviewCandidateGames(input: {
 
 export async function getCourseReviewPlies(importedGameIds: number[]) {
   if (importedGameIds.length === 0) return [];
-  return prisma.importedGamePly.findMany({
+  const rows = await prisma.importedGamePly.findMany({
     where: { importedGameId: { in: importedGameIds } },
     orderBy: [{ importedGameId: 'asc' }, { plyNumber: 'asc' }],
     select: {
       importedGameId: true,
       plyNumber: true,
-      moveUci: true,
+      moveCode: true,
       position: { select: { normalizedFen: true } },
     },
   });
+  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) }));
 }

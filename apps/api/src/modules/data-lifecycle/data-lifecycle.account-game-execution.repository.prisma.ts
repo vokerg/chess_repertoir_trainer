@@ -1,3 +1,4 @@
+import { decodeUciMove } from 'chess-domain';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { dataLifecyclePreviewCountsSchema, dataLifecycleScopeSchema } from '@chess-trainer/contracts/data-lifecycle';
 import prisma from '../../prisma';
@@ -49,7 +50,7 @@ const taggingSelect = {
     orderBy: { plyNumber: 'asc' as const },
     select: {
       plyNumber: true,
-      moveUci: true,
+      moveCode: true,
       scoreLossCp: true,
       classificationCode: true,
       position: {
@@ -997,7 +998,10 @@ async function recomputeTags(
     orderBy: { id: 'asc' },
   });
   for (const game of games) {
-    const tagCodes = calculateTagCodes(game);
+    const tagCodes = calculateTagCodes({
+      ...game,
+      plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })),
+    });
     await transaction.importedGame.update({
       where: { id: game.id },
       data: { tagCodes },

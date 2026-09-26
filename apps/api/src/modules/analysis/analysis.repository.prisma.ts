@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { normalizeFenForPosition } from 'chess-domain';
+import { normalizeFenForPosition, decodeUciMove } from 'chess-domain';
 import { ActivityFeedService } from '../activity-feed/activity-feed.service';
 import prisma from '../../prisma';
 import {
@@ -31,7 +31,7 @@ const compactGameAnalysisRunInclude = {
         orderBy: { plyNumber: 'asc' as const },
         select: {
           plyNumber: true,
-          moveUci: true,
+          moveCode: true,
           scoreLossCp: true,
           classificationCode: true,
           position: {
@@ -51,6 +51,18 @@ const compactGameAnalysisRunInclude = {
     },
   },
 } as const;
+
+type StoredCompactRun = Prisma.GameAnalysisRunGetPayload<{ include: typeof compactGameAnalysisRunInclude }>;
+
+function decodeCompactRun(run: StoredCompactRun) {
+  return {
+    ...run,
+    importedGame: {
+      ...run.importedGame,
+      plies: run.importedGame.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) })),
+    },
+  };
+}
 
 function latestAnalysisSnapshotData(run: {
   id: number;
@@ -419,7 +431,7 @@ export async function getImportedGameForAnalysis(userId: number, importedGameId:
 }
 
 export async function getLatestGameAnalysisForImportedGame(userId: number, importedGameId: number) {
-  return prisma.gameAnalysisRun.findFirst({
+  const run = await prisma.gameAnalysisRun.findFirst({
     where: {
       importedGameId,
       importedGame: { userId },
@@ -431,6 +443,7 @@ export async function getLatestGameAnalysisForImportedGame(userId: number, impor
     ],
     include: compactGameAnalysisRunInclude,
   });
+  return run ? decodeCompactRun(run) : null;
 }
 
 export async function createClientGameAnalysisRun(data: {
@@ -467,7 +480,7 @@ export async function createClientGameAnalysisRun(data: {
       ],
       include: compactGameAnalysisRunInclude,
     });
-    if (existing) return { run: existing, reusedExisting: true };
+    if (existing) return { run: decodeCompactRun(existing), reusedExisting: true };
 
     const completedAt = new Date();
     const run = await tx.gameAnalysisRun.create({
@@ -490,7 +503,7 @@ export async function createClientGameAnalysisRun(data: {
     });
     await updateImportedGameLatestAnalysisSnapshot(tx, data.importedGameId, run);
     await recordCompletedGameAnalysisActivity(tx, data.importedGameId, completedAt);
-    return { run, reusedExisting: false };
+    return { run: decodeCompactRun(run), reusedExisting: false };
   });
 }
 
@@ -510,7 +523,7 @@ export async function createRunningGameAnalysisRun(data: {
       include: compactGameAnalysisRunInclude,
     });
     await updateImportedGameLatestAnalysisSnapshot(tx, data.importedGameId, run);
-    return run;
+    return decodeCompactRun(run);
   });
 }
 
@@ -571,13 +584,13 @@ export async function completeGameAnalysisRun(
     });
     if (!run) throw new Error('Game analysis run not found');
     if (transitioned.count === 0) {
-      if (run.status === 'COMPLETED') return run;
+      if (run.status === 'COMPLETED') return decodeCompactRun(run);
       throw new Error('Game analysis run is not running');
     }
 
     await updateImportedGameLatestAnalysisSnapshot(tx, run.importedGameId, run);
     await recordCompletedGameAnalysisActivity(tx, run.importedGameId, completedAt);
-    return run;
+    return decodeCompactRun(run);
   });
 }
 
@@ -593,7 +606,7 @@ export async function failGameAnalysisRun(runId: number, error: string) {
       include: compactGameAnalysisRunInclude,
     });
     await updateImportedGameLatestAnalysisSnapshot(tx, run.importedGameId, run);
-    return run;
+    return decodeCompactRun(run);
   });
 }
 
@@ -647,12 +660,12 @@ export async function clearImportedGamePlyAnalysis(userId: number, gameId: numbe
 }
 
 export async function getImportedGamePliesForAnalysisSummary(userId: number, gameId: number) {
-  return prisma.importedGamePly.findMany({
+  const rows = await prisma.importedGamePly.findMany({
     where: { importedGameId: gameId, importedGame: { userId } },
     orderBy: { plyNumber: 'asc' },
     select: {
       plyNumber: true,
-      moveUci: true,
+      moveCode: true,
       scoreLossCp: true,
       classificationCode: true,
       position: {
@@ -670,15 +683,16 @@ export async function getImportedGamePliesForAnalysisSummary(userId: number, gam
       },
     },
   });
+  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) }));
 }
 
 export async function getImportedGamePliesForBatchAnalysis(userId: number, gameId: number) {
-  return prisma.importedGamePly.findMany({
+  const rows = await prisma.importedGamePly.findMany({
     where: { importedGameId: gameId, importedGame: { userId } },
     orderBy: { plyNumber: 'asc' },
     select: {
       plyNumber: true,
-      moveUci: true,
+      moveCode: true,
       scoreLossCp: true,
       classificationCode: true,
       positionId: true,
@@ -704,4 +718,5 @@ export async function getImportedGamePliesForBatchAnalysis(userId: number, gameI
       },
     },
   });
+  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode!) }));
 }

@@ -1,3 +1,4 @@
+import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
@@ -86,7 +87,7 @@ try {
         importedGameId: game.id,
         positionId: position.id,
         plyNumber: index + 1,
-        moveUci: moves[index],
+        moveUci: moves[index], moveCode: encodeUciMove(moves[index]),
       },
     });
     chess.move({
