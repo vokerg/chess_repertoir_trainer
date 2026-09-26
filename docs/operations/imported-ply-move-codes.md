@@ -36,6 +36,12 @@ Use a maintenance window for the backfill and application cutover. Before applyi
 
 The concurrent index migration must run outside a transaction. An interrupted PostgreSQL concurrent build can leave an invalid index. Inspect `pg_index.indisvalid` for the **new** index; if invalid, drop that invalid new index concurrently, mark the failed Prisma migration rolled back using the normal migration-recovery procedure, and rerun it. Retain the legacy index throughout. Do not redesign either index in this rollout.
 
+### Removed orphan-cleanup triggers
+
+`20260926130000_remove_ply_position_cleanup_triggers` removes the earlier orphan-position cleanup INSERT/UPDATE triggers from `ImportedGamePly`. Those triggers referenced `PositionCleanupCandidate` on ordinary writes, including move-code backfill. The candidate table is not needed for compact move storage and is not recreated by this migration. The independent data-lifecycle guard remains. Once this migration is applied, rerun the resumable backfill normally; a failed update statement was rolled back by PostgreSQL.
+
+The optional orphan-position cleanup workflow no longer has its writer-side candidate-reset/advisory-lock fence. Keep it disabled (the default) until its observation/grace and concurrency guarantees are redesigned for this boundary. A transient ply reference no longer restarts a candidate’s grace clock; regression tests record this limitation. Existing historical cleanup migration files describe the former trigger behavior and remain immutable.
+
 ## Contract gate (not included in this release)
 
 Create a **separate reviewed release/PR** only after retaining evidence that:
