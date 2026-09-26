@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { normalizeFenForPosition, decodeUciMove } from 'chess-domain';
+import { normalizeFenForPosition, decodeUciMove, encodeNormalizedFenCompact } from 'chess-domain';
 import { ActivityFeedService } from '../activity-feed/activity-feed.service';
 import prisma from '../../prisma';
 import {
@@ -223,7 +223,7 @@ export async function findOrCreatePositionByNormalizedFen(normalizedFen: string)
 
   try {
     return await prisma.position.create({
-      data: { normalizedFen, positionKey: new Uint8Array(positionKey) },
+      data: { normalizedFen, positionKey: new Uint8Array(positionKey), positionDataCompact: new Uint8Array(encodeNormalizedFenCompact(normalizedFen)) },
     });
   } catch {
     const byKey = await prisma.position.findUnique({
@@ -340,6 +340,7 @@ export async function upsertPositionAnalysesBulk(inputs: StorePositionAnalysisIn
       data: deduped.map(({ normalizedFen, positionKey }) => ({
         normalizedFen,
         positionKey: new Uint8Array(positionKey),
+        positionDataCompact: new Uint8Array(encodeNormalizedFenCompact(normalizedFen)),
       })),
       skipDuplicates: true,
     });

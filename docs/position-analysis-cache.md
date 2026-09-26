@@ -8,6 +8,8 @@ Position analysis stores reusable engine results for a normalized chess position
 
 Nullable `Position.positionData` supports a [reversible 34-byte storage pilot](operations/position-data-pilot.md). It has no index or uniqueness constraint and is used only by the bounded maintenance script; application imports, analysis, lookups and cleanup retain their existing behavior.
 
+Separate nullable `Position.positionDataCompact` supports the [compact shadow rollout](operations/compact-position-shadow-rollout.md). The three Position creation statements (indexed plies, single analysis and bulk analysis) populate it through the canonical domain codec. Existing rows with null shadow data still resolve normally by `positionKey`; maintenance backfills historical nulls and gates a concurrent unique shadow index behind full validation. No analysis lookup or relation switches to compact identity. Production rollout requires the documented authorization and deployment gates.
+
 `PositionAnalysis` is one cached analysis row per position. It can be compact or rich:
 
 - Compact rows store scalar best move/eval only: `bestMoveUci`, `bestScoreCpWhite`, and `bestMateWhite`. Their database `lines` value is SQL `NULL`. Imported-game analysis uses compact depth 12, MultiPV 1, and one PV move for classification.

@@ -1,7 +1,7 @@
 import { decodeNormalizedFen, encodeNormalizedFen, POSITION_DATA_BYTES } from './position-binary';
 
 /**
- * EXPERIMENTAL, canonical variable-length storage; never used for DB writes.
+ * Canonical variable-length shadow storage; production lookups retain positionKey.
  * Bytes 0..7: little-endian occupancy bitmap. Square a1=0 ... h8=63 is
  * bit (square % 8) of byte floor(square / 8), least significant bit first.
  * Bytes 8..(8+ceil(pieceCount/2)-1): occupied squares in ascending order,

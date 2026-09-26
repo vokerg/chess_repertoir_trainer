@@ -378,6 +378,7 @@ model Position {
   positionKey   Bytes  @unique @db.ByteA
   normalizedFen String @db.VarChar(120)
   positionData  Bytes? @db.ByteA
+  positionDataCompact Bytes? @db.ByteA
 
   plies                 ImportedGamePly[]
   analysis              PositionAnalysis?

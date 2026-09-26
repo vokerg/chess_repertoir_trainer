@@ -27,6 +27,7 @@ Canonical documents in `docs/` describe current runtime architecture and operati
 ## Operational guides
 
 - [Position data pilot](operations/position-data-pilot.md): reversible 34-byte FEN codec and transactional 100-row pilot; existing position lookups remain unchanged.
+- [Compact Position shadow rollout](operations/compact-position-shadow-rollout.md): additive shadow dual-writes, resumable full backfill, gated concurrent unique index, storage measurements and read-only lookup comparison.
 - [Imported-game ply move codes](operations/imported-ply-move-codes.md): staged compact storage rollout, bounded backfill, validation, and the production contract gate.
 - [Orphan position removal SQL review](operations/orphan-position-removal-review.sql): read-only counts and a rolled-back bounded deletion example; human review is required before any destructive use.
 - [API conventions](api-conventions.md): route and service conventions.
