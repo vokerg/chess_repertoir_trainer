@@ -42,4 +42,20 @@ cd apps/api
 node test/imported-games/position-data-pilot.test.mjs
 ```
 
-On 2026-09-26 the integration test passed against a disposable local PostgreSQL 16 database, including a 100-row fixture selection with `selected=100`, `written=100`, `validated=100`, `mismatches=0`, and 100 payloads of exactly 34 bytes. For those exact synthetic rows, average `pg_column_size(normalizedFen)` was 58.1 bytes and average `pg_column_size(positionData)` was 35 bytes. The complete migration chain and focused import/analysis/HTTP/opening regressions also passed locally. These are fixture measurements, not measurements of the configured Neon dataset. No migration or pilot was executed against Neon because its development/test identity could not be established.
+On 2026-09-26 the integration test passed against a disposable local PostgreSQL 16 database, including a 100-row fixture selection with `selected=100`, `written=100`, `validated=100`, `mismatches=0`, and 100 payloads of exactly 34 bytes. For those exact synthetic rows, average `pg_column_size(normalizedFen)` was 58.1 bytes and average `pg_column_size(positionData)` was 35 bytes. The complete migration chain and focused import/analysis/HTTP/opening regressions also passed locally. These are fixture measurements; the configured Neon dataset measurements are recorded below.
+
+## Configured-database pilot result
+
+On 2026-09-26, after the user explicitly requested execution against the configured Neon database, the pooled and direct connections were verified to match `neondb/public`. The database contained 771,646 positions. The pilot migration was the only pending migration and was applied without changing any existing column or index.
+
+One pilot invocation selected IDs **1..100**, wrote 100 rows, validated 100 rows and committed with **zero mismatches**. Every payload was exactly 34 bytes. For those exact 100 rows, average `pg_column_size(normalizedFen)` was **46.18 bytes**, and average `pg_column_size(positionData)` was **35 bytes**. These are field sizes; both fields remain stored, so this pilot does not reclaim FEN storage.
+
+A separate read-only check after commit revalidated all 100 rows, compared their original FENs and position keys against the preflight snapshot, and confirmed both were unchanged. Exactly 100 positions had non-null `positionData`; the other 771,546 remained null. The column remained nullable with no default, and the only position indexes remained the ID primary key and unique position-key index. No full backfill, lookup change, old-field removal or cleanup change followed.
+
+Three stored samples, with exact equality between original and decoded FEN:
+
+| id | positionData bytes | normalizedFen | decoded normalizedFen |
+| ---: | ---: | --- | --- |
+| 1 | 34 | `1B1R4/p1P4p/1p4k1/6p1/8/2P1r3/PP6/6K1 b - -` | `1B1R4/p1P4p/1p4k1/6p1/8/2P1r3/PP6/6K1 b - -` |
+| 2 | 34 | `1B1R4/p1P4p/1p4k1/6p1/8/2P3r1/PP3K2/8 b - -` | `1B1R4/p1P4p/1p4k1/6p1/8/2P3r1/PP3K2/8 b - -` |
+| 3 | 34 | `1B1R4/p1P4p/1p4k1/6p1/8/2P3r1/PP6/6K1 w - -` | `1B1R4/p1P4p/1p4k1/6p1/8/2P3r1/PP6/6K1 w - -` |
