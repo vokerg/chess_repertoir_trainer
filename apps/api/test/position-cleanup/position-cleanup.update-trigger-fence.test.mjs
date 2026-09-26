@@ -94,27 +94,24 @@ try {
     )
   `;
 
-  // A retained reference with a stale candidate is intentionally different:
-  // it must take the observer fence before deleting the candidate.
-  await assert.rejects(
-    writerClient.$transaction(async (transaction) => {
-      await transaction.$executeRawUnsafe("SET LOCAL lock_timeout = '150ms'");
-      await transaction.importedGamePly.update({
-        where: {
-          importedGameId_plyNumber: {
-            importedGameId: game.id,
-            plyNumber: 1,
-          },
+  // Ordinary ply updates must stay independent of optional cleanup, even
+  // when a stale candidate exists and an observer holds its advisory lock.
+  await writerClient.$transaction(async (transaction) => {
+    await transaction.$executeRawUnsafe("SET LOCAL lock_timeout = '150ms'");
+    await transaction.importedGamePly.update({
+      where: {
+        importedGameId_plyNumber: {
+          importedGameId: game.id,
+          plyNumber: 1,
         },
-        data: { classificationCode: 1 },
-      });
-    }),
-    /lock timeout|55P03|canceling statement due to lock timeout|Raw query failed/i,
-  );
+      },
+      data: { classificationCode: 1 },
+    });
+  });
   assert.equal(
     await prisma.positionCleanupCandidate.count({ where: { positionId: position.id } }),
     1,
-    'failed fenced update must roll back without resetting the candidate',
+    'successful update leaves the candidate unchanged',
   );
 
   releaseBlocker();
@@ -132,11 +129,11 @@ try {
   });
   assert.equal(
     await prisma.positionCleanupCandidate.count({ where: { positionId: position.id } }),
-    0,
-    'retained-reference update must reset a stale candidate after acquiring the fence',
+    1,
+    'updates remain independent after the observer releases its lock',
   );
 
-  console.log('Position cleanup update trigger fence tests passed.');
+  console.log('Ply updates remain independent of position cleanup advisory locks.');
 } finally {
   releaseBlocker?.();
   if (blockerPromise) await blockerPromise.catch(() => {});
