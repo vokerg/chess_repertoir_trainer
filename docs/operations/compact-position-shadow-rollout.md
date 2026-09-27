@@ -22,7 +22,7 @@ It has no default, non-null constraint or index. The fixed pilot column is never
 
 ## Production authorization and sequence
 
-The user explicitly authorized this complete shadow sequence on 2026-09-27, with an immediate stop on any failed target, migration, validation, uniqueness, index, deployment or operational gate. Authorization does not permit a read cutover or merging PR #439. The first execution stopped at the worker deployment gate described below; do not advance to backfill while that gate remains failed.
+The user explicitly authorized this complete shadow sequence on 2026-09-27, with an immediate stop on any failed target, migration, validation, uniqueness, index, deployment or operational gate. Authorization does not permit a read cutover or merging PR #439. Execution is currently stopped on the worker connection-pool failure described below after a partial backfill; do not resume until the worker deployment/operational gate is healthy.
 
 1. Inspect both runtime `DATABASE_URL` and migration/index `DIRECT_URL`; require the same intended database. Inspect pending migrations. Preserve the current column/index/table/database sizes and the 100 fixed-pilot values for comparison. A full **read-only**, bounded compatibility scan works even before the new column exists:
 
@@ -176,7 +176,7 @@ Completed:
 - Render service `srv-d8a44vf7f7vs73cp9ogg` deployed exact reviewed commit `6d3b660459187e989dae08dfb7c52570e0c023cb` through the specific-commit workflow, without merging or changing its configured branch. [Deployment `dep-dasg3kh7lnhs7391irc0`](https://dashboard.render.com/web/srv-d8a44vf7f7vs73cp9ogg/deploys/dep-dasg3kh7lnhs7391irc0) reported live at **11:48:56 UTC**; `/health` returned `{ "ok": true }`. Verified Render auto-deploy is **Off** after the specific-commit workflow; it remains off so an unrelated main push cannot replace the dual-writing canary with the legacy build. The configured source branch remains main.
 - Found the actual local API/worker supervisors in this repository. Reloaded their reviewed source after Prisma generation by changing entry-file modification times only; no source content changed. Local API PID 49187 remained healthy. Worker PID 49186 initially ran under supervisor PID 36438, but subsequently exited, leaving the supervisor with no child. The Render project contains one API web service and no hosted worker.
 
-**Stop condition:** the active worker could not be confirmed to remain running on the dual-write release. The rollout stopped immediately when that deployment inconsistency was established, before any compact backfill batch. Computer-use safety controls rejected access to Terminal, so the worker's console error was unavailable. Its latest startup/exit error is needed to diagnose this blocker; no second restart or replacement worker was launched after the failed gate.
+**Stop condition:** the active worker could not be confirmed to remain running on the dual-write release. The rollout stopped immediately when that deployment inconsistency was established, before any compact backfill batch. Computer-use safety controls rejected access to Terminal, so the worker's console error was unavailable. At this first checkpoint its console error was unavailable and no second restart had been attempted. The user subsequently clarified that they had intentionally terminated the local processes, authorized starting them for verification, and the sequence resumed as recorded below.
 
 Read-only checkpoint at **11:55 UTC**:
 
@@ -201,3 +201,101 @@ An independent read-only audit compared the saved 100 fixed-pilot rows' IDs, FEN
 Not executed: backfill, stored-data full validation, unique index gates/build, convergence migration or nullable `@unique` annotation, vacuum, and equality/batch benchmark. No lookup plans/timings or post-backfill storage conclusions are available. The full-table preflight distribution above remains encoding-only evidence, not completed shadow rollout validation. The 38.30% raw gain still merits a canary, but does not justify cutover without the remaining measured storage/index/lookup gates.
 
 The existing application reads remain key-based; the fixed pilot, FEN/hash fields, relations and cleanup behavior remain intact. PR #439 is unmerged. Resolve and confirm the worker deployment gate before resuming the still-authorized sequence; recheck identity, migrations and headroom before the next production mutation.
+
+## Resumed after user clarification — stopped on worker P2028
+
+The user clarified that the earlier local process termination was intentional and authorized startup for verification. Rebuilt the reviewed API runtime with `npm run build:api`, then started the compiled local API and worker using the repository's normal `start` and `start:worker` commands, with logs captured. Both local and hosted API health checks passed. The worker started all configured loops; orphan Position cleanup remained disabled by its existing configuration. Its initial preparation-reconciliation lag warning after downtime cleared on subsequent iterations. Rechecked the target: `neondb.public`, intended endpoints, no pending/unfinished migrations, 771,646 positions and 771,646 compact NULLs.
+
+Ran the documented backfill command with `--batch-size=1000`. **75 batches / 75,000 rows** committed, each prevalidated and validated again from PostgreSQL before commit, with **zero codec failures**, last committed ID **76,614**. The worker subsequently exited with:
+
+```text
+Persistent worker failed PrismaClientKnownRequestError:
+Transaction API error: Unable to start a transaction in the given time.
+code: P2028
+
+Timed out fetching a new connection from the connection pool.
+Current connection pool timeout: 20, connection limit: 3
+```
+
+On detecting this material operational failure, interrupted the maintenance process immediately with SIGINT. No automatic retry or additional batch job was launched. The worker is stopped. The temporary local API used for verification was intentionally shut down afterward; the hosted API remains live on reviewed commit `6d3b6604`, with Render auto-deploy Off. The backfill's own per-batch validation reported no failure; the **worker operational failure** stopped the rollout. Existing successful batches remain resumable and are not undone.
+
+An independent **read-only partial audit** at **12:06:47 UTC** paged through all 75,000 populated values, requiring exact decoded FEN and canonical byte equality, and found **zero mismatches**. It explicitly excluded the still-unfilled values and is **not** the required final full-table validation. All 100 saved fixed-pilot IDs/FENs/keys/fixed bytes remain exactly unchanged.
+
+| Current measurement | Actual value |
+| --- | ---: |
+| Total positions | 771,646 |
+| Compact populated / NULL | 75,000 / 696,646 |
+| Committed / independently validated | 75,000 / 75,000 |
+| Codec mismatches | 0 |
+| Compact field storage | 1,513,571 bytes |
+| Compact raw payload | 1,438,571 bytes |
+| Compact field min / average / max | 13 / 20.180947 / 27 bytes |
+| Compact UNIQUE index | Not built |
+| Current hash unique index | 31,367,168 bytes; unchanged |
+| Primary-key index | 19,906,560 bytes; unchanged |
+| Position heap | 90,849,280 bytes; growth 1,654,784 |
+| Position total relation | 142,204,928 bytes; growth 1,654,784 |
+| Database | 345,858,048 bytes; growth 1,654,784 |
+| FEN / hash / fixed-pilot field totals | 40,581,498 / 13,117,982 / 3,500 bytes; unchanged |
+
+Measured attributable compact field/index storage is **1,513,571 bytes**, with zero compact index storage. Physical growth is reported separately; no vacuum has run, and these partial-update heap sizes do not establish eventual compacted storage.
+
+| Partial populated rows only | Min | Average | Median | p90 | p99 | Max |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Compact raw bytes | 12 | 19.180947 | 19 | 24 | 26 | 26 |
+| Piece count | 3 | 17.918880 | 18 | 28 | 32 | 32 |
+
+| Compact raw bytes | Populated positions |
+| ---: | ---: |
+| 12 | 1,471 |
+| 13 | 2,772 |
+| 14 | 3,468 |
+| 15 | 4,659 |
+| 16 | 6,326 |
+| 17 | 6,626 |
+| 18 | 7,242 |
+| 19 | 7,488 |
+| 20 | 6,848 |
+| 21 | 6,674 |
+| 22 | 6,245 |
+| 23 | 5,565 |
+| 24 | 4,574 |
+| 25 | 3,407 |
+| 26 | 1,635 |
+
+| Pieces | Populated positions |
+| ---: | ---: |
+| 3 | 664 |
+| 4 | 807 |
+| 5 | 868 |
+| 6 | 1,904 |
+| 7 | 1,431 |
+| 8 | 2,037 |
+| 9 | 2,265 |
+| 10 | 2,394 |
+| 11 | 3,037 |
+| 12 | 3,289 |
+| 13 | 3,388 |
+| 14 | 3,238 |
+| 15 | 3,576 |
+| 16 | 3,666 |
+| 17 | 3,749 |
+| 18 | 3,739 |
+| 19 | 3,307 |
+| 20 | 3,541 |
+| 21 | 3,124 |
+| 22 | 3,550 |
+| 23 | 2,680 |
+| 24 | 3,565 |
+| 25 | 2,244 |
+| 26 | 3,321 |
+| 27 | 1,617 |
+| 28 | 2,957 |
+| 29 | 1,028 |
+| 30 | 2,379 |
+| 31 | 248 |
+| 32 | 1,387 |
+
+Remaining operations were **not executed**: the other 696,646 historical rows, independent full-table stored validation, duplicate/index gates and concurrent UNIQUE build, convergence migration/nullable unique annotation, ordinary vacuum, and equality/batch lookup comparisons. No query-plan/timing comparison or final compact-index size exists yet, so there is no basis for a cutover decision. Reads remain on the existing key and FEN.
+
+Resume requires diagnosing the worker's transaction-admission and three-connection-pool exhaustion and confirming a stable connection budget for its concurrent loops while maintenance runs. The cause is now captured in the worker log; no console access or additional authorization for the already approved sequence is needed, but the user's explicit stop-on-operational-error condition prevents silently retrying the failed rollout. Recheck target/migrations/headroom and worker health before a deliberate resume. The documented NULL-only command will retain the already committed 75,000 rows and continue at the first unfilled ID.
