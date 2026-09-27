@@ -22,7 +22,7 @@ It has no default, non-null constraint or index. The fixed pilot column is never
 
 ## Production authorization and sequence
 
-The previous authorization covered a 100-row fixed-format pilot. It does **not** authorize this full-table rollout. Do not mutate Neon until the target identity, current row count and these commands have been presented and execution is explicitly authorized. Keep PR #439 unmerged.
+The user explicitly authorized this complete shadow sequence on 2026-09-27, with an immediate stop on any failed target, migration, validation, uniqueness, index, deployment or operational gate. Authorization does not permit a read cutover or merging PR #439. The first execution stopped at the worker deployment gate described below; do not advance to backfill while that gate remains failed.
 
 1. Inspect both runtime `DATABASE_URL` and migration/index `DIRECT_URL`; require the same intended database. Inspect pending migrations. Preserve the current column/index/table/database sizes and the 100 fixed-pilot values for comparison. A full **read-only**, bounded compatibility scan works even before the new column exists:
 
@@ -38,7 +38,7 @@ The previous authorization covered a 100-row fixed-format pilot. It does **not**
    npm run db:migrate --workspace=apps/api
    ```
 
-3. Deploy the API and any active worker from the reviewed PR-branch artifact through the existing release process, without merging the PR. Apply the column before starting the new release. Confirm all Position writers use the dual-writing release before backfill. If that release cannot be deployed, pause legacy writers for maintenance and report continuous shadow coverage as pending; old writers can introduce new nulls after they resume. Do not claim a complete sustained rollout while old writers remain active.
+3. Deploy the API and any active worker from the reviewed PR-branch artifact through the existing release process, without merging the PR. Apply the column before starting the new release. Confirm all Position writers use the dual-writing release before backfill. If that release cannot be deployed or any writer fails, stop the rollout and report continuous shadow coverage as pending. Old writers can introduce new nulls. Do not claim a complete sustained rollout while old writers remain active or the worker deployment gate is failed.
 
 4. Save baseline measurements, then backfill and independently validate:
 
@@ -163,6 +163,41 @@ Lossless encoding and the full-table 38.30% raw reduction versus the fixed codec
 
 New API tests cover all three dual-write statements, duplicate-create semantics, legacy null shadow reads, immutable fixed data/keys/FENs, interruption/resume/idempotency, rollback for malformed FEN or corrupted readback, zero final nulls, exact full histogram statistics, duplicate/collision gates, concurrent index validity, nullable schema and bounded lookup equivalence. Backfill/index/benchmark integration fixtures live in a private PostgreSQL schema. Run mutation tests only against an identified disposable test database.
 
-Local validation completed: root `npm run build` (including API typecheck, web and mobile builds), root `npm run lint`, all 191 chess-domain tests, focused dual-write/backfill and existing import/analysis/opening/HTTP tests, `check:architecture`, `check:hygiene`, and `git diff --check`. The full migration chain was applied only to disposable local PostgreSQL 16 databases; maintenance integration uses 2,107 positions in an isolated schema. The complete root test suite and fresh PR CI are rerun for this checkpoint. Initial local full-suite attempts exposed non-UTC PostgreSQL timestamps, reused authentication fixtures, and a synthetic non-FEN cleanup fixture; the final run uses a fresh UTC database and the cleanup test now exercises a valid played FEN without changing cleanup behavior. Production-mutating tests, migration, deployment, backfill, index and vacuum are skipped pending authorization. Git emits configured LF-to-CRLF conversion notices.
+Local validation completed: root `npm run build` (including API typecheck, web and mobile builds), root `npm run lint`, all 191 chess-domain tests, focused dual-write/backfill and existing import/analysis/opening/HTTP tests, `check:architecture`, `check:hygiene`, and `git diff --check`. The full migration chain was applied only to disposable local PostgreSQL 16 databases; maintenance integration uses 2,107 positions in an isolated schema. The complete root suite passed: 191 domain tests, 250 API test files, 545 web tests and 25 mobile tests. [CI passed for reviewed commit `6d3b6604`](https://github.com/vokerg/chess_repertoir_trainer/actions/runs/36269077398). Initial local full-suite attempts exposed non-UTC PostgreSQL timestamps, reused authentication fixtures, and a synthetic non-FEN cleanup fixture; the final run uses a fresh UTC database and the cleanup test now exercises a valid played FEN without changing cleanup behavior. Database-mutating integration tests ran only on disposable local PostgreSQL. Production execution is tracked separately below. Git emits configured LF-to-CRLF conversion notices.
 
-The full production rollout has **not yet been authorized or executed**. Its commands and SQL are reviewable above; actual production compact-column/index totals and lookup plans remain pending execution. The earlier [100-row fixed pilot and read-only compact comparison](position-data-pilot.md) remain historical checkpoints, not evidence that this full shadow rollout is complete.
+## Authorized execution — stopped at deployment gate, 2026-09-27
+
+At 11:41 UTC, target verification matched the documented direct/pooled endpoint, `neondb.public`, role `neondb_owner`, 771,646 positions and 100 fixed pilot rows. The expansion migration was the only pending migration; main had not advanced beyond the branch base. The Neon console identified project `morning-butterfly-68390172`, production branch `br-dawn-hall-alkzystf`, Free plan with 0.5 GB/project storage. Reported project usage was 367.67 MB; PostgreSQL reports `neon.max_cluster_size = 512 MB` and autovacuum enabled.
+
+Completed:
+
+- `npm run db:migrate --workspace=apps/api` applied `20260926160000_add_compact_position_shadow` at **11:44:07 UTC**, then regenerated Prisma. The compact field is nullable with no default; no index was added. Prisma displayed a major-version upgrade notice; no dependency upgrade was performed.
+- Verified the existing Render service's runtime/direct database hosts and database/schema match the intended Neon target, without changing its environment.
+- Render service `srv-d8a44vf7f7vs73cp9ogg` deployed exact reviewed commit `6d3b660459187e989dae08dfb7c52570e0c023cb` through the specific-commit workflow, without merging or changing its configured branch. [Deployment `dep-dasg3kh7lnhs7391irc0`](https://dashboard.render.com/web/srv-d8a44vf7f7vs73cp9ogg/deploys/dep-dasg3kh7lnhs7391irc0) reported live at **11:48:56 UTC**; `/health` returned `{ "ok": true }`. Verified Render auto-deploy is **Off** after the specific-commit workflow; it remains off so an unrelated main push cannot replace the dual-writing canary with the legacy build. The configured source branch remains main.
+- Found the actual local API/worker supervisors in this repository. Reloaded their reviewed source after Prisma generation by changing entry-file modification times only; no source content changed. Local API PID 49187 remained healthy. Worker PID 49186 initially ran under supervisor PID 36438, but subsequently exited, leaving the supervisor with no child. The Render project contains one API web service and no hosted worker.
+
+**Stop condition:** the active worker could not be confirmed to remain running on the dual-write release. The rollout stopped immediately when that deployment inconsistency was established, before any compact backfill batch. Computer-use safety controls rejected access to Terminal, so the worker's console error was unavailable. Its latest startup/exit error is needed to diagnose this blocker; no second restart or replacement worker was launched after the failed gate.
+
+Read-only checkpoint at **11:55 UTC**:
+
+| Measurement | Actual value |
+| --- | ---: |
+| Positions | 771,646 |
+| Compact NULLs | 771,646 |
+| Rows backfilled | 0 |
+| Compact field storage / raw payload | 0 / 0 bytes |
+| Compact UNIQUE index | Not created |
+| Hash unique index | 31,367,168 bytes |
+| Primary-key index | 19,906,560 bytes |
+| FEN field total | 40,581,498 bytes |
+| Hash field total | 13,117,982 bytes |
+| Fixed pilot field total | 3,500 bytes |
+| Position heap | 89,194,496 bytes; growth 0 |
+| Position total relation | 140,550,144 bytes; growth 0 |
+| PostgreSQL database | 344,203,264 bytes; growth 0 |
+
+An independent read-only audit compared the saved 100 fixed-pilot rows' IDs, FENs, keys and fixed bytes exactly; all are unchanged. Both existing index definitions are unchanged. Additional measured compact field/index storage is zero; metadata/catalog effects are not a compacted steady-state estimate.
+
+Not executed: backfill, stored-data full validation, unique index gates/build, convergence migration or nullable `@unique` annotation, vacuum, and equality/batch benchmark. No lookup plans/timings or post-backfill storage conclusions are available. The full-table preflight distribution above remains encoding-only evidence, not completed shadow rollout validation. The 38.30% raw gain still merits a canary, but does not justify cutover without the remaining measured storage/index/lookup gates.
+
+The existing application reads remain key-based; the fixed pilot, FEN/hash fields, relations and cleanup behavior remain intact. PR #439 is unmerged. Resolve and confirm the worker deployment gate before resuming the still-authorized sequence; recheck identity, migrations and headroom before the next production mutation.
