@@ -22,7 +22,7 @@ It has no default, non-null constraint or index. The fixed pilot column is never
 
 ## Production authorization and sequence
 
-The user explicitly authorized this complete shadow sequence on 2026-09-27, with an immediate stop on any failed target, migration, validation, uniqueness, index, deployment or operational gate. Authorization does not permit a read cutover or merging PR #439. Execution is currently stopped on the worker connection-pool failure described below after a partial backfill; do not resume until the worker deployment/operational gate is healthy.
+The user explicitly authorized this complete shadow sequence on 2026-09-27, with an immediate stop on any failed target, migration, validation, uniqueness, index, deployment or operational gate. Authorization does not permit a read cutover or merging PR #439. The user subsequently authorized resuming with the local worker intentionally paused during bulk maintenance, batches of 500, and a worker health gate after independent full validation. The earlier P2028 was a worker transaction-admission/concurrency failure, not a codec or persisted-data failure. Pool sizes, connection URL parameters and worker concurrency remain unchanged.
 
 1. Inspect both runtime `DATABASE_URL` and migration/index `DIRECT_URL`; require the same intended database. Inspect pending migrations. Preserve the current column/index/table/database sizes and the 100 fixed-pilot values for comparison. A full **read-only**, bounded compatibility scan works even before the new column exists:
 
@@ -44,15 +44,15 @@ The user explicitly authorized this complete shadow sequence on 2026-09-27, with
 
    ```bash
    npm run db:measure-compact-position-data --workspace=apps/api
-   npm run db:backfill-compact-position-data --workspace=apps/api -- --batch-size=1000
-   npm run db:backfill-compact-position-data --workspace=apps/api -- --validate-only --batch-size=1000
+   npm run db:backfill-compact-position-data --workspace=apps/api -- --batch-size=500
+   npm run db:backfill-compact-position-data --workspace=apps/api -- --validate-only --batch-size=500
    ```
 
    Batch size accepts integers 1..5000, default 1000. The update selects only null compact values, ordered by ID, in bounded batches with row locks. It prevalidates the entire batch, performs one parameterized `UPDATE ... FROM (VALUES ...)` guarded by ID, original FEN and null compact data, rereads exactly those IDs and commits only after exact/canonical validation. Failure rolls back that batch and identifies ID, FEN, encoded length and decoded FEN. Earlier committed batches remain durable; restarting begins at the first null row and never overwrites a populated value. Malformed rows are never skipped. The fixed pilot, hash and FEN columns are not updated.
 
    Incremental reports include batches/scanned/written/validated/failures/last ID and bounded compact-byte/piece-count histograms. The final repeatable-read validation decodes every stored row in bounded pages, requires zero nulls and row-count agreement, and reports min/average/median/p90/p99/max sizes and piece counts, complete distributions, raw compact payload total, field-storage totals and averages. Median uses the two central ranks; p90/p99 use nearest rank. Validation has a 30-minute snapshot timeout; row-lock acquisition is five seconds and each write batch has a 60-second timeout. No whole-table array is retained.
 
-5. Only after successful full validation, build the unique index using the **direct** URL:
+5. After the independent validation reports zero NULLs, zero mismatches and a validated count equal to the current row count, restart the reviewed local worker with no backfill running. Observe all configured loops with the existing `connection_limit=3`, and validate any newly created Positions. Stop on worker/database errors; do not change the connection budget to pass this gate. Only after this worker gate succeeds, build the unique index using the **direct** URL:
 
    ```bash
    npm run db:index-compact-position-data --workspace=apps/api
@@ -299,3 +299,73 @@ Measured attributable compact field/index storage is **1,513,571 bytes**, with z
 Remaining operations were **not executed**: the other 696,646 historical rows, independent full-table stored validation, duplicate/index gates and concurrent UNIQUE build, convergence migration/nullable unique annotation, ordinary vacuum, and equality/batch lookup comparisons. No query-plan/timing comparison or final compact-index size exists yet, so there is no basis for a cutover decision. Reads remain on the existing key and FEN.
 
 Resume requires diagnosing the worker's transaction-admission and three-connection-pool exhaustion and confirming a stable connection budget for its concurrent loops while maintenance runs. The cause is now captured in the worker log; no console access or additional authorization for the already approved sequence is needed, but the user's explicit stop-on-operational-error condition prevents silently retrying the failed rollout. Recheck target/migrations/headroom and worker health before a deliberate resume. The documented NULL-only command will retain the already committed 75,000 rows and continue at the first unfilled ID.
+
+## Maintenance-pause resume — 2026-09-27
+
+The user explicitly instructed that the worker stay stopped throughout the bulk backfill and independent full validation. The prior P2028 means the worker could not acquire a transaction/connection while concurrent maintenance was active; there were zero codec mismatches. This rollout changes neither Prisma pool sizes, `DATABASE_URL` parameters, worker concurrency nor application architecture. The post-backfill restart will determine whether the reviewed worker remains healthy without the write workload.
+
+Resume preflight at 12:16:42 UTC confirmed the intended direct/pooled Neon identity, no pending or unfinished migrations, the nullable/no-default shadow column and no compact index. Counts matched the checkpoint exactly: 771,646 total, 75,000 populated, 696,646 NULL. Database storage was 345,858,048 bytes against the 512 MB cluster limit. A SHA-256 audit of IDs and existing compact bytes was saved to verify that the original 75,000 values remain untouched. Render remained Live on reviewed dual-write commit `6d3b660459187e989dae08dfb7c52570e0c023cb`, with auto-deploy Off.
+
+The resumed command uses `--batch-size=500`. A health-monitor timeout caused an immediate pause after 127 batches / 63,500 additional rows, with written = validated and zero failures. The Render free instance had been inactive for over 15 minutes; its logs show a fresh instance startup, followed by HTTP 200 and a subsequent 0.3-second health response. This was a cold-start delay rather than evidence of codec/database failure. After confirming recovery, the NULL-only command resumed with continuous health/headroom/count monitoring. The local worker stayed intentionally stopped until both full validations passed. The reviewed worker restart was subsequently interrupted by local laptop sleep and a failed health probe; it is stopped again. The worker health gate and remaining index/vacuum/benchmark sequence are pending.
+
+### Completed backfill and independent validation
+
+The resumed work committed **696,646** additional rows in **1,394** batches of at most 500: 127 / 63,500 before the cold-start monitoring pause and 1,267 / 633,146 afterward. Including the initial 75 / 75,000, the complete backfill committed **771,646 rows across 1,469 batches**, with written = readback-validated for every batch and **zero failures**. The final ID was **1,123,909**.
+
+Both the automatic full validation and the separate `--validate-only --batch-size=500` command validated **771,646** stored rows with **zero NULLs and zero mismatches**, equal to the current Position count. Each required exact FEN equality and canonical re-encoding. A separate retention audit reproduced the SHA-256 digest of the initial 75,000 compact values and confirmed all 100 saved fixed-pilot IDs/FENs/keys/bytes unchanged. FEN and hash field totals also equal the pre-rollout totals.
+
+| Persisted full-table metric | Min | Average | Median | p90 | p99 | Max |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Compact payload bytes | 12 | 20.978037 | 22 | 25 | 26 | 26 |
+| Piece count | 3 | 21.554491 | 23 | 30 | 32 | 32 |
+
+Actual raw compact payload totals **16,187,618 bytes**; `pg_column_size(positionDataCompact)` totals **16,959,264 bytes**, averaging **21.978037 bytes** including the field header. This is **38.30%** less raw payload than the fixed 34-byte format.
+
+| Persisted compact payload bytes | Positions |
+| ---: | ---: |
+| 12 | 8,457 |
+| 13 | 16,771 |
+| 14 | 23,447 |
+| 15 | 30,517 |
+| 16 | 36,944 |
+| 17 | 41,059 |
+| 18 | 48,203 |
+| 19 | 52,473 |
+| 20 | 56,787 |
+| 21 | 62,309 |
+| 22 | 70,332 |
+| 23 | 76,670 |
+| 24 | 86,832 |
+| 25 | 92,531 |
+| 26 | 68,314 |
+
+The persisted piece-count distribution exactly matches the complete preflight piece table above. The worker restart uses the reviewed compiled `start:worker` build and the existing `connection_limit=3`; no backfill is running during observation.
+
+### Worker observation interrupted by laptop sleep — final checkpoint
+
+At **12:51:02 UTC**, after both validation processes exited successfully and no backfill remained, restarted the reviewed compiled worker using `npm run start:worker --workspace=apps/api`. Persistent jobs, account imports, account/game lifecycle and whole-user lifecycle loops started normally. Position cleanup remained disabled by its existing configuration. Preparation reconciliation telemetry recovered from the downtime warning to normal sub-second lag. The existing `connection_limit=3` was unchanged.
+
+The worker remained alive and all health probes passed through **12:53:02 UTC** (121 seconds), with **no P2028, database transaction/connection errors or codec failures**. No Position with ID above the pre-restart maximum 1,123,909 was created during that window, so the bounded canonical audit observed **zero new rows**; this is not a claim that a new production creation path was exercised. The creation paths are covered by the API dual-write tests.
+
+The observation then stopped on a health-probe transport failure (`fetch failed`), and its supervisor sent SIGTERM to the worker process group. The laptop subsequently spent several hours in sleep/dark-wake cycles, confirmed by the macOS power log. A later 30-second curl probe reported 949.9 seconds elapsed across suspension and no response. This local interruption prevents claiming a complete continuous worker health canary; it does **not** demonstrate a codec failure or a recurrence of P2028. The worker is stopped. No pool, URL, concurrency or architecture settings were changed to pass the gate.
+
+After wake, a read-only Neon check reconfirmed **771,646 positions, zero compact NULLs**, and **417,472,512 database bytes**. A fresh hosted `/health` request subsequently returned **HTTP 200 / `{ "ok": true }`** after 82.5 seconds, consistent with Render free-instance wake latency; the interrupted worker observation is still incomplete. The fully committed backfill and both successful full validations remain durable. No compact UNIQUE index, convergence migration, nullable `@unique` annotation, vacuum or lookup benchmark was executed because the worker observation gate remains incomplete. Existing reads and representations remain unchanged; PR #439 remains unmerged.
+
+The following are **post-backfill, pre-index, pre-vacuum** measurements, not a completed shadow rollout:
+
+| Measurement | Actual bytes | Change from original baseline |
+| --- | ---: | ---: |
+| Compact raw payload | 16,187,618 | +16,187,618 |
+| Compact field storage | 16,959,264 | +16,959,264 |
+| Compact UNIQUE index | Not built | 0 |
+| Current hash unique index | 62,521,344 | +31,154,176 |
+| Primary-key index | 35,053,568 | +15,147,008 |
+| Position heap | 116,154,368 | +26,959,872 |
+| Position total relation | 213,819,392 | +73,269,248 |
+| Whole database | 417,472,512 | +73,269,248 |
+
+FEN/hash/fixed-pilot field totals remain **40,581,498 / 13,117,982 / 3,500 bytes**. Compact field min/average/max are **13 / 21.978037 / 27 bytes**; payload min/average/median/p90/p99/max are **12 / 20.978037 / 22 / 25 / 26 / 26 bytes**. Attributable compact field-plus-index storage so far is **16,959,264 bytes**. The larger observed physical growth includes backfill tuple/index bloat and reusable space; neither old index growth nor heap growth should be treated as eventual compacted steady-state storage. No current index was logically altered or dropped.
+
+The full-table lossless result and 38.30% raw reduction versus the fixed format support compact identity as a candidate. Actual compact-index size, duplicate readiness and equality/batch plans/timings remain unmeasured; these results alone do not justify a read cutover.
+
+Validation for this checkpoint: **191 chess-domain tests / 16 files** passed; the complete API command (`npm run test --workspace=apps/api`) passed **250 test files** against a fresh disposable local PostgreSQL 16 database with UTC timezone, including the API build/typecheck, dual-write and transactional backfill tests. Architecture and hygiene checks passed. Production mutation tests were not run. The previously reviewed runtime and prior documentation checkpoint both have green GitHub CI; CI for this documentation checkpoint is triggered on push.
