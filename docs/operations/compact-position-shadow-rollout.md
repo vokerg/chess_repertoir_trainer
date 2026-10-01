@@ -369,3 +369,49 @@ FEN/hash/fixed-pilot field totals remain **40,581,498 / 13,117,982 / 3,500 bytes
 The full-table lossless result and 38.30% raw reduction versus the fixed format support compact identity as a candidate. Actual compact-index size, duplicate readiness and equality/batch plans/timings remain unmeasured; these results alone do not justify a read cutover.
 
 Validation for this checkpoint: **191 chess-domain tests / 16 files** passed; the complete API command (`npm run test --workspace=apps/api`) passed **250 test files** against a fresh disposable local PostgreSQL 16 database with UTC timezone, including the API build/typecheck, dual-write and transactional backfill tests. Architecture and hygiene checks passed. Production mutation tests were not run. The previously reviewed runtime and prior documentation checkpoint both have green GitHub CI; CI for this documentation checkpoint is triggered on push.
+
+## Completed shadow rollout — 2026-10-01
+
+This section supersedes the preceding stopped checkpoint. The hosted API remains on reviewed dual-write commit `6d3b660459187e989dae08dfb7c52570e0c023cb` with healthy `/health`; PR #439 is still unmerged. Production reads, deduplication and cleanup still use the existing `positionKey`/`normalizedFen` behavior. No old representation, relation or index was removed, and `positionDataCompact` remains nullable.
+
+The renewed target check confirmed `neondb.public` on the intended direct/pooled Neon endpoints, **771,646** Positions, **zero compact NULLs**, **100** fixed-pilot values, no compact index and no pending repository migrations. The current Neon-reported cluster limit is **1 GB**; the database was **417,472,512 bytes** before index creation. A new independent `--validate-only --batch-size=500` pass decoded and canonically re-encoded **all 771,646 stored values** with **zero mismatches** and **zero NULLs**. FEN/key/compact field totals matched the previous full validation exactly.
+
+With no backfill running, the reviewed compiled worker restarted using the existing `connection_limit=3`. Persistent jobs, account imports, account/game lifecycle and whole-user lifecycle loops started; Position cleanup remained disabled by its existing configuration. Preparation reconciliation cleared the initial maintenance lag on its next iteration. The worker and hosted API passed a **303-second** continuous observation with no P2028 or transaction/connection failure, then remained healthy through index creation, migration, vacuum and measurement. No Position above pre-restart ID **1,123,909** was created through the final readback, so this production observation contains **zero new-row dual-write samples**; the three creation paths are covered by API tests. The worker's ordinary terminal-retention loop deleted two expired job runs on startup, outside the Position table.
+
+An explicit read-only readiness gate found **zero NULLs**, **zero duplicate compact values** and no pre-existing compact index. The guarded command repeated those gates, validated **771,646** rows again, and created `ImportedGamePosition_positionDataCompact_key` with `CREATE UNIQUE INDEX CONCURRENTLY` outside an explicit transaction. PostgreSQL reports a valid, ready, unique one-column btree. Its size is **32,899,072 bytes**. No invalid-index state occurred.
+
+The normal convergence migration [`20261001171630_index_compact_position_shadow`](../../apps/api/prisma/migrations/20261001171630_index_compact_position_shadow/migration.sql) records the index with `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS`; the Prisma field now has a mapped nullable `@unique` annotation. The operational index retained PostgreSQL object ID **2,105,344** across migration deployment, proving it was not recreated. The column remains nullable with no default. All **84** repository migrations are applied. The earlier `0001_init` status warning was a rolled-back May migration, not an active or pending migration; a complete history audit found that this convergence migration was the sole pending migration and no finished migration was missing locally. Prisma now reports the schema up to date.
+
+Ordinary `VACUUM (ANALYZE) "ImportedGamePosition"` completed outside a transaction. `VACUUM FULL` was not run. Actual post-vacuum field storage is:
+
+| Column | Min bytes | Average bytes | Max bytes | Total bytes |
+| --- | ---: | ---: | ---: | ---: |
+| `normalizedFen` | 25 | 52.590823 | 73 | 40,581,498 |
+| `positionKey` | 17 | 17 | 17 | 13,117,982 |
+| `positionDataCompact` | 13 | 21.978037 | 27 | 16,959,264 |
+
+The 100 retained fixed-pilot values total **3,500 field bytes**. Compact raw payload totals **16,187,618 bytes**, versus **26,235,964 bytes** for 771,646 fixed 34-byte payloads: **10,048,346 bytes (38.30%)** less raw data. The persisted compact and piece-count distributions in the preceding full-backfill section still apply.
+
+| Physical measurement | Actual bytes | Change from pre-rollout baseline |
+| --- | ---: | ---: |
+| Compact UNIQUE index | 32,899,072 | +32,899,072 |
+| Current `positionKey` UNIQUE index | 62,521,344 | +31,154,176 |
+| Position primary-key index | 35,053,568 | +15,147,008 |
+| Position heap | 116,154,368 | +26,959,872 |
+| Position total relation | 246,718,464 | +106,168,320 |
+| Whole database | 450,387,968 | +106,184,704 |
+
+The attributable added compact **field plus index** storage is **49,858,336 bytes**. Whole-database growth is larger because updating every Position also grew old index files and left heap/index space that ordinary vacuum can reuse without shrinking their physical files. The current hash index is **29,622,272 bytes larger** than the compact index, but the hash index was only **31,367,168 bytes before backfill**. These are actual live sizes, not a clean steady-state comparison or a prediction of space reclaimed by dropping anything later.
+
+The read-only bounded benchmark sampled the **same 100 Positions** for both representations: three single equality lookups and one 100-value `IN` lookup per representation, **eight** `EXPLAIN (ANALYZE, BUFFERS)` executions in total. All ID/FEN result sets agreed with **zero mismatches**. PostgreSQL selected the corresponding unique index in all eight plans (single `Index Scan`, batch `Bitmap Index Scan`/`Bitmap Heap Scan` under a final sort). The [complete bounded EXPLAIN report](compact-position-shadow-benchmark-2026-10-01.json) retains plans, buffers, sampled IDs and per-query timings.
+
+| Pattern | `positionKey` execution | Compact execution | Rows each |
+| --- | ---: | ---: | ---: |
+| Single equality, three-query mean | 2.669 ms | 0.072 ms | 1 |
+| Batch `IN` (100 values) | 127.296 ms | 0.390 ms | 100 |
+
+This is a single warm-cache canary, not a reliable latency estimate. The newly built compact index incurred **zero shared-block reads** in these plans; the current hash index incurred **2–3** in each single lookup and **138** in the batch. Buffer-cache state and backfill bloat materially affect this timing difference. The result establishes equivalent identity resolution and index eligibility, not a production throughput advantage.
+
+The lossless full-table validation, zero duplicates and successful unique index make compact bytes viable as a future collision-free Position identity. Its smaller actual shadow index and much smaller field storage justify evaluating a separate cutover, subject to representative load testing and a storage design that accounts for old-index bloat. This rollout makes **no read cutover**, no `NOT NULL` change and no removal of `normalizedFen`, `positionKey` or fixed `positionData`.
+
+After the convergence migration, `npm run test --workspace=packages/chess-domain` passed **191 tests in 16 files**, `npm run build:api` passed, and `npm run test --workspace=apps/api` passed **250 test files**, including the compact dual-write and backfill suites, against a fresh disposable UTC PostgreSQL 16 database with all 84 migrations applied. Root lint, architecture and hygiene checks passed. An initial attempt against a reused local database failed on a pre-existing dev-auth uniqueness fixture; the clean database run passed without application-code changes. Pull-request CI is tracked with the final branch review. No production test fixture rows were created.
