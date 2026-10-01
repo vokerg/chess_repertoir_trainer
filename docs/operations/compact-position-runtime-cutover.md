@@ -1,6 +1,6 @@
 # Compact Position runtime cutover
 
-PR #439 continues on `pilot-position-data`. The shadow rollout is complete. This branch implements compact runtime identity and FEN hydration; production deployment and merge require explicit authorization. Legacy storage remains for rollback. Destructive cleanup has not been performed.
+PR #439 continues on `pilot-position-data`. The shadow rollout is complete. This branch implements compact runtime identity and FEN hydration. The user authorized deployment of exact commit `ddf03ff4a7ce0d50b46833776d1a7834bdf54a8d` after green CI; deployment stopped at the renewed migration-history gate below. Merge remains unauthorized. Legacy storage remains for rollback. Destructive cleanup has not been performed.
 
 ## Persistence behavior
 
@@ -77,3 +77,24 @@ Passed:
 - Focused cutover integration/unit tests and cleanup/reindex/scenario regressions. Shadow corruption tests are guarded to loopback databases and restore/delete their isolated fixtures; no such tests ran on Neon.
 
 Initial broad runs exposed fixture uniqueness assumptions (random hashes creating equal canonical Positions) and a duplicate test import; corrected fixtures/imports, focused regressions passed, then the complete fresh-database root run passed. Git reports the repository's existing LF-to-CRLF conversion notices. No new build/lint warning was reported. Hosted API deployment, worker startup/canary, post-cutover measurements and destructive cleanup were skipped pending explicit deployment authorization. `npm run expo:check` was not run for this API-only behavior change; mobile build/test/lint did run. GitHub CI for the pushed cutover commit is reported on PR #439 separately.
+
+## Authorized deployment stopped at preflight — 2026-10-01
+
+The user authorized exact runtime commit `ddf03ff4a7ce0d50b46833776d1a7834bdf54a8d` after its current CI passed, with mandatory stop on migration/schema drift or material operational error. [CI run 36914540785](https://github.com/vokerg/chess_repertoir_trainer/actions/runs/36914540785) completed successfully for that SHA. No deployment or worker startup was attempted. Render remains Live on rollback revision `6d3b660459187e989dae08dfb7c52570e0c023cb`, with auto-deploy disabled.
+
+Refreshed read-only target/index/column checks at 19:32 UTC and independent full validation completed at 19:34:58 UTC: **771,646 Positions, 0 compact NULLs, 0 duplicate groups, 0 full canonical/FEN mismatches**, valid/ready/unique compact index, all legacy columns/indexes retained, and hosted health **200 / `{ "ok": true }`**. Direct and pooled URLs still identify the intended Neon project/database.
+
+The stronger read-only migration-history audit found all **84** repository migrations finished, no missing/unknown finished migration and no unfinished migration, but **two recorded checksums disagree with the reviewed files**, including LF/CRLF variants:
+
+| Migration | Production checksum | Reviewed file checksum | Production completion |
+| --- | --- | --- | --- |
+| `20260717093000_require_complete_analysis_progress` | `cc0f8ac67d65784e1ce5ca739434b2dac3d0b49ccda9d06913e972c7e8863a1e` | `f5507c3396ca8de405ffdb6c61f5395f7d54efd15931815be903914282ccfae0` | 2026-07-17 07:46:58 UTC |
+| `20260903080000_position_cleanup_foundation` | `845c88466dd81d39fe31cb8ad4e47f6fc57bfae80256962a168b37a9a7d06176` | `c97c7d34f273a6af768981fca6d61d7ea41a191378df82ca71caece26bff2121` | 2026-09-11 18:14:36 UTC |
+
+The first recorded checksum matches historical Git versions at `c8af89df9dc2cadffb91e22132b5ab3efd705e8e` and `e5633ef0f5f2be4c0398deedf0f9ef66ac25875d`. No matching cleanup-foundation version was found in the available Git history. Both files predate this cutover and are unchanged by it. The expected completed-progress CHECK and the retained Position primary key/ply-analysis-cache foreign keys are present. These observations do not prove complete schema equivalence for the historical cleanup migration, so the discrepancy was not waived.
+
+Deployment stopped as soon as the first checksum mismatch was detected; subsequent checks were read-only diagnostics to establish scope. No migration repair, checksum rewrite, schema change, data mutation, fake production fixture, merge, destructive cleanup or rollback was performed. No rollback was needed because the cutover was never deployed. API/worker feature canary, continuous observation, new-row dual-write checks and post-cutover EXPLAIN were **not run**.
+
+The exact runtime source built successfully in the existing workspace. A separate detached worktree build sharing installed dependencies failed on pre-existing WASM Worker error-event typing (`unknown` versus `Error`); that artifact was not started, and no runtime source was changed to address it. This local artifact-preparation limitation is separate from the production migration-history stop. The successful fresh CI build remains the reviewed release evidence.
+
+Resume requires a separate decision about the historical migration discrepancy and a deliberate renewed gate; green CI alone does not override the user's stop condition. The authorized runtime SHA and rollback target remain unchanged.
