@@ -5,12 +5,12 @@ import type {
 } from '@chess-trainer/contracts/opening-explorer';
 import prisma from '../../prisma';
 import { findOrCreatePositionByNormalizedFen } from '../analysis/analysis.repository.prisma';
-import { positionKeyForNormalizedFen } from '../positions/position-key';
+import { compactPositionIdentity, normalizedFenFromPosition, positionIdentitySelect } from '../positions/position-storage';
 
 const openingExplorerCacheInclude = {
   position: {
     select: {
-      normalizedFen: true,
+      ...positionIdentitySelect,
     },
   },
 } as const;
@@ -47,7 +47,7 @@ function mapStoredCache(row: any): StoredOpeningExplorerCache {
   return {
     id: row.id,
     positionId: row.positionId,
-    normalizedFen: row.position.normalizedFen,
+    normalizedFen: normalizedFenFromPosition(row.position),
     source: row.source,
     profileVersion: row.profileVersion,
     sinceYear: row.sinceYear,
@@ -65,14 +65,14 @@ export async function findOpeningExplorerCache(
   source: OpeningExplorerSource,
   profileVersion: number,
 ): Promise<StoredOpeningExplorerCache | null> {
-  const positionKey = positionKeyForNormalizedFen(normalizedFen);
+  const positionDataCompact = compactPositionIdentity(normalizedFen);
   // The deployed Prisma model keeps its original storage name. This repository
   // is the only opening-explorer boundary allowed to depend on that legacy name.
   const row = await prisma.mastersExplorerCache.findFirst({
     where: {
       source,
       profileVersion,
-      position: { positionKey: new Uint8Array(positionKey) },
+      position: { positionDataCompact },
     },
     include: openingExplorerCacheInclude,
   });

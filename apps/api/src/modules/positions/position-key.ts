@@ -1,3 +1,4 @@
+/** Legacy hash compatibility writes and historical maintenance diagnostics only. */
 import crypto from 'node:crypto';
 
 export const POSITION_KEY_BYTES = 16;

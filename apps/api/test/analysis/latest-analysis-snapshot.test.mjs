@@ -1,3 +1,4 @@
+import { encodeNormalizedFenCompact, normalizeFenForPosition } from 'chess-domain';
 import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -199,7 +200,8 @@ try {
     const position = await prisma.position.create({
       data: {
         positionKey: Buffer.from(randomUUID().replaceAll('-', ''), 'hex'),
-        normalizedFen: '8/8/8/8/8/8/8/K6k w - -',
+        normalizedFen: normalizeFenForPosition('8/8/8/8/8/8/8/K6k w - -'),
+      positionDataCompact: encodeNormalizedFenCompact(normalizeFenForPosition('8/8/8/8/8/8/8/K6k w - -')),
       },
     });
     await prisma.importedGamePly.createMany({

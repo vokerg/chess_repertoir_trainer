@@ -1,6 +1,7 @@
 import { decodeUciMove } from 'chess-domain';
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
+import { hydratePositionFen, positionIdentitySelect } from '../positions/position-storage';
 import {
   buildImportedGameWhere,
   importedGameListSelect,
@@ -114,8 +115,8 @@ export async function getCourseReviewPlies(importedGameIds: number[]) {
       importedGameId: true,
       plyNumber: true,
       moveCode: true,
-      position: { select: { normalizedFen: true } },
+      position: { select: { ...positionIdentitySelect } },
     },
   });
-  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) }));
+  return rows.map(({ moveCode, ...ply }) => ({ ...ply, position: hydratePositionFen(ply.position), moveUci: decodeUciMove(moveCode) }));
 }

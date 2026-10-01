@@ -2,6 +2,7 @@ import { decodeUciMove } from 'chess-domain';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { dataLifecyclePreviewCountsSchema, dataLifecycleScopeSchema } from '@chess-trainer/contracts/data-lifecycle';
 import prisma from '../../prisma';
+import { hydratePositionFen, positionIdentitySelect } from '../positions/position-storage';
 import { calculateTagCodes } from '../imported-games/game-tagging.service';
 import { lockDataLifecycleUserScope } from './data-lifecycle.guard';
 import {
@@ -55,7 +56,7 @@ const taggingSelect = {
       classificationCode: true,
       position: {
         select: {
-          normalizedFen: true,
+          ...positionIdentitySelect,
           analysis: {
             select: {
               bestScoreCpWhite: true,
@@ -1000,7 +1001,7 @@ async function recomputeTags(
   for (const game of games) {
     const tagCodes = calculateTagCodes({
       ...game,
-      plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) })),
+      plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, position: hydratePositionFen(ply.position), moveUci: decodeUciMove(moveCode) })),
     });
     await transaction.importedGame.update({
       where: { id: game.id },

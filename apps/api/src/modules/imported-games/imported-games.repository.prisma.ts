@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { moveClassificationCodeFromLegacy, decodeUciMove } from 'chess-domain';
 import prisma from '../../prisma';
+import { hydratePositionFen, positionIdentitySelect, type PositionFen } from '../positions/position-storage';
 import { ImportedGameSearchQuery, ImportedGameSummaryQuery } from './imported-games.schemas';
 
 export type ImportedGameSort = ImportedGameSearchQuery['sort'];
@@ -28,7 +29,7 @@ const importedGamePlySelect = {
   classificationCode: true,
   position: {
     select: {
-      normalizedFen: true,
+      ...positionIdentitySelect,
       analysis: {
         select: {
           id: true,
@@ -100,7 +101,7 @@ export type ImportedGameListRow = Prisma.ImportedGameGetPayload<{ select: typeof
 export type ImportedGameSearchRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameSearchSelect }>;
 type StoredImportedGameDetailRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameDetailSelect }>;
 export type ImportedGameDetailRow = Omit<StoredImportedGameDetailRow, 'plies'> & {
-  plies: Array<Omit<StoredImportedGameDetailRow['plies'][number], 'moveCode'> & { moveUci: string }>;
+  plies: Array<Omit<StoredImportedGameDetailRow['plies'][number], 'moveCode' | 'position'> & { moveUci: string; position: PositionFen<StoredImportedGameDetailRow['plies'][number]['position']> }>;
 };
 
 export interface ImportedGameSummaryAggregateRows {
@@ -127,7 +128,7 @@ const openingStrugglesPlySelect = {
   scoreLossCp: true,
   position: {
     select: {
-      normalizedFen: true,
+      ...positionIdentitySelect,
       analysis: {
         select: {
           id: true,
@@ -152,7 +153,7 @@ const openingStrugglesGameSelect = {
 
 type StoredOpeningStrugglesGameRow = Prisma.ImportedGameGetPayload<{ select: typeof openingStrugglesGameSelect }>;
 export type OpeningStrugglesGameRow = Omit<StoredOpeningStrugglesGameRow, 'plies'> & {
-  plies: Array<Omit<StoredOpeningStrugglesGameRow['plies'][number], 'moveCode'> & { moveUci: string }>;
+  plies: Array<Omit<StoredOpeningStrugglesGameRow['plies'][number], 'moveCode' | 'position'> & { moveUci: string; position: PositionFen<StoredOpeningStrugglesGameRow['plies'][number]['position']> }>;
 };
 
 function inFilter(values?: string[]) {
@@ -403,7 +404,7 @@ export async function findImportedGamesForOpeningStruggles(
       },
     },
   });
-  return rows.map((game) => ({ ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) })) }));
+  return rows.map((game) => ({ ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, position: hydratePositionFen(ply.position), moveUci: decodeUciMove(moveCode) })) }));
 }
 
 export async function findImportedGameById(userId: number, id: number) {
@@ -411,7 +412,7 @@ export async function findImportedGameById(userId: number, id: number) {
     where: { id, userId },
     select: importedGameDetailSelect,
   });
-  return game ? { ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) })) } : null;
+  return game ? { ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, position: hydratePositionFen(ply.position), moveUci: decodeUciMove(moveCode) })) } : null;
 }
 
 export async function getImportedGamePgn(userId: number, id: number) {

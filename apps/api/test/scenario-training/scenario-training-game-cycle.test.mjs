@@ -1,6 +1,7 @@
+import { findOrCreatePositionByFen } from '../../dist/modules/analysis/analysis.repository.prisma.js';
 import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { Chess } from 'chess.js';
@@ -78,9 +79,7 @@ try {
   const moves = ['e2e4', 'e7e5', 'g1f3'];
   const chess = new Chess();
   for (let index = 0; index < moves.length; index += 1) {
-    const position = await prisma.position.create({
-      data: { positionKey: randomBytes(16), normalizedFen: chess.fen() },
-    });
+    const position = await findOrCreatePositionByFen(chess.fen());
     positionIds.push(position.id);
     await prisma.importedGamePly.create({
       data: {

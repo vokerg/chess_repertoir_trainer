@@ -19,7 +19,6 @@ import { positionKeyForNormalizedFen } from '../../dist/modules/positions/positi
 const prisma = prismaModule.default;
 const suffix = randomUUID();
 const normalizedFen = '8/P6k/8/8/8/8/8/7K w - -';
-const positionKey = positionKeyForNormalizedFen(normalizedFen);
 let userId;
 const positionIds = [];
 function assertUciPlies(rows, expected) {
@@ -35,7 +34,7 @@ try {
     userColor: 'WHITE', resultForUser: 'WIN', endedAt: new Date(),
   } });
   const moves = ['a7a8q', 'a7a8n', 'a7a8b', 'a7a8r', 'h1g1', 'a7a8q'];
-  await replacePlyRowsForGame(game.id, moves.map((moveUci, index) => ({ importedGameId: game.id, plyNumber: index + 1, moveUci, normalizedFen, positionKey })));
+  await replacePlyRowsForGame(game.id, moves.map((moveUci, index) => ({ importedGameId: game.id, plyNumber: index + 1, moveUci, normalizedFen })));
   const stored = await prisma.importedGamePly.findMany({ where: { importedGameId: game.id }, orderBy: { plyNumber: 'asc' } });
   for (const [index, row] of stored.entries()) {
     assert.equal(row.moveCode, encodeUciMove(moves[index]), 'new indexed plies store compact codes');

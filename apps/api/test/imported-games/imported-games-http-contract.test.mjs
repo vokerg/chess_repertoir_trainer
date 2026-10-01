@@ -1,3 +1,4 @@
+import { encodeNormalizedFenCompact } from 'chess-domain';
 import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -88,6 +89,7 @@ try {
     create: {
       positionKey: positionKey(firstNormalizedFen),
       normalizedFen: firstNormalizedFen,
+      positionDataCompact: encodeNormalizedFenCompact(firstNormalizedFen),
     },
   });
   await prisma.positionAnalysis.upsert({
@@ -108,6 +110,7 @@ try {
     create: {
       positionKey: positionKey(legacyNormalizedFen),
       normalizedFen: legacyNormalizedFen,
+      positionDataCompact: encodeNormalizedFenCompact(legacyNormalizedFen),
     },
   });
   await prisma.positionAnalysis.upsert({

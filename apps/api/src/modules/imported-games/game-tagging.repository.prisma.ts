@@ -1,6 +1,7 @@
 import { decodeUciMove } from 'chess-domain';
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
+import { hydratePositionFen, positionIdentitySelect, type PositionFen } from '../positions/position-storage';
 
 const latestAnalysisRunForTaggingSelect = {
   id: true,
@@ -43,7 +44,7 @@ const importedGameForTaggingSelect = {
       classificationCode: true,
       position: {
         select: {
-          normalizedFen: true,
+          ...positionIdentitySelect,
           analysis: {
             select: {
               bestScoreCpWhite: true,
@@ -59,7 +60,7 @@ const importedGameForTaggingSelect = {
 
 type StoredImportedGameForTagging = Prisma.ImportedGameGetPayload<{ select: typeof importedGameForTaggingSelect }>;
 export type ImportedGameForTagging = Omit<StoredImportedGameForTagging, 'plies'> & {
-  plies: Array<Omit<StoredImportedGameForTagging['plies'][number], 'moveCode'> & { moveUci: string }>;
+  plies: Array<Omit<StoredImportedGameForTagging['plies'][number], 'moveCode' | 'position'> & { moveUci: string; position: PositionFen<StoredImportedGameForTagging['plies'][number]['position']> }>;
 };
 
 export async function getGameTagDefinitions() {
@@ -73,7 +74,7 @@ export async function getImportedGameForTagging(userId: number, gameId: number):
     where: { id: gameId, userId },
     select: importedGameForTaggingSelect,
   });
-  return game ? { ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) })) } : null;
+  return game ? { ...game, plies: game.plies.map(({ moveCode, ...ply }) => ({ ...ply, position: hydratePositionFen(ply.position), moveUci: decodeUciMove(moveCode) })) } : null;
 }
 
 export async function updateImportedGameTagCodes(importedGameId: number, tagCodes: number[]) {

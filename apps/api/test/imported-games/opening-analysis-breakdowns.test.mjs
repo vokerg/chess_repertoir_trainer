@@ -1,3 +1,4 @@
+import { encodeNormalizedFenCompact } from 'chess-domain';
 import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -30,7 +31,7 @@ try {
   const position = await prisma.position.upsert({
     where: { positionKey: positionKey(normalizedFen) },
     update: {},
-    create: { positionKey: positionKey(normalizedFen), normalizedFen },
+    create: { positionKey: positionKey(normalizedFen), normalizedFen, positionDataCompact: encodeNormalizedFenCompact(normalizedFen) },
   });
 
   const openings = [

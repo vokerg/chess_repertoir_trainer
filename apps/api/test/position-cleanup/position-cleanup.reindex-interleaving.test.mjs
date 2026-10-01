@@ -1,3 +1,4 @@
+import { encodeNormalizedFenCompact } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { Chess } from 'chess.js';
@@ -87,6 +88,7 @@ async function createFixture(label) {
   const position = await prisma.position.create({
     data: {
       normalizedFen,
+      positionDataCompact: encodeNormalizedFenCompact(normalizedFen),
       positionKey: new Uint8Array(positionKey),
     },
   });
@@ -142,13 +144,12 @@ async function finishRun(runId) {
   throw new Error(`Cleanup run ${runId} did not complete.`);
 }
 
-async function reindex(game, normalizedFen, positionKey) {
+async function reindex(game, normalizedFen) {
   return replacePlyRowsForGame(game.id, [{
     importedGameId: game.id,
     plyNumber: 1,
     moveUci: 'e2e4',
     normalizedFen,
-    positionKey,
   }]);
 }
 
@@ -199,7 +200,6 @@ try {
   writerFirstPromise = reindex(
     writerFirst.game,
     writerFirst.normalizedFen,
-    writerFirst.positionKey,
   );
 
   await waitFor(
@@ -269,7 +269,6 @@ try {
   cleanupFirstWriterPromise = reindex(
     cleanupFirst.game,
     cleanupFirst.normalizedFen,
-    cleanupFirst.positionKey,
   );
   await waitFor(
     async () => (await tableLockCount('ImportedGamePly', 'RowExclusiveLock', false)) >= 1,

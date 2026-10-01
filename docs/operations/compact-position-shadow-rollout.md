@@ -1,5 +1,7 @@
 # Compact Position shadow rollout
 
+This document records the historical shadow rollout. Shadow rollout is complete; the subsequent [compact runtime/read cutover](compact-position-runtime-cutover.md) is implemented in PR #439, with production deployment pending explicit authorization. Legacy storage remains for rollback; destructive cleanup has not been performed. The shadow rollout checkpoints below describe the application revision active at that time.
+
 This rollout adds `Position.positionDataCompact BYTEA NULL` while retaining `id`, `normalizedFen`, `positionKey` and the fixed 34-byte `positionData` pilot. It is not a read cutover. All application lookups and deduplication continue to use the existing position key and FEN. Ply, analysis and Masters cache relations and cleanup behavior remain unchanged.
 
 ## Implementation and creation-path audit

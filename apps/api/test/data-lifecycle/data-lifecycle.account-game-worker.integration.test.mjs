@@ -1,3 +1,4 @@
+import { encodeNormalizedFenCompact } from 'chess-domain';
 import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
@@ -95,7 +96,8 @@ async function createIndexedGame(accountId, providerGameId, openingProvenance, o
   const position = await prisma.position.create({
     data: {
       positionKey: Buffer.from(hash(`position:${providerGameId}`).slice(0, 32), 'hex'),
-      normalizedFen: '8/8/8/8/8/8/8/K6k w - - 0 1',
+      normalizedFen: `8/7k/8/8/8/8/2K5/8 ${openingProvenance === 'LOCAL_BOOK' ? 'w' : 'b'} - -`,
+      positionDataCompact: encodeNormalizedFenCompact(`8/7k/8/8/8/8/2K5/8 ${openingProvenance === 'LOCAL_BOOK' ? 'w' : 'b'} - -`),
       analysis: {
         create: {
           bestMoveUci: 'a1a2',

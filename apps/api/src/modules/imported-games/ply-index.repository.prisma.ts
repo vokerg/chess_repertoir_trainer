@@ -1,10 +1,13 @@
 import { Prisma } from '@prisma/client';
-import { encodeNormalizedFenCompact, encodeUciMove } from 'chess-domain';
+import { encodeUciMove } from 'chess-domain';
 import prisma from '../../prisma';
 import {
-  assertPositionKeyMatchesFen,
-  positionKeyHex,
-} from '../positions/position-key';
+  compactPositionIdentity,
+  compactPositionMapKey,
+  normalizedFenFromPosition,
+  positionIdentitySelect,
+  transitionalPositionWriteFields,
+} from '../positions/position-storage';
 
 export type ImportedGameForPlyIndex = {
   id: number;
@@ -16,7 +19,6 @@ export type ImportedGameForPlyIndex = {
 export type ImportedGamePlyCreateInput = Pick<Prisma.ImportedGamePlyCreateManyInput, 'importedGameId' | 'plyNumber'> & {
   moveUci: string;
   normalizedFen: string;
-  positionKey: Buffer;
 };
 
 export async function getImportedGameForPlyIndex(userId: number, importedGameId: number): Promise<ImportedGameForPlyIndex | null> {
@@ -49,82 +51,39 @@ export async function replacePlyRowsForGame(importedGameId: number, rows: Import
   return prisma.$transaction(async (tx) => {
     await tx.importedGamePly.deleteMany({ where: { importedGameId } });
     if (rows.length > 0) {
-      const positionsByKey = new Map<string, { normalizedFen: string; positionKey: Buffer }>();
-
+      const positionsByCompact = new Map<string, { normalizedFen: string; positionDataCompact: Uint8Array<ArrayBuffer> }>();
       for (const row of rows) {
-        const keyHex = positionKeyHex(row.positionKey);
-        const existing = positionsByKey.get(keyHex);
-
+        const positionDataCompact = compactPositionIdentity(row.normalizedFen);
+        const key = compactPositionMapKey(positionDataCompact);
+        const existing = positionsByCompact.get(key);
         if (existing && existing.normalizedFen !== row.normalizedFen) {
-          throw new Error(
-            `Position key collision before DB write for key ${keyHex}: ${existing.normalizedFen} vs ${row.normalizedFen}`,
-          );
+          throw new Error(`Position compact invariant failed before ply write: ${existing.normalizedFen} vs ${row.normalizedFen}`);
         }
-
-        positionsByKey.set(keyHex, {
-          normalizedFen: row.normalizedFen,
-          positionKey: row.positionKey,
-        });
+        positionsByCompact.set(key, { normalizedFen: row.normalizedFen, positionDataCompact });
       }
-
-      const uniquePositions = Array.from(positionsByKey.values());
-
+      const uniquePositions = [...positionsByCompact.values()];
       await tx.position.createMany({
-        data: uniquePositions.map((position) => ({
-          normalizedFen: position.normalizedFen,
-          positionKey: new Uint8Array(position.positionKey),
-          positionDataCompact: new Uint8Array(encodeNormalizedFenCompact(position.normalizedFen)),
-        })),
+        data: uniquePositions.map(({ normalizedFen, positionDataCompact }) => transitionalPositionWriteFields(normalizedFen, positionDataCompact)),
         skipDuplicates: true,
       });
-
       const positions = await tx.position.findMany({
-        where: {
-          positionKey: {
-            in: uniquePositions.map((position) => new Uint8Array(position.positionKey)),
-          },
-        },
-        select: {
-          id: true,
-          positionKey: true,
-          normalizedFen: true,
-        },
+        where: { positionDataCompact: { in: uniquePositions.map(({ positionDataCompact }) => positionDataCompact) } },
+        select: positionIdentitySelect,
       });
-
-      const expectedFenByKey = new Map(
-        uniquePositions.map((position) => [
-          positionKeyHex(position.positionKey),
-          position.normalizedFen,
-        ]),
-      );
-
-      const positionIdsByKey = new Map<string, number>();
-
+      const positionIdsByCompact = new Map<string, number>();
       for (const position of positions) {
-        if (!position.positionKey) {
-          throw new Error(`Resolved position ${position.id} has null positionKey`);
-        }
-
-        const keyHex = positionKeyHex(position.positionKey);
-        const expectedNormalizedFen = expectedFenByKey.get(keyHex);
-
-        if (!expectedNormalizedFen) {
-          throw new Error(`Resolved unexpected position key ${keyHex}`);
-        }
-
-        assertPositionKeyMatchesFen({
-          expectedNormalizedFen,
-          actualNormalizedFen: position.normalizedFen,
-          positionKey: position.positionKey,
-        });
-
-        positionIdsByKey.set(keyHex, position.id);
+        normalizedFenFromPosition(position);
+        const key = compactPositionMapKey(position.positionDataCompact!);
+        const expected = positionsByCompact.get(key);
+        if (!expected) throw new Error(`Position compact invariant failed: unexpected Position id=${position.id}`);
+        normalizedFenFromPosition(position, expected.normalizedFen);
+        positionIdsByCompact.set(key, position.id);
       }
 
       await tx.importedGamePly.createMany({
         data: rows.map((row) => {
-          const positionId = positionIdsByKey.get(positionKeyHex(row.positionKey));
-          if (!positionId) throw new Error(`Could not resolve position for ${row.normalizedFen}`);
+          const positionId = positionIdsByCompact.get(compactPositionMapKey(compactPositionIdentity(row.normalizedFen)));
+          if (!positionId) throw new Error(`Position compact invariant failed: could not resolve position for ${row.normalizedFen}`);
           return {
             importedGameId: row.importedGameId,
             plyNumber: row.plyNumber,

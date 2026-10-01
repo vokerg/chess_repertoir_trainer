@@ -1,5 +1,7 @@
 # Reversible position data: 100-row pilot
 
+This document records the historical fixed pilot and compact codec comparison. Current branch identity behavior is documented in the [compact runtime cutover](compact-position-runtime-cutover.md); the fixed pilot remains intact.
+
 `Position` maps to `ImportedGamePosition`. The nullable `positionData BYTEA` column is a pilot only. It has no default, index or uniqueness constraint. Migration `20260926150000_add_position_data_pilot` only adds this column. Existing imports and analysis continue to write `normalizedFen` and the unchanged 16-byte `positionKey`; lookups, ply foreign keys and cleanup behavior are unchanged. Ordinary writers leave `positionData` null.
 
 ## Binary format
