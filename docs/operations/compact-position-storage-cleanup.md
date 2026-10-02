@@ -63,10 +63,38 @@ At **05:16:52 UTC**, the hosted API `/health` returned **200 / `{ "ok": true }`*
 
 [Cleanup implementation CI](https://github.com/vokerg/chess_repertoir_trainer/actions/runs/36967725931) completed successfully for the exact deployed commit on Node 22 and fresh PostgreSQL 16. Local complete validation above passed before migration/deployment. The subsequent documentation checkpoint changes no runtime code. The rollout stops here for final review; PR #439 remains open and unmerged.
 
+## Authorized physical compaction — 2026-10-02
+
+The user subsequently authorized freeing storage with vacuum/index maintenance and accepted temporary production errors. The latest PR checkpoint CI was green, the intended Neon target was unchanged, and a fresh read-only audit found **771,646** Positions, required compact identity, valid indexes, **0 dead tuples** and no other active transaction. Neon reports a **1 GB** cluster limit; PostgreSQL database size was **370,171,904 bytes**.
+
+Dropping legacy columns had left their physical contents in existing heap tuples. The heap remained **116,154,368 bytes**; both indexes were already compact. A targeted rewrite reclaims that retained storage ([PostgreSQL DROP COLUMN behavior](https://www.postgresql.org/docs/17/sql-altertable.html), [VACUUM FULL behavior](https://www.postgresql.org/docs/17/sql-vacuum.html)).
+
+Executed outside a transaction, through the direct endpoint:
+
+```sql
+VACUUM (FULL, ANALYZE) public."ImportedGamePosition";
+```
+
+The maintenance-only connection used a five-second lock timeout and ten-minute statement timeout. The application connection settings are unchanged. The command succeeded at **19:20:56.140–19:20:57.662 UTC** (**1.522 seconds**) and rebuilt the table's existing indexes as part of the rewrite. No separate reindex or maintenance of unrelated tables was needed.
+
+| Measurement | Before bytes | After bytes | Freed bytes |
+| --- | ---: | ---: | ---: |
+| Position heap | 116,154,368 | 44,507,136 | 71,647,232 |
+| Position table incl. auxiliary storage | 116,219,904 | 44,515,328 | 71,704,576 |
+| Position indexes | 50,257,920 | 50,257,920 | 0 |
+| Position total relation | 166,477,824 | 94,773,248 | 71,704,576 |
+| Whole PostgreSQL database | 370,171,904 | 298,467,328 | 71,704,576 |
+
+Reclaimed **71,704,576 bytes** (**71.70 decimal MB / 68.38 MiB**). Measurements cover live PostgreSQL relation/database bytes; Neon project history/retention usage is measured separately.
+
+Independent full, bounded, read-only validation before and after the rewrite reproduced all **771,646** canonical identities with **0 NULLs / duplicates** and exactly the same ID/compact fingerprint: `78631b71a659ebbe6420d109b95ad1b78de5f671f2a8f6b6232b73f111e0caad`. Columns, index definitions/OIDs/validity, all existing Position FK definitions/OIDs and all **85 migration ledger names/checksums** are exactly unchanged. At **19:21:24 UTC**, hosted health was **200**, and single/bulk analysis plus opening repository reads returned the same Position/analysis IDs and exact FENs. Read-only EXPLAIN still selects the compact UNIQUE index.
+
+`npm run check:hygiene` and `git diff --check` passed for this documentation checkpoint; Git emitted its existing line-ending conversion notice. Broad builds/tests were not rerun because this maintenance step changes no runtime code, Prisma model or migration. The prior complete test/build results and green runtime CI remain recorded above. No production deployment changed. PR #439 stays open and unmerged.
+
 ## Historical drift remains separate
 
 The two checksum discrepancies for `20260717093000_require_complete_analysis_progress` and `20260903080000_position_cleanup_foundation` predate this change. Production also lacks `PositionCleanupCandidate` and has the previously identified extra `PositionCleanupRun.orphansObserved` field. This rollout does not repair that unrelated cleanup-subsystem drift, edit historical SQL or modify existing migration ledger records. The new migration touches only Position storage.
 
 ## Rollback after storage removal
 
-Redeploying a legacy dual-write revision (`6d3b660459187e989dae08dfb7c52570e0c023cb` or the read-cutover revision) alone is no longer compatible after column removal. Prefer a forward runtime fix retaining compact-only persistence. Restoring legacy runtime requires a separately reviewed additive migration to restore/reconstruct legacy columns and the old unique index from compact data, or a database restore. Do not modify historical migration checksums. No merge, heap reclamation or further destructive action is included.
+Redeploying a legacy dual-write revision (`6d3b660459187e989dae08dfb7c52570e0c023cb` or the read-cutover revision) alone is no longer compatible after column removal. Prefer a forward runtime fix retaining compact-only persistence. Restoring legacy runtime requires a separately reviewed additive migration to restore/reconstruct legacy columns and the old unique index from compact data, or a database restore. Do not modify historical migration checksums. No merge or further destructive storage change is included. The later authorized physical compaction is recorded above.
