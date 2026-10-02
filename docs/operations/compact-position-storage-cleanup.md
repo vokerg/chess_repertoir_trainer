@@ -45,7 +45,23 @@ The reviewed compact read runtime `ddf03ff4a7ce0d50b46833776d1a7834bdf54a8d` bec
 
 Preflight at 04:34–04:36 UTC independently validated all **771,646** Positions against canonical compact re-encoding and legacy FEN, with **0 NULLs, duplicates or mismatches**. A renewed read-only snapshot at **05:02:59 UTC** validated all **771,646** canonical identities and fingerprinted every ID/compact byte pair: `78631b71a659ebbe6420d109b95ad1b78de5f671f2a8f6b6232b73f111e0caad`. Compact index was valid/ready/unique. Direct endpoint `ep-spring-bird-algpv2s4.c-3.eu-central-1.aws.neon.tech`, `neondb.public`; pooled URL and `connection_limit=3` remain unchanged.
 
-The final cleanup commit, complete validation results and post-cleanup observations will be recorded here after deployment. Render's existing build command runs normal `prisma migrate deploy`; only the new forward migration is pending. Brief temporary errors between column removal and the final API restart were accepted by the user. There is no hosted worker in the Render project.
+The final cleanup implementation is **`77bcec57c0a3b4ab6aa7aa489779d8063f20a853`**. Normal `npm run db:migrate --workspace=apps/api` applied only the new forward migration to the confirmed direct Neon target at **05:12–05:13 UTC**. No historical SQL or existing ledger checksum was changed. The new ledger checksum matches the committed SQL bytes exactly.
+
+Render deployment **`dep-davjqs8u01pc73f24cng`** checked out that exact commit and became **Live at 05:16:35 UTC**. Its unchanged build command also ran `prisma migrate deploy`, which reported **85 migrations / no pending migrations**. Specific-commit deployment leaves auto-deploy disabled; the configured source branch remains `main`. Brief temporary errors between storage removal and final runtime startup were accepted, but none were observed by these read-only checks.
+
+Post-cleanup full read-only validation completed at **05:15:28 UTC**:
+
+- **771,646 Positions**, all decoded and canonically re-encoded; **0 NULLs / duplicate groups**.
+- The full ID/compact fingerprint is exactly unchanged: `78631b71a659ebbe6420d109b95ad1b78de5f671f2a8f6b6232b73f111e0caad`.
+- Position has exactly **`id INTEGER NOT NULL`** and **`positionDataCompact BYTEA NOT NULL`**; all three legacy columns and the hash index are absent.
+- Retained primary-key and compact-index definitions/OIDs are unchanged, valid, ready and unique (compact index OID `2105344`).
+- All three production Position FK definitions/OIDs are exactly unchanged: ImportedGamePly, PositionAnalysis and MastersExplorerCache. The previously absent cleanup-candidate FK remains part of the unrelated historical drift below.
+- All **84 historical migration ledger names/checksums** are unchanged; the new migration is the only added entry.
+- A bounded read-only EXPLAIN selects **`ImportedGamePosition_positionDataCompact_key`**, with no legacy index/fallback. No timing performance claim is made.
+
+At **05:16:52 UTC**, the hosted API `/health` returned **200 / `{ "ok": true }`** after final runtime deployment. Final-code single/bulk analysis and opening repository reads returned the exact same Positions **25/30/31**, analysis IDs **30204/34261/62118** and canonical FENs as the pre-cleanup samples. No compact invariant, NULL, lookup mismatch or Prisma connectivity regression was observed. These Position reads use the final compiled repositories against production; they are not authenticated hosted HTTP feature calls. No synthetic production users/games, production mutation fixtures or extra production worker were created. Worker startup/polling/shutdown was verified on disposable UTC PostgreSQL; there is no hosted worker in the Render project.
+
+[Cleanup implementation CI](https://github.com/vokerg/chess_repertoir_trainer/actions/runs/36967725931) completed successfully for the exact deployed commit on Node 22 and fresh PostgreSQL 16. Local complete validation above passed before migration/deployment. The subsequent documentation checkpoint changes no runtime code. The rollout stops here for final review; PR #439 remains open and unmerged.
 
 ## Historical drift remains separate
 
