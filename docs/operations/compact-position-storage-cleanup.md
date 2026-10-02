@@ -93,7 +93,17 @@ Independent full, bounded, read-only validation before and after the rewrite rep
 
 ## Historical drift remains separate
 
-The two checksum discrepancies for `20260717093000_require_complete_analysis_progress` and `20260903080000_position_cleanup_foundation` predate this change. Production also lacks `PositionCleanupCandidate` and has the previously identified extra `PositionCleanupRun.orphansObserved` field. This rollout does not repair that unrelated cleanup-subsystem drift, edit historical SQL or modify existing migration ledger records. The new migration touches only Position storage.
+The two checksum discrepancies for `20260717093000_require_complete_analysis_progress` and `20260903080000_position_cleanup_foundation` predate this change. The earlier audit also found a missing `PositionCleanupCandidate` and the extra legacy `PositionCleanupRun.orphansObserved` field. The Position storage migration did not change that subsystem. The user subsequently authorized the empty candidate-table restoration below; the extra legacy run column and historical checksum discrepancies remain unchanged.
+
+## Empty cleanup-candidate restoration — 2026-10-02
+
+After confirming the production candidate table was absent, the user explicitly authorized recreating it without data. Forward migration `20261002194000_restore_position_cleanup_candidate` restores the existing Prisma model's three columns, timestamp defaults/precision, primary key, observation-order CHECK, cascading Position FK and paging index. It creates the table only when absent; databases where the foundation already created it retain the existing object and observations. It runs transactionally with a five-second lock timeout and two-minute statement timeout.
+
+The migration does not seed/backdate candidates, create cleanup runs, run observation/deletion, modify Positions or restore the removed ply triggers. Candidate observations will start empty. The cleanup service remains disabled; the existing [observation/grace/concurrency limitation](imported-ply-move-codes.md#removed-orphan-cleanup-triggers) still requires separate review before enabling cleanup. No historical migration or checksum repair is included, and no runtime deployment is required because the deployed Prisma model already defines the table.
+
+Preflight at **19:43:31 UTC** reconfirmed `neondb.public`, absent candidate table, all **771,646** canonical Positions with unchanged full fingerprint and **0 NULLs / duplicates**, **882,172 plies**, **104,881 analyses**, **183 caches**, and **four retained cleanup runs**. The existing data-lifecycle guard is the only non-internal ply trigger; the three existing cleanup functions remain present. All 85 historical migration ledger entries are finished.
+
+Focused disposable-database tests cover empty restoration, preservation/replay with existing observations and unrelated data/triggers, exact column/constraint/index definitions, ORM reads/writes, FK/default/uniqueness/check behavior, cascading relations and atomic rollback on index creation failure. The complete **86-migration** chain and **250 API test files** passed on fresh disposable UTC PostgreSQL 16.15, including API/domain/contracts builds and trap validation. API build, root lint, architecture/hygiene checks and `git diff --check` passed. An initial suite failure from shared-client schema isolation was fixed by giving the restoration fixtures dedicated Prisma clients; the full suite then passed on another fresh database. Root build/tests were not repeated for this SQL/test/documentation-only repair; the previous rollout passed them and CI repeats them. Production application and post-repair evidence will be recorded after validation completes.
 
 ## Rollback after storage removal
 

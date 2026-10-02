@@ -52,7 +52,7 @@ To recreate the legacy column for a rollback or inspection:
 
 ## Removed orphan-cleanup triggers
 
-`20260926130000_remove_ply_position_cleanup_triggers` removes the orphan-position cleanup INSERT/UPDATE triggers from `ImportedGamePly`. They referenced `PositionCleanupCandidate` on ordinary writes, including backfill. The candidate table is not needed for move encoding and is not recreated. The independent data-lifecycle guard remains.
+`20260926130000_remove_ply_position_cleanup_triggers` removes the orphan-position cleanup INSERT/UPDATE triggers from `ImportedGamePly`. They referenced `PositionCleanupCandidate` on ordinary writes, including backfill. That trigger-removal migration does not recreate the candidate table. The later `20261002194000_restore_position_cleanup_candidate` forward migration restores it empty where missing, without adding triggers or affecting move encoding. See the [empty-table repair record](compact-position-storage-cleanup.md#empty-cleanup-candidate-restoration--2026-10-02). The independent data-lifecycle guard remains.
 
 Keep optional orphan cleanup disabled (the default) until its observation/grace and concurrency guarantees are redesigned without the writer-side candidate reset/advisory fence. A transient ply reference no longer restarts the candidate grace clock; regression tests record this limitation. Historical cleanup migrations remain immutable.
 
