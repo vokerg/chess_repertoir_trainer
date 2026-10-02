@@ -6,9 +6,9 @@ Position analysis stores reusable engine results for a normalized chess position
 
 `Position` is the canonical position row, mapped to `ImportedGamePosition`. Its unique `positionDataCompact` bytes dedupe equivalent positions. Normalized FEN ignores halfmove and fullmove counters: repositories encode it for identity queries and decode compact bytes to return the same `normalizedFen` domain/API strings.
 
-Nullable `Position.positionData` supports a [reversible 34-byte storage pilot](operations/position-data-pilot.md). It has no index or uniqueness constraint and is used only by the bounded maintenance script; application imports, analysis, lookups and cleanup retain their existing behavior.
+`Position` persists only its integer `id` and required `positionDataCompact` bytes. The compact UNIQUE index provides identity; all existing relations retain their Position IDs. Single analysis creation, bulk analysis creation and indexed-ply creation write only compact bytes. Repositories decode those bytes to expose the unchanged `normalizedFen` domain/API values. There is no legacy fallback; missing, malformed or unexpected compact data raises an explicit invariant error.
 
-The [compact shadow rollout](operations/compact-position-shadow-rollout.md) completed historical validation and the UNIQUE index. The [runtime cutover](operations/compact-position-runtime-cutover.md) makes compact identity authoritative in this branch; deployment requires explicit authorization. The three Position creation statements (indexed plies, single analysis and bulk analysis) retain `normalizedFen`, `positionKey` and `positionDataCompact` writes for rollback. Runtime reads never fall back to legacy fields. NULL or invalid compact data fails as a database invariant violation with the Position ID when available. The schema remains nullable; destructive storage cleanup is deferred.
+The [fixed pilot](operations/position-data-pilot.md), [shadow rollout](operations/compact-position-shadow-rollout.md) and [runtime cutover](operations/compact-position-runtime-cutover.md) remain historical rollout records. The [final storage cleanup](operations/compact-position-storage-cleanup.md) removes the legacy FEN/hash/fixed-pilot columns and hash index through a forward migration after the compact read runtime is deployed. Historical migrations remain unchanged.
 
 `PositionAnalysis` is one cached analysis row per position. It can be compact or rich:
 
@@ -57,7 +57,7 @@ Before `completeRun`, pending position saves and pending ply updates are fully f
 ## Invariants
 
 - Normalized FEN ignores halfmove and fullmove counters.
-- `Position.positionDataCompact` is the runtime lookup and deduplication identity; legacy hash/FEN fields are rollback shadows only.
+- `Position.positionDataCompact` is the runtime lookup and deduplication identity; no other Position identity/FEN representation is persisted.
 - `PositionAnalysis.positionId` is unique, so there is one reusable analysis row per position.
 - Compact writes do not downgrade rich rows or erase existing rich lines.
 - Rich writes can upgrade compact rows and can replace older rich rows when the incoming analysis is at least as deep.

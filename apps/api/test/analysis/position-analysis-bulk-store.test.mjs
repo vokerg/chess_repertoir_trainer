@@ -1,3 +1,4 @@
+import { encodeNormalizedFenCompact } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { normalizeFenForPosition } from 'chess-domain';
 import prismaModule from '../../dist/prisma.js';
@@ -26,14 +27,14 @@ function richLine(moveUci, scoreCpWhite, depth = 12, multipv = 1) {
 
 async function cleanup() {
   await prisma.position.deleteMany({
-    where: { normalizedFen: { in: normalizedFens } },
+    where: { positionDataCompact: { in: normalizedFens.map(encodeNormalizedFenCompact) } },
   });
 }
 
 async function dbAnalysisForFen(fen) {
   const normalizedFen = normalizeFenForPosition(fen);
   return prisma.positionAnalysis.findFirst({
-    where: { position: { normalizedFen } },
+    where: { position: { positionDataCompact: encodeNormalizedFenCompact(normalizedFen) } },
     select: { bestMoveUci: true, bestScoreCpWhite: true, bestMateWhite: true, lines: true },
   });
 }
@@ -194,7 +195,7 @@ try {
   assert.equal((await dbAnalysisForFen(fenG))?.lines, null);
 
   const positions = await prisma.position.findMany({
-    where: { normalizedFen: { in: normalizedFens } },
+    where: { positionDataCompact: { in: normalizedFens.map(encodeNormalizedFenCompact) } },
     select: { id: true },
   });
   assert.equal(positions.length, normalizedFens.length);

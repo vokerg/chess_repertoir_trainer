@@ -6,7 +6,6 @@ import { decodeNormalizedFenCompact, normalizeFenForPosition } from 'chess-domai
 import { PrismaClient } from '@prisma/client';
 import prismaModule from '../../dist/prisma.js';
 import { replacePlyRowsForGame } from '../../dist/modules/imported-games/ply-index.repository.prisma.js';
-import { positionKeyForNormalizedFen } from '../../dist/modules/positions/position-key.js';
 import { loadPositionCleanupConfig } from '../../dist/modules/position-cleanup/position-cleanup.config.js';
 import { createPositionCleanupRepository } from '../../dist/modules/position-cleanup/position-cleanup.repository.prisma.js';
 import { createPositionCleanupService, POSITION_CLEANUP_EXECUTE_CONFIRMATION } from '../../dist/modules/position-cleanup/position-cleanup.service.js';
@@ -84,15 +83,12 @@ async function createFixture(label) {
   }
   const normalizedFen = normalizeFenForPosition(chess.fen());
   normalizedFens.push(normalizedFen);
-  const positionKey = positionKeyForNormalizedFen(normalizedFen);
   const position = await prisma.position.create({
     data: {
-      normalizedFen,
-      positionDataCompact: encodeNormalizedFenCompact(normalizedFen),
-      positionKey: new Uint8Array(positionKey),
+      positionDataCompact: encodeNormalizedFenCompact(normalizedFen)
     },
   });
-  return { game, position, normalizedFen, positionKey };
+  return { game, position, normalizedFen };
 }
 
 async function insertOldCandidate(positionId) {
@@ -300,7 +296,7 @@ try {
   });
   assert.ok(replacementPly);
   assert.notEqual(replacementPly.positionId, cleanupFirst.position.id, 'reindex should recreate the deleted shared Position');
-  assert.equal(replacementPly.position.normalizedFen, cleanupFirst.normalizedFen);
+  assert.equal(Object.hasOwn(replacementPly.position, 'normalizedFen'), false);
   assert.equal(decodeNormalizedFenCompact(replacementPly.position.positionDataCompact), cleanupFirst.normalizedFen);
 
   const cleanupFirstCompleted = await finishRun(cleanupFirstRun.id);
@@ -329,7 +325,7 @@ try {
   await prisma.$executeRaw`DELETE FROM "PositionCleanupCandidate"`.catch(() => {});
   if (userId) await prisma.appUser.delete({ where: { id: userId } }).catch(() => {});
   for (const normalizedFen of normalizedFens) {
-    await prisma.position.deleteMany({ where: { normalizedFen } }).catch(() => {});
+    await prisma.position.deleteMany({ where: { positionDataCompact: encodeNormalizedFenCompact(normalizedFen) } }).catch(() => {});
   }
   await cleanupClient.$disconnect();
   await blockerClient.$disconnect();

@@ -4,14 +4,13 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { buildApp } from '../../dist/app.js';
 import prismaModule from '../../dist/prisma.js';
-import { positionKeyForNormalizedFen } from '../../dist/modules/positions/position-key.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
 let accountId;
 
-function positionKey(normalizedFen) {
-  return new Uint8Array(positionKeyForNormalizedFen(normalizedFen));
+function compactIdentity(normalizedFen) {
+  return encodeNormalizedFenCompact(normalizedFen);
 }
 
 try {
@@ -29,9 +28,11 @@ try {
 
   const normalizedFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
   const position = await prisma.position.upsert({
-    where: { positionKey: positionKey(normalizedFen) },
+    where: { positionDataCompact: compactIdentity(normalizedFen) },
     update: {},
-    create: { positionKey: positionKey(normalizedFen), normalizedFen, positionDataCompact: encodeNormalizedFenCompact(normalizedFen) },
+    create: {
+      positionDataCompact: encodeNormalizedFenCompact(normalizedFen)
+    },
   });
 
   const openings = [

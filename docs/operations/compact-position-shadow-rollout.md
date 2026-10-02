@@ -1,5 +1,7 @@
 # Compact Position shadow rollout
 
+**Historical rollout record.** The pilot/shadow maintenance commands below have been retired because the final compact storage migration removes their legacy source columns. Do not execute these historical commands against the current schema. Use `npm run db:validate-position-data-compact --workspace=apps/api` for current read-only validation; see [final storage cleanup](compact-position-storage-cleanup.md).
+
 This document records the historical shadow rollout. Shadow rollout is complete; the subsequent [compact runtime/read cutover](compact-position-runtime-cutover.md) is implemented in PR #439, with production deployment pending explicit authorization. Legacy storage remains for rollback; destructive cleanup has not been performed. The shadow rollout checkpoints below describe the application revision active at that time.
 
 This rollout adds `Position.positionDataCompact BYTEA NULL` while retaining `id`, `normalizedFen`, `positionKey` and the fixed 34-byte `positionData` pilot. It is not a read cutover. All application lookups and deduplication continue to use the existing position key and FEN. Ply, analysis and Masters cache relations and cleanup behavior remain unchanged.

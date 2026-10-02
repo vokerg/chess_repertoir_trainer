@@ -6,7 +6,6 @@ import {
   compactPositionMapKey,
   normalizedFenFromPosition,
   positionIdentitySelect,
-  transitionalPositionWriteFields,
 } from '../positions/position-storage';
 
 export type ImportedGameForPlyIndex = {
@@ -63,7 +62,7 @@ export async function replacePlyRowsForGame(importedGameId: number, rows: Import
       }
       const uniquePositions = [...positionsByCompact.values()];
       await tx.position.createMany({
-        data: uniquePositions.map(({ normalizedFen, positionDataCompact }) => transitionalPositionWriteFields(normalizedFen, positionDataCompact)),
+        data: uniquePositions.map(({ positionDataCompact }) => ({ positionDataCompact })),
         skipDuplicates: true,
       });
       const positions = await tx.position.findMany({
@@ -73,7 +72,7 @@ export async function replacePlyRowsForGame(importedGameId: number, rows: Import
       const positionIdsByCompact = new Map<string, number>();
       for (const position of positions) {
         normalizedFenFromPosition(position);
-        const key = compactPositionMapKey(position.positionDataCompact!);
+        const key = compactPositionMapKey(position.positionDataCompact);
         const expected = positionsByCompact.get(key);
         if (!expected) throw new Error(`Position compact invariant failed: unexpected Position id=${position.id}`);
         normalizedFenFromPosition(position, expected.normalizedFen);

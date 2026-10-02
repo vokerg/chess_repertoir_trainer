@@ -8,7 +8,6 @@ import {
   hydratePositionFen,
   normalizedFenFromPosition,
   positionIdentitySelect,
-  transitionalPositionWriteFields,
 } from '../positions/position-storage';
 import { PlyAnalysisUpdate, StorePositionAnalysisInput, StoredEngineLine, StoredPositionAnalysis } from './analysis.types';
 import {
@@ -231,7 +230,7 @@ export async function findOrCreatePositionByNormalizedFen(normalizedFen: string)
   let position;
   try {
     position = await prisma.position.create({
-      data: transitionalPositionWriteFields(normalizedFen, positionDataCompact),
+      data: { positionDataCompact },
       select: positionIdentitySelect,
     });
   } catch (error) {
@@ -312,7 +311,7 @@ export async function upsertPositionAnalysesBulk(inputs: StorePositionAnalysisIn
 
   return prisma.$transaction(async (tx) => {
     await tx.position.createMany({
-      data: deduped.map(({ normalizedFen, positionDataCompact }) => transitionalPositionWriteFields(normalizedFen, positionDataCompact)),
+      data: deduped.map(({ positionDataCompact }) => ({ positionDataCompact })),
       skipDuplicates: true,
     });
 
@@ -322,7 +321,7 @@ export async function upsertPositionAnalysesBulk(inputs: StorePositionAnalysisIn
     });
     const positionsByCompact = new Map(positions.map((position) => {
       normalizedFenFromPosition(position);
-      return [compactPositionMapKey(position.positionDataCompact!), position] as const;
+      return [compactPositionMapKey(position.positionDataCompact), position] as const;
     }));
     const upsertRows = deduped.map((item) => {
       const position = positionsByCompact.get(compactPositionMapKey(item.positionDataCompact));

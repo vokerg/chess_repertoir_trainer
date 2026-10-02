@@ -72,9 +72,7 @@ try {
   });
   const position = await prisma.position.create({
     data: {
-      positionKey: Buffer.from(randomUUID().replaceAll('-', ''), 'hex'),
-      normalizedFen: normalizeFenForPosition('8/8/8/8/8/8/1K6/7k w - -'),
-      positionDataCompact: encodeNormalizedFenCompact(normalizeFenForPosition('8/8/8/8/8/8/1K6/7k w - -')),
+      positionDataCompact: encodeNormalizedFenCompact(normalizeFenForPosition('8/8/8/8/8/8/1K6/7k w - -'))
     },
   });
   positionId = position.id;

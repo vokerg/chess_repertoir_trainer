@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import { randomUUID, randomBytes } from 'node:crypto';
-import { decodeNormalizedFenCompact, encodeNormalizedFen, encodeNormalizedFenCompact } from 'chess-domain';
+import { randomUUID } from 'node:crypto';
+import { decodeNormalizedFenCompact, encodeNormalizedFenCompact } from 'chess-domain';
 import prismaModule from '../../dist/prisma.js';
+import { validatePositionDataCompact } from '../../dist/scripts/validate-position-data-compact.js';
 import { findOrCreatePositionByFen, upsertPositionAnalysesBulk, getPositionAnalysisByFen, getPositionAnalysisByPositionId, getPositionAnalysesByFens, getImportedGamePliesForBatchAnalysis } from '../../dist/modules/analysis/analysis.repository.prisma.js';
 import { replacePlyRowsForGame } from '../../dist/modules/imported-games/ply-index.repository.prisma.js';
 import { findOpeningPositionByNormalizedFen } from '../../dist/modules/imported-games/opening-analysis.repository.prisma.js';
@@ -11,33 +12,27 @@ import { findImportedGameById, findImportedGamesForOpeningStruggles } from '../.
 import { getImportedGameForTagging } from '../../dist/modules/imported-games/game-tagging.repository.prisma.js';
 import { findGamePliesThrough } from '../../dist/modules/scenario-training/scenario-training.repository.prisma.js';
 import { getCourseReviewPlies } from '../../dist/modules/repertoire-coverage/repertoire-coverage.repository.prisma.js';
-import { positionKeyForNormalizedFen } from '../../dist/modules/positions/position-key.js';
 
-// This suite intentionally corrupts rollback fields, exclusively on a disposable local DB.
+// Storage and malformed-byte fixtures run exclusively on a disposable local DB.
 assert.ok(['localhost', '127.0.0.1', '[::1]'].includes(new URL(process.env.DATABASE_URL).hostname));
 const prisma = prismaModule.default;
-const fens = ['4K3', '3K4', '2K5', '1K6'].map(rank => `7k/8/8/8/8/8/${rank}/8 w - -`);
-const [singleFen, bulkFen, plyFen, nullFen] = fens;
-const key = fen => new Uint8Array(positionKeyForNormalizedFen(fen));
+const fens = ['4K3', '3K4', '2K5'].map(rank => `7k/8/8/8/8/8/${rank}/8 w - -`);
+const [singleFen, bulkFen, plyFen] = fens;
 const suffix = randomUUID();
 const positionIds = [];
 let userId;
 try {
   await prisma.position.deleteMany({ where: { positionDataCompact: { in: fens.map(encodeNormalizedFenCompact) } } });
-  const baseline = encodeNormalizedFen(nullFen);
-  const legacy = await prisma.position.create({ data: { normalizedFen: nullFen, positionKey: key(nullFen), positionData: baseline } });
-  positionIds.push(legacy.id);
-  await assert.rejects(findOrCreatePositionByFen(`${nullFen} 0 1`), /compact invariant failed.*unique conflict/);
-  assert.equal(await findOpeningPositionByNormalizedFen(nullFen), null, 'compact miss must not resolve a legacy-only row');
-  assert.equal((await prisma.position.findUnique({ where: { id: legacy.id } })).positionDataCompact, null);
+  const columns = await prisma.$queryRaw`SELECT column_name FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='ImportedGamePosition' ORDER BY column_name`;
+  assert.deepEqual(columns.map(row => row.column_name), ['id', 'positionDataCompact']);
+  await assert.rejects(prisma.$executeRaw`INSERT INTO "ImportedGamePosition" ("positionDataCompact") VALUES (NULL)`, (error) => error.meta?.code === '23502');
 
   const concurrent = await Promise.all(Array.from({ length: 4 }, () => findOrCreatePositionByFen(`${singleFen} 0 1`)));
   assert.ok(concurrent.every(row => row.id === concurrent[0].id), 'concurrent creation resolves the same compact identity');
   const single = await prisma.position.findUnique({ where: { id: concurrent[0].id } });
   positionIds.push(single.id);
-  assert.equal(decodeNormalizedFenCompact(single.positionDataCompact), single.normalizedFen);
-  assert.deepEqual(single.positionKey, key(singleFen));
-  assert.equal(single.positionData, null);
+  assert.equal(decodeNormalizedFenCompact(single.positionDataCompact), singleFen);
+  assert.deepEqual(Object.keys(single).sort(), ['id', 'positionDataCompact']);
 
   const analyses = await upsertPositionAnalysesBulk([
     { fen: `${bulkFen} 0 1`, bestScoreCpWhite: 1, persistenceMode: 'compact' },
@@ -48,8 +43,6 @@ try {
   assert.equal(analyses.find(row => row.normalizedFen === bulkFen).bestScoreCpWhite, 2);
   const bulk = await prisma.position.findUnique({ where: { positionDataCompact: encodeNormalizedFenCompact(bulkFen) } });
   positionIds.push(bulk.id);
-  assert.equal(bulk.normalizedFen, bulkFen);
-  assert.deepEqual(bulk.positionKey, key(bulkFen));
   assert.equal(decodeNormalizedFenCompact(bulk.positionDataCompact), bulkFen);
 
   const user = await prisma.appUser.create({ data: { displayName: `compact-runtime-${suffix}` } });
@@ -60,8 +53,6 @@ try {
   await replacePlyRowsForGame(game.id, rows);
   const plyPosition = await prisma.position.findUnique({ where: { positionDataCompact: encodeNormalizedFenCompact(plyFen) } });
   positionIds.push(plyPosition.id);
-  assert.equal(plyPosition.normalizedFen, plyFen);
-  assert.deepEqual(plyPosition.positionKey, key(plyFen));
   assert.equal(decodeNormalizedFenCompact(plyPosition.positionDataCompact), plyFen);
 
   const now = new Date();
@@ -69,16 +60,12 @@ try {
     sinceYear: 1952, untilYear: 2026, movesLimit: 12, topGamesLimit: 4, payload: {}, fetchedAt: now, expiresAt: new Date(now.getTime() + 60000) });
   assert.equal(cache.positionId, single.id, 'MastersExplorerCache retains its Position FK');
 
-  // Deliberately alter BOTH legacy fields after canonical creation.
-  for (const row of [single, bulk, plyPosition]) {
-    await prisma.position.update({ where: { id: row.id }, data: { positionKey: randomBytes(16), normalizedFen: `shadow-corrupted-${row.id}` } });
-  }
   assert.equal((await findOrCreatePositionByFen(`${singleFen} 17 42`)).id, single.id);
   assert.equal((await getPositionAnalysisByFen(`${singleFen} 0 1`)).positionId, single.id);
   const lookup = await getPositionAnalysesByFens([`${bulkFen} 0 1`, `${singleFen} 0 1`, `${bulkFen} 42 7`]);
   assert.deepEqual(lookup.map(row => row.normalizedFen).sort(), [singleFen, bulkFen].sort());
   for (const row of [single, bulk, plyPosition]) {
-    assert.deepEqual(await findOpeningPositionByNormalizedFen(row.normalizedFen), { id: row.id, normalizedFen: row.normalizedFen });
+    assert.deepEqual(await findOpeningPositionByNormalizedFen(decodeNormalizedFenCompact(row.positionDataCompact)), { id: row.id, normalizedFen: decodeNormalizedFenCompact(row.positionDataCompact) });
   }
   assert.deepEqual((await findCourseExtensionPositions([singleFen, bulkFen, singleFen])).map(row => row.id).sort((a,b) => a-b), [single.id, bulk.id].sort((a,b) => a-b));
   const cached = await findOpeningExplorerCache(singleFen, 'MASTERS', 1);
@@ -86,7 +73,7 @@ try {
   assert.equal(cached.normalizedFen, singleFen);
   assert.equal(await findOpeningExplorerCache(singleFen, 'MASTERS', 2), null);
   const storedAgain = await upsertPositionAnalysesBulk([{ fen: `${singleFen} 0 1`, bestScoreCpWhite: 5, persistenceMode: 'compact' }]);
-  assert.equal(storedAgain[0].positionId, single.id, 'skipDuplicates resolves by compact despite shadow corruption');
+  assert.equal(storedAgain[0].positionId, single.id, 'skipDuplicates resolves the existing compact identity');
   await replacePlyRowsForGame(game.id, rows);
   const plies = await prisma.importedGamePly.findMany({ where: { importedGameId: game.id }, orderBy: { plyNumber: 'asc' } });
   assert.deepEqual(plies.map(row => row.positionId), [plyPosition.id, plyPosition.id, single.id]);
@@ -112,14 +99,20 @@ try {
     }
   }
 
-  await prisma.position.update({ where: { id: single.id }, data: { positionDataCompact: null } });
-  for (const read of readers) await assert.rejects(read(), new RegExp(`compact invariant failed: id=${single.id}.*NULL`));
-  await assert.rejects(getPositionAnalysisByPositionId(single.id), /NULL positionDataCompact/);
+  const validSnapshot = await validatePositionDataCompact(prisma, 2);
+  assert.equal(validSnapshot.validated, await prisma.position.count());
+  assert.equal(validSnapshot.nulls, 0);
+  assert.equal(validSnapshot.duplicates, 0);
+  assert.match(validSnapshot.fingerprint, /^[0-9a-f]{64}$/);
+
+  await assert.rejects(prisma.position.update({ where: { id: single.id }, data: { positionDataCompact: null } }), /null|Argument/i);
   await prisma.position.update({ where: { id: single.id }, data: { positionDataCompact: new Uint8Array([1]) } });
+  await assert.rejects(validatePositionDataCompact(prisma, 2), new RegExp(`compact invariant failed: id=${single.id}.*Invalid compact`));
   await assert.rejects(getPositionAnalysisByPositionId(single.id), new RegExp(`compact invariant failed: id=${single.id}.*Invalid compact`));
+  for (const read of readers) await assert.rejects(read(), new RegExp(`compact invariant failed: id=${single.id}.*Invalid compact`));
   await prisma.position.update({ where: { id: single.id }, data: { positionDataCompact: single.positionDataCompact } });
-  assert.deepEqual((await prisma.position.findUnique({ where: { id: legacy.id } })).positionData, baseline);
-  console.log('Compact runtime identity, shadow independence, dual-write, concurrent creation, FK and invariant tests passed.');
+  assert.deepEqual(await validatePositionDataCompact(prisma, 2), validSnapshot, 'restored bytes preserve the full ID/identity fingerprint');
+  console.log('Compact-only storage, FEN hydration, concurrent creation, FK and invariant tests passed.');
 } finally {
   if (userId) await prisma.appUser.deleteMany({ where: { id: userId } });
   await prisma.position.deleteMany({ where: { id: { in: positionIds } } });

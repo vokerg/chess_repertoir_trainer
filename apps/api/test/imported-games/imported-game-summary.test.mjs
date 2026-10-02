@@ -1,3 +1,4 @@
+import { positionFixtureData } from '../positions/fixtures.mjs';
 import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -78,7 +79,9 @@ try {
   ]);
 
   const position = await prisma.position.create({
-    data: { positionKey: Buffer.from(randomUUID().replaceAll('-', ''), 'hex'), normalizedFen: `summary-${suffix}` },
+    data: {
+      ...positionFixtureData(`summary-${suffix}`)
+    },
   });
   await prisma.importedGamePly.create({
     data: { importedGameId: games[0].id, positionId: position.id, plyNumber: 1,  moveCode: encodeUciMove('e2e4'), classificationCode: 6 },

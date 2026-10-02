@@ -1,5 +1,11 @@
 # Compact Position runtime cutover
 
+**Historical read-cutover record.** The renewed user authorization on 2026-10-02 explicitly accepted the historical checksum discrepancies and authorized final storage removal without repairing historical migrations. Exact runtime commit `ddf03ff4a7ce0d50b46833776d1a7834bdf54a8d` became Live on Render at **04:38:14 UTC** (`dep-davj8re7bikc73e9kcug`), while all legacy columns/indexes still existed. At **04:38:37 UTC**, hosted health returned 200 and read-only single/bulk analysis and opening repository checks returned the same three Position/analysis IDs and exact FENs. No production fixture was created. The project lists one hosted API and no hosted worker.
+
+The sections below describe the earlier dual-write stage and its original stop gate. Current persistence and the subsequent authorized cleanup are tracked in [Compact Position storage cleanup](compact-position-storage-cleanup.md). The earlier redeploy-only rollback instructions apply **only before legacy storage removal**.
+
+## Original checkpoint — 2026-10-01
+
 PR #439 continues on `pilot-position-data`. The shadow rollout is complete. This branch implements compact runtime identity and FEN hydration. The user authorized deployment of exact commit `ddf03ff4a7ce0d50b46833776d1a7834bdf54a8d` after green CI; deployment stopped at the renewed migration-history gate below. Merge remains unauthorized. Legacy storage remains for rollback. Destructive cleanup has not been performed.
 
 ## Persistence behavior

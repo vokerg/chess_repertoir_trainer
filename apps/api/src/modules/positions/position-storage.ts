@@ -1,11 +1,10 @@
 import { decodeNormalizedFenCompact, encodeNormalizedFenCompact } from 'chess-domain';
-import { positionKeyForNormalizedFen } from './position-key';
 
 export const positionIdentitySelect = { id: true, positionDataCompact: true } as const;
 
 type StoredPositionIdentity = { id: number; positionDataCompact: Uint8Array | null };
 
-/** Compact bytes are the runtime identity; legacy fields exist only for rollback. */
+/** Reversible compact bytes are the only persisted Position identity. */
 export function compactPositionIdentity(normalizedFen: string): Uint8Array<ArrayBuffer> {
   const data = encodeNormalizedFenCompact(normalizedFen);
   if (decodeNormalizedFenCompact(data) !== normalizedFen) {
@@ -39,13 +38,3 @@ export function hydratePositionFen<T extends StoredPositionIdentity>(position: T
 }
 
 export type PositionFen<T extends StoredPositionIdentity> = ReturnType<typeof hydratePositionFen<T>>;
-
-export function transitionalPositionWriteFields(normalizedFen: string, positionDataCompact = compactPositionIdentity(normalizedFen)) {
-  // Validate supplied identity before generating the compatibility hash.
-  normalizedFenFromPosition({ id: 0, positionDataCompact }, normalizedFen);
-  return {
-    normalizedFen,
-    positionKey: new Uint8Array(positionKeyForNormalizedFen(normalizedFen)),
-    positionDataCompact: new Uint8Array(positionDataCompact),
-  };
-}

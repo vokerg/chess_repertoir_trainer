@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { Prisma } from '@prisma/client';
 import prismaModule from '../../dist/prisma.js';
 import { encodeNormalizedFenCompact } from 'chess-domain';
-import { compactPositionIdentity, compactPositionMapKey, hydratePositionFen, normalizedFenFromPosition, transitionalPositionWriteFields } from '../../dist/modules/positions/position-storage.js';
+import { compactPositionIdentity, compactPositionMapKey, hydratePositionFen, normalizedFenFromPosition } from '../../dist/modules/positions/position-storage.js';
 import { findOrCreatePositionByNormalizedFen } from '../../dist/modules/analysis/analysis.repository.prisma.js';
 
 const fen = '7k/8/8/8/8/8/4K3/8 w - -';
@@ -14,7 +14,6 @@ assert.equal(normalizedFenFromPosition({ id: 42, positionDataCompact: data }, fe
 assert.throws(() => normalizedFenFromPosition({ id: 42, positionDataCompact: null }), /id=42.*NULL positionDataCompact/);
 assert.throws(() => normalizedFenFromPosition({ id: 42, positionDataCompact: new Uint8Array([1]) }), /id=42.*Invalid compact/);
 assert.throws(() => normalizedFenFromPosition({ id: 42, positionDataCompact: data }, otherFen), /id=42.*Expected.*decoded/);
-assert.throws(() => transitionalPositionWriteFields(otherFen, data), /Expected.*decoded/);
 assert.deepEqual(hydratePositionFen({ id: 42, positionDataCompact: data, analysis: { id: 11 } }), { normalizedFen: fen, analysis: { id: 11 } });
 
 const prisma = prismaModule.default;
@@ -23,7 +22,7 @@ const originalLookup = prisma.position.findUnique;
 const uniqueError = new Prisma.PrismaClientKnownRequestError('Unique conflict', { code: 'P2002', clientVersion: 'test' });
 try {
   prisma.position.create = async ({ data: write, select }) => {
-    assert.deepEqual(Object.keys(write).sort(), ['normalizedFen', 'positionDataCompact', 'positionKey']);
+    assert.deepEqual(Object.keys(write).sort(), ['positionDataCompact']);
     assert.deepEqual(select, { id: true, positionDataCompact: true });
     throw uniqueError;
   };

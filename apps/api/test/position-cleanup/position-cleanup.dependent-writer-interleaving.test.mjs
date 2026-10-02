@@ -1,3 +1,5 @@
+import { encodeNormalizedFenCompact } from 'chess-domain';
+import { positionFixtureFen } from '../positions/fixtures.mjs';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
@@ -8,7 +10,6 @@ import {
   upsertPositionAnalysis,
 } from '../../dist/modules/analysis/analysis.repository.prisma.js';
 import { upsertOpeningExplorerCache } from '../../dist/modules/opening-explorer/opening-explorer.repository.prisma.js';
-import { positionKeyForNormalizedFen } from '../../dist/modules/positions/position-key.js';
 import { loadPositionCleanupConfig } from '../../dist/modules/position-cleanup/position-cleanup.config.js';
 import { createPositionCleanupRepository } from '../../dist/modules/position-cleanup/position-cleanup.repository.prisma.js';
 import {
@@ -36,7 +37,7 @@ const worker = createPositionCleanupWorker({
   logger: { info() {}, warn() {}, error() {} },
 });
 const suffix = randomUUID();
-const targetFen = `position-cleanup-dependent-writer-target-${suffix}`;
+const targetFen = positionFixtureFen(`position-cleanup-dependent-writer-target-${suffix}`);
 const analysisFen = '8/8/8/8/8/8/4K3/7k w - - 0 1';
 const openingFen = '8/8/8/8/8/8/3K4/7k w - - 0 1';
 const normalizedOpeningFen = normalizeFenForPosition(openingFen);
@@ -124,8 +125,7 @@ try {
 
   const targetPosition = await prisma.position.create({
     data: {
-      normalizedFen: targetFen,
-      positionKey: new Uint8Array(positionKeyForNormalizedFen(targetFen)),
+      positionDataCompact: encodeNormalizedFenCompact(normalizeFenForPosition(targetFen))
     },
   });
   targetPositionId = targetPosition.id;
@@ -231,7 +231,7 @@ try {
   await prisma.$executeRaw`DELETE FROM "PositionCleanupRun"`.catch(() => {});
   await prisma.$executeRaw`DELETE FROM "PositionCleanupCandidate"`.catch(() => {});
   await prisma.mastersExplorerCache.deleteMany({
-    where: { position: { normalizedFen: normalizedOpeningFen } },
+    where: { position: { positionDataCompact: encodeNormalizedFenCompact(normalizedOpeningFen) } },
   }).catch(() => {});
   await prisma.positionAnalysis.deleteMany({
     where: { positionId: analysisPositionId ?? -1 },
@@ -239,9 +239,9 @@ try {
   await prisma.position.deleteMany({
     where: {
       OR: [
-        { normalizedFen: targetFen },
-        { normalizedFen: normalizeFenForPosition(analysisFen) },
-        { normalizedFen: normalizedOpeningFen },
+        { positionDataCompact: encodeNormalizedFenCompact(targetFen) },
+        { positionDataCompact: encodeNormalizedFenCompact(normalizeFenForPosition(analysisFen)) },
+        { positionDataCompact: encodeNormalizedFenCompact(normalizedOpeningFen) },
       ],
     },
   }).catch(() => {});

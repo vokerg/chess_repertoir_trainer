@@ -1,3 +1,5 @@
+import { encodeNormalizedFenCompact, normalizeFenForPosition } from 'chess-domain';
+import { positionFixtureFen } from '../positions/fixtures.mjs';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { encodeUciMove } from 'chess-domain';
@@ -14,7 +16,6 @@ import { getImportedGamePliesForBatchAnalysis, getImportedGamePliesForAnalysisSu
 import { getLatestGameAnalysisRunDeterministic } from '../../dist/modules/analysis/analysis-run-lifecycle.repository.prisma.js';
 import { findTacticalDetectionCandidatesForGames } from '../../dist/modules/lab/tactical-detections/tactical-detection.repository.prisma.js';
 import { tacticalDetectionThresholds } from '../../dist/modules/lab/tactical-detections/tactical-detection.constants.js';
-import { positionKeyForNormalizedFen } from '../../dist/modules/positions/position-key.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
@@ -80,8 +81,10 @@ try {
   } });
   const evals = [0, 0, 300, 0];
   for (const [index, score] of evals.entries()) {
-    const testFen = `ply-code-test-${suffix}-${index}`;
-    const position = await prisma.position.create({ data: { normalizedFen: testFen, positionKey: new Uint8Array(positionKeyForNormalizedFen(testFen)) } });
+    const testFen = positionFixtureFen(`ply-code-test-${suffix}-${index}`);
+    const position = await prisma.position.create({ data: {
+      positionDataCompact: encodeNormalizedFenCompact(normalizeFenForPosition(testFen))
+    } });
     positionIds.push(position.id);
     await prisma.positionAnalysis.create({ data: { positionId: position.id, bestScoreCpWhite: score, bestMoveUci: index === 2 ? 'A7A8Q' : 'e2e4' } });
     await prisma.importedGamePly.create({ data: {

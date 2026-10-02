@@ -1,3 +1,4 @@
+import { positionFixtureData } from '../positions/fixtures.mjs';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import prismaModule from '../../dist/prisma.js';
@@ -29,8 +30,7 @@ const positionIds = [];
 async function createPosition(label) {
   const position = await prisma.position.create({
     data: {
-      positionKey: Buffer.from(randomUUID().replaceAll('-', ''), 'hex'),
-      normalizedFen: `position-cleanup-grace-${label}-${suffix}`,
+      ...positionFixtureData(`position-cleanup-grace-${label}-${suffix}`)
     },
   });
   positionIds.push(position.id);

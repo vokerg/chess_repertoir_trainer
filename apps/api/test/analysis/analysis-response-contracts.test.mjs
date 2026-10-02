@@ -1,3 +1,4 @@
+import { encodeNormalizedFenCompact } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
@@ -24,7 +25,7 @@ let userId;
 let app;
 
 async function cleanupPosition() {
-  await prisma.position.deleteMany({ where: { normalizedFen } });
+  await prisma.position.deleteMany({ where: { positionDataCompact: encodeNormalizedFenCompact(normalizedFen) } });
 }
 
 try {

@@ -95,8 +95,6 @@ async function driveToStatus(operationId, expectedStatus, worker, maxSteps = 20)
 async function createIndexedGame(accountId, providerGameId, openingProvenance, openingName, openingEco) {
   const position = await prisma.position.create({
     data: {
-      positionKey: Buffer.from(hash(`position:${providerGameId}`).slice(0, 32), 'hex'),
-      normalizedFen: `8/7k/8/8/8/8/2K5/8 ${openingProvenance === 'LOCAL_BOOK' ? 'w' : 'b'} - -`,
       positionDataCompact: encodeNormalizedFenCompact(`8/7k/8/8/8/8/2K5/8 ${openingProvenance === 'LOCAL_BOOK' ? 'w' : 'b'} - -`),
       analysis: {
         create: {
@@ -104,7 +102,7 @@ async function createIndexedGame(accountId, providerGameId, openingProvenance, o
           bestScoreCpWhite: 25,
           lines: [{ pvUci: ['a1a2'] }],
         },
-      },
+      }
     },
   });
   const game = await prisma.importedGame.create({

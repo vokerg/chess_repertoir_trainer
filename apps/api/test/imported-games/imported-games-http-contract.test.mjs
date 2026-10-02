@@ -4,15 +4,14 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { buildApp } from '../../dist/app.js';
 import prismaModule from '../../dist/prisma.js';
-import { positionKeyForNormalizedFen } from '../../dist/modules/positions/position-key.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
 let accountId;
 let userId;
 
-function positionKey(normalizedFen) {
-  return new Uint8Array(positionKeyForNormalizedFen(normalizedFen));
+function compactIdentity(normalizedFen) {
+  return encodeNormalizedFenCompact(normalizedFen);
 }
 
 try {
@@ -84,12 +83,10 @@ try {
 
   const firstNormalizedFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
   const firstPosition = await prisma.position.upsert({
-    where: { positionKey: positionKey(firstNormalizedFen) },
+    where: { positionDataCompact: compactIdentity(firstNormalizedFen) },
     update: {},
     create: {
-      positionKey: positionKey(firstNormalizedFen),
-      normalizedFen: firstNormalizedFen,
-      positionDataCompact: encodeNormalizedFenCompact(firstNormalizedFen),
+      positionDataCompact: encodeNormalizedFenCompact(firstNormalizedFen)
     },
   });
   await prisma.positionAnalysis.upsert({
@@ -105,12 +102,10 @@ try {
   });
   const legacyNormalizedFen = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -';
   const legacyPosition = await prisma.position.upsert({
-    where: { positionKey: positionKey(legacyNormalizedFen) },
+    where: { positionDataCompact: compactIdentity(legacyNormalizedFen) },
     update: {},
     create: {
-      positionKey: positionKey(legacyNormalizedFen),
-      normalizedFen: legacyNormalizedFen,
-      positionDataCompact: encodeNormalizedFenCompact(legacyNormalizedFen),
+      positionDataCompact: encodeNormalizedFenCompact(legacyNormalizedFen)
     },
   });
   await prisma.positionAnalysis.upsert({

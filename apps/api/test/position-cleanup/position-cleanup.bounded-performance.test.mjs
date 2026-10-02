@@ -1,3 +1,4 @@
+import { positionFixtureData } from '../positions/fixtures.mjs';
 import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { performance } from 'node:perf_hooks';
@@ -191,15 +192,10 @@ try {
     },
   });
 
-  await prisma.$executeRaw`
-    INSERT INTO "ImportedGamePosition" ("positionKey", "normalizedFen")
-    SELECT
-      decode(md5(${prefix} || series::text), 'hex'),
-      ${prefix} || series::text
-    FROM generate_series(1, ${fixtureSize}) AS series
-  `;
+  const fixtureData = Array.from({ length: fixtureSize }, (_, index) => positionFixtureData(`${prefix}${index}`));
+  await prisma.position.createMany({ data: fixtureData });
   const positions = await prisma.position.findMany({
-    where: { normalizedFen: { startsWith: prefix } },
+    where: { positionDataCompact: { in: fixtureData.map(row => row.positionDataCompact) } },
     orderBy: { id: 'asc' },
     select: { id: true },
   });

@@ -1,10 +1,11 @@
+import { encodeNormalizedFenCompact, normalizeFenForPosition } from 'chess-domain';
+import { positionFixtureFen } from '../positions/fixtures.mjs';
 import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import prismaModule from '../../dist/prisma.js';
 import { clearPlyRowsForGame } from '../../dist/modules/imported-games/ply-index.repository.prisma.js';
-import { positionKeyForNormalizedFen } from '../../dist/modules/positions/position-key.js';
 import { loadPositionCleanupConfig } from '../../dist/modules/position-cleanup/position-cleanup.config.js';
 import { createPositionCleanupRepository } from '../../dist/modules/position-cleanup/position-cleanup.repository.prisma.js';
 import {
@@ -64,11 +65,10 @@ async function tableLockCount(tableName, mode, granted) {
 }
 
 async function createPosition(label) {
-  const normalizedFen = `position-cleanup-cascade-${label}-${suffix}`;
+  const normalizedFen = positionFixtureFen(`position-cleanup-cascade-${label}-${suffix}`);
   const position = await prisma.position.create({
     data: {
-      normalizedFen,
-      positionKey: new Uint8Array(positionKeyForNormalizedFen(normalizedFen)),
+      positionDataCompact: encodeNormalizedFenCompact(normalizeFenForPosition(normalizedFen))
     },
   });
   createdPositionIds.push(position.id);

@@ -375,10 +375,7 @@ model GameTagDefinition {
 
 model Position {
   id            Int    @id @default(autoincrement())
-  positionKey   Bytes  @unique @db.ByteA
-  normalizedFen String @db.VarChar(120)
-  positionData  Bytes? @db.ByteA
-  positionDataCompact Bytes? @unique(map: "ImportedGamePosition_positionDataCompact_key") @db.ByteA
+  positionDataCompact Bytes @unique(map: "ImportedGamePosition_positionDataCompact_key") @db.ByteA
 
   plies                 ImportedGamePly[]
   analysis              PositionAnalysis?
