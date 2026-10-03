@@ -4,7 +4,7 @@ import { buildApp } from '../../dist/app.js';
 import { CurrentAppUserService } from '../../dist/auth/current-app-user.service.js';
 import prismaModule from '../../dist/prisma.js';
 import {
-  gameLibrarySchema, gameLibraryNameSchema, importedGameSearchQuerySchema,
+  gameLibrarySchema, gameLibraryNameSchema, importedGameSearchQuerySchema, importedGameDetailResponseSchema,
   importedGameSearchResponseSchema,
 } from '@chess-trainer/contracts/imported-games';
 
@@ -62,6 +62,9 @@ try {
   assert.equal(liked.items[0].liked, true);
   assert.deepEqual(liked.items[0].libraryIds.sort((a, b) => a - b), [library.id, second.id]);
   assert.equal(liked.appliedFilters.liked, true);
+  const detail = importedGameDetailResponseSchema.parse(await request('GET', `/api/imported-games/${games[0].id}`));
+  assert.equal(detail.liked, true);
+  assert.deepEqual(detail.libraryIds.sort((a, b) => a - b), [library.id, second.id]);
   const first = await request('GET', `/api/imported-games?libraryId=${library.id}&limit=1`);
   assert.equal(first.items[0].id, games[1].id);
   assert.equal(first.pageInfo.hasMore, true);

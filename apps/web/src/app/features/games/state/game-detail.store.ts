@@ -1,3 +1,4 @@
+import type { GameLibrary } from '@chess-trainer/contracts/imported-games';
 import { computed, effect, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Chess } from 'chess.js';
@@ -48,6 +49,57 @@ export class GameDetailStore implements OnDestroy {
   private lastTerminalSequence = 0;
   private lastPollVersion = -1;
   private loadingAnalysisProgress = false;
+
+  readonly libraries = signal<GameLibrary[]>([]);
+  readonly librariesLoading = signal(false);
+  readonly collectionSaving = signal(false);
+  readonly collectionError = signal<string | null>(null);
+
+  async loadLibraries(): Promise<void> {
+    this.librariesLoading.set(true);
+    try {
+      this.libraries.set((await firstValueFrom(this.api.getLibraries())).items);
+    } catch (error) {
+      this.collectionError.set(readError(error, 'Could not load game libraries. Refresh to retry.'));
+    } finally {
+      this.librariesLoading.set(false);
+    }
+  }
+
+  async toggleLike(): Promise<void> {
+    const game = this.game();
+    if (!game) return;
+    await this.saveCollection(game.id, async () => {
+      const liked = !game.liked;
+      await firstValueFrom(this.api.setLiked(game.id, liked));
+      return { liked };
+    });
+  }
+
+  async toggleMembership(libraryId: number): Promise<void> {
+    const game = this.game();
+    if (!game) return;
+    await this.saveCollection(game.id, async () => {
+      const ids = game.libraryIds ?? [];
+      const included = !ids.includes(libraryId);
+      await firstValueFrom(this.api.setMembership(libraryId, game.id, included));
+      return { libraryIds: included ? [...ids, libraryId] : ids.filter((id) => id !== libraryId) };
+    });
+  }
+
+  private async saveCollection(gameId: number, save: () => Promise<Partial<Pick<ImportedGameDetail, 'liked' | 'libraryIds'>>>): Promise<void> {
+    if (this.collectionSaving()) return;
+    this.collectionSaving.set(true);
+    this.collectionError.set(null);
+    try {
+      const patch = await save();
+      this.game.update((current) => current?.id === gameId ? { ...current, ...patch } : current);
+    } catch (error) {
+      if (this.game()?.id === gameId) this.collectionError.set(readError(error, 'Could not save game. Please try again.'));
+    } finally {
+      this.collectionSaving.set(false);
+    }
+  }
 
   readonly game = signal<ImportedGameDetail | null>(null);
   readonly analysisRun = signal<ImportedGameAnalysisRun | null>(null);
@@ -159,6 +211,8 @@ export class GameDetailStore implements OnDestroy {
       this.loading.set(false);
       return;
     }
+    this.collectionError.set(null);
+    void this.loadLibraries();
     this.gameId.set(gameId);
     void this.loadGame();
   }

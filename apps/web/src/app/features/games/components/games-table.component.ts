@@ -1,5 +1,3 @@
-import type { GameLibrary } from '@chess-trainer/contracts/imported-games';
-import { GameCollectionActionsComponent } from './game-collection-actions.component';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ImportedGameJobStore } from '../../../core/jobs/imported-game-job.store';
@@ -29,7 +27,7 @@ import { isStandardImportedGameSpeed } from '../../../shared/games/imported-game
 @Component({
   selector: 'app-games-table',
   standalone: true,
-  imports: [RouterLink, PanelComponent, FactGridComponent, GameCollectionActionsComponent],
+  imports: [RouterLink, PanelComponent, FactGridComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './games-table.component.html',
   styleUrl: './games-table.component.css',
@@ -37,10 +35,6 @@ import { isStandardImportedGameSpeed } from '../../../shared/games/imported-game
 export class GamesTableComponent {
   private readonly jobs = inject(ImportedGameJobStore);
 
-  readonly libraries = input<readonly GameLibrary[]>([]);
-  readonly savingGameIds = input<readonly number[]>([]);
-  readonly like = output<ImportedGameSearchItem>();
-  readonly membership = output<{ game: ImportedGameSearchItem; libraryId: number }>();
   readonly games = input.required<ImportedGameSearchItem[]>();
   readonly loading = input(false);
   readonly error = input<string | null>(null);

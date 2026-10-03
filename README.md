@@ -68,6 +68,8 @@ The shared chess domain owns deterministic move validation, fixed-path opponent 
 
 ### Imported games and accounts
 
+- Open a game to heart it into **Liked games** or save it to named **Game libraries**. Find and manage collections in the Games submenu (web).
+
 - Track multiple Lichess and Chess.com accounts.
 - Synchronize finished games from either provider.
 - Use the account settings actions for a bounded recent refresh, one older three-month expansion, or an explicit full supported Lichess-history import; the page states the included scope and exclusions.

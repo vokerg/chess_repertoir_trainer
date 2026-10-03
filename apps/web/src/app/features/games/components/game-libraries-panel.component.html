@@ -21,7 +21,7 @@
           <button type="button" class="secondary" [disabled]="busy()" (click)="remove.emit(library)" [attr.aria-label]="'Delete ' + library.name">Delete</button>
         </li>
       } @empty {
-        <li>Create your first library, then use “Save to library” on any game.</li>
+        <li>Create your first library, then use “Save to library” on a game’s detail page.</li>
       }
     </ul>
   }
