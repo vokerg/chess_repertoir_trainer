@@ -50,15 +50,13 @@
             <div class="profile-switcher" role="group" aria-label="Switch account">
               <span class="profile-switcher-label">Switch account</span>
               @if (accountOptions().length <= 3) {
-                <div class="profile-switcher-pills" role="tablist">
+                <div class="profile-switcher-pills">
                   @for (option of accountOptions(); track option.id) {
-                    <button
-                      type="button"
-                      role="tab"
+                    <a
                       class="profile-switcher-pill"
                       [class.active]="option.id === accountId()"
-                      [attr.aria-selected]="option.id === accountId()"
-                      (click)="onAccountSelectionChange(option.id)"
+                      [attr.aria-current]="option.id === accountId() ? 'page' : null"
+                      [routerLink]="['/progress/accounts', option.id]"
                       [title]="accountOptionLabel(option)"
                     >
                       <span class="switcher-pill-provider">{{ providerLabel(option.provider) }}</span>
@@ -66,7 +64,7 @@
                       @if (option.isDefaultProgressAccount) {
                         <span class="switcher-pill-default">default</span>
                       }
-                    </button>
+                    </a>
                   }
                 </div>
               } @else {
