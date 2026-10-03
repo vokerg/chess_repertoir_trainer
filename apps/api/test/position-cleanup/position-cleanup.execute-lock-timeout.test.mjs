@@ -1,3 +1,4 @@
+import { positionFixtureData } from '../positions/fixtures.mjs';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
@@ -56,8 +57,7 @@ try {
 
   const position = await prisma.position.create({
     data: {
-      positionKey: Buffer.from(randomUUID().replaceAll('-', ''), 'hex'),
-      normalizedFen: `position-cleanup-lock-timeout-${suffix}`,
+      ...positionFixtureData(`position-cleanup-lock-timeout-${suffix}`)
     },
   });
   positionId = position.id;

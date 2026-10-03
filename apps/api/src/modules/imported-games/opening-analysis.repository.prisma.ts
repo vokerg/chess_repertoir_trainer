@@ -1,7 +1,7 @@
 import { decodeUciMove } from 'chess-domain';
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
-import { positionKeyForNormalizedFen } from '../positions/position-key';
+import { compactPositionIdentity, normalizedFenFromPosition, positionIdentitySelect } from '../positions/position-storage';
 import { OpeningAnalysisQuery } from './imported-games.schemas';
 import { buildImportedGameWhere } from './imported-games.repository.prisma';
 
@@ -90,10 +90,11 @@ function matchingPlyWhere(userId: number, query: OpeningAnalysisQuery, positionI
 }
 
 export async function findOpeningPositionByNormalizedFen(normalizedFen: string): Promise<OpeningPositionRow | null> {
-  return prisma.position.findUnique({
-    where: { positionKey: new Uint8Array(positionKeyForNormalizedFen(normalizedFen)) },
-    select: { id: true, normalizedFen: true },
+  const position = await prisma.position.findUnique({
+    where: { positionDataCompact: compactPositionIdentity(normalizedFen) },
+    select: positionIdentitySelect,
   });
+  return position ? { id: position.id, normalizedFen: normalizedFenFromPosition(position, normalizedFen) } : null;
 }
 
 export async function findOpeningCoreSummary(userId: number, query: OpeningAnalysisQuery, positionId: number): Promise<OpeningCoreSummaryRow> {

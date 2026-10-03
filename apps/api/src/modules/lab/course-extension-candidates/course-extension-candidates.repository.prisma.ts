@@ -1,18 +1,18 @@
 import { decodeUciMove } from 'chess-domain';
 import { Prisma } from '@prisma/client';
 import prisma from '../../../prisma';
+import { compactPositionIdentity, hydratePositionFen, positionIdentitySelect, type PositionFen } from '../../positions/position-storage';
 import {
   buildImportedGameWhere,
 } from '../../imported-games/imported-games.repository.prisma';
 import { ImportedGameSummaryQuery } from '../../imported-games/imported-games.schemas';
-import { positionKeyForNormalizedFen } from '../../positions/position-key';
 
 const candidatePlySelect = {
   positionId: true,
   importedGameId: true,
   plyNumber: true,
   moveCode: true,
-  position: { select: { normalizedFen: true } },
+  position: { select: { ...positionIdentitySelect } },
   importedGame: {
     select: {
       id: true,
@@ -28,7 +28,7 @@ const candidatePlySelect = {
 } as const;
 
 type StoredCandidatePlyRow = Prisma.ImportedGamePlyGetPayload<{ select: typeof candidatePlySelect }>;
-export type CourseExtensionCandidatePlyRow = Omit<StoredCandidatePlyRow, 'moveCode'> & { moveUci: string };
+export type CourseExtensionCandidatePlyRow = Omit<StoredCandidatePlyRow, 'moveCode' | 'position'> & { moveUci: string; position: PositionFen<StoredCandidatePlyRow['position']> };
 
 export interface CourseExtensionPositionRow {
   id: number;
@@ -39,14 +39,15 @@ export async function findCourseExtensionPositions(
   normalizedFens: string[],
 ): Promise<CourseExtensionPositionRow[]> {
   if (normalizedFens.length === 0) return [];
-  return prisma.position.findMany({
+  const rows = await prisma.position.findMany({
     where: {
-      positionKey: {
-        in: normalizedFens.map((fen) => new Uint8Array(positionKeyForNormalizedFen(fen))),
+      positionDataCompact: {
+        in: normalizedFens.map((fen) => compactPositionIdentity(fen)),
       },
     },
-    select: { id: true, normalizedFen: true },
+    select: positionIdentitySelect,
   });
+  return rows.map((row) => ({ id: row.id, ...hydratePositionFen(row) }));
 }
 
 export async function findCourseExtensionCandidatePlies(
@@ -69,7 +70,7 @@ export async function findCourseExtensionCandidatePlies(
     ],
     select: candidatePlySelect,
   });
-  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) }))
+  return rows.map(({ moveCode, ...ply }) => ({ ...ply, position: hydratePositionFen(ply.position), moveUci: decodeUciMove(moveCode) }))
     .sort((a, b) => a.positionId - b.positionId || a.moveUci.localeCompare(b.moveUci)
       || a.importedGameId - b.importedGameId || a.plyNumber - b.plyNumber);
 }

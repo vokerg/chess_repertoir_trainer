@@ -2,6 +2,7 @@ import { decodeUciMove } from 'chess-domain';
 import { Prisma } from '@prisma/client';
 import { ActivityFeedService } from '../activity-feed/activity-feed.service';
 import prisma from '../../prisma';
+import { hydratePositionFen, positionIdentitySelect } from '../positions/position-storage';
 import { TacticalScenarioStartInput } from './scenario-training.schema';
 
 export type TacticalDetectionKind = 'MISSED_SHOT' | 'USER_BLUNDER';
@@ -194,10 +195,10 @@ export async function findGamePliesThrough(
     select: {
       plyNumber: true,
       moveCode: true,
-      position: { select: { normalizedFen: true } },
+      position: { select: { ...positionIdentitySelect } },
     },
   });
-  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) }));
+  return rows.map(({ moveCode, ...ply }) => ({ ...ply, position: hydratePositionFen(ply.position), moveUci: decodeUciMove(moveCode) }));
 }
 
 export async function createScenarioTrainingSession(input: {

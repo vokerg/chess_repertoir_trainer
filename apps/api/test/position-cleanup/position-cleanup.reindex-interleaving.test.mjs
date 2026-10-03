@@ -1,9 +1,11 @@
+import { encodeNormalizedFenCompact } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { Chess } from 'chess.js';
+import { decodeNormalizedFenCompact, normalizeFenForPosition } from 'chess-domain';
 import { PrismaClient } from '@prisma/client';
 import prismaModule from '../../dist/prisma.js';
 import { replacePlyRowsForGame } from '../../dist/modules/imported-games/ply-index.repository.prisma.js';
-import { positionKeyForNormalizedFen } from '../../dist/modules/positions/position-key.js';
 import { loadPositionCleanupConfig } from '../../dist/modules/position-cleanup/position-cleanup.config.js';
 import { createPositionCleanupRepository } from '../../dist/modules/position-cleanup/position-cleanup.repository.prisma.js';
 import { createPositionCleanupService, POSITION_CLEANUP_EXECUTE_CONFIRMATION } from '../../dist/modules/position-cleanup/position-cleanup.service.js';
@@ -71,16 +73,22 @@ async function createFixture(label) {
       pgn: '1. e4 e5',
     },
   });
-  const normalizedFen = `position-cleanup-reindex-${label}-${suffix}`;
+  // Exercise the real Position writer with a valid, independently played FEN.
+  const chess = new Chess();
+  let seed = Number.parseInt(randomUUID().slice(0, 8), 16);
+  for (let ply = 0; ply < 40 && !chess.isGameOver(); ply += 1) {
+    const moves = chess.moves();
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    chess.move(moves[seed % moves.length]);
+  }
+  const normalizedFen = normalizeFenForPosition(chess.fen());
   normalizedFens.push(normalizedFen);
-  const positionKey = positionKeyForNormalizedFen(normalizedFen);
   const position = await prisma.position.create({
     data: {
-      normalizedFen,
-      positionKey: new Uint8Array(positionKey),
+      positionDataCompact: encodeNormalizedFenCompact(normalizedFen)
     },
   });
-  return { game, position, normalizedFen, positionKey };
+  return { game, position, normalizedFen };
 }
 
 async function insertOldCandidate(positionId) {
@@ -132,13 +140,12 @@ async function finishRun(runId) {
   throw new Error(`Cleanup run ${runId} did not complete.`);
 }
 
-async function reindex(game, normalizedFen, positionKey) {
+async function reindex(game, normalizedFen) {
   return replacePlyRowsForGame(game.id, [{
     importedGameId: game.id,
     plyNumber: 1,
     moveUci: 'e2e4',
     normalizedFen,
-    positionKey,
   }]);
 }
 
@@ -189,7 +196,6 @@ try {
   writerFirstPromise = reindex(
     writerFirst.game,
     writerFirst.normalizedFen,
-    writerFirst.positionKey,
   );
 
   await waitFor(
@@ -259,7 +265,6 @@ try {
   cleanupFirstWriterPromise = reindex(
     cleanupFirst.game,
     cleanupFirst.normalizedFen,
-    cleanupFirst.positionKey,
   );
   await waitFor(
     async () => (await tableLockCount('ImportedGamePly', 'RowExclusiveLock', false)) >= 1,
@@ -291,7 +296,8 @@ try {
   });
   assert.ok(replacementPly);
   assert.notEqual(replacementPly.positionId, cleanupFirst.position.id, 'reindex should recreate the deleted shared Position');
-  assert.equal(replacementPly.position.normalizedFen, cleanupFirst.normalizedFen);
+  assert.equal(Object.hasOwn(replacementPly.position, 'normalizedFen'), false);
+  assert.equal(decodeNormalizedFenCompact(replacementPly.position.positionDataCompact), cleanupFirst.normalizedFen);
 
   const cleanupFirstCompleted = await finishRun(cleanupFirstRun.id);
   assert.equal(cleanupFirstCompleted.status, 'COMPLETED');
@@ -319,7 +325,7 @@ try {
   await prisma.$executeRaw`DELETE FROM "PositionCleanupCandidate"`.catch(() => {});
   if (userId) await prisma.appUser.delete({ where: { id: userId } }).catch(() => {});
   for (const normalizedFen of normalizedFens) {
-    await prisma.position.deleteMany({ where: { normalizedFen } }).catch(() => {});
+    await prisma.position.deleteMany({ where: { positionDataCompact: encodeNormalizedFenCompact(normalizedFen) } }).catch(() => {});
   }
   await cleanupClient.$disconnect();
   await blockerClient.$disconnect();

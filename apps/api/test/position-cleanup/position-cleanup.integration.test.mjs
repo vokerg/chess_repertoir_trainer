@@ -1,3 +1,4 @@
+import { positionFixtureData } from '../positions/fixtures.mjs';
 import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -18,8 +19,7 @@ const DAY_MS = 24 * 60 * 60_000;
 async function createPosition(label) {
   const position = await prisma.position.create({
     data: {
-      positionKey: Buffer.from(randomUUID().replaceAll('-', ''), 'hex'),
-      normalizedFen: `position-cleanup-${label}-${suffix}`,
+      ...positionFixtureData(`position-cleanup-${label}-${suffix}`)
     },
   });
   positionIds.push(position.id);

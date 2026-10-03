@@ -1,3 +1,4 @@
+import { positionFixtureData } from '../positions/fixtures.mjs';
 import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -33,8 +34,7 @@ try {
   });
   const positions = await Promise.all([1, 2, 3].map((ordinal) => prisma.position.create({
     data: {
-      positionKey: Buffer.from(`preview-${suffix}-${ordinal}`, 'utf8'),
-      normalizedFen: `8/8/8/8/8/8/${ordinal}7/K6k w - - 0 1`,
+      ...positionFixtureData(`preview-${suffix}-${ordinal}`)
     },
   })));
   positionIds.push(...positions.map(({ id }) => id));

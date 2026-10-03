@@ -1,8 +1,9 @@
+import { encodeNormalizedFenCompact, normalizeFenForPosition } from 'chess-domain';
+import { positionFixtureFen } from '../positions/fixtures.mjs';
 import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import prismaModule from '../../dist/prisma.js';
-import { positionKeyForNormalizedFen } from '../../dist/modules/positions/position-key.js';
 import { loadPositionCleanupConfig } from '../../dist/modules/position-cleanup/position-cleanup.config.js';
 import { createPositionCleanupService } from '../../dist/modules/position-cleanup/position-cleanup.service.js';
 import { createPositionCleanupWorker } from '../../dist/modules/position-cleanup/position-cleanup.worker.service.js';
@@ -21,7 +22,7 @@ const worker = createPositionCleanupWorker({
   logger: { info() {}, warn() {}, error() {} },
 });
 const suffix = randomUUID();
-const normalizedFen = `position-cleanup-stale-candidate-${suffix}`;
+const normalizedFen = positionFixtureFen(`position-cleanup-stale-candidate-${suffix}`);
 let userId;
 let positionId;
 
@@ -55,8 +56,7 @@ try {
   });
   const position = await prisma.position.create({
     data: {
-      normalizedFen,
-      positionKey: new Uint8Array(positionKeyForNormalizedFen(normalizedFen)),
+      positionDataCompact: encodeNormalizedFenCompact(normalizeFenForPosition(normalizedFen))
     },
   });
   positionId = position.id;

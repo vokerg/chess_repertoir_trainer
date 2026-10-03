@@ -17,12 +17,10 @@
     "start:worker": "node dist/worker.js",
     "db:migrate": "prisma migrate deploy --schema prisma/schema.prisma && prisma generate --schema prisma/schema.prisma",
     "db:generate": "prisma generate --schema prisma/schema.prisma",
-    "db:backfill-position-keys": "ts-node --transpile-only src/scripts/backfill-position-keys.ts",
     "db:backfill-game-openings": "ts-node --transpile-only src/scripts/backfill-missing-game-openings.ts",
     "activity:backfill-played-games": "ts-node --transpile-only src/scripts/backfill-played-game-activity.ts",
     "db:cleanup-position-analysis-lines": "ts-node --transpile-only src/scripts/cleanup-position-analysis-lines.ts",
     "db:cleanup-orphan-positions": "ts-node --transpile-only src/scripts/cleanup-orphan-positions.ts",
-    "db:rewrite-position-keys-128": "ts-node --transpile-only src/scripts/rewrite-position-keys-to-128-bit.ts",
     "predb:backfill-imported-ply-move-codes": "npm --prefix ../.. run build:domain",
     "db:backfill-imported-ply-move-codes": "ts-node src/scripts/backfill-imported-ply-move-codes.ts",
     "predb:restore-imported-ply-move-uci": "npm --prefix ../.. run build:domain",
@@ -41,7 +39,9 @@
     "db:reset": "prisma migrate reset --force --schema prisma/schema.prisma && prisma generate --schema prisma/schema.prisma && npm run db:seed",
     "prisma:studio": "prisma studio",
     "canary:lichess-account-import": "npm run build && node test/account-imports/account-import.lichess-canary.mjs",
-    "test": "npm run build && npm run traps:validate && node test/run-all.mjs"
+    "test": "npm run build && npm run traps:validate && node test/run-all.mjs",
+    "predb:validate-position-data-compact": "npm --prefix ../.. run build:domain",
+    "db:validate-position-data-compact": "ts-node src/scripts/validate-position-data-compact.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",

@@ -1,3 +1,4 @@
+import { positionFixtureData } from '../positions/fixtures.mjs';
 import { encodeUciMove } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -80,8 +81,7 @@ try {
   });
   const sharedPosition = await prisma.position.create({
     data: {
-      positionKey: Buffer.from(randomUUID().replaceAll('-', ''), 'hex'),
-      normalizedFen: '8/8/8/8/8/8/8/K6k w - - 0 1',
+      ...positionFixtureData(`user-delete-shared-${suffix}`)
     },
   });
   sharedPositionId = sharedPosition.id;

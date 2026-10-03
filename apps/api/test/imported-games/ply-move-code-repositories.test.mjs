@@ -1,3 +1,5 @@
+import { encodeNormalizedFenCompact, normalizeFenForPosition } from 'chess-domain';
+import { positionFixtureFen } from '../positions/fixtures.mjs';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { encodeUciMove } from 'chess-domain';
@@ -14,12 +16,10 @@ import { getImportedGamePliesForBatchAnalysis, getImportedGamePliesForAnalysisSu
 import { getLatestGameAnalysisRunDeterministic } from '../../dist/modules/analysis/analysis-run-lifecycle.repository.prisma.js';
 import { findTacticalDetectionCandidatesForGames } from '../../dist/modules/lab/tactical-detections/tactical-detection.repository.prisma.js';
 import { tacticalDetectionThresholds } from '../../dist/modules/lab/tactical-detections/tactical-detection.constants.js';
-import { positionKeyForNormalizedFen } from '../../dist/modules/positions/position-key.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
 const normalizedFen = '8/P6k/8/8/8/8/8/7K w - -';
-const positionKey = positionKeyForNormalizedFen(normalizedFen);
 let userId;
 const positionIds = [];
 function assertUciPlies(rows, expected) {
@@ -35,7 +35,7 @@ try {
     userColor: 'WHITE', resultForUser: 'WIN', endedAt: new Date(),
   } });
   const moves = ['a7a8q', 'a7a8n', 'a7a8b', 'a7a8r', 'h1g1', 'a7a8q'];
-  await replacePlyRowsForGame(game.id, moves.map((moveUci, index) => ({ importedGameId: game.id, plyNumber: index + 1, moveUci, normalizedFen, positionKey })));
+  await replacePlyRowsForGame(game.id, moves.map((moveUci, index) => ({ importedGameId: game.id, plyNumber: index + 1, moveUci, normalizedFen })));
   const stored = await prisma.importedGamePly.findMany({ where: { importedGameId: game.id }, orderBy: { plyNumber: 'asc' } });
   for (const [index, row] of stored.entries()) {
     assert.equal(row.moveCode, encodeUciMove(moves[index]), 'new indexed plies store compact codes');
@@ -81,8 +81,10 @@ try {
   } });
   const evals = [0, 0, 300, 0];
   for (const [index, score] of evals.entries()) {
-    const testFen = `ply-code-test-${suffix}-${index}`;
-    const position = await prisma.position.create({ data: { normalizedFen: testFen, positionKey: new Uint8Array(positionKeyForNormalizedFen(testFen)) } });
+    const testFen = positionFixtureFen(`ply-code-test-${suffix}-${index}`);
+    const position = await prisma.position.create({ data: {
+      positionDataCompact: encodeNormalizedFenCompact(normalizeFenForPosition(testFen))
+    } });
     positionIds.push(position.id);
     await prisma.positionAnalysis.create({ data: { positionId: position.id, bestScoreCpWhite: score, bestMoveUci: index === 2 ? 'A7A8Q' : 'e2e4' } });
     await prisma.importedGamePly.create({ data: {

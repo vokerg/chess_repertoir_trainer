@@ -4,7 +4,11 @@ Position analysis stores reusable engine results for a normalized chess position
 
 ## Stored Data
 
-`Position` is the canonical position row. Its `normalizedFen` ignores halfmove and fullmove counters, and its unique `positionKey` dedupes equivalent positions.
+`Position` is the canonical position row, mapped to `ImportedGamePosition`. Its unique `positionDataCompact` bytes dedupe equivalent positions. Normalized FEN ignores halfmove and fullmove counters: repositories encode it for identity queries and decode compact bytes to return the same `normalizedFen` domain/API strings.
+
+`Position` persists only its integer `id` and required `positionDataCompact` bytes. The compact UNIQUE index provides identity; all existing relations retain their Position IDs. Single analysis creation, bulk analysis creation and indexed-ply creation write only compact bytes. Repositories decode those bytes to expose the unchanged `normalizedFen` domain/API values. There is no legacy fallback; missing, malformed or unexpected compact data raises an explicit invariant error.
+
+The [fixed pilot](operations/position-data-pilot.md), [shadow rollout](operations/compact-position-shadow-rollout.md) and [runtime cutover](operations/compact-position-runtime-cutover.md) remain historical rollout records. The [final storage cleanup](operations/compact-position-storage-cleanup.md) removes the legacy FEN/hash/fixed-pilot columns and hash index through a forward migration after the compact read runtime is deployed. Historical migrations remain unchanged.
 
 `PositionAnalysis` is one cached analysis row per position. It can be compact or rich:
 
@@ -53,7 +57,7 @@ Before `completeRun`, pending position saves and pending ply updates are fully f
 ## Invariants
 
 - Normalized FEN ignores halfmove and fullmove counters.
-- `Position.positionKey` dedupes positions and maps to `ImportedGamePosition`.
+- `Position.positionDataCompact` is the runtime lookup and deduplication identity; no other Position identity/FEN representation is persisted.
 - `PositionAnalysis.positionId` is unique, so there is one reusable analysis row per position.
 - Compact writes do not downgrade rich rows or erase existing rich lines.
 - Rich writes can upgrade compact rows and can replace older rich rows when the incoming analysis is at least as deep.

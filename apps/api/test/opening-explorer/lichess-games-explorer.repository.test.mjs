@@ -1,3 +1,4 @@
+import { encodeNormalizedFenCompact } from 'chess-domain';
 import assert from 'node:assert/strict';
 import { normalizeFenForPosition } from 'chess-domain';
 import prismaModule from '../../dist/prisma.js';
@@ -17,7 +18,7 @@ const payload = {
 };
 
 async function cleanup() {
-  await prisma.position.deleteMany({ where: { normalizedFen } });
+  await prisma.position.deleteMany({ where: { positionDataCompact: encodeNormalizedFenCompact(normalizedFen) } });
 }
 
 try {

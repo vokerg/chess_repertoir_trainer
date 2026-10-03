@@ -3,10 +3,12 @@ import { normalizeFenForPosition, decodeUciMove } from 'chess-domain';
 import { ActivityFeedService } from '../activity-feed/activity-feed.service';
 import prisma from '../../prisma';
 import {
-  assertPositionKeyMatchesFen,
-  positionKeyForNormalizedFen,
-  positionKeyHex,
-} from '../positions/position-key';
+  compactPositionIdentity,
+  compactPositionMapKey,
+  hydratePositionFen,
+  normalizedFenFromPosition,
+  positionIdentitySelect,
+} from '../positions/position-storage';
 import { PlyAnalysisUpdate, StorePositionAnalysisInput, StoredEngineLine, StoredPositionAnalysis } from './analysis.types';
 import {
   bestMateWhiteFrom,
@@ -19,7 +21,7 @@ import {
 const positionAnalysisInclude = {
   position: {
     select: {
-      normalizedFen: true,
+      ...positionIdentitySelect,
     },
   },
 } as const;
@@ -114,7 +116,7 @@ function compactPositionAnalysis(row: any, fromCache = true) {
   return {
     id: row.id,
     positionId: row.positionId,
-    normalizedFen: row.position?.normalizedFen ?? '',
+    normalizedFen: normalizedFenFromPosition(row.position),
     bestMoveUci: firstUciMove(row.bestMoveUci) ?? undefined,
     bestScoreCpWhite: row.bestScoreCpWhite ?? undefined,
     bestMateWhite: row.bestMateWhite ?? undefined,
@@ -133,7 +135,7 @@ function dedupePlyAnalysisUpdates(updates: PlyAnalysisUpdate[]) {
 
 function normalizedPositionAnalysisInput(input: StorePositionAnalysisInput) {
   const normalizedFen = normalizeFenForPosition(input.fen);
-  const positionKey = positionKeyForNormalizedFen(normalizedFen);
+  const positionDataCompact = compactPositionIdentity(normalizedFen);
   const persistenceMode = input.persistenceMode ?? 'rich';
   const normalizedLines = normalizeStoredEngineLines(input.lines);
   const linesToPersist = persistenceMode === 'compact' ? null : normalizedLines;
@@ -141,7 +143,7 @@ function normalizedPositionAnalysisInput(input: StorePositionAnalysisInput) {
   return {
     input,
     normalizedFen,
-    positionKey,
+    positionDataCompact,
     persistenceMode,
     normalizedLines,
     linesToPersist,
@@ -208,61 +210,38 @@ function positionAnalysisWriteData(existing: { lines: Prisma.JsonValue | null },
 }
 
 function dedupePositionAnalysisInputs(inputs: StorePositionAnalysisInput[]) {
-  const byPositionKey = new Map<string, ReturnType<typeof normalizedPositionAnalysisInput>>();
+  const byCompactIdentity = new Map<string, ReturnType<typeof normalizedPositionAnalysisInput>>();
 
   for (const input of inputs) {
     const normalized = normalizedPositionAnalysisInput(input);
-    byPositionKey.set(positionKeyHex(normalized.positionKey), normalized);
+    const key = compactPositionMapKey(normalized.positionDataCompact);
+    const previous = byCompactIdentity.get(key);
+    if (previous && previous.normalizedFen !== normalized.normalizedFen) {
+      throw new Error(`Position compact invariant failed before analysis write: ${previous.normalizedFen} vs ${normalized.normalizedFen}`);
+    }
+    byCompactIdentity.set(key, normalized);
   }
 
-  return Array.from(byPositionKey.values());
+  return Array.from(byCompactIdentity.values());
 }
 
 export async function findOrCreatePositionByNormalizedFen(normalizedFen: string) {
-  const positionKey = positionKeyForNormalizedFen(normalizedFen);
-
+  const positionDataCompact = compactPositionIdentity(normalizedFen);
+  let position;
   try {
-    return await prisma.position.create({
-      data: { normalizedFen, positionKey: new Uint8Array(positionKey) },
+    position = await prisma.position.create({
+      data: { positionDataCompact },
+      select: positionIdentitySelect,
     });
-  } catch {
-    const byKey = await prisma.position.findUnique({
-      where: { positionKey: new Uint8Array(positionKey) },
+  } catch (error) {
+    if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') throw error;
+    position = await prisma.position.findUnique({
+      where: { positionDataCompact },
+      select: positionIdentitySelect,
     });
-
-    if (byKey) {
-      assertPositionKeyMatchesFen({
-        expectedNormalizedFen: normalizedFen,
-        actualNormalizedFen: byKey.normalizedFen,
-        positionKey,
-      });
-
-      return byKey;
-    }
-
-    const byFen = await prisma.position.findFirst({
-      where: { normalizedFen },
-    });
-
-    if (byFen) {
-      if (!byFen.positionKey) {
-        return prisma.position.update({
-          where: { id: byFen.id },
-          data: { positionKey: new Uint8Array(positionKey) },
-        });
-      }
-
-      assertPositionKeyMatchesFen({
-        expectedNormalizedFen: normalizedFen,
-        actualNormalizedFen: byFen.normalizedFen,
-        positionKey: byFen.positionKey,
-      });
-
-      return byFen;
-    }
-
-    throw new Error('Could not create or find position');
+    if (!position) throw new Error('Position compact invariant failed: unique conflict without canonical Position', { cause: error });
   }
+  return { id: position.id, normalizedFen: normalizedFenFromPosition(position, normalizedFen) };
 }
 
 export async function findOrCreatePositionByFen(fen: string) {
@@ -271,29 +250,24 @@ export async function findOrCreatePositionByFen(fen: string) {
 
 export async function getPositionAnalysisByFen(fen: string) {
   const normalizedFen = normalizeFenForPosition(fen);
-  const positionKey = positionKeyForNormalizedFen(normalizedFen);
+  const positionDataCompact = compactPositionIdentity(normalizedFen);
 
   const row = await prisma.positionAnalysis.findFirst({
-    where: { position: { positionKey: new Uint8Array(positionKey) } },
+    where: { position: { positionDataCompact } },
     include: positionAnalysisInclude,
   });
   return row ? compactPositionAnalysis(row) : null;
 }
 
 export async function getPositionAnalysesByFens(fens: string[]) {
-  const positionsByKey = new Map<string, Buffer>();
-
+  const identities = new Map<string, Uint8Array<ArrayBuffer>>();
   for (const fen of fens) {
-    const normalizedFen = normalizeFenForPosition(fen);
-    const positionKey = positionKeyForNormalizedFen(normalizedFen);
-    positionsByKey.set(positionKeyHex(positionKey), positionKey);
+    const data = compactPositionIdentity(normalizeFenForPosition(fen));
+    identities.set(compactPositionMapKey(data), data);
   }
-
-  const positionKeys = Array.from(positionsByKey.values()).map((positionKey) => new Uint8Array(positionKey));
-  if (!positionKeys.length) return [];
-
+  if (!identities.size) return [];
   const rows = await prisma.positionAnalysis.findMany({
-    where: { position: { positionKey: { in: positionKeys } } },
+    where: { position: { positionDataCompact: { in: [...identities.values()] } } },
     include: positionAnalysisInclude,
   });
   return rows.map((row) => compactPositionAnalysis(row));
@@ -337,36 +311,22 @@ export async function upsertPositionAnalysesBulk(inputs: StorePositionAnalysisIn
 
   return prisma.$transaction(async (tx) => {
     await tx.position.createMany({
-      data: deduped.map(({ normalizedFen, positionKey }) => ({
-        normalizedFen,
-        positionKey: new Uint8Array(positionKey),
-      })),
+      data: deduped.map(({ positionDataCompact }) => ({ positionDataCompact })),
       skipDuplicates: true,
     });
 
     const positions = await tx.position.findMany({
-      where: {
-        positionKey: {
-          in: deduped.map(({ positionKey }) => new Uint8Array(positionKey)),
-        },
-      },
-      select: {
-        id: true,
-        normalizedFen: true,
-        positionKey: true,
-      },
+      where: { positionDataCompact: { in: deduped.map(({ positionDataCompact }) => positionDataCompact) } },
+      select: positionIdentitySelect,
     });
-
-    const positionsByKey = new Map(positions.map((position) => [positionKeyHex(position.positionKey), position]));
+    const positionsByCompact = new Map(positions.map((position) => {
+      normalizedFenFromPosition(position);
+      return [compactPositionMapKey(position.positionDataCompact), position] as const;
+    }));
     const upsertRows = deduped.map((item) => {
-      const position = positionsByKey.get(positionKeyHex(item.positionKey));
-      if (!position) throw new Error('Could not create or find position');
-
-      assertPositionKeyMatchesFen({
-        expectedNormalizedFen: item.normalizedFen,
-        actualNormalizedFen: position.normalizedFen,
-        positionKey: item.positionKey,
-      });
+      const position = positionsByCompact.get(compactPositionMapKey(item.positionDataCompact));
+      if (!position) throw new Error('Position compact invariant failed: could not resolve bulk Position');
+      normalizedFenFromPosition(position, item.normalizedFen);
 
       return {
         positionId: position.id,
@@ -698,7 +658,7 @@ export async function getImportedGamePliesForBatchAnalysis(userId: number, gameI
       positionId: true,
       position: {
         select: {
-          normalizedFen: true,
+          ...positionIdentitySelect,
           analysis: {
             select: {
               id: true,
@@ -709,7 +669,7 @@ export async function getImportedGamePliesForBatchAnalysis(userId: number, gameI
               lines: true,
               position: {
                 select: {
-                  normalizedFen: true,
+                  ...positionIdentitySelect,
                 },
               },
             },
@@ -718,5 +678,12 @@ export async function getImportedGamePliesForBatchAnalysis(userId: number, gameI
       },
     },
   });
-  return rows.map(({ moveCode, ...ply }) => ({ ...ply, moveUci: decodeUciMove(moveCode) }));
+  return rows.map(({ moveCode, ...ply }) => ({
+    ...ply,
+    moveUci: decodeUciMove(moveCode),
+    position: {
+      ...hydratePositionFen(ply.position),
+      analysis: ply.position.analysis ? { ...ply.position.analysis, position: hydratePositionFen(ply.position.analysis.position) } : null,
+    },
+  }));
 }
