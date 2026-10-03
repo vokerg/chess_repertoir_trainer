@@ -1,3 +1,4 @@
+import gameLibrariesRoutes from './game-libraries.routes';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import {
   importedGameDetailResponseSchema,
@@ -86,6 +87,7 @@ function toImportedGameIndexWorkflowResponse(
 }
 
 const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
+  await app.register(gameLibrariesRoutes);
   app.get('/api/imported-games', {
     schema: {
       operationId: 'listImportedGames',

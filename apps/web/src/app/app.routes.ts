@@ -128,6 +128,20 @@ export const routes: Routes = [
   { path: 'accounts', redirectTo: '/settings/accounts', pathMatch: 'full' },
   { path: 'accounts/:accountId', redirectTo: '/progress/accounts/:accountId' },
   {
+    path: 'games/liked',
+    title: 'Liked games | Chess Repertoire Trainer',
+    data: { gameCollection: 'liked' },
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/games/pages/games-explorer-page.component').then((m) => m.GamesExplorerPageComponent),
+  },
+  {
+    path: 'games/libraries',
+    title: 'Game libraries | Chess Repertoire Trainer',
+    data: { gameCollection: 'libraries' },
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/games/pages/games-explorer-page.component').then((m) => m.GamesExplorerPageComponent),
+  },
+  {
     path: 'games',
     title: 'Games | Chess Repertoire Trainer',
     canActivate: [authGuard],

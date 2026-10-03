@@ -72,6 +72,7 @@ The shared chess domain owns deterministic move validation, fixed-path opponent 
 - Synchronize finished games from either provider.
 - Use the account settings actions for a bounded recent refresh, one older three-month expansion, or an explicit full supported Lichess-history import; the page states the included scope and exclusions.
 - Browse `/games` with SQL-backed filtering, cursor pagination, deep-linkable filter state, responsive evidence cards, and durable processing status.
+- Heart imported games into **Liked games**, or organize them into multiple named **Game libraries** from the Games submenu. Create, rename, and delete libraries without deleting their games (web).
 - Filter by account, provider, period/custom dates, result, colour, speed, rated status, opponent, opening, rating, analysis status, classification, tags, and accuracy.
 - Open a game review with replay, PGN, indexed plies, analysis context, tactical findings, and optional AI review.
 - Run durable imported-game indexing, analysis, tagging, opening assignment, and related post-processing through the persistent worker model.

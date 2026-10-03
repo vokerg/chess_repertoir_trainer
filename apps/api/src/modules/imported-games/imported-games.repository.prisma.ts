@@ -78,6 +78,7 @@ export const importedGameListSelect = {
 } as const;
 
 export const importedGameSearchSelect = {
+  liked: true, libraryEntries: { select: { libraryId: true } },
   id: true, provider: true, providerUrl: true, endedAt: true, speedCategory: true, rated: true,
   timeControlRaw: true, timeControlInitial: true, timeControlIncrement: true,
   whiteUsername: true, whiteRating: true, blackUsername: true, blackRating: true,
@@ -279,6 +280,8 @@ function tagCodesFilter(query: ImportedGameFilterQuery): Prisma.IntNullableListF
 export function buildImportedGameWhere(userId: number, query: ImportedGameFilterQuery): Prisma.ImportedGameWhereInput {
   return {
     userId,
+    liked: query.liked,
+    libraryEntries: query.libraryId ? { some: { libraryId: query.libraryId, library: { userId } } } : undefined,
     accountId: accountInFilter(query.accountIds),
     provider: inFilter(query.providers),
     endedAt: buildEndedAtRange(query),

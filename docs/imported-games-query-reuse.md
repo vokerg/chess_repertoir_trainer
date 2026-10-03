@@ -39,6 +39,8 @@ A plain `/games` URL uses the current `defaultGameFilters()` behavior: the defau
 
 The durable supported parameters are:
 
+- `liked`
+- `libraryId`
 - `accountIds`
 - `providers`
 - `from`
@@ -136,3 +138,30 @@ The analysis-status facet groups `ImportedGame.latestAnalysisStatus`. Account pe
 MCP-specific input schemas and output mappers remain under `apps/api/src/modules/mcp`; imported-games query semantics remain owned by the imported-games module.
 
 Opening-analysis repository functions reuse `buildImportedGameWhere` for account/provider/date/rated/result/color/speed/variant/opening/tag/rating/analysis-status filters. The core endpoint uses SQL/Prisma count, group, and distinct queries for position WDL and next-move reduction; it does not load full matching ply rows to build secondary panels.
+
+## Liked games and named libraries
+
+The Games navigation keeps `/games` as its default destination and adds `/games/liked` and `/games/libraries`. Both reuse `GamesExplorerPageComponent`, its page-scoped signal store, typed data access, filter codec, and cursor-paginated game table. Collection actions are presentational components with typed outputs; only the store performs writes. Desktop rows and responsive web cards expose a heart and a multiple-library chooser. Native Expo does not yet expose these controls.
+
+`/games/liked` always applies `liked=true`. `/games/libraries?libraryId=<id>` shows a named library. These routes default to explicit, unrestricted search criteria so old, casual, and non-blitz/rapid saved games remain visible. Applying filters preserves the collection route; resetting filters preserves the selected collection. The ordinary `/games` defaults remain unchanged. Library links and filter state survive refresh/back navigation. Library management supports create, rename, and confirmed delete; deleting a library retains games and likes.
+
+The shared imported-game search contract adds optional `liked` and `libraryId` predicates, combined with existing filters in `buildImportedGameWhere`. Search rows emit `liked` and `libraryIds` without loading PGN. These row fields remain optional in the wire schema for older consumers/fixtures; the current API supplies both. A library predicate includes library ownership as well as the existing game ownership predicate. Unknown or foreign library filters return no games. Library counts use database relation counts, not loaded game rows.
+
+Likes live on the already user-owned `ImportedGame` row, defaulting to false for existing imports. `GameLibrary` belongs to an `AppUser`; `GameLibraryEntry` is a many-to-many membership with a composite primary key. The repository locks and checks both owned parent rows inside one transaction before changing membership, making retries idempotent and preventing delete/write races. Deleting a game/account/user cascades memberships; deleting a library only cascades its memberships. Reimporting an existing game does not reset its like or memberships.
+
+Routes are owned by `game-libraries.routes.ts` inside the imported-games module, with orchestration in `GameLibrariesService` and persistence in `game-libraries.repository.prisma.ts`. Shared schemas and inferred types are exported from `@chess-trainer/contracts/imported-games` and directly attached to Fastify route schemas:
+
+| Method | URL | Behavior |
+| --- | --- | --- |
+| GET | `/api/game-libraries` | Current user's libraries with database game counts |
+| POST | `/api/game-libraries` | Create with `{ name }`; returns 201 |
+| PATCH | `/api/game-libraries/:libraryId` | Rename with `{ name }` |
+| DELETE | `/api/game-libraries/:libraryId` | Delete only the owned library |
+| PUT | `/api/imported-games/:gameId/like` | Set `{ liked: boolean }` idempotently |
+| PUT / DELETE | `/api/game-libraries/:libraryId/games/:gameId` | Add/remove owned-game membership idempotently |
+
+Names are trimmed, required, and limited to 100 characters. Duplicate names are allowed; IDs identify libraries. All routes require authentication. Resource writes return 404 for missing or foreign resources and `{ success: true }` on success. Invalid requests use the centralized 400 `{ "error": "Validation failed" }` response. OpenAPI is generated from these route schemas.
+
+Apply `20261003120000_game_libraries` with `npm run db:migrate` before deploying the API. It adds the default-false like column, a partial liked-game index, and the two library tables; no game backfill is needed. Saved-game metadata follows imported-game lifetime and is not an archive of deleted accounts. Concurrent changes in another tab become visible on refresh.
+
+Focused verification: `apps/api/test/imported-games/game-libraries.test.mjs` exercises actual HTTP responses, ownership, pagination, idempotence, persistence, and cascades; `apps/api/test/openapi/imported-games-openapi.test.mjs` covers generated operation metadata. Games store/page/API, collection presentation, and navigation specs cover web behavior. Database tests require a migrated test database.

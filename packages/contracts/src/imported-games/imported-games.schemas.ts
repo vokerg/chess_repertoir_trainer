@@ -30,6 +30,8 @@ export const importedGamePlyIndexStatusSchema = z.enum(['NOT_INDEXED', 'INDEXED'
 export const importedGameClassificationSchema = z.enum(['BEST', 'GOOD', 'INACCURACY', 'MISTAKE', 'BLUNDER', 'BOOK', 'MISS']);
 
 export const importedGameSearchQuerySchema = z.object({
+  liked: boolParam,
+  libraryId: z.coerce.number().int().positive().optional(),
   accountIds: intCsv,
   providers: csvArray(importedGameProviderSchema),
   from: isoDateStringSchema.optional(),
@@ -60,6 +62,8 @@ export const importedGameSearchQuerySchema = z.object({
 });
 
 export const importedGameAppliedFiltersSchema = z.object({
+  liked: z.boolean().optional(),
+  libraryId: z.number().int().positive().optional(),
   accountIds: z.array(z.number().int().positive()).optional(),
   providers: z.array(importedGameProviderSchema).optional(),
   from: isoDateStringSchema.optional(),
@@ -173,6 +177,8 @@ export const importedGameListItemSchema = z.object({
 });
 
 export const importedGameSearchItemSchema = z.object({
+  liked: z.boolean().optional(),
+  libraryIds: z.array(z.number().int().positive()).optional(),
   id: z.number().int().positive(),
   provider: importedGameProviderSchema,
   providerUrl: z.string().nullable(),

@@ -1,0 +1,7 @@
+:host { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.heart { font-size: 22px; padding: 4px 10px; background: var(--ui-surface); color: var(--ui-text-muted); }
+.heart.liked { color: var(--ui-danger); }
+summary { cursor: pointer; color: var(--ui-text); font-size: 12px; }
+.collection-options { display: grid; gap: 6px; padding: 8px; border: 1px solid var(--ui-border); border-radius: var(--ui-radius-control); background: var(--ui-surface); max-width: 240px; white-space: normal; }
+.collection-options button { text-align: left; overflow-wrap: anywhere; }
+.collection-options a, .collection-options span { font-size: 12px; }

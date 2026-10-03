@@ -8,12 +8,23 @@ describe('GamesApiService', () => {
   let api: jasmine.SpyObj<ApiService>;
 
   beforeEach(() => {
-    api = jasmine.createSpyObj<ApiService>('ApiService', ['get']);
+    api = jasmine.createSpyObj<ApiService>('ApiService', ['get', 'post', 'put', 'patch', 'delete']);
     api.get.and.returnValue(of({}));
     TestBed.configureTestingModule({
       providers: [GamesApiService, { provide: ApiService, useValue: api }],
     });
     service = TestBed.inject(GamesApiService);
+  });
+
+  it('serializes liked and library filters and uses idempotent writes', () => {
+    service.searchGames({ liked: true, libraryId: 7, sort: 'endedAtDesc', limit: 50 });
+    expect(api.get.calls.mostRecent().args[0]).toContain('liked=true&libraryId=7');
+    service.setLiked(9, true);
+    expect(api.put).toHaveBeenCalledWith('/imported-games/9/like', { liked: true });
+    service.setMembership(7, 9, true);
+    expect(api.put).toHaveBeenCalledWith('/game-libraries/7/games/9', {});
+    service.setMembership(7, 9, false);
+    expect(api.delete).toHaveBeenCalledWith('/game-libraries/7/games/9');
   });
 
   it('serializes canonical criteria without openingNameExact or arbitrary fields', () => {

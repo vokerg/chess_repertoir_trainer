@@ -1,0 +1,29 @@
+<app-panel title="Game libraries" subtitle="Keep games together for study. A game can belong to more than one library.">
+  <form (ngSubmit)="save.emit({ name: name(), id: editingId() })">
+    <label for="game-collection-name">{{ editingId() ? 'Rename library' : 'New library' }}</label>
+    <div class="collection-form">
+      <input id="game-collection-name" name="name" [ngModel]="name()" (ngModelChange)="name.set($event)"
+        maxlength="100" required placeholder="e.g. Endgames to study" [disabled]="busy()" />
+      <button type="submit" [disabled]="busy() || loading() || !name().trim()">{{ editingId() ? 'Save name' : 'Create library' }}</button>
+      @if (editingId()) { <button type="button" class="secondary" [disabled]="busy()" (click)="resetForm()">Cancel</button> }
+    </div>
+  </form>
+  @if (loading()) { <p role="status">Loading libraries...</p> }
+  @else {
+    <ul>
+      @for (library of libraries(); track library.id) {
+        <li>
+          <a routerLink="/games/libraries" [queryParams]="{ libraryId: library.id, filterMode: 'explicit' }"
+            [attr.aria-current]="selectedId() === library.id ? 'page' : null">
+            {{ library.name }} <span>{{ library.gameCount }} games</span>
+          </a>
+          <button type="button" class="secondary" [disabled]="busy()" (click)="edit(library)" [attr.aria-label]="'Rename ' + library.name">Rename</button>
+          <button type="button" class="secondary" [disabled]="busy()" (click)="remove.emit(library)" [attr.aria-label]="'Delete ' + library.name">Delete</button>
+        </li>
+      } @empty {
+        <li>Create your first library, then use “Save to library” on any game.</li>
+      }
+    </ul>
+  }
+  <a routerLink="/games">Browse games to add</a>
+</app-panel>

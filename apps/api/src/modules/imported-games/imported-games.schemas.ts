@@ -32,6 +32,8 @@ const tagFilterSchema = z.enum(['NO_TAGS']);
 const classificationSchema = z.enum(['BEST', 'GOOD', 'INACCURACY', 'MISTAKE', 'BLUNDER', 'BOOK', 'MISS']);
 
 export const importedGameSearchQuerySchema = z.object({
+  liked: boolParam,
+  libraryId: z.coerce.number().int().positive().optional(),
   accountIds: intCsv,
   providers: csvArray(providerSchema),
   from: z.coerce.date().optional(),
