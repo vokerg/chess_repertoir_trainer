@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { convertToParamMap, provideRouter, Router } from '@angular/router';
+import { convertToParamMap, provideRouter } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import { AccountsApiService } from '../data-access/accounts-api.service';
@@ -14,7 +14,6 @@ import { AccountDetailPageComponent } from './account-detail-page.component';
 describe('AccountDetailPageComponent', () => {
   let fixture: ComponentFixture<AccountDetailPageComponent>;
   let accountsApi: jasmine.SpyObj<AccountsApiService>;
-  let router: Router;
 
   const account1: ExternalAccount = {
     id: 1,
@@ -118,9 +117,6 @@ describe('AccountDetailPageComponent', () => {
       })
       .compileComponents();
 
-    router = TestBed.inject(Router);
-    spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
-
     fixture = TestBed.createComponent(AccountDetailPageComponent);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -152,17 +148,19 @@ describe('AccountDetailPageComponent', () => {
     expect(activePill?.textContent).toContain('vokerg6');
   });
 
-  it('navigates to another account profile when switcher pill is clicked', () => {
+  it('renders account switcher pills as route links with current-page semantics', () => {
     const pills = fixture.nativeElement.querySelectorAll(
       '.profile-switcher-pill',
-    ) as NodeListOf<HTMLButtonElement>;
+    ) as NodeListOf<HTMLAnchorElement>;
     expect(pills.length).toBe(2);
 
-    // Click the other pill (account2 with id 2)
-    const inactivePill = Array.from(pills).find((p) => !p.classList.contains('active'));
-    expect(inactivePill).toBeDefined();
-    inactivePill?.click();
+    const activePill = Array.from(pills).find((pill) => pill.classList.contains('active'));
+    expect(activePill?.tagName).toBe('A');
+    expect(activePill?.getAttribute('aria-current')).toBe('page');
+    expect(activePill?.getAttribute('role')).toBeNull();
 
-    expect(router.navigate).toHaveBeenCalledWith(['/progress/accounts', 2]);
+    const inactivePill = Array.from(pills).find((pill) => !pill.classList.contains('active'));
+    expect(inactivePill?.getAttribute('href')).toContain('/progress/accounts/2');
+    expect(inactivePill?.getAttribute('aria-current')).toBeNull();
   });
 });
