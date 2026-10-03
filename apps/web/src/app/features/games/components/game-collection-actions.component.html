@@ -1,9 +1,15 @@
 <button type="button" class="heart" [class.liked]="game().liked" [attr.aria-pressed]="!!game().liked"
   [attr.aria-label]="game().liked ? 'Unlike game' : 'Like game'" [disabled]="busy()" (click)="like.emit()">
-  <span aria-hidden="true">{{ game().liked ? '♥' : '♡' }}</span>
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />
+  </svg>
 </button>
 <details>
-  <summary>Save to library</summary>
+  <summary class="mode-pill collection-trigger">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 4h12v17l-6-4-6 4Z" /></svg>
+    Save to library
+    <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m7 10 5 5 5-5" /></svg>
+  </summary>
   <div class="collection-options">
     @for (library of libraries(); track library.id) {
       <button type="button" [attr.aria-pressed]="game().libraryIds?.includes(library.id) ?? false"
