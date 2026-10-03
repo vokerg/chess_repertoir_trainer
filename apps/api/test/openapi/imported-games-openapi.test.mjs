@@ -2,6 +2,13 @@ import assert from 'node:assert/strict';
 import { buildApp } from '../../dist/app.js';
 
 const expectedOperations = new Map([
+  ['GET /api/game-libraries', 'listGameLibraries'],
+  ['POST /api/game-libraries', 'createGameLibrary'],
+  ['PATCH /api/game-libraries/{libraryId}', 'renameGameLibrary'],
+  ['DELETE /api/game-libraries/{libraryId}', 'deleteGameLibrary'],
+  ['PUT /api/imported-games/{gameId}/like', 'setImportedGameLike'],
+  ['PUT /api/game-libraries/{libraryId}/games/{gameId}', 'addGameToLibrary'],
+  ['DELETE /api/game-libraries/{libraryId}/games/{gameId}', 'removeGameFromLibrary'],
   ['GET /api/imported-games', 'listImportedGames'],
   ['GET /api/imported-games/facets', 'getImportedGameFacets'],
   ['GET /api/imported-games/tag-definitions', 'getImportedGameTagDefinitions'],

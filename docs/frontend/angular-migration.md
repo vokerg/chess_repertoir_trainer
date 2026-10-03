@@ -8,6 +8,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 
 - Application shell: external template/styles, OnPush, and app-specific navigation extracted to `core/layout/main-navigation`.
 - Production token foundation: `design-system.css` owns namespaced `--ui-*` colour, typography, radius, shadow, focus, and semantic-status roles; shared page headers, panels, shell actions, global controls, and the application canvas consume the production layer.
+- Games collections: `/games/liked` and `/games/libraries` reuse the Games explorer page/store; hearts, membership controls, and library management remain feature-local presentational components. The two new guarded URLs share the existing route component and are additions to the historical visual-transformation inventory below.
 - Games explorer and Game Detail: feature-local route pages, signal stores, typed data access, immutable updates, pure helpers, presentational composition, responsive evidence, and built-in control flow.
 - Study/library: feature-local route page, signal store, typed data access, computed filtering/selection, stale-request guards, presentational scope/line/basket components, and responsive training launch flow.
 - Opening Analysis and Free Analysis: feature-owned route/query/store workflows composed through the shared analytical workbench without moving persistence, engine, board, filter, or navigation ownership into shared UI.
@@ -27,7 +28,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 
 VT-301 route-family rollout is complete at the implementation level for the route registry that existed at its completion checkpoint.
 
-The current route registry contains 35 guarded authenticated URL entries and 30 unique guarded route components after shared session routes are collapsed. The additional `/admin` / `AdminDiagnosticsPageComponent` route was introduced later by the Onboarding program and is reviewed under VT-302 against the same transformed shell, state, focus, and responsive contracts; it does not reopen the completed VT-301 batch history. No current guarded route component is unclassified.
+The current route registry contains 37 guarded authenticated URL entries and 30 unique guarded route components after shared session routes are collapsed. The `/games/liked` and `/games/libraries` URLs reuse the Games explorer; they add two URL entries without another component. The additional `/admin` / `AdminDiagnosticsPageComponent` route was introduced later by the Onboarding program and is reviewed under VT-302 against the same transformed shell, state, focus, and responsive contracts; it does not reopen the completed VT-301 batch history. No current guarded route component is unclassified.
 
 See [`../../transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md`](../../transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md) for the historical 34-URL/29-component VT-301 completion table. The VT-302 source-closeout report owns the later `/admin` delta and the current 35/30 checkpoint.
 

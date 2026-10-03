@@ -123,6 +123,7 @@ function toSearchItem(row: ImportedGameSearchRow): ImportedGameSearchItem {
   const whiteAccuracy = row.latestWhiteAccuracy ?? null;
   const blackAccuracy = row.latestBlackAccuracy ?? null;
   return {
+    liked: row.liked, libraryIds: row.libraryEntries?.map((entry) => entry.libraryId) ?? [],
     id: row.id, provider: row.provider as ImportedGameSearchItem['provider'], providerUrl: row.providerUrl,
     endedAt: toIso(row.endedAt), speedCategory: row.speedCategory, rated: row.rated,
     timeControl: { raw: row.timeControlRaw, initial: row.timeControlInitial, increment: row.timeControlIncrement },

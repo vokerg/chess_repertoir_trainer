@@ -14,6 +14,8 @@ export interface ImportedGameSearchSerializationOptions {
 }
 
 export const importedGameSearchQueryKeys = [
+  'liked',
+  'libraryId',
   'accountIds',
   'providers',
   'from',

@@ -34,6 +34,8 @@ describe('MainNavigationComponent', () => {
           { path: 'puzzles', component: TestRouteComponent },
           { path: 'courses', component: TestRouteComponent },
           { path: 'games', component: TestRouteComponent },
+          { path: 'games/liked', component: TestRouteComponent },
+          { path: 'games/libraries', component: TestRouteComponent },
           { path: 'opening-analysis', component: TestRouteComponent },
           { path: 'builder', component: TestRouteComponent },
           { path: 'progress', component: TestRouteComponent },
@@ -50,6 +52,16 @@ describe('MainNavigationComponent', () => {
     router = TestBed.inject(Router);
     fixture = TestBed.createComponent(MainNavigationComponent);
     fixture.detectChanges();
+  });
+
+  it('keeps Games as the default and selects only the current collection submenu', async () => {
+    await router.navigateByUrl('/games/liked');
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.rail-nav-link[href="/games"]')).not.toBeNull();
+    expect(root.querySelector('.rail-inline-item[href="/games/liked"]')?.getAttribute('aria-current')).toBe('page');
+    expect(root.querySelector('.rail-inline-item[href="/games"]')?.getAttribute('aria-current')).toBeNull();
+    expect(root.querySelector('.rail-inline-item[href="/games/libraries"]')).not.toBeNull();
   });
 
   it('renders every top-level destination from the shared navigation model', () => {

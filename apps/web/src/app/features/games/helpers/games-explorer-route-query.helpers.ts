@@ -136,6 +136,8 @@ export function summarizeUnrepresentedGamesExplorerCriteria(
   query: ImportedGameSearchCriteria,
 ): readonly string[] {
   const summary: string[] = [];
+  if (query.liked !== undefined) summary.push(query.liked ? 'Liked games' : 'Unliked games');
+  if (query.libraryId) summary.push(`Game library: ${query.libraryId}`);
   addMultiValue(summary, 'Accounts', query.accountIds);
   addMultiValue(summary, 'Providers', query.providers);
   addMultiValue(summary, 'Results', query.resultForUser);

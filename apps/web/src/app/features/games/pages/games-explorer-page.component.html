@@ -1,11 +1,20 @@
 <section class="games-page stack">
   <app-page-header
-    title="Games"
-    subtitle="Explore imported games, review the evidence, and submit durable processing jobs."
+    [title]="pageTitle()"
+    [subtitle]="likedView ? 'Your favorite games, saved with a heart.' : librariesView ? 'Organize games into collections for study.' : 'Explore imported games, review the evidence, and submit durable processing jobs.'"
     [stats]="headerStats()"
     [actions]="headerActions()"
   />
 
+  @if (store.collectionError(); as error) {
+    <div role="alert">{{ error }} <button type="button" (click)="store.loadLibraries()">Reload libraries</button></div>
+  }
+  @if (librariesView) {
+    <app-game-libraries-panel [libraries]="store.libraries()" [loading]="store.librariesLoading()"
+      [busy]="store.libraryBusy()" [selectedId]="store.appliedQuery().libraryId"
+      (save)="saveLibrary($event)" (remove)="deleteLibrary($event)" />
+  }
+  @if (showGames()) {
   <section class="games-filter-workspace" aria-label="Game filters">
     <app-game-filter-panel
       presentation="explorer"
@@ -27,6 +36,10 @@
 
   <app-games-table
     [games]="store.filteredGames()"
+    [libraries]="store.libraries()"
+    [savingGameIds]="store.savingGameIds()"
+    (like)="store.toggleLike($event)"
+    (membership)="store.toggleMembership($event.game, $event.libraryId)"
     [loading]="store.loading()"
     [error]="store.error()"
     [tableSubtitle]="store.tableSubtitle()"
@@ -35,4 +48,5 @@
     (loadMore)="store.loadMore()"
     (analyse)="store.analyse($event)"
   />
+  }
 </section>

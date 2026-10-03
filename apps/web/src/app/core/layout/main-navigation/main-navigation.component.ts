@@ -146,6 +146,11 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
       link: '/games',
       icon: 'games',
       activePrefixes: ['/games'],
+      children: [
+        { id: 'all-games', label: 'Games', description: 'Explore imported games', link: '/games', icon: 'games', activePrefixes: ['/games'] },
+        { id: 'liked-games', label: 'Liked games', description: 'Games you have given a heart', link: '/games/liked', icon: 'games', activePrefixes: ['/games/liked'] },
+        { id: 'game-libraries', label: 'Game libraries', description: 'Organize games for study', link: '/games/libraries', icon: 'library', activePrefixes: ['/games/libraries'] },
+      ],
     },
     {
       id: 'openings',
@@ -410,6 +415,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
 
   protected isNavActive(item: AppNavItem): boolean {
     const url = this.currentPath();
+    if (item.id === 'all-games') return url === '/games' || /^\/games\/\d+/.test(url);
     return item.activePrefixes.some((prefix) => url === prefix || url.startsWith(`${prefix}/`));
   }
 

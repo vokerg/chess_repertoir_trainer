@@ -83,7 +83,7 @@ export async function buildApp(options: BuildAppOptions = {}) {
     await app.register(cors, {
       origin: options.corsOrigin ?? process.env['CORS_ORIGIN'] ?? 'http://localhost:4200',
       credentials: true,
-      methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+      methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     });
 
     app.get('/health', async () => ({ ok: true }));

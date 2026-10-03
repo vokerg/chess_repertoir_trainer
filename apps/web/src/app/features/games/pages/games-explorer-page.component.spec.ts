@@ -23,8 +23,10 @@ describe('GamesExplorerPageComponent', () => {
     queryParamMap.subscribe((params) => snapshotParamMap = params);
     api = jasmine.createSpyObj<GamesApiService>('GamesApiService', [
       'getFacets',
+      'getLibraries',
       'searchGames',
     ]);
+    api.getLibraries.and.returnValue(of({ items: [] }));
     api.getFacets.and.returnValue(of(emptyImportedGameFacets()));
     api.searchGames.and.returnValue(of({
       items: [],
@@ -50,7 +52,7 @@ describe('GamesExplorerPageComponent', () => {
           provide: ActivatedRoute,
           useValue: {
             queryParamMap: queryParamMap.asObservable(),
-            snapshot: { get queryParamMap() { return snapshotParamMap; } },
+            snapshot: { data: {}, get queryParamMap() { return snapshotParamMap; } },
           },
         },
         { provide: Router, useValue: router },
@@ -96,7 +98,8 @@ describe('GamesExplorerPageComponent', () => {
 
     callApply(fixture.componentInstance);
 
-    expect(router.navigate).toHaveBeenCalledOnceWith(['/games'], {
+    expect(router.navigate).toHaveBeenCalledOnceWith([], {
+      relativeTo: TestBed.inject(ActivatedRoute),
       queryParams: gamesExplorerLinkQueryParams(store.draftQuery()),
     });
     expect(api.searchGames).not.toHaveBeenCalled();

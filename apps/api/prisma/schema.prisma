@@ -27,6 +27,7 @@ model AppUser {
   defaultProgressAccount          ExternalAccount?                 @relation("DefaultProgressAccount", fields: [defaultProgressAccountId], references: [id], onDelete: SetNull)
   externalAccounts                ExternalAccount[]
   lichessConnection               LichessConnection?
+  gameLibraries                   GameLibrary[]
   importedGames                   ImportedGame[]
   importedGameAiReviews           ImportedGameAiReview[]
   importRuns                      ImportRun[]
@@ -225,7 +226,29 @@ model AccountRatingStats {
   data       Json
 }
 
+model GameLibrary {
+  id     Int                @id @default(autoincrement())
+  userId Int
+  user   AppUser            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String             @db.VarChar(100)
+  games  GameLibraryEntry[]
+
+  @@index([userId, id])
+}
+
+model GameLibraryEntry {
+  libraryId Int
+  gameId    Int
+  library   GameLibrary  @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  game      ImportedGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([libraryId, gameId])
+  @@index([gameId])
+}
+
 model ImportedGame {
+  liked                           Boolean                          @default(false)
+  libraryEntries                  GameLibraryEntry[]
   id                              Int                              @id @default(autoincrement())
   userId                          Int
   user                            AppUser                          @relation(fields: [userId], references: [id], onDelete: Cascade)

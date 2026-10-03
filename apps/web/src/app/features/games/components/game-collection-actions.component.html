@@ -1,0 +1,19 @@
+<button type="button" class="heart" [class.liked]="game().liked" [attr.aria-pressed]="!!game().liked"
+  [attr.aria-label]="game().liked ? 'Unlike game' : 'Like game'" [disabled]="busy()" (click)="like.emit()">
+  <span aria-hidden="true">{{ game().liked ? '♥' : '♡' }}</span>
+</button>
+<details>
+  <summary>Save to library</summary>
+  <div class="collection-options">
+    @for (library of libraries(); track library.id) {
+      <button type="button" [attr.aria-pressed]="game().libraryIds?.includes(library.id) ?? false"
+        [disabled]="busy()" (click)="membership.emit(library.id)">
+        <span aria-hidden="true">{{ game().libraryIds?.includes(library.id) ? '✓' : '+' }}</span>
+        {{ library.name }}
+      </button>
+    } @empty {
+      <span>Create a library to organize your games.</span>
+    }
+    <a routerLink="/games/libraries">Manage libraries</a>
+  </div>
+</details>

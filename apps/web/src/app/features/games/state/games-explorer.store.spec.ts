@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { CreateImportedGameJobRunResponse, JobRunKind } from '@chess-trainer/contracts/jobs';
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { ImportedGameJobStore } from '../../../core/jobs/imported-game-job.store';
 import type { ImportedGameSearchCriteria } from '../../../shared/games/filters/imported-game-search-query.codec';
 import { GamesApiService } from '../data-access/games-api.service';
@@ -17,7 +17,7 @@ describe('GamesExplorerStore', () => {
   let settledGameBatch: ReturnType<typeof signal>;
 
   beforeEach(() => {
-    api = jasmine.createSpyObj<GamesApiService>('GamesApiService', ['getFacets', 'searchGames']);
+    api = jasmine.createSpyObj<GamesApiService>('GamesApiService', ['getFacets', 'searchGames', 'setLiked', 'setMembership', 'createLibrary', 'renameLibrary', 'deleteLibrary', 'getLibraries']);
     submit = jasmine
       .createSpy('submit')
       .and.callFake(async (kind: JobRunKind, gameIds: readonly number[], force = false) =>
@@ -37,6 +37,58 @@ describe('GamesExplorerStore', () => {
     });
     store = TestBed.inject(GamesExplorerStore);
     store.games.set([game(1), game(2)]);
+  });
+
+  it('likes a game without resetting filters, pagination, or other rows', async () => {
+    api.setLiked.and.returnValue(of({ success: true }));
+    store.pageInfo.set({ hasMore: true, nextCursor: 'next' });
+    const query = store.appliedQuery();
+    await store.toggleLike(store.games()[0]);
+    expect(store.games()[0].liked).toBeTrue();
+    expect(store.games()[1].id).toBe(2);
+    expect(store.appliedQuery()).toBe(query);
+    expect(store.pageInfo().nextCursor).toBe('next');
+    expect(api.searchGames).not.toHaveBeenCalled();
+  });
+
+  it('removes an unliked row from Liked games and preserves rows after a failed write', async () => {
+    store.appliedQuery.set({ sort: 'endedAtDesc', limit: 50, liked: true });
+    store.games.set([{ ...game(1), liked: true }]);
+    api.setLiked.and.returnValue(throwError(() => new Error('Offline')));
+    await store.toggleLike(store.games()[0]);
+    expect(store.games().length).toBe(1);
+    expect(store.collectionError()).toBe('Offline');
+    expect(store.savingGameIds()).toEqual([]);
+    api.setLiked.and.returnValue(of({ success: true }));
+    await store.toggleLike(store.games()[0]);
+    expect(store.games()).toEqual([]);
+  });
+
+  it('prevents duplicate writes and ignores responses after navigation', async () => {
+    const pending = new Subject<{ success: true }>();
+    api.setLiked.and.returnValue(pending);
+    const original = store.games()[0];
+    const saving = store.toggleLike(original);
+    await store.toggleLike(original);
+    expect(api.setLiked).toHaveBeenCalledTimes(1);
+    api.searchGames.and.returnValue(of(searchResponse([game(3)])));
+    store.applyRouteQuery({ sort: 'endedAtDesc', limit: 50, libraryId: 4 });
+    pending.next({ success: true });
+    pending.complete();
+    await saving;
+    expect(store.games().map((row) => row.id)).toEqual([3]);
+  });
+
+  it('keeps likes and other memberships when removing a game from one library', async () => {
+    store.appliedQuery.set({ sort: 'endedAtDesc', limit: 50, libraryId: 4 });
+    store.games.set([{ ...game(1), liked: true, libraryIds: [4, 5] }]);
+    store.libraries.set([{ id: 4, name: 'Study', gameCount: 1 }, { id: 5, name: 'Other', gameCount: 1 }]);
+    api.setMembership.and.returnValue(of({ success: true }));
+    await store.toggleMembership(store.games()[0], 4);
+    expect(api.setMembership).toHaveBeenCalledOnceWith(4, 1, false);
+    expect(store.games()).toEqual([]);
+    expect(store.libraries().map((item) => item.gameCount)).toEqual([0, 1]);
+    expect(api.setLiked).not.toHaveBeenCalled();
   });
 
   it('reloads visible rows once when an individual task settles', async () => {

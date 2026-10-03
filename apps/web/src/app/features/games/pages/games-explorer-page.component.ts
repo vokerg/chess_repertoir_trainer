@@ -1,3 +1,6 @@
+import type { GameLibrary } from '@chess-trainer/contracts/imported-games';
+import { GameLibrariesPanelComponent } from '../components/game-libraries-panel.component';
+import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -5,6 +8,7 @@ import {
   computed,
   inject,
   OnInit,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -28,7 +32,7 @@ import { GamesExplorerStore } from '../state/games-explorer.store';
 @Component({
   selector: 'app-games-explorer-page',
   standalone: true,
-  imports: [GameFilterPanelComponent, GamesTableComponent, PageHeaderComponent],
+  imports: [GameFilterPanelComponent, GamesTableComponent, PageHeaderComponent, GameLibrariesPanelComponent],
   providers: [GamesExplorerStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './games-explorer-page.component.html',
@@ -39,12 +43,24 @@ export class GamesExplorerPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly librariesView = this.route.snapshot.data['gameCollection'] === 'libraries';
+  protected readonly likedView = this.route.snapshot.data['gameCollection'] === 'liked';
+  private readonly confirm = inject(ConfirmDialogService);
+  private readonly libraryPanel = viewChild(GameLibrariesPanelComponent);
+  protected readonly pageTitle = computed(() => {
+    if (this.likedView) return 'Liked games';
+    if (!this.librariesView) return 'Games';
+    const id = this.store.appliedQuery().libraryId;
+    return this.store.libraries().find((library) => library.id === id)?.name ?? 'Game libraries';
+  });
+  protected readonly showGames = computed(() => !this.librariesView || !!this.store.appliedQuery().libraryId);
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
     { id: 'loaded', label: 'Loaded', value: this.store.filteredGames().length },
     { id: 'analysed', label: 'Analysed', value: this.store.analysedCount() },
     { id: 'ply-indexed', label: 'Indexed', value: this.store.plyIndexedCount() },
   ]);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
+    if (!this.showGames()) return [];
     const submitting = this.store.submittingKind() !== null;
     return [
       {
@@ -66,13 +82,20 @@ export class GamesExplorerPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.store.loadFacets();
+    void this.store.loadLibraries();
     this.route.queryParamMap
       .pipe(
-        map((params) => parseGamesExplorerRouteQuery(params)),
+        map((params) => {
+          const collectionView = this.likedView || this.librariesView;
+          const parsed = parseGamesExplorerRouteQuery(collectionView
+            ? { ...params, get: (key: string) => key === 'filterMode' ? 'explicit' : params.get(key) }
+            : params);
+          return this.likedView ? { ...parsed, query: { ...parsed.query, liked: true } } : parsed;
+        }),
         distinctUntilChanged(gamesExplorerRouteQueriesEqual),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((routeQuery) => this.store.applyRouteQuery(routeQuery.query));
+      .subscribe((routeQuery) => this.store.applyRouteQuery(routeQuery.query, !this.librariesView || !!routeQuery.query.libraryId));
   }
 
   protected applyFilters(): void {
@@ -90,14 +113,38 @@ export class GamesExplorerPageComponent implements OnInit {
       return;
     }
 
-    void this.router.navigate(['/games'], { queryParams: targetParams });
+    void this.router.navigate([], { relativeTo: this.route, queryParams: targetParams });
   }
 
   protected resetFilters(): void {
+    if (this.likedView || this.librariesView) {
+      void this.router.navigate([], { relativeTo: this.route, queryParams: {
+        filterMode: 'explicit', libraryId: this.store.appliedQuery().libraryId,
+      } });
+      return;
+    }
     if (this.route.snapshot.queryParamMap.keys.length === 0) {
       this.store.applyRouteQuery(defaultGamesExplorerQuery());
       return;
     }
     void this.router.navigate(['/games']);
+  }
+
+  protected async saveLibrary(event: { name: string; id?: number }): Promise<void> {
+    if (await this.store.saveLibrary(event.name, event.id)) this.libraryPanel()?.resetForm();
+  }
+
+  protected async deleteLibrary(library: GameLibrary): Promise<void> {
+    const confirmed = await this.confirm.confirm({
+      title: `Delete ${library.name}?`,
+      message: 'This removes the library. Its games and likes are kept.',
+      confirmLabel: 'Delete library',
+      tone: 'danger',
+    });
+    if (!confirmed || !await this.store.deleteLibrary(library.id)) return;
+    this.libraryPanel()?.resetForm();
+    if (this.store.appliedQuery().libraryId === library.id) {
+      void this.router.navigate(['/games/libraries']);
+    }
   }
 }
