@@ -31,7 +31,9 @@
             <th>Opening</th>
             <th>Accuracy</th>
             <th>Status</th>
-            <th class="games-actions-heading">Actions</th>
+            @if (hasRowActions()) {
+              <th class="games-actions-heading">Actions</th>
+            }
           </tr>
         </thead>
         <tbody>
@@ -111,20 +113,22 @@
               <td data-label="Status">
                 <p class="game-main games-status-primary">{{ gameStatusLabel(game) }}</p>
               </td>
-              <td data-label="Actions">
-                <div class="games-row-actions">
-                  @if (canAnalyse(game)) {
-                    <button
-                      type="button"
-                      class="text-button games-row-action-link"
-                      [disabled]="isAnalysing(game)"
-                      (click)="analyseGame(game)"
-                    >
-                      {{ isAnalysing(game) ? 'Analysing...' : 'Analyse' }}
-                    </button>
-                  }
-                </div>
-              </td>
+              @if (hasRowActions()) {
+                <td data-label="Actions">
+                  <div class="games-row-actions">
+                    @if (canAnalyse(game)) {
+                      <button
+                        type="button"
+                        class="text-button games-row-action-link"
+                        [disabled]="isAnalysing(game)"
+                        (click)="analyseGame(game)"
+                      >
+                        {{ isAnalysing(game) ? 'Analysing...' : 'Analyse' }}
+                      </button>
+                    }
+                  </div>
+                </td>
+              }
             </tr>
           }
         </tbody>

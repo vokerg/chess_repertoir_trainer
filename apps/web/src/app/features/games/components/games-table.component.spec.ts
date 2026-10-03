@@ -36,6 +36,24 @@ describe('GamesTableComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Save to library');
   });
 
+  it('hides the Actions column when all displayed games are already analysed', () => {
+    expect(fixture.nativeElement.querySelector('.games-actions-heading')).toBeNull();
+    expect(fixture.nativeElement.querySelector('td[data-label="Actions"]')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('thead th').length).toBe(7);
+  });
+
+  it('shows aligned action cells only when a displayed game can be analysed', () => {
+    fixture.componentRef.setInput('games', [game(), { ...gameAwaitingAnalysis(), id: 43 }]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.games-actions-heading')).not.toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('td[data-label="Actions"]').length).toBe(2);
+    const rows = fixture.nativeElement.querySelectorAll('tbody tr') as NodeListOf<HTMLTableRowElement>;
+    expect(Array.from(rows).every((row) => row.cells.length === 8)).toBeTrue();
+    fixture.componentRef.setInput('games', [game()]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.games-actions-heading')).toBeNull();
+  });
+
   it('keeps core analytical evidence in the responsive card representation', () => {
     const card = fixture.nativeElement.querySelector('.games-mobile-card') as HTMLElement;
     const text = card.textContent?.replace(/\s+/g, ' ').trim();
