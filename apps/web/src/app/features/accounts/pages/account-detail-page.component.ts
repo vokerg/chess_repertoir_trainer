@@ -13,6 +13,10 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
+import {
+  gamesExplorerLinkQueryParams,
+  type GamesExplorerLinkQueryParams,
+} from '../../../shared/games/navigation/games-explorer-link.helper';
 import { AccountProfileCoachReadComponent } from '../components/account-profile-coach-read.component';
 import { AccountProfileEvidenceComponent } from '../components/account-profile-evidence.component';
 import { AccountProfileGameShapeComponent } from '../components/account-profile-game-shape.component';
@@ -183,7 +187,11 @@ export class AccountDetailPageComponent implements OnInit {
     return `Synced ${Math.round(elapsedHours / 24)}d ago`;
   }
 
-  protected onAccountSelectionChange(value: string): void {
+  protected gamesQueryParams(accountId: number): GamesExplorerLinkQueryParams {
+    return gamesExplorerLinkQueryParams({ accountIds: [accountId] });
+  }
+
+  protected onAccountSelectionChange(value: string | number): void {
     const id = Number(value);
     if (Number.isInteger(id) && id > 0 && id !== this.accountId()) {
       void this.router.navigate(['/progress/accounts', id]);

@@ -45,24 +45,61 @@
           </div>
         </div>
 
-        <div class="profile-viewing">
-          <label for="profile-account-select">Viewing account</label>
-          <select
-            id="profile-account-select"
-            [value]="accountId() ?? ''"
-            (change)="onAccountSelectionChange($any($event.target).value)"
-            [disabled]="accountsLoading() || accounts().length === 0"
-          >
-            @if (accountsLoading()) {
-              <option value="">Loading accounts...</option>
-            }
-            @for (option of accountOptions(); track option.id) {
-              <option [value]="option.id">{{ accountOptionLabel(option) }}</option>
-            }
-          </select>
-          <a class="profile-compare" routerLink="/settings/accounts">
-            Manage accounts <span aria-hidden="true">↗</span>
-          </a>
+        <div class="profile-hero-aside">
+          @if (accountOptions().length > 1) {
+            <div class="profile-switcher" role="group" aria-label="Switch account">
+              <span class="profile-switcher-label">Switch account</span>
+              @if (accountOptions().length <= 3) {
+                <div class="profile-switcher-pills">
+                  @for (option of accountOptions(); track option.id) {
+                    <a
+                      class="profile-switcher-pill"
+                      [class.active]="option.id === accountId()"
+                      [attr.aria-current]="option.id === accountId() ? 'page' : null"
+                      [routerLink]="['/progress/accounts', option.id]"
+                      [title]="accountOptionLabel(option)"
+                    >
+                      <span class="switcher-pill-provider">{{ providerLabel(option.provider) }}</span>
+                      <span class="switcher-pill-user">&#64;{{ option.username }}</span>
+                      @if (option.isDefaultProgressAccount) {
+                        <span class="switcher-pill-default">default</span>
+                      }
+                    </a>
+                  }
+                </div>
+              } @else {
+                <div class="profile-switcher-select-wrap">
+                  <select
+                    id="profile-account-select"
+                    class="profile-switcher-select"
+                    [value]="accountId() ?? ''"
+                    (change)="onAccountSelectionChange($any($event.target).value)"
+                    [disabled]="accountsLoading()"
+                    aria-label="Switch account"
+                  >
+                    @for (option of accountOptions(); track option.id) {
+                      <option [value]="option.id" [selected]="option.id === accountId()">
+                        {{ accountOptionLabel(option) }}
+                      </option>
+                    }
+                  </select>
+                </div>
+              }
+            </div>
+          }
+
+          <div class="profile-hero-actions">
+            <a
+              class="profile-action-btn"
+              routerLink="/games"
+              [queryParams]="gamesQueryParams(account.id)"
+            >
+              Games <span aria-hidden="true">↗</span>
+            </a>
+            <a class="profile-action-btn secondary" routerLink="/settings/accounts">
+              Manage accounts <span aria-hidden="true">↗</span>
+            </a>
+          </div>
         </div>
       </section>
 
