@@ -44,6 +44,8 @@ export class GamesTableComponent {
   readonly loadMore = output<void>();
   readonly analyse = output<ImportedGameSearchItem>();
 
+  protected readonly hasRowActions = computed(() => this.games().some((game) => this.canAnalyse(game)));
+
   protected readonly accuracyLabel = accuracyLabel;
   protected readonly colorLabel = colorLabel;
   protected readonly displayTimeControl = displayTimeControl;
