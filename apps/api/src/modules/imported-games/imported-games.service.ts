@@ -146,6 +146,7 @@ function toSearchItem(row: ImportedGameSearchRow): ImportedGameSearchItem {
 function toDetail(row: ImportedGameDetailRow, tagNamesByCode: Map<number, string>): ImportedGameDetail {
   return {
     ...toListItem(row, tagNamesByCode),
+    liked: row.liked, libraryIds: row.libraryEntries.map((entry) => entry.libraryId),
     pgn: row.pgn,
     plies: row.plies.map(toPlyItem),
     createdAt: row.createdAt.toISOString(),

@@ -113,9 +113,6 @@
               </td>
               <td data-label="Actions">
                 <div class="games-row-actions">
-                  <app-game-collection-actions [game]="game" [libraries]="libraries()"
-                    [busy]="savingGameIds().includes(game.id)" (like)="like.emit(game)"
-                    (membership)="membership.emit({ game, libraryId: $event })" />
                   @if (canAnalyse(game)) {
                     <button
                       type="button"
@@ -148,9 +145,6 @@
             </div>
 
             <div class="games-mobile-actions">
-                  <app-game-collection-actions [game]="game" [libraries]="libraries()"
-                    [busy]="savingGameIds().includes(game.id)" (like)="like.emit(game)"
-                    (membership)="membership.emit({ game, libraryId: $event })" />
               @if (canAnalyse(game)) {
                 <button
                   type="button"

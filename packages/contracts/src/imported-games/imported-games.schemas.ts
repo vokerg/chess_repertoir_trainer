@@ -202,6 +202,8 @@ export const importedGameSearchItemSchema = z.object({
 });
 
 export const importedGameDetailResponseSchema = z.object({
+  liked: z.boolean().optional(),
+  libraryIds: z.array(z.number().int().positive()).optional(),
   ...importedGameListItemSchema.shape,
   pgn: z.string().nullable(),
   plies: z.array(importedGamePlySchema),

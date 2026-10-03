@@ -10,7 +10,17 @@
     [aiReviewDisabled]="store.analysisStatusLabel() !== 'Saved'"
     (fullRefresh)="store.fullRefreshGame()"
     (generateAiReview)="generateAiReview()"
-  />
+  >
+    @if (store.game(); as game) {
+      <app-game-collection-actions [game]="game" [libraries]="store.libraries()"
+        [busy]="store.collectionSaving() || store.librariesLoading()"
+        (like)="store.toggleLike()" (membership)="store.toggleMembership($event)" />
+    }
+  </app-game-detail-header>
+
+  @if (store.collectionError(); as error) {
+    <app-state-message tone="error" [message]="error" />
+  }
 
   @if (store.error(); as error) {
     <app-state-message tone="error" [message]="error" />

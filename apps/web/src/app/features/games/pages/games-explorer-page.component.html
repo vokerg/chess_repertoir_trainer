@@ -36,10 +36,6 @@
 
   <app-games-table
     [games]="store.filteredGames()"
-    [libraries]="store.libraries()"
-    [savingGameIds]="store.savingGameIds()"
-    (like)="store.toggleLike($event)"
-    (membership)="store.toggleMembership($event.game, $event.libraryId)"
     [loading]="store.loading()"
     [error]="store.error()"
     [tableSubtitle]="store.tableSubtitle()"

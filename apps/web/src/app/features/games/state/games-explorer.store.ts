@@ -34,7 +34,6 @@ export class GamesExplorerStore {
   readonly librariesLoading = signal(false);
   readonly collectionError = signal<string | null>(null);
   readonly libraryBusy = signal(false);
-  readonly savingGameIds = signal<readonly number[]>([]);
 
   async loadLibraries(): Promise<void> {
     this.librariesLoading.set(true);
@@ -83,49 +82,6 @@ export class GamesExplorerStore {
       return false;
     } finally {
       this.libraryBusy.set(false);
-    }
-  }
-
-  async toggleLike(game: ImportedGameSearchItem): Promise<void> {
-    await this.saveGameCollection(game, async () => {
-      const liked = !game.liked;
-      await firstValueFrom(this.api.setLiked(game.id, liked));
-      return { liked };
-    });
-  }
-
-  async toggleMembership(game: ImportedGameSearchItem, libraryId: number): Promise<void> {
-    await this.saveGameCollection(game, async () => {
-      const ids = game.libraryIds ?? [];
-      const included = !ids.includes(libraryId);
-      await firstValueFrom(this.api.setMembership(libraryId, game.id, included));
-      this.libraries.update((items) => items.map((item) => item.id === libraryId
-        ? { ...item, gameCount: Math.max(0, item.gameCount + (included ? 1 : -1)) } : item));
-      return { libraryIds: included ? [...ids, libraryId] : ids.filter((id) => id !== libraryId) };
-    });
-  }
-
-  private async saveGameCollection(game: ImportedGameSearchItem, save: () => Promise<Partial<Pick<ImportedGameSearchItem, 'liked' | 'libraryIds'>>>): Promise<void> {
-    if (this.savingGameIds().includes(game.id)) return;
-    this.savingGameIds.update((ids) => [...ids, game.id]);
-    this.collectionError.set(null);
-    const query = this.appliedQuery();
-    const requestId = this.searchRequestId;
-    try {
-      const updated = await save();
-      // Ignore a mutation response from a previous route/search.
-      if (requestId !== this.searchRequestId) return;
-      this.games.update((games) => games.flatMap((item) => {
-        if (item.id !== game.id) return [item];
-        const patched = { ...item, ...updated };
-        const matches = (query.liked === undefined || patched.liked === query.liked) &&
-          (!query.libraryId || patched.libraryIds?.includes(query.libraryId));
-        return matches ? [patched] : [];
-      }));
-    } catch (error) {
-      this.collectionError.set(readApiError(error, 'Could not save game. Please try again.'));
-    } finally {
-      this.savingGameIds.update((ids) => ids.filter((id) => id !== game.id));
     }
   }
 

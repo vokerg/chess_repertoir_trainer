@@ -1,3 +1,4 @@
+import { GameCollectionActionsComponent } from '../components/game-collection-actions.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -31,6 +32,7 @@ import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-
   selector: 'app-game-detail-page',
   standalone: true,
   imports: [
+    GameCollectionActionsComponent,
     GameInsightsComponent,
     GameDetailHeaderComponent,
     GameSummaryComponent,

@@ -31,23 +31,9 @@ describe('GamesTableComponent', () => {
     fixture.detectChanges();
   });
 
-  it('emits heart and membership intents in desktop and mobile layouts', () => {
-    fixture.componentRef.setInput('libraries', [{ id: 7, name: 'Endgames', gameCount: 0 }]);
-    fixture.detectChanges();
-    const liked = jasmine.createSpy('liked');
-    const membership = jasmine.createSpy('membership');
-    fixture.componentInstance.like.subscribe(liked);
-    fixture.componentInstance.membership.subscribe(membership);
-    const hearts = fixture.nativeElement.querySelectorAll('button[aria-label="Like game"]') as NodeListOf<HTMLButtonElement>;
-    expect(hearts.length).toBe(2);
-    hearts.forEach((heart) => heart.click());
-    expect(liked).toHaveBeenCalledTimes(2);
-    const entries = fixture.nativeElement.querySelectorAll('.collection-options button') as NodeListOf<HTMLButtonElement>;
-    entries.forEach((entry) => entry.click());
-    expect(membership).toHaveBeenCalledWith({ game: game(), libraryId: 7 });
-    fixture.componentRef.setInput('savingGameIds', [game().id]);
-    fixture.detectChanges();
-    expect(hearts[0].disabled).toBeTrue();
+  it('keeps collection actions off desktop rows and mobile cards', () => {
+    expect(fixture.nativeElement.querySelector('app-game-collection-actions')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Save to library');
   });
 
   it('keeps core analytical evidence in the responsive card representation', () => {

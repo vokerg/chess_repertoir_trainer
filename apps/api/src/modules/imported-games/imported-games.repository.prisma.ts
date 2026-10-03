@@ -88,6 +88,7 @@ export const importedGameSearchSelect = {
 } as const;
 
 export const importedGameDetailSelect = {
+  liked: true, libraryEntries: { select: { libraryId: true } },
   ...importedGameListSelect,
   pgn: true,
   createdAt: true,
