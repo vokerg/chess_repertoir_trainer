@@ -41,6 +41,7 @@ export type UserResidualPhase =
   | 'PREPARATION_RUNS'
   | 'JOB_RUNS'
   | 'COURSES'
+  | 'GAME_LIBRARIES'
   | 'LICHESS_CONNECTION'
   | 'OAUTH_LOGIN_STATES';
 
@@ -60,6 +61,7 @@ export const USER_RESIDUAL_PHASES: readonly UserResidualPhase[] = [
   'PREPARATION_RUNS',
   'JOB_RUNS',
   'COURSES',
+  'GAME_LIBRARIES',
   'LICHESS_CONNECTION',
   'OAUTH_LOGIN_STATES',
 ];
@@ -345,6 +347,8 @@ export function createUserDataLifecycleRepository(
           return deleteIdBatch(transaction.jobRun, { userId }, take);
         case 'COURSES':
           return deleteIdBatch(transaction.course, { userId }, take);
+        case 'GAME_LIBRARIES':
+          return deleteIdBatch(transaction.gameLibrary, { userId }, take);
         case 'LICHESS_CONNECTION':
           return (await transaction.lichessConnection.deleteMany({ where: { userId } })).count;
         case 'OAUTH_LOGIN_STATES': {
@@ -402,6 +406,7 @@ async function countUserOwnedRows(database: UserLifecycleDatabase, userId: numbe
   const [
     accounts,
     games,
+    gameLibraries,
     courses,
     trainingSessions,
     puzzleRounds,
@@ -423,6 +428,7 @@ async function countUserOwnedRows(database: UserLifecycleDatabase, userId: numbe
   ] = await Promise.all([
     database.externalAccount.count({ where: { userId } }),
     database.importedGame.count({ where: { userId } }),
+    database.gameLibrary.count({ where: { userId } }),
     database.course.count({ where: { userId } }),
     database.trainingSession.count({ where: { userId } }),
     database.lichessPuzzleRound.count({ where: { userId } }),
@@ -445,6 +451,7 @@ async function countUserOwnedRows(database: UserLifecycleDatabase, userId: numbe
   return {
     accounts,
     games,
+    gameLibraries,
     courses,
     trainingSessions,
     puzzleRounds,
