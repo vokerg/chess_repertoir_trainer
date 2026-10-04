@@ -37,6 +37,7 @@ assert.deepEqual(
     'Course',
     'DataPreparationRun',
     'ExternalAccount',
+    'GameLibrary',
     'ImportRun',
     'ImportedGame',
     'ImportedGameAiReview',
