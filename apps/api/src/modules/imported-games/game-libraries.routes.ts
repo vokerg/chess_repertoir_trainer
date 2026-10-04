@@ -65,6 +65,9 @@ const gameLibrariesRoutes: FastifyPluginAsyncZod = async (app) => {
     app.route({ method, url: '/api/game-libraries/:libraryId/games/:gameId', schema: {
       operationId: method === 'PUT' ? 'addGameToLibrary' : 'removeGameFromLibrary', tags,
       summary: method === 'PUT' ? 'Add an owned game to an owned library' : 'Remove a game from a library',
+      description: method === 'PUT'
+        ? 'The library and game path parameters fully identify the membership to add; no request body is required.'
+        : 'The library and game path parameters fully identify the membership to remove.',
       params: gameLibraryEntryParamsSchema, response: mutationResponse,
     }, handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
