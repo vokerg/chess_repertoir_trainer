@@ -91,6 +91,22 @@ try {
       pgn: '1. d4 d5',
     },
   });
+  const library = await prisma.gameLibrary.create({
+    data: { userId: owner.id, name: 'Lifecycle fenced library' },
+  });
+  await prisma.gameLibraryEntry.create({
+    data: { libraryId: library.id, gameId: gameA.id },
+  });
+  const foreignLibrary = await prisma.gameLibrary.create({
+    data: { userId: otherUser.id, name: 'Foreign library' },
+  });
+  await assert.rejects(
+    prisma.gameLibraryEntry.create({
+      data: { libraryId: foreignLibrary.id, gameId: gameB.id },
+    }),
+    /DATA_LIFECYCLE_SCOPE_MISMATCH/,
+    'direct writes must not link another user\'s library to a game',
+  );
   const analysisRun = await prisma.gameAnalysisRun.create({
     data: {
       importedGameId: gameA.id,
@@ -176,6 +192,36 @@ try {
     previewHash: hash(`preview:${suffix}`),
     idempotencyKeyHash: hash(`idempotency:${suffix}`),
   });
+
+  // A direct library writer must obey active fences even if HTTP auth
+  // completed before deletion started.
+  await assert.rejects(
+    prisma.gameLibrary.create({ data: { userId: owner.id, name: 'Late library' } }),
+    /DATA_LIFECYCLE_WRITE_BLOCKED/,
+  );
+  await assert.rejects(
+    prisma.gameLibrary.update({
+      where: { id: library.id }, data: { userId: otherUser.id },
+    }),
+    /DATA_LIFECYCLE_WRITE_BLOCKED/,
+  );
+  await assert.rejects(
+    prisma.gameLibraryEntry.create({
+      data: { libraryId: library.id, gameId: gameA.id },
+    }),
+    /DATA_LIFECYCLE_WRITE_BLOCKED/,
+  );
+  await assert.rejects(
+    prisma.gameLibraryEntry.update({
+      where: { libraryId_gameId: { libraryId: library.id, gameId: gameA.id } },
+      data: { gameId: gameB.id },
+    }),
+    /DATA_LIFECYCLE_WRITE_BLOCKED/,
+    'moving a membership away from a fenced game must check its old scope',
+  );
+  await prisma.gameLibraryEntry.create({
+    data: { libraryId: library.id, gameId: gameB.id },
+  }); // A different account is not fenced.
 
   // Reparenting a fenced account to another user must check the old owner scope.
   await assert.rejects(

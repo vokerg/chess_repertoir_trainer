@@ -61,6 +61,7 @@ for (const { method, path, operation } of operations) {
 }
 
 const bodylessActions = new Map([
+  ['PUT /api/game-libraries/{libraryId}/games/{gameId}', 'The library and game path parameters fully identify the membership to add; no request body is required.'],
   ['POST /api/lines/{lineId}/training/start', 'the line id selects the repertoire material'],
   ['POST /api/training-marathons/{runId}/next', 'The run id selects the prepared marathon state'],
   ['POST /api/training/{sessionId}/complete', 'completion uses the persisted session state'],

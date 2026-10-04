@@ -79,6 +79,12 @@ try {
       pgn: '1. e4 e5',
     },
   });
+  const library = await prisma.gameLibrary.create({
+    data: { userId: user.id, name: 'Delete my library' },
+  });
+  await prisma.gameLibraryEntry.create({
+    data: { libraryId: library.id, gameId: game.id },
+  });
   const sharedPosition = await prisma.position.create({
     data: {
       ...positionFixtureData(`user-delete-shared-${suffix}`)
@@ -302,6 +308,8 @@ try {
 
   assert.equal(await prisma.appUser.count({ where: { id: user.id } }), 0);
   assert.equal(await prisma.externalAccount.count({ where: { userId: user.id } }), 0);
+  assert.equal(await prisma.gameLibrary.count({ where: { userId: user.id } }), 0);
+  assert.equal(await prisma.gameLibraryEntry.count({ where: { libraryId: library.id } }), 0);
   assert.equal(await prisma.course.count({ where: { userId: user.id } }), 0);
   assert.equal(await prisma.jobRun.count({ where: { userId: user.id } }), 0);
   assert.equal(await prisma.oAuthLoginState.count({ where: { userId: user.id } }), 0);
@@ -320,6 +328,7 @@ try {
     select: { verificationJson: true },
   });
   assert.equal(storedOperation.verificationJson?.checks?.importRuns, 0);
+  assert.equal(storedOperation.verificationJson?.checks?.gameLibraries, 0);
   assert.equal(
     await prisma.deletedAuthIdentityTombstone.count({ where: { operationId } }),
     1,

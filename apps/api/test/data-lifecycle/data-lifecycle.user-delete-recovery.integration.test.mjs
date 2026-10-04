@@ -81,6 +81,13 @@ try {
     })),
   });
 
+  await prisma.gameLibrary.createMany({
+    data: Array.from({ length: 30 }, (_, index) => ({
+      userId: resumableUser.id,
+      name: `Bounded deletion library ${index + 1}`,
+    })),
+  });
+
   const preview = await service.preview(resumableUser.id, { action: 'DELETE_APP_USER' });
   operationIds.push(preview.operationId);
   const credentials = {
@@ -128,14 +135,34 @@ try {
   assert.ok(afterFirstBatch.firstDestructiveCommitAt);
 
   let needsAttention = false;
+  let checkedLibraryBatch = false;
   for (let step = 0; step < 20; step += 1) {
     const operation = await readOperation(preview.operationId);
     if (operation.status === 'NEEDS_ATTENTION') {
       needsAttention = true;
       break;
     }
-    assert.equal(await runFreshWorker(failingRevoker), true);
+    if (!checkedLibraryBatch && operation.checkpointJson?.phase === 'GAME_LIBRARIES') {
+      assert.equal(
+        await prisma.gameLibrary.count({ where: { userId: resumableUser.id } }),
+        30,
+      );
+      assert.equal(await runFreshWorker(failingRevoker), true);
+      assert.equal(
+        await prisma.gameLibrary.count({ where: { userId: resumableUser.id } }),
+        5,
+        'one library residual transaction must delete no more than gameBatchLimit rows',
+      );
+      checkedLibraryBatch = true;
+    } else {
+      assert.equal(await runFreshWorker(failingRevoker), true);
+    }
   }
+  assert.equal(checkedLibraryBatch, true, 'recovery must visit the bounded game-library phase');
+  assert.equal(
+    await prisma.gameLibrary.count({ where: { userId: resumableUser.id } }),
+    0,
+  );
   assert.equal(needsAttention, true, 'a post-mutation failure should require explicit resume');
   const failedAfterMutation = await readOperation(preview.operationId);
   assert.equal(failedAfterMutation.terminalResult, 'NEEDS_ATTENTION');
@@ -166,6 +193,7 @@ try {
   const completed = await service.getByReceipt(firstExecute.receiptToken);
   assert.equal(completed?.status, 'COMPLETED');
   assert.equal(await prisma.appUser.count({ where: { id: resumableUser.id } }), 0);
+  assert.equal(await prisma.gameLibrary.count({ where: { userId: resumableUser.id } }), 0);
   assert.equal(
     await prisma.dataLifecycleResourceFence.count({
       where: { operationId: preview.operationId, releasedAt: null },
