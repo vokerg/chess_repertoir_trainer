@@ -8,6 +8,7 @@ export interface AnalysisTreeNodeData {
   side?: 'WHITE' | 'BLACK' | null;
   classification?: string | null;
   evalCpWhite?: number | null;
+  source?: 'GAME' | 'LOCAL';
 }
 
 export interface AnalysisTreeNode {

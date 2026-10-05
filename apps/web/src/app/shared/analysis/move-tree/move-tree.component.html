@@ -1,8 +1,75 @@
 @if (tree(); as currentTree) {
-  <div class="move-tree-modern">
-    <ng-container *ngTemplateOutlet="renderSequence; context: { $implicit: mainlineNodes(currentTree.root), branch: false }" />
+  <div class="move-tree-view-switch" role="group" aria-label="Move list presentation">
+    <button type="button" [class.active]="view() === 'tree'" [attr.aria-pressed]="view() === 'tree'" (click)="setView('tree')">Tree</button>
+    <button type="button" [class.active]="view() === 'score'" [attr.aria-pressed]="view() === 'score'" (click)="setView('score')">Score sheet · Preview</button>
   </div>
+  @if (view() === 'score') {
+    <div class="move-score-sheet" aria-label="Move score sheet with inline variations">
+      <button type="button" class="move-score-root" [class.selected]="selectedNodeId() === 0" (click)="nodeSelected.emit(0)">{{ rootLabel() }}</button>
+      @for (branchNode of sidelines(currentTree.root); track branchNode.node.id) {
+        <ng-container *ngTemplateOutlet="scoreSequence; context: { start: branchNode, parent: currentTree.root, branch: true }" />
+      }
+      <ng-container *ngTemplateOutlet="scoreSequence; context: { start: currentTree.root.children[0], parent: currentTree.root, branch: false }" />
+    </div>
+  } @else {
+    <div class="move-tree-modern">
+      <ng-container *ngTemplateOutlet="renderSequence; context: { $implicit: mainlineNodes(currentTree.root), branch: false }" />
+    </div>
+  }
 }
+
+<ng-template #scoreSequence let-start="start" let-parent="parent" let-branch="branch">
+  @if (start) {
+    <section class="move-score-line" [class.move-score-line-branch]="branch">
+      @if (branch) {
+        <div class="move-score-branch-header">
+          <button type="button" class="move-score-disclosure" [attr.aria-expanded]="branchExpanded(start.node.id)" [attr.aria-label]="(branchExpanded(start.node.id) ? 'Collapse' : 'Expand') + ' variation from ' + branchOrigin(parent)" (click)="toggleBranch(start.node.id, parent.node.id)">{{ branchExpanded(start.node.id) ? '▾' : '▸' }}</button>
+          <span>Branch from {{ branchOrigin(parent) }}</span>
+          @if (scoreSource(start); as source) { <span class="move-score-source">{{ source }}</span> }
+        </div>
+      }
+      @if (!branch || branchExpanded(start.node.id)) {
+        @for (row of scoreRows(start); track row.id) {
+          <div class="move-score-row">
+            <span class="move-score-number">{{ row.number === null ? '·' : row.number + (row.white ? '.' : '…') }}</span>
+            <div class="move-score-cell">
+              @if (row.white; as white) { <ng-container *ngTemplateOutlet="scoreMove; context: { $implicit: white }" /> }
+            </div>
+            <div class="move-score-cell">
+              @if (row.black; as black) { <ng-container *ngTemplateOutlet="scoreMove; context: { $implicit: black }" /> }
+            </div>
+          </div>
+          @if (row.white; as white) {
+            @for (branchNode of sidelines(white); track branchNode.node.id) {
+              <ng-container *ngTemplateOutlet="scoreSequence; context: { start: branchNode, parent: white, branch: true }" />
+            }
+          }
+          @if (row.black; as black) {
+            @for (branchNode of sidelines(black); track branchNode.node.id) {
+              <ng-container *ngTemplateOutlet="scoreSequence; context: { start: branchNode, parent: black, branch: true }" />
+            }
+          }
+        }
+      }
+    </section>
+  }
+</ng-template>
+
+<ng-template #scoreMove let-current>
+  <div class="move-score-controls">
+    <button type="button" class="move-score-move" [class.move-score-trained]="current.node.isUserMove" [class.selected]="current.node.id === selectedNodeId()" [attr.aria-current]="current.node.id === selectedNodeId() ? 'true' : null" [title]="nodeTitle(current)" (click)="nodeSelected.emit(current.node.id)">
+      <span class="move-score-san">{{ nodeLabel(current) }}</span>
+      @if (evalLabel(current); as label) { <span class="move-score-eval" [attr.aria-label]="'Evaluation ' + label">{{ label }}</span> }
+      @if (classificationLabel(current); as label) {
+        <span class="move-tree-classification" [class.move-tree-classification-warning]="classificationTone(current) === 'warning'" [class.move-tree-classification-bad]="classificationTone(current) === 'bad'" [attr.title]="classificationTitle(current)" [attr.aria-label]="classificationTitle(current)">{{ label }}</span>
+      }
+      @if (scoreSource(current); as source) { <span class="move-score-source-inline">{{ source }}</span> }
+    </button>
+    @if (canDeleteNode(current)) {
+      <button type="button" class="move-score-delete" [disabled]="deletionDisabled()" [attr.aria-label]="'Delete ' + nodeLabel(current) + ' and its continuations'" (click)="requestDelete(current, $event)">×</button>
+    }
+  </div>
+</ng-template>
 
 <ng-template #renderSequence let-nodes let-branch="branch">
   <section class="move-tree-line" [class.move-tree-line-branch]="branch">
