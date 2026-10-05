@@ -1,9 +1,30 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import {
   AnalysisTree,
   AnalysisTreeNode,
 } from '../workbench/analysis-tree.models';
+
+const VIEW_STORAGE_KEY = 'chess-trainer.move-tree-view';
+
+type MoveTreeView = 'tree' | 'score';
+
+interface ScoreRow {
+  id: number;
+  number: number | null;
+  white: AnalysisTreeNode | null;
+  black: AnalysisTreeNode | null;
+}
+
+function storedView(): MoveTreeView {
+  try {
+    return typeof localStorage !== 'undefined' && localStorage.getItem(VIEW_STORAGE_KEY) === 'score'
+      ? 'score'
+      : 'tree';
+  } catch {
+    return 'tree';
+  }
+}
 
 @Component({
   selector: 'app-move-tree',
@@ -21,6 +42,81 @@ export class MoveTreeComponent {
   readonly deletionDisabled = input(false);
   readonly nodeSelected = output<number>();
   readonly deleteSelectedSubtree = output<void>();
+
+  protected readonly view = signal<MoveTreeView>(storedView());
+  protected readonly collapsedBranches = signal<ReadonlySet<number>>(new Set<number>());
+  protected readonly selectedPathIds = computed(() => {
+    const ids = new Set<number>();
+    const tree = this.tree();
+    const selected = this.selectedNodeId();
+    if (!tree || selected === null) return ids;
+    const find = (node: AnalysisTreeNode): boolean => {
+      if (node.node.id === selected) {
+        ids.add(node.node.id);
+        return true;
+      }
+      for (const child of node.children) {
+        if (find(child)) {
+          ids.add(node.node.id);
+          return true;
+        }
+      }
+      return false;
+    };
+    find(tree.root);
+    return ids;
+  });
+
+  protected setView(view: MoveTreeView): void {
+    this.view.set(view);
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, view);
+    } catch {
+      // The switch still works when browser storage is unavailable.
+    }
+  }
+
+  protected toggleBranch(id: number, parentId: number): void {
+    if (this.branchExpanded(id) && this.selectedPathIds().has(id)) {
+      this.nodeSelected.emit(parentId);
+    }
+    this.collapsedBranches.update((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  protected branchExpanded(id: number): boolean {
+    return !this.collapsedBranches().has(id) || this.selectedPathIds().has(id);
+  }
+
+  protected scoreRows(start: AnalysisTreeNode | null | undefined): ScoreRow[] {
+    const rows: ScoreRow[] = [];
+    for (const current of this.mainlineNodes(start)) {
+      const number = current.node.moveNumber ?? null;
+      const side = current.node.side;
+      const last = rows.at(-1);
+      if (!last || last.number !== number || (side === 'WHITE' ? last.white : last.black)) {
+        rows.push({ id: current.node.id, number, white: null, black: null });
+      }
+      const row = rows.at(-1)!;
+      if (side === 'WHITE') row.white = current;
+      else row.black = current;
+    }
+    return rows;
+  }
+
+  protected branchOrigin(parent: AnalysisTreeNode): string {
+    return parent.node.id === 0 ? this.rootLabel() : this.nodeLabel(parent);
+  }
+
+  protected scoreSource(node: AnalysisTreeNode): string | null {
+    const meta = node.node.moveMeta?.trim();
+    if (meta && !['you', 'opp', 'white', 'black'].includes(meta.toLowerCase())) return meta;
+    return node.node.source === 'LOCAL' ? 'Local line' : null;
+  }
 
   protected mainlineNodes(start: AnalysisTreeNode | null | undefined): AnalysisTreeNode[] {
     const nodes: AnalysisTreeNode[] = [];
@@ -95,9 +191,7 @@ export class MoveTreeComponent {
   protected canDeleteNode(node: AnalysisTreeNode): boolean {
     if (!this.deletionEnabled() || node.node.id === 0) return false;
 
-    const source = (
-      node.node as AnalysisTreeNode['node'] & { source?: 'GAME' | 'LOCAL' }
-    ).source;
+    const source = node.node.source;
     return source === undefined || source === 'LOCAL';
   }
 
