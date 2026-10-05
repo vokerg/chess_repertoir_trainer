@@ -398,10 +398,67 @@
 .move-score-controls:hover .move-score-delete,
 .move-score-controls:focus-within .move-score-delete { opacity: 1; }
 .move-score-delete:disabled { opacity: 0.35; cursor: wait; }
+
+.move-focused-score { display: grid; gap: 0.35rem; min-width: 0; }
+.move-focused-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--ui-border);
+  color: var(--ui-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.move-focused-row { min-height: 2.5rem; }
+.move-focused-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; min-width: 0; }
+.move-focused-row .move-score-move { font-size: 0.94rem; }
+.move-focused-row .move-score-number { font-size: 0.82rem; }
+.move-focused-fork-button {
+  padding: 0.22rem 0.42rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
+  color: var(--ui-action-strong);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.move-focused-fork-button:hover { border-color: var(--ui-action-strong); }
+.move-focused-root-forks { justify-self: start; }
+.move-focused-fork-panel {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0 0 0.35rem 2rem;
+  padding: 0.55rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
+}
+.move-focused-fork-panel p { margin: 0 0 0.2rem; color: var(--ui-text-muted); font-size: 0.8rem; }
+.move-focused-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-control);
+  background: transparent;
+  color: var(--ui-text);
+  text-align: left;
+  font-size: 0.82rem;
+}
+.move-focused-choice:hover, .move-focused-choice.active { border-color: var(--ui-border-strong); background: var(--ui-surface); }
+.move-focused-choice-line { overflow-wrap: anywhere; font-weight: 700; }
+.move-focused-choice-source { color: var(--ui-text-muted); font-size: 0.72rem; }
 /* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
 @media (max-width: 640px) {
   .move-score-line-branch { margin-left: 0.45rem; padding-inline: 0.3rem; }
   .move-score-row { grid-template-columns: 1.65rem repeat(2, minmax(0, 1fr)); }
   .move-score-move { padding-inline: 0.2rem; font-size: 0.73rem; }
   .move-score-delete { opacity: 1; }
+  .move-focused-fork-panel { margin-left: 0.4rem; }
 }

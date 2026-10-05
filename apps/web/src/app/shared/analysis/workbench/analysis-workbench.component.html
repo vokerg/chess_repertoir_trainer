@@ -38,7 +38,9 @@
     @if (showTreePanel()) {
       <app-move-tree-panel
         [tree]="tree()"
+        [context]="treeContext()"
         [selectedNodeId]="selectedNodeId()"
+        [preferredContinuations]="preferredContinuations()"
         [title]="treeTitle()"
         [help]="treeHelp()"
         [rootLabel]="treeRootLabel()"

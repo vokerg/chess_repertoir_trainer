@@ -44,6 +44,7 @@ export class LineEditorStore implements OnDestroy {
   readonly line = signal<LineDetail | null>(null);
   readonly tree = signal<LineTree | null>(null);
   readonly selectedNodeId = signal(0);
+  readonly preferredContinuations = signal<ReadonlyMap<number, number>>(new Map());
   readonly boardPositionVersion = signal(0);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
@@ -125,6 +126,7 @@ export class LineEditorStore implements OnDestroy {
       return;
     }
     this.lineId.set(lineId);
+    this.preferredContinuations.set(new Map());
     void this.loadGamesFacets();
     void this.loadLineAndTree(selectNodeId);
   }
@@ -157,7 +159,9 @@ export class LineEditorStore implements OnDestroy {
   }
 
   selectNode(nodeId: number): void {
-    if (!findLineTreeNode(nodeId, this.tree()?.root)) return;
+    const root = this.tree()?.root;
+    if (!root || !findLineTreeNode(nodeId, root)) return;
+    this.rememberSelectedPath(root, nodeId);
     this.selectedNodeId.set(nodeId);
     this.notesSaved.set(false);
     this.notesError.set(null);
@@ -208,13 +212,18 @@ export class LineEditorStore implements OnDestroy {
   }
 
   goToNext(): void {
-    const next = this.selectedNode()?.children[0];
+    const selected = this.selectedNode();
+    const preferredId = this.preferredContinuations().get(selected?.node.id ?? -1);
+    const next = selected?.children.find((child) => child.node.id === preferredId) ?? selected?.children[0];
     if (next) this.selectNode(next.node.id);
   }
 
   goToEnd(): void {
     let node = this.selectedNode();
-    while (node?.children.length) node = node.children[0];
+    while (node?.children.length) {
+      const preferredId = this.preferredContinuations().get(node.node.id);
+      node = node.children.find((child) => child.node.id === preferredId) ?? node.children[0];
+    }
     if (node) this.selectNode(node.node.id);
   }
 
@@ -327,10 +336,31 @@ export class LineEditorStore implements OnDestroy {
       ? requestedNodeId
       : tree.root.node.id;
     this.tree.set(tree);
+    this.rememberSelectedPath(tree.root, selectedNodeId);
     this.selectedNodeId.set(selectedNodeId);
     this.boardPositionVersion.update((version) => version + 1);
     this.scheduleAnalysis();
     void this.refreshGamesAnalysis();
+  }
+
+  private rememberSelectedPath(root: LineTree['root'], nodeId: number): void {
+    const visit = (node: LineTree['root']): number[] | null => {
+      if (node.node.id === nodeId) return [nodeId];
+      for (const child of node.children) {
+        const path = visit(child);
+        if (path) return [node.node.id, ...path];
+      }
+      return null;
+    };
+    const path = visit(root);
+    if (!path) return;
+    this.preferredContinuations.update((previous) => {
+      const next = new Map(previous);
+      for (let index = 0; index < path.length - 1; index += 1) {
+        next.set(path[index], path[index + 1]);
+      }
+      return next;
+    });
   }
 
   private scheduleAnalysis(): void {

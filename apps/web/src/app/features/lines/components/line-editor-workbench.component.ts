@@ -23,6 +23,7 @@ import { LineNotesEditorComponent } from './line-notes-editor.component';
 export class LineEditorWorkbenchComponent {
   readonly tree = input.required<LineTree>();
   readonly selectedNodeId = input.required<number>();
+  readonly preferredContinuations = input<ReadonlyMap<number, number>>(new Map());
   readonly nodeId = input<number | null>(null);
   readonly branchLabel = input<string | null | undefined>(null);
   readonly comment = input<string | null | undefined>(null);

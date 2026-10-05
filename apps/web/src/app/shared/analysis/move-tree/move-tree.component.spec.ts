@@ -29,6 +29,8 @@ describe('MoveTreeComponent score sheet preview', () => {
 
   beforeEach(async () => {
     localStorage.removeItem('chess-trainer.move-tree-view');
+    localStorage.removeItem('chess-trainer.move-tree-view.analysis');
+    localStorage.removeItem('chess-trainer.move-tree-view.repertoire');
     await TestBed.configureTestingModule({ imports: [MoveTreeComponent] }).compileComponents();
     fixture = TestBed.createComponent(MoveTreeComponent);
     fixture.componentRef.setInput('tree', tree);
@@ -36,7 +38,11 @@ describe('MoveTreeComponent score sheet preview', () => {
     fixture.detectChanges();
   });
 
-  afterEach(() => localStorage.removeItem('chess-trainer.move-tree-view'));
+  afterEach(() => {
+    localStorage.removeItem('chess-trainer.move-tree-view');
+    localStorage.removeItem('chess-trainer.move-tree-view.analysis');
+    localStorage.removeItem('chess-trainer.move-tree-view.repertoire');
+  });
 
   it('keeps the existing tree as the default and switches without changing selected data', () => {
     expect(fixture.nativeElement.querySelector('.move-tree-modern')).not.toBeNull();
@@ -44,7 +50,7 @@ describe('MoveTreeComponent score sheet preview', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.move-score-sheet')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.move-score-move.selected')?.textContent).toContain('d5');
-    expect(localStorage.getItem('chess-trainer.move-tree-view')).toBe('score');
+    expect(localStorage.getItem('chess-trainer.move-tree-view.analysis')).toBe('score');
     (fixture.nativeElement.querySelectorAll('.move-tree-view-switch button')[0] as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.move-tree-modern')).not.toBeNull();
@@ -101,5 +107,41 @@ describe('MoveTreeComponent score sheet preview', () => {
     (fixture.nativeElement.querySelectorAll('.move-tree-view-switch button')[1] as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.move-score-number')?.textContent?.trim()).toBe('23…');
+  });
+
+  it('shows a complete selected repertoire line and lets another full line replace it at a fork', () => {
+    fixture.componentRef.setInput('context', 'repertoire');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.move-focused-score')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.move-focused-score')?.textContent).toContain('d5');
+    expect(fixture.nativeElement.querySelector('.move-focused-score')?.textContent).not.toContain('Nf6');
+
+    const selected: number[] = [];
+    fixture.componentInstance.nodeSelected.subscribe((id) => selected.push(id));
+    (fixture.nativeElement.querySelector('.move-focused-fork-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const choices = fixture.nativeElement.querySelectorAll('.move-focused-choice') as NodeListOf<HTMLButtonElement>;
+    expect(choices.length).toBe(2);
+    expect(choices[1].textContent).toContain('1.d4');
+    expect(choices[1].textContent).toContain('1…Nf6');
+    expect(choices[1].textContent).toContain('2.c4');
+    choices[1].click();
+    expect(selected).toEqual([3]);
+    fixture.componentRef.setInput('selectedNodeId', 3);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.move-focused-score')?.textContent).toContain('Nf6');
+    expect(fixture.nativeElement.querySelector('.move-focused-score')?.textContent).toContain('c4');
+    expect(fixture.nativeElement.querySelector('.move-focused-score')?.textContent).not.toContain('d5');
+
+    fixture.componentRef.setInput('preferredContinuations', new Map([[1, 3]]));
+    fixture.componentRef.setInput('selectedNodeId', 1);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.move-focused-score')?.textContent).toContain('Nf6');
+    expect(fixture.nativeElement.querySelector('.move-focused-score')?.textContent).not.toContain('d5');
+
+    (fixture.nativeElement.querySelectorAll('.move-tree-view-switch button')[1] as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.move-score-line-branch')?.textContent).toContain('Nf6');
+    expect(fixture.nativeElement.querySelector('.move-score-sheet')?.textContent).toContain('d5');
   });
 });
