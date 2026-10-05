@@ -7,7 +7,8 @@ import {
 
 const VIEW_STORAGE_KEY = 'chess-trainer.move-tree-view';
 
-type MoveTreeView = 'tree' | 'score';
+type MoveTreeView = 'tree' | 'score' | 'focused';
+export type MoveTreeContext = 'analysis' | 'repertoire';
 
 interface ScoreRow {
   id: number;
@@ -16,14 +17,15 @@ interface ScoreRow {
   black: AnalysisTreeNode | null;
 }
 
-function storedView(): MoveTreeView {
+function storedView(context: MoveTreeContext): MoveTreeView {
   try {
-    return typeof localStorage !== 'undefined' && localStorage.getItem(VIEW_STORAGE_KEY) === 'score'
-      ? 'score'
-      : 'tree';
+    const value = localStorage.getItem(`${VIEW_STORAGE_KEY}.${context}`)
+      ?? (context === 'analysis' ? localStorage.getItem(VIEW_STORAGE_KEY) : null);
+    if (value === 'tree' || value === 'score' || (context === 'repertoire' && value === 'focused')) return value;
   } catch {
-    return 'tree';
+    // Browser storage is optional.
   }
+  return context === 'repertoire' ? 'focused' : 'tree';
 }
 
 @Component({
@@ -36,15 +38,38 @@ function storedView(): MoveTreeView {
 })
 export class MoveTreeComponent {
   readonly tree = input<AnalysisTree | null>(null);
+  readonly context = input<MoveTreeContext>('analysis');
   readonly selectedNodeId = input<number | null>(null);
+  readonly preferredContinuations = input<ReadonlyMap<number, number>>(new Map());
   readonly rootLabel = input('Start');
   readonly deletionEnabled = input(false);
   readonly deletionDisabled = input(false);
   readonly nodeSelected = output<number>();
   readonly deleteSelectedSubtree = output<void>();
 
-  protected readonly view = signal<MoveTreeView>(storedView());
+  protected readonly requestedView = signal<MoveTreeView | null>(null);
+  protected readonly view = computed(() => this.requestedView() ?? storedView(this.context()));
   protected readonly collapsedBranches = signal<ReadonlySet<number>>(new Set<number>());
+  protected readonly openForkId = signal<number | null>(null);
+  protected readonly focusedPath = computed(() => {
+    const tree = this.tree();
+    if (!tree) return [];
+    const target = this.selectedNodeId();
+    const path = target === null ? null : this.findPath(tree.root, target);
+    const nodes = path ?? [tree.root];
+    let current = nodes.at(-1)!;
+    while (current.children.length) {
+      const preferredId = this.preferredContinuations().get(current.node.id);
+      current = current.children.find((child) => child.node.id === preferredId) ?? current.children[0];
+      nodes.push(current);
+    }
+    return nodes;
+  });
+  protected readonly focusedRows = computed(() => this.pairRows(this.focusedPath().slice(1)));
+  protected readonly totalMoves = computed(() => {
+    const count = (node: AnalysisTreeNode): number => (node.node.id === 0 ? 0 : 1) + node.children.reduce((sum, child) => sum + count(child), 0);
+    return this.tree() ? count(this.tree()!.root) : 0;
+  });
   protected readonly selectedPathIds = computed(() => {
     const ids = new Set<number>();
     const tree = this.tree();
@@ -68,12 +93,50 @@ export class MoveTreeComponent {
   });
 
   protected setView(view: MoveTreeView): void {
-    this.view.set(view);
+    this.requestedView.set(view);
+    this.openForkId.set(null);
     try {
-      localStorage.setItem(VIEW_STORAGE_KEY, view);
+      localStorage.setItem(`${VIEW_STORAGE_KEY}.${this.context()}`, view);
     } catch {
       // The switch still works when browser storage is unavailable.
     }
+  }
+
+  protected toggleFork(id: number): void {
+    this.openForkId.update((current) => current === id ? null : id);
+  }
+
+  protected chooseFork(id: number): void {
+    this.openForkId.set(null);
+    this.nodeSelected.emit(id);
+  }
+
+  protected forkChoices(parent: AnalysisTreeNode): AnalysisTreeNode[] {
+    return parent.children;
+  }
+
+  protected fullLine(node: AnalysisTreeNode): string {
+    const tree = this.tree();
+    if (!tree) return '';
+    const path = this.findPath(tree.root, node.node.id) ?? [node];
+    return [...path.slice(1), ...this.mainlineNodes(node).slice(1)]
+      .map((move) => {
+        const number = move.node.moveNumber;
+        const prefix = typeof number === 'number'
+          ? `${number}${move.node.side === 'BLACK' ? '…' : '.'}`
+          : '';
+        return `${prefix}${this.nodeLabel(move)}`;
+      })
+      .join('  ');
+  }
+
+  private findPath(node: AnalysisTreeNode, id: number): AnalysisTreeNode[] | null {
+    if (node.node.id === id) return [node];
+    for (const child of node.children) {
+      const path = this.findPath(child, id);
+      if (path) return [node, ...path];
+    }
+    return null;
   }
 
   protected toggleBranch(id: number, parentId: number): void {
@@ -93,8 +156,12 @@ export class MoveTreeComponent {
   }
 
   protected scoreRows(start: AnalysisTreeNode | null | undefined): ScoreRow[] {
+    return this.pairRows(this.mainlineNodes(start));
+  }
+
+  private pairRows(nodes: AnalysisTreeNode[]): ScoreRow[] {
     const rows: ScoreRow[] = [];
-    for (const current of this.mainlineNodes(start)) {
+    for (const current of nodes) {
       const number = current.node.moveNumber ?? null;
       const side = current.node.side;
       const last = rows.at(-1);

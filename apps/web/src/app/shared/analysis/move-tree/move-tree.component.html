@@ -1,9 +1,40 @@
 @if (tree(); as currentTree) {
   <div class="move-tree-view-switch" role="group" aria-label="Move list presentation">
-    <button type="button" [class.active]="view() === 'tree'" [attr.aria-pressed]="view() === 'tree'" (click)="setView('tree')">Tree</button>
-    <button type="button" [class.active]="view() === 'score'" [attr.aria-pressed]="view() === 'score'" (click)="setView('score')">Score sheet · Preview</button>
+    @if (context() === 'repertoire') {
+      <button type="button" [class.active]="view() === 'focused'" [attr.aria-pressed]="view() === 'focused'" (click)="setView('focused')">Focused score</button>
+      <button type="button" [class.active]="view() === 'score'" [attr.aria-pressed]="view() === 'score'" (click)="setView('score')">All forks</button>
+      <button type="button" [class.active]="view() === 'tree'" [attr.aria-pressed]="view() === 'tree'" (click)="setView('tree')">Tree</button>
+    } @else {
+      <button type="button" [class.active]="view() === 'tree'" [attr.aria-pressed]="view() === 'tree'" (click)="setView('tree')">Tree</button>
+      <button type="button" [class.active]="view() === 'score'" [attr.aria-pressed]="view() === 'score'" (click)="setView('score')">Score sheet · Preview</button>
+    }
   </div>
-  @if (view() === 'score') {
+  @if (view() === 'focused') {
+    <div class="move-focused-score" aria-label="Selected repertoire line and its forks">
+      <div class="move-focused-head">
+        <span>Selected line · {{ focusedPath().length - 1 }} moves</span>
+        <span>{{ totalMoves() }} moves in repertoire tree</span>
+      </div>
+      <button type="button" class="move-score-root" [class.selected]="selectedNodeId() === currentTree.root.node.id" (click)="nodeSelected.emit(currentTree.root.node.id)">{{ rootLabel() }}</button>
+      @if (currentTree.root.children.length > 1) {
+        <button type="button" class="move-focused-fork-button move-focused-root-forks" [attr.aria-expanded]="openForkId() === currentTree.root.node.id" (click)="toggleFork(currentTree.root.node.id)">{{ currentTree.root.children.length }} forks from start</button>
+        <ng-container *ngTemplateOutlet="focusedFork; context: { $implicit: currentTree.root }" />
+      }
+      @for (row of focusedRows(); track row.id) {
+        <div class="move-score-row move-focused-row">
+          <span class="move-score-number">{{ row.number === null ? '·' : row.number + (row.white ? '.' : '…') }}</span>
+          <div class="move-score-cell">
+            @if (row.white; as white) { <ng-container *ngTemplateOutlet="focusedMove; context: { $implicit: white }" /> }
+          </div>
+          <div class="move-score-cell">
+            @if (row.black; as black) { <ng-container *ngTemplateOutlet="focusedMove; context: { $implicit: black }" /> }
+          </div>
+        </div>
+        @if (row.white; as white) { <ng-container *ngTemplateOutlet="focusedFork; context: { $implicit: white }" /> }
+        @if (row.black; as black) { <ng-container *ngTemplateOutlet="focusedFork; context: { $implicit: black }" /> }
+      }
+    </div>
+  } @else if (view() === 'score') {
     <div class="move-score-sheet" aria-label="Move score sheet with inline variations">
       <button type="button" class="move-score-root" [class.selected]="selectedNodeId() === 0" (click)="nodeSelected.emit(0)">{{ rootLabel() }}</button>
       @for (branchNode of sidelines(currentTree.root); track branchNode.node.id) {
@@ -17,6 +48,29 @@
     </div>
   }
 }
+
+<ng-template #focusedMove let-current>
+  <div class="move-focused-controls">
+    <ng-container *ngTemplateOutlet="scoreMove; context: { $implicit: current }" />
+    @if (current.children.length > 1) {
+      <button type="button" class="move-focused-fork-button" [attr.aria-expanded]="openForkId() === current.node.id" [attr.aria-label]="current.children.length + ' continuations after ' + nodeLabel(current)" (click)="toggleFork(current.node.id)">{{ current.children.length }} forks</button>
+    }
+  </div>
+</ng-template>
+
+<ng-template #focusedFork let-current>
+  @if (current.children.length > 1 && openForkId() === current.node.id) {
+      <section class="move-focused-fork-panel" [attr.aria-label]="'Continuations after ' + branchOrigin(current)">
+        <p>Continue after {{ branchOrigin(current) }} · choose a complete line</p>
+        @for (choice of forkChoices(current); track choice.node.id) {
+          <button type="button" class="move-focused-choice" [class.active]="focusedPath().includes(choice)" (click)="chooseFork(choice.node.id)">
+            <span class="move-focused-choice-line">{{ fullLine(choice) }}</span>
+            @if (scoreSource(choice); as source) { <span class="move-focused-choice-source">{{ source }}</span> }
+          </button>
+        }
+      </section>
+  }
+</ng-template>
 
 <ng-template #scoreSequence let-start="start" let-parent="parent" let-branch="branch">
   @if (start) {

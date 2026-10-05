@@ -22,6 +22,7 @@
       <app-line-editor-workbench
         [tree]="tree"
         [selectedNodeId]="store.selectedNodeId()"
+        [preferredContinuations]="store.preferredContinuations()"
         [nodeId]="store.selectedNode()?.node?.id ?? null"
         [branchLabel]="store.selectedNode()?.node?.branchLabel"
         [comment]="store.selectedNode()?.node?.comment"
