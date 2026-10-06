@@ -64,9 +64,10 @@ describe('MoveTreeComponent score sheet preview', () => {
     expect(rows[0].textContent).toContain('d5');
     expect(rows[0].textContent).toContain('+0.3');
     expect(rows[0].textContent).toContain('??');
-    expect(fixture.nativeElement.querySelector('.move-score-branch-header')?.textContent).toContain('Branch from d4');
+    expect(fixture.nativeElement.querySelector('.move-score-branch-header')?.textContent).not.toContain('Branch from');
+    expect(fixture.nativeElement.querySelector('.move-score-disclosure')?.getAttribute('aria-label')).toContain('variation from d4');
     expect(fixture.nativeElement.querySelector('.move-score-line-branch')?.textContent).toContain('Nf6');
-    expect(fixture.nativeElement.querySelector('.move-score-line-branch')?.textContent).toContain('Local line');
+    expect(fixture.nativeElement.querySelector('.move-score-line-branch')?.textContent).not.toContain('Local line');
     (fixture.nativeElement.querySelector('.move-score-disclosure') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.move-score-line-branch .move-score-row')).toBeNull();
@@ -107,6 +108,47 @@ describe('MoveTreeComponent score sheet preview', () => {
     (fixture.nativeElement.querySelectorAll('.move-tree-view-switch button')[1] as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.move-score-number')?.textContent?.trim()).toBe('23…');
+  });
+
+  it('can show only the score sheet without the legacy presentation switch', () => {
+    fixture.componentRef.setInput('scoreOnly', true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.move-score-sheet')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.move-tree-view-switch')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.move-tree-modern')).toBeNull();
+  });
+
+  it('uses the same move typography in focused and all-forks repertoire views', () => {
+    fixture.componentRef.setInput('context', 'repertoire');
+    fixture.detectChanges();
+    const focusedMove = fixture.nativeElement.querySelector('.move-focused-score .move-score-move') as HTMLElement;
+    const focusedSize = getComputedStyle(focusedMove).fontSize;
+    (fixture.nativeElement.querySelectorAll('.move-tree-view-switch button')[1] as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const allForksMove = fixture.nativeElement.querySelector('.move-score-sheet .move-score-move') as HTMLElement;
+    expect(getComputedStyle(allForksMove).fontSize).toBe(focusedSize);
+  });
+
+  it('labels only the game move at the deviation and the start of the engine line', () => {
+    fixture.componentRef.setInput('tree', {
+      root: { node: { id: 0, moveSan: null, moveUci: null, isUserMove: false }, children: [{
+        node: { id: 1, moveSan: 'e4', moveUci: 'e2e4', moveNumber: 1, side: 'WHITE', isUserMove: true, moveMeta: 'Game' },
+        children: [
+          { node: { id: 2, moveSan: 'e5', moveUci: 'e7e5', moveNumber: 1, side: 'BLACK', isUserMove: false, moveMeta: 'Training move' }, children: [{
+            node: { id: 4, moveSan: 'Nf3', moveUci: 'g1f3', moveNumber: 2, side: 'WHITE', isUserMove: true, moveMeta: 'Engine line' }, children: [{
+              node: { id: 5, moveSan: 'Nc6', moveUci: 'b8c6', moveNumber: 2, side: 'BLACK', isUserMove: false, moveMeta: 'Engine line' }, children: [],
+            }],
+          }] },
+          { node: { id: 3, moveSan: 'c5', moveUci: 'c7c5', moveNumber: 1, side: 'BLACK', isUserMove: false, moveMeta: 'Game move' }, children: [] },
+        ],
+      }] },
+    } satisfies AnalysisTree);
+    fixture.componentRef.setInput('scoreOnly', true);
+    fixture.detectChanges();
+    const text = fixture.nativeElement.querySelector('.move-score-sheet')?.textContent as string;
+    expect(text.match(/Game move/g)?.length).toBe(1);
+    expect(text.match(/Engine line/g)?.length).toBe(1);
+    expect(text).not.toContain('e4 Game');
   });
 
   it('shows a complete selected repertoire line and lets another full line replace it at a fork', () => {
