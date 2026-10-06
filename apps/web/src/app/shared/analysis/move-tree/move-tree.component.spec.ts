@@ -24,13 +24,15 @@ const tree: AnalysisTree = {
   },
 };
 
-describe('MoveTreeComponent score sheet preview', () => {
+describe('MoveTreeComponent presentations', () => {
   let fixture: ComponentFixture<MoveTreeComponent>;
 
   beforeEach(async () => {
     localStorage.removeItem('chess-trainer.move-tree-view');
     localStorage.removeItem('chess-trainer.move-tree-view.analysis');
+    localStorage.removeItem('chess-trainer.move-tree-view.explore');
     localStorage.removeItem('chess-trainer.move-tree-view.repertoire');
+    localStorage.removeItem('chess-trainer.move-tree-view.focused');
     await TestBed.configureTestingModule({ imports: [MoveTreeComponent] }).compileComponents();
     fixture = TestBed.createComponent(MoveTreeComponent);
     fixture.componentRef.setInput('tree', tree);
@@ -41,7 +43,9 @@ describe('MoveTreeComponent score sheet preview', () => {
   afterEach(() => {
     localStorage.removeItem('chess-trainer.move-tree-view');
     localStorage.removeItem('chess-trainer.move-tree-view.analysis');
+    localStorage.removeItem('chess-trainer.move-tree-view.explore');
     localStorage.removeItem('chess-trainer.move-tree-view.repertoire');
+    localStorage.removeItem('chess-trainer.move-tree-view.focused');
   });
 
   it('keeps the existing tree as the default and switches without changing selected data', () => {
@@ -50,7 +54,7 @@ describe('MoveTreeComponent score sheet preview', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.move-score-sheet')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.move-score-move.selected')?.textContent).toContain('d5');
-    expect(localStorage.getItem('chess-trainer.move-tree-view.analysis')).toBe('score');
+    expect(localStorage.getItem('chess-trainer.move-tree-view.explore')).toBe('score');
     (fixture.nativeElement.querySelectorAll('.move-tree-view-switch button')[0] as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.move-tree-modern')).not.toBeNull();
@@ -110,16 +114,32 @@ describe('MoveTreeComponent score sheet preview', () => {
     expect(fixture.nativeElement.querySelector('.move-score-number')?.textContent?.trim()).toBe('23…');
   });
 
-  it('can show only the score sheet without the legacy presentation switch', () => {
-    fixture.componentRef.setInput('scoreOnly', true);
+  it('can show only the score sheet without a presentation switch', () => {
+    fixture.componentRef.setInput('display', 'score');
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.move-score-sheet')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.move-tree-view-switch')).toBeNull();
     expect(fixture.nativeElement.querySelector('.move-tree-modern')).toBeNull();
   });
 
+  it('keeps each switchable display preference separate from the fixed game score', () => {
+    (fixture.nativeElement.querySelectorAll('.move-tree-view-switch button')[1] as HTMLButtonElement).click();
+    fixture.componentRef.setInput('display', 'score');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.move-tree-view-switch')).toBeNull();
+
+    fixture.componentRef.setInput('display', 'focused');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.move-focused-score')).not.toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.move-tree-view-switch button').length).toBe(3);
+
+    fixture.componentRef.setInput('display', 'explore');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.move-score-sheet')).not.toBeNull();
+  });
+
   it('uses the same move typography in focused and all-forks repertoire views', () => {
-    fixture.componentRef.setInput('context', 'repertoire');
+    fixture.componentRef.setInput('display', 'focused');
     fixture.detectChanges();
     const focusedMove = fixture.nativeElement.querySelector('.move-focused-score .move-score-move') as HTMLElement;
     const focusedSize = getComputedStyle(focusedMove).fontSize;
@@ -143,7 +163,7 @@ describe('MoveTreeComponent score sheet preview', () => {
         ],
       }] },
     } satisfies AnalysisTree);
-    fixture.componentRef.setInput('scoreOnly', true);
+    fixture.componentRef.setInput('display', 'score');
     fixture.detectChanges();
     const text = fixture.nativeElement.querySelector('.move-score-sheet')?.textContent as string;
     expect(text.match(/Game move/g)?.length).toBe(1);
@@ -152,7 +172,7 @@ describe('MoveTreeComponent score sheet preview', () => {
   });
 
   it('shows a complete selected repertoire line and lets another full line replace it at a fork', () => {
-    fixture.componentRef.setInput('context', 'repertoire');
+    fixture.componentRef.setInput('display', 'focused');
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.move-focused-score')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.move-focused-score')?.textContent).toContain('d5');

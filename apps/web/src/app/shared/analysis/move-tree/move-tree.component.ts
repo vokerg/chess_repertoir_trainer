@@ -4,28 +4,24 @@ import {
   AnalysisTree,
   AnalysisTreeNode,
 } from '../workbench/analysis-tree.models';
+import { AVAILABLE_MOVE_VIEWS } from './move-list-display';
+import type { MoveListDisplay, MoveTreeView } from './move-list-display';
+import { firstChildSequence, indexMoveTree, pairMoveRows, pathToMove } from './move-tree-view.helpers';
 
 const VIEW_STORAGE_KEY = 'chess-trainer.move-tree-view';
 
-type MoveTreeView = 'tree' | 'score' | 'focused';
-export type MoveTreeContext = 'analysis' | 'repertoire';
-
-interface ScoreRow {
-  id: number;
-  number: number | null;
-  white: AnalysisTreeNode | null;
-  black: AnalysisTreeNode | null;
-}
-
-function storedView(context: MoveTreeContext): MoveTreeView {
+function storedView(display: MoveListDisplay): MoveTreeView | null {
+  if (display === 'score') return null;
   try {
-    const value = localStorage.getItem(`${VIEW_STORAGE_KEY}.${context}`)
-      ?? (context === 'analysis' ? localStorage.getItem(VIEW_STORAGE_KEY) : null);
-    if (value === 'tree' || value === 'score' || (context === 'repertoire' && value === 'focused')) return value;
+    const legacyKey = display === 'focused' ? `${VIEW_STORAGE_KEY}.repertoire` : `${VIEW_STORAGE_KEY}.analysis`;
+    const value = localStorage.getItem(`${VIEW_STORAGE_KEY}.${display}`)
+      ?? localStorage.getItem(legacyKey)
+      ?? (display === 'explore' ? localStorage.getItem(VIEW_STORAGE_KEY) : null);
+    if (value && AVAILABLE_MOVE_VIEWS[display].includes(value as MoveTreeView)) return value as MoveTreeView;
   } catch {
     // Browser storage is optional.
   }
-  return context === 'repertoire' ? 'focused' : 'tree';
+  return null;
 }
 
 @Component({
@@ -38,8 +34,7 @@ function storedView(context: MoveTreeContext): MoveTreeView {
 })
 export class MoveTreeComponent {
   readonly tree = input<AnalysisTree | null>(null);
-  readonly context = input<MoveTreeContext>('analysis');
-  readonly scoreOnly = input(false);
+  readonly display = input<MoveListDisplay>('explore');
   readonly selectedNodeId = input<number | null>(null);
   readonly preferredContinuations = input<ReadonlyMap<number, number>>(new Map());
   readonly rootLabel = input('Start');
@@ -48,70 +43,52 @@ export class MoveTreeComponent {
   readonly nodeSelected = output<number>();
   readonly deleteSelectedSubtree = output<void>();
 
-  protected readonly requestedView = signal<MoveTreeView | null>(null);
-  protected readonly view = computed(() => this.scoreOnly() ? 'score' : this.requestedView() ?? storedView(this.context()));
+  protected readonly requestedViews = signal<Partial<Record<MoveListDisplay, MoveTreeView>>>({});
+  protected readonly availableViews = computed(() => AVAILABLE_MOVE_VIEWS[this.display()]);
+  protected readonly view = computed(() => {
+    const requested = this.requestedViews()[this.display()];
+    if (requested && this.availableViews().includes(requested)) return requested;
+    return storedView(this.display()) ?? this.availableViews()[0];
+  });
   protected readonly collapsedBranches = signal<ReadonlySet<number>>(new Set<number>());
   protected readonly openForkId = signal<number | null>(null);
+  private readonly treeIndex = computed(() => {
+    const tree = this.tree();
+    return tree ? indexMoveTree(tree.root) : null;
+  });
   protected readonly focusedPath = computed(() => {
     const tree = this.tree();
     if (!tree) return [];
     const target = this.selectedNodeId();
-    const path = target === null ? null : this.findPath(tree.root, target);
+    const index = this.treeIndex()!;
+    const path = target === null ? null : pathToMove(index, target);
     const nodes = path ?? [tree.root];
-    let current = nodes.at(-1)!;
-    while (current.children.length) {
-      const preferredId = this.preferredContinuations().get(current.node.id);
-      current = current.children.find((child) => child.node.id === preferredId) ?? current.children[0];
-      nodes.push(current);
-    }
-    return nodes;
+    return [...nodes, ...firstChildSequence(nodes.at(-1), this.preferredContinuations()).slice(1)];
   });
-  protected readonly focusedRows = computed(() => this.pairRows(this.focusedPath().slice(1)));
-  protected readonly totalMoves = computed(() => {
-    const count = (node: AnalysisTreeNode): number => (node.node.id === 0 ? 0 : 1) + node.children.reduce((sum, child) => sum + count(child), 0);
-    return this.tree() ? count(this.tree()!.root) : 0;
-  });
-  private readonly parentById = computed(() => {
-    const parents = new Map<number, AnalysisTreeNode>();
-    const visit = (node: AnalysisTreeNode): void => {
-      for (const child of node.children) {
-        parents.set(child.node.id, node);
-        visit(child);
-      }
-    };
-    const tree = this.tree();
-    if (tree) visit(tree.root);
-    return parents;
-  });
+  protected readonly focusedRows = computed(() => pairMoveRows(this.focusedPath().slice(1)));
+  protected readonly totalMoves = computed(() => this.treeIndex()?.moveCount ?? 0);
   protected readonly selectedPathIds = computed(() => {
-    const ids = new Set<number>();
-    const tree = this.tree();
+    const index = this.treeIndex();
     const selected = this.selectedNodeId();
-    if (!tree || selected === null) return ids;
-    const find = (node: AnalysisTreeNode): boolean => {
-      if (node.node.id === selected) {
-        ids.add(node.node.id);
-        return true;
-      }
-      for (const child of node.children) {
-        if (find(child)) {
-          ids.add(node.node.id);
-          return true;
-        }
-      }
-      return false;
-    };
-    find(tree.root);
-    return ids;
+    return new Set(index && selected !== null ? (pathToMove(index, selected) ?? []).map((node) => node.node.id) : []);
   });
 
   protected setView(view: MoveTreeView): void {
-    this.requestedView.set(view);
+    if (!this.availableViews().includes(view)) return;
+    this.requestedViews.update((current) => ({ ...current, [this.display()]: view }));
     this.openForkId.set(null);
     try {
-      localStorage.setItem(`${VIEW_STORAGE_KEY}.${this.context()}`, view);
+      if (this.display() !== 'score') localStorage.setItem(`${VIEW_STORAGE_KEY}.${this.display()}`, view);
     } catch {
       // The switch still works when browser storage is unavailable.
+    }
+  }
+
+  protected viewLabel(view: MoveTreeView): string {
+    switch (view) {
+      case 'focused': return 'Focused score';
+      case 'score': return 'All forks';
+      case 'tree': return 'Tree';
     }
   }
 
@@ -129,10 +106,10 @@ export class MoveTreeComponent {
   }
 
   protected fullLine(node: AnalysisTreeNode): string {
-    const tree = this.tree();
-    if (!tree) return '';
-    const path = this.findPath(tree.root, node.node.id) ?? [node];
-    return [...path.slice(1), ...this.mainlineNodes(node).slice(1)]
+    const index = this.treeIndex();
+    if (!index) return '';
+    const path = pathToMove(index, node.node.id) ?? [node];
+    return [...path.slice(1), ...firstChildSequence(node, this.preferredContinuations()).slice(1)]
       .map((move) => {
         const number = move.node.moveNumber;
         const prefix = typeof number === 'number'
@@ -141,15 +118,6 @@ export class MoveTreeComponent {
         return `${prefix}${this.nodeLabel(move)}`;
       })
       .join('  ');
-  }
-
-  private findPath(node: AnalysisTreeNode, id: number): AnalysisTreeNode[] | null {
-    if (node.node.id === id) return [node];
-    for (const child of node.children) {
-      const path = this.findPath(child, id);
-      if (path) return [node, ...path];
-    }
-    return null;
   }
 
   protected toggleBranch(id: number, parentId: number): void {
@@ -168,24 +136,8 @@ export class MoveTreeComponent {
     return !this.collapsedBranches().has(id) || this.selectedPathIds().has(id);
   }
 
-  protected scoreRows(start: AnalysisTreeNode | null | undefined): ScoreRow[] {
-    return this.pairRows(this.mainlineNodes(start));
-  }
-
-  private pairRows(nodes: AnalysisTreeNode[]): ScoreRow[] {
-    const rows: ScoreRow[] = [];
-    for (const current of nodes) {
-      const number = current.node.moveNumber ?? null;
-      const side = current.node.side;
-      const last = rows.at(-1);
-      if (!last || last.number !== number || (side === 'WHITE' ? last.white : last.black)) {
-        rows.push({ id: current.node.id, number, white: null, black: null });
-      }
-      const row = rows.at(-1)!;
-      if (side === 'WHITE') row.white = current;
-      else row.black = current;
-    }
-    return rows;
+  protected scoreRows(start: AnalysisTreeNode | null | undefined) {
+    return pairMoveRows(firstChildSequence(start));
   }
 
   protected branchOrigin(parent: AnalysisTreeNode): string {
@@ -195,20 +147,14 @@ export class MoveTreeComponent {
   protected scoreSource(node: AnalysisTreeNode): string | null {
     const meta = node.node.moveMeta?.trim();
     if (!meta || ['you', 'opp', 'white', 'black', 'game'].includes(meta.toLowerCase())) return null;
-    const parent = this.parentById().get(node.node.id);
+    const parent = this.treeIndex()?.parentById.get(node.node.id);
     if (meta === 'Game move' && (!parent || parent.children.length < 2)) return null;
     if ((meta === 'Engine line' || meta === 'Local analysis') && parent?.node.moveMeta === meta) return null;
     return meta;
   }
 
   protected mainlineNodes(start: AnalysisTreeNode | null | undefined): AnalysisTreeNode[] {
-    const nodes: AnalysisTreeNode[] = [];
-    let current = start || null;
-    while (current) {
-      nodes.push(current);
-      current = current.children[0] || null;
-    }
-    return nodes;
+    return firstChildSequence(start);
   }
 
   protected sidelines(node: AnalysisTreeNode): AnalysisTreeNode[] {

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { CopyButtonComponent } from '../../ui/copy-button/copy-button.component';
-import { MoveTreeComponent, MoveTreeContext } from '../move-tree/move-tree.component';
+import { MoveTreeComponent } from '../move-tree/move-tree.component';
+import type { MoveListDisplay } from '../move-tree/move-list-display';
 import { AnalysisTree, AnalysisTreeNode } from '../workbench/analysis-tree.models';
 
 @Component({
@@ -13,8 +14,7 @@ import { AnalysisTree, AnalysisTreeNode } from '../workbench/analysis-tree.model
 })
 export class MoveTreePanelComponent {
   readonly tree = input<AnalysisTree | null>(null);
-  readonly context = input<MoveTreeContext>('analysis');
-  readonly scoreOnly = input(false);
+  readonly display = input<MoveListDisplay>('explore');
   readonly selectedNodeId = input<number | null>(null);
   readonly preferredContinuations = input<ReadonlyMap<number, number>>(new Map());
   readonly title = input.required<string>();

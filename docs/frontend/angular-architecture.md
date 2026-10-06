@@ -32,6 +32,7 @@ Some older `pages/*` files and large route components still own too much state o
 - A feature must not import another feature's internals. Promote genuinely reusable code to `shared` or expose a deliberate public boundary.
 - Shared chess board behavior and visual theming belong under `shared/chess/board`; feature code should not duplicate board mechanics.
 - The shared analysis workbench is presentational UI only. Feature stores own persistence and workflow semantics: the line editor persists repertoire changes, while game and free analysis own local-only variation trees.
+- The shared move list receives a typed display configuration and an analysis tree. It owns only move-list presentation state, selection/delete intents, and a browser-local view preference for switchable displays. Feature stores own the selected position, preferred repertoire continuations, and all persistence. Shared move-list traversal and row pairing are pure helpers under `shared/analysis/move-tree`.
 - Dialogs are UI composition concerns. Shared generic confirmation belongs in `shared/ui`; feature-specific input dialogs belong in `features/<feature>/components`; stores must not call browser-native dialogs or collect user input.
 
 ## Proven shared presentation primitives
