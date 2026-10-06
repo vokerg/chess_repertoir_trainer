@@ -4,7 +4,7 @@ import { AnalysisBoardComponent, AnalysisBoardArrow } from '../board/analysis-bo
 import { MoveTreePanelComponent } from '../move-tree-panel/move-tree-panel.component';
 import { PanelComponent } from '../../ui/panel/panel.component';
 import { AnalysisTree } from './analysis-tree.models';
-import { MoveTreeContext } from '../move-tree/move-tree.component';
+import type { MoveListDisplay } from '../move-tree/move-list-display';
 
 @Component({
   selector: 'app-analysis-workbench',
@@ -16,8 +16,7 @@ import { MoveTreeContext } from '../move-tree/move-tree.component';
 })
 export class AnalysisWorkbenchComponent {
   readonly tree = input<AnalysisTree | null>(null);
-  readonly treeContext = input<MoveTreeContext>('analysis');
-  readonly treeScoreOnly = input(false);
+  readonly moveListDisplay = input<MoveListDisplay>('explore');
   readonly selectedNodeId = input<number | null>(null);
   readonly preferredContinuations = input<ReadonlyMap<number, number>>(new Map());
   readonly currentFen = input.required<string>();

@@ -34,7 +34,7 @@
       <app-panel title="Game context" subtitle="Review the moves that led to the challenge position.">
         <app-move-tree
           [tree]="contextTree()"
-          [scoreOnly]="true"
+          display="score"
           [selectedNodeId]="selectedContextPly()"
           rootLabel="Before"
           (nodeSelected)="selectTreeNode($event)"

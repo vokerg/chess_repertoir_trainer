@@ -117,6 +117,17 @@ Keep the launcher HTTP-free and router-free. If the launcher needs derived stats
 
 The shared analysis workbench receives board, move-tree, engine, navigation, and delete state as inputs and emits user intents as outputs. Feature wrappers and pages provide feature-specific copy, projected UI such as line notes, and confirmation dialogs. Feature stores decide whether an emitted move or delete command calls an API or updates a local-only tree. Shared analysis components must not import feature internals.
 
+The move list has one shared tree model and three permanent renderings: `score` (complete nested score), `focused` (the selected root-to-leaf repertoire path with full-line choices at forks), and `tree` (the earlier nested move tree). Callers select a typed `moveListDisplay`/`display` policy, which controls which renderings the user can choose:
+
+| Surface | Display policy | Available renderings |
+| --- | --- | --- |
+| Imported game detail | `score` | Score only |
+| Tactical trainer game context and post-training analysis | `score` | Score only |
+| Repertoire line editor, including courses | `focused` | Focused score, All forks score, Tree |
+| Other analysis workbench consumers | `explore` | Tree, All forks score |
+
+This policy is product behavior, not a rollout flag. `MoveTreeComponent` presents the tree and emits node selection or deletion intents; it does not decide whether moves are saved. The line editor store remembers the preferred child at each visited fork so board navigation and the focused score follow the same path. Game and tactical analysis keep their own local tree behavior. Pure indexing, path lookup, continuation traversal, and move-row pairing live next to the shared move-list component; no feature imports another feature's move-list internals.
+
 Projected side content may compose the shared position-game-moves panel with feature-owned UI such as line notes. Shared and presentational components emit user intent only; persistence and async workflow remain owned by the feature store. Shared components must not import feature internals to reach feature state or commands.
 
 ## Shared chess board

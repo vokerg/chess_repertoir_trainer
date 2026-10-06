@@ -1,15 +1,10 @@
 @if (tree(); as currentTree) {
-  @if (!scoreOnly()) {
-  <div class="move-tree-view-switch" role="group" aria-label="Move list presentation">
-    @if (context() === 'repertoire') {
-      <button type="button" [class.active]="view() === 'focused'" [attr.aria-pressed]="view() === 'focused'" (click)="setView('focused')">Focused score</button>
-      <button type="button" [class.active]="view() === 'score'" [attr.aria-pressed]="view() === 'score'" (click)="setView('score')">All forks</button>
-      <button type="button" [class.active]="view() === 'tree'" [attr.aria-pressed]="view() === 'tree'" (click)="setView('tree')">Tree</button>
-    } @else {
-      <button type="button" [class.active]="view() === 'tree'" [attr.aria-pressed]="view() === 'tree'" (click)="setView('tree')">Tree</button>
-      <button type="button" [class.active]="view() === 'score'" [attr.aria-pressed]="view() === 'score'" (click)="setView('score')">Score sheet · Preview</button>
-    }
-  </div>
+  @if (availableViews().length > 1) {
+    <div class="move-tree-view-switch" role="group" aria-label="Move list presentation">
+      @for (option of availableViews(); track option) {
+        <button type="button" [class.active]="view() === option" [attr.aria-pressed]="view() === option" (click)="setView(option)">{{ viewLabel(option) }}</button>
+      }
+    </div>
   }
   @if (view() === 'focused') {
     <div class="move-focused-score" aria-label="Selected repertoire line and its forks">

@@ -241,7 +241,7 @@
   }
 }
 
-/* Preview score sheet: the shared tree, selection, and commands stay unchanged. */
+/* Shared score and tree presentations use the same move controls and selection. */
 .move-tree-view-switch {
   display: inline-flex;
   gap: 0.15rem;

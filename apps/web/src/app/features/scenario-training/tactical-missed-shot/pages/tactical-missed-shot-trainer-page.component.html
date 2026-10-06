@@ -31,7 +31,7 @@
     @if (store.mode() === 'analysis') {
       <app-analysis-workbench
         [tree]="store.analysisTree()"
-        [treeScoreOnly]="true"
+        moveListDisplay="score"
         [selectedNodeId]="store.selectedAnalysisNodeId()"
         [currentFen]="store.currentAnalysisFen()"
         [side]="session.userColor || 'WHITE'"
