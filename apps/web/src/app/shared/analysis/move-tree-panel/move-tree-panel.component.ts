@@ -14,6 +14,7 @@ import { AnalysisTree, AnalysisTreeNode } from '../workbench/analysis-tree.model
 export class MoveTreePanelComponent {
   readonly tree = input<AnalysisTree | null>(null);
   readonly context = input<MoveTreeContext>('analysis');
+  readonly scoreOnly = input(false);
   readonly selectedNodeId = input<number | null>(null);
   readonly preferredContinuations = input<ReadonlyMap<number, number>>(new Map());
   readonly title = input.required<string>();

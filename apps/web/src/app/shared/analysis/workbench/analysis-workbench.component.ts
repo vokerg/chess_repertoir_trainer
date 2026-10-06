@@ -17,6 +17,7 @@ import { MoveTreeContext } from '../move-tree/move-tree.component';
 export class AnalysisWorkbenchComponent {
   readonly tree = input<AnalysisTree | null>(null);
   readonly treeContext = input<MoveTreeContext>('analysis');
+  readonly treeScoreOnly = input(false);
   readonly selectedNodeId = input<number | null>(null);
   readonly preferredContinuations = input<ReadonlyMap<number, number>>(new Map());
   readonly currentFen = input.required<string>();

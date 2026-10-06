@@ -1,4 +1,5 @@
 @if (tree(); as currentTree) {
+  @if (!scoreOnly()) {
   <div class="move-tree-view-switch" role="group" aria-label="Move list presentation">
     @if (context() === 'repertoire') {
       <button type="button" [class.active]="view() === 'focused'" [attr.aria-pressed]="view() === 'focused'" (click)="setView('focused')">Focused score</button>
@@ -9,6 +10,7 @@
       <button type="button" [class.active]="view() === 'score'" [attr.aria-pressed]="view() === 'score'" (click)="setView('score')">Score sheet · Preview</button>
     }
   </div>
+  }
   @if (view() === 'focused') {
     <div class="move-focused-score" aria-label="Selected repertoire line and its forks">
       <div class="move-focused-head">
@@ -78,8 +80,6 @@
       @if (branch) {
         <div class="move-score-branch-header">
           <button type="button" class="move-score-disclosure" [attr.aria-expanded]="branchExpanded(start.node.id)" [attr.aria-label]="(branchExpanded(start.node.id) ? 'Collapse' : 'Expand') + ' variation from ' + branchOrigin(parent)" (click)="toggleBranch(start.node.id, parent.node.id)">{{ branchExpanded(start.node.id) ? '▾' : '▸' }}</button>
-          <span>Branch from {{ branchOrigin(parent) }}</span>
-          @if (scoreSource(start); as source) { <span class="move-score-source">{{ source }}</span> }
         </div>
       }
       @if (!branch || branchExpanded(start.node.id)) {

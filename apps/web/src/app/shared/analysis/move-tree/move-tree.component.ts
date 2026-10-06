@@ -39,6 +39,7 @@ function storedView(context: MoveTreeContext): MoveTreeView {
 export class MoveTreeComponent {
   readonly tree = input<AnalysisTree | null>(null);
   readonly context = input<MoveTreeContext>('analysis');
+  readonly scoreOnly = input(false);
   readonly selectedNodeId = input<number | null>(null);
   readonly preferredContinuations = input<ReadonlyMap<number, number>>(new Map());
   readonly rootLabel = input('Start');
@@ -48,7 +49,7 @@ export class MoveTreeComponent {
   readonly deleteSelectedSubtree = output<void>();
 
   protected readonly requestedView = signal<MoveTreeView | null>(null);
-  protected readonly view = computed(() => this.requestedView() ?? storedView(this.context()));
+  protected readonly view = computed(() => this.scoreOnly() ? 'score' : this.requestedView() ?? storedView(this.context()));
   protected readonly collapsedBranches = signal<ReadonlySet<number>>(new Set<number>());
   protected readonly openForkId = signal<number | null>(null);
   protected readonly focusedPath = computed(() => {
@@ -69,6 +70,18 @@ export class MoveTreeComponent {
   protected readonly totalMoves = computed(() => {
     const count = (node: AnalysisTreeNode): number => (node.node.id === 0 ? 0 : 1) + node.children.reduce((sum, child) => sum + count(child), 0);
     return this.tree() ? count(this.tree()!.root) : 0;
+  });
+  private readonly parentById = computed(() => {
+    const parents = new Map<number, AnalysisTreeNode>();
+    const visit = (node: AnalysisTreeNode): void => {
+      for (const child of node.children) {
+        parents.set(child.node.id, node);
+        visit(child);
+      }
+    };
+    const tree = this.tree();
+    if (tree) visit(tree.root);
+    return parents;
   });
   protected readonly selectedPathIds = computed(() => {
     const ids = new Set<number>();
@@ -181,8 +194,11 @@ export class MoveTreeComponent {
 
   protected scoreSource(node: AnalysisTreeNode): string | null {
     const meta = node.node.moveMeta?.trim();
-    if (meta && !['you', 'opp', 'white', 'black'].includes(meta.toLowerCase())) return meta;
-    return node.node.source === 'LOCAL' ? 'Local line' : null;
+    if (!meta || ['you', 'opp', 'white', 'black', 'game'].includes(meta.toLowerCase())) return null;
+    const parent = this.parentById().get(node.node.id);
+    if (meta === 'Game move' && (!parent || parent.children.length < 2)) return null;
+    if ((meta === 'Engine line' || meta === 'Local analysis') && parent?.node.moveMeta === meta) return null;
+    return meta;
   }
 
   protected mainlineNodes(start: AnalysisTreeNode | null | undefined): AnalysisTreeNode[] {
