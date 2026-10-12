@@ -69,6 +69,22 @@ try {
   });
   assert.equal(invalidBoardImage.isError, true);
   assert.equal(invalidBoardImage.structuredContent.code, 'BAD_REQUEST');
+
+  // A transport session does not establish AppUser ownership, even when MCP access is enabled.
+  const dataToolRequests = [
+    { name: 'search_imported_games', arguments: {} },
+    { name: 'summarize_imported_games', arguments: {} },
+    { name: 'get_imported_game', arguments: { gameId: 1 } },
+    { name: 'get_imported_game_pgn', arguments: { gameId: 1 } },
+    { name: 'get_imported_game_facets', arguments: {} },
+    { name: 'get_imported_game_analysis', arguments: { gameId: 1 } },
+    { name: 'get_opening_analysis', arguments: {} },
+  ];
+  for (const request of dataToolRequests) {
+    const response = await client.callTool(request);
+    assert.equal(response.isError, true, `${request.name} must reject missing AppUser identity`);
+    assert.equal(response.structuredContent.code, 'UNAUTHORIZED', `${request.name} must reject missing AppUser identity`);
+  }
   await client.close();
 
   console.log('MCP transport tests passed');
