@@ -27,8 +27,8 @@ assert.equal(
 );
 assert.equal(
   apiPackage.scripts['dev:prepared'],
-  'ts-node-dev --transpile-only src/main.ts',
-  'combined API dev must allow startup failure to terminate the watcher process',
+  'node --watch -r ts-node/register/transpile-only src/main.ts',
+  'combined API dev must use Node watch for event-driven restarts',
 );
 
 assert.equal(
