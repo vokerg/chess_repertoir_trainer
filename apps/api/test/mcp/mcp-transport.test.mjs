@@ -35,9 +35,14 @@ try {
   const noAuthGet = await app.inject({ method: 'GET', url: '/mcp' });
   assert.equal(noAuthGet.statusCode, 405);
 
+  // A valid MCP bearer token authorizes the transport, not access to an AppUser's games.
+  process.env.MCP_AUTH_MODE = 'token';
+  process.env.MCP_BEARER_TOKEN = 'test-secret';
   const address = await app.listen({ host: '127.0.0.1', port: 0 });
   const client = new Client({ name: 'mcp-transport-test', version: '1.0.0' });
-  const transport = new StreamableHTTPClientTransport(new URL('/mcp', address));
+  const transport = new StreamableHTTPClientTransport(new URL('/mcp', address), {
+    requestInit: { headers: { Authorization: 'Bearer test-secret' } },
+  });
 
   await client.connect(transport);
   const tools = await client.listTools();
