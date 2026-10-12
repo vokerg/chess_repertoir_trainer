@@ -9,6 +9,7 @@ const webPackage = JSON.parse(readFileSync(new URL('../apps/web/package.json', i
 const mobilePackage = JSON.parse(readFileSync(new URL('../apps/mobile/package.json', import.meta.url), 'utf8'));
 const domainPackage = JSON.parse(readFileSync(new URL('../packages/chess-domain/package.json', import.meta.url), 'utf8'));
 const contractsPackage = JSON.parse(readFileSync(new URL('../packages/contracts/package.json', import.meta.url), 'utf8'));
+const webTsConfig = JSON.parse(readFileSync(new URL('../apps/web/tsconfig.json', import.meta.url), 'utf8'));
 const gitignore = readFileSync(new URL('../.gitignore', import.meta.url), 'utf8');
 const globalWebStyles = readFileSync(new URL('../apps/web/src/styles.css', import.meta.url), 'utf8');
 const importedGameRepository = readFileSync(
@@ -191,9 +192,44 @@ for (const script of ['prebuild', 'predev', 'prelint']) {
 for (const script of ['prebuild', 'prestart', 'pretest', 'prelint']) {
   assert.match(mobilePackage.scripts[script] ?? '', /build:domain/, `mobile ${script} must prepare chess-domain`);
 }
-for (const target of Object.values(contractsPackage.exports)) {
-  assert.match(target.types, /^\.\/dist\//);
-  assert.match(target.default, /^\.\/dist\//);
+// Compiled package entry points must have an owning source file. Web aliases that bypass
+// the CommonJS outputs must resolve to the very same public entry points, not forks.
+for (const [packageDirectory, manifest] of [
+  ['contracts', contractsPackage],
+  ['chess-domain', domainPackage],
+]) {
+  for (const [subpath, target] of Object.entries(manifest.exports)) {
+    assert.match(target.default, /^\.\/dist\/.+\.js$/, `${manifest.name} ${subpath} must target compiled JS`);
+    assert.equal(
+      target.types,
+      target.default.replace(/\.js$/, '.d.ts'),
+      `${manifest.name} ${subpath} must publish matching declarations`,
+    );
+    const sourcePath = target.default.replace(/^\.\/dist\//, '').replace(/\.js$/, '.ts');
+    assert.equal(
+      existsSync(new URL(`../packages/${packageDirectory}/src/${sourcePath}`, import.meta.url)),
+      true,
+      `${manifest.name} ${subpath} has no source entry point`,
+    );
+  }
+}
+
+for (const [specifier, paths] of Object.entries(webTsConfig.compilerOptions.paths ?? {})) {
+  const isContract = specifier === contractsPackage.name || specifier.startsWith(`${contractsPackage.name}/`);
+  const isDomain = specifier === domainPackage.name || specifier.startsWith(`${domainPackage.name}/`);
+  if (!isContract && !isDomain) continue;
+
+  const manifest = isContract ? contractsPackage : domainPackage;
+  const packageDirectory = isContract ? 'contracts' : 'chess-domain';
+  const subpath = specifier === manifest.name ? '.' : `./${specifier.slice(manifest.name.length + 1)}`;
+  const entry = manifest.exports[subpath];
+  assert.ok(entry, `${specifier} must be an explicitly exported package entry point`);
+  const sourcePath = entry.default.replace(/^\.\/dist\//, '').replace(/\.js$/, '.ts');
+  assert.deepEqual(
+    paths,
+    [`../../packages/${packageDirectory}/src/${sourcePath}`],
+    `${specifier} Angular alias must match the exported source entry point`,
+  );
 }
 assert.ok(contractsPackage.scripts.build, 'contracts must expose a build script for dist exports');
 
