@@ -35,9 +35,14 @@ try {
   const noAuthGet = await app.inject({ method: 'GET', url: '/mcp' });
   assert.equal(noAuthGet.statusCode, 405);
 
+  // A valid MCP bearer token authorizes the transport, not access to an AppUser's games.
+  process.env.MCP_AUTH_MODE = 'token';
+  process.env.MCP_BEARER_TOKEN = 'test-secret';
   const address = await app.listen({ host: '127.0.0.1', port: 0 });
   const client = new Client({ name: 'mcp-transport-test', version: '1.0.0' });
-  const transport = new StreamableHTTPClientTransport(new URL('/mcp', address));
+  const transport = new StreamableHTTPClientTransport(new URL('/mcp', address), {
+    requestInit: { headers: { Authorization: 'Bearer test-secret' } },
+  });
 
   await client.connect(transport);
   const tools = await client.listTools();
@@ -69,6 +74,22 @@ try {
   });
   assert.equal(invalidBoardImage.isError, true);
   assert.equal(invalidBoardImage.structuredContent.code, 'BAD_REQUEST');
+
+  // A transport session does not establish AppUser ownership, even when MCP access is enabled.
+  const dataToolRequests = [
+    { name: 'search_imported_games', arguments: {} },
+    { name: 'summarize_imported_games', arguments: {} },
+    { name: 'get_imported_game', arguments: { gameId: 1 } },
+    { name: 'get_imported_game_pgn', arguments: { gameId: 1 } },
+    { name: 'get_imported_game_facets', arguments: {} },
+    { name: 'get_imported_game_analysis', arguments: { gameId: 1 } },
+    { name: 'get_opening_analysis', arguments: {} },
+  ];
+  for (const request of dataToolRequests) {
+    const response = await client.callTool(request);
+    assert.equal(response.isError, true, `${request.name} must reject missing AppUser identity`);
+    assert.equal(response.structuredContent.code, 'UNAUTHORIZED', `${request.name} must reject missing AppUser identity`);
+  }
   await client.close();
 
   console.log('MCP transport tests passed');
