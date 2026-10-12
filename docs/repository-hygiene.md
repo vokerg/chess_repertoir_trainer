@@ -46,6 +46,17 @@ CI runs the hygiene guard independently from the architecture guardrails so clea
 
 A cleanup change must not introduce unrelated redesigns, dependency upgrades, storage/queue/job infrastructure, migration squashing, or speculative abstractions.
 
+## RH-009 reconciliation evidence and retained debt
+
+The shared packages still build Node16/CommonJS `dist` output for API and Mobile. Angular selectively aliases first-party package entry points to TypeScript source in `apps/web/tsconfig.json`. On 2026-10-12, the passing main-branch CI build (run [38306374178](https://github.com/vokerg/chess_repertoir_trainer/actions/runs/38306374178)) emitted no Angular CommonJS optimization-bailout warnings. That observation does not prove every package is ESM or warrant a speculative dual-format build.
+
+The architecture guard checks every declared `contracts` and `chess-domain` export against its source entry point and matching declaration path; it also checks that Angular's first-party source aliases point to those exact exported entry points. These checks prevent divergent ownership but do not replace runtime build/tests.
+
+Remaining intentional debt:
+- A full dual ESM/CommonJS distribution has not been introduced. Reconsider only with a reproducible consumer warning or demonstrated bundling problem, and verify API, Web, and Mobile together.
+- MCP imported-game/analysis tools remain HTTP-inaccessible without a verified application-user identity binding. Transport bearer tokens alone are not user identity; see [MCP](mcp.md). Do not weaken this boundary to achieve tool parity.
+- The legacy SQLite migration subtree remains retained for historical provenance until that history is explicitly resolved; see the RH-001 inventory in issue #340.
+
 ## Validation
 
 At minimum, changes touching shared contracts must run contract tests plus API and Web builds. Repository-wide cleanup PRs should also run the root lint, build, test, architecture, and hygiene commands. CI remains the final repository-level verification when local execution is unavailable.
