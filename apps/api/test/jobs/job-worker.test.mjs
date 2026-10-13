@@ -230,6 +230,61 @@ const logger = {
   assert.equal(releaseCount, 0, 'a successful executor is not requeued when completion settlement throws');
 }
 
+for (const failingOperation of ['recoverStaleTasks', 'skipOrphanedTasks']) {
+  let maintenanceAttempts = 0;
+  let claimCount = 0;
+  const warnings = [];
+  const failure = Object.assign(new Error('Unable to start a transaction in the given time.'), {
+    code: 'P2028',
+  });
+  let worker;
+  const repository = fakeRepository({
+    [failingOperation]: async () => {
+      maintenanceAttempts += 1;
+      if (maintenanceAttempts === 1) throw failure;
+      return 0;
+    },
+    claimNextTask: async () => {
+      claimCount += 1;
+      assert.equal(maintenanceAttempts, 2, 'maintenance is retried before claiming work');
+      return task(40, 40, 200);
+    },
+  });
+  const executors = new JobTaskExecutorRegistry([{
+    kind: 'INDEX_GAMES',
+    async execute() {
+      worker.requestStop('Maintenance recovery test complete.');
+      return 'COMPLETED';
+    },
+  }]);
+  worker = createJobWorker({
+    repository,
+    executors,
+    config,
+    logger: { ...logger, warn: (context, message) => warnings.push({ context, message }) },
+  });
+  await worker.run();
+  assert.equal(claimCount, 1, 'worker processes work after the database recovers');
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0].context.err, failure);
+}
+
+{
+  let claimCount = 0;
+  let worker;
+  worker = createJobWorker({
+    repository: fakeRepository({
+      recoverStaleTasks: async () => { throw new Error('Database unavailable'); },
+      claimNextTask: async () => { claimCount += 1; return null; },
+    }),
+    executors: new JobTaskExecutorRegistry([]),
+    config: { ...config, pollIntervalMs: 60_000 },
+    logger: { ...logger, warn: () => worker.requestStop('Stop during maintenance retry.') },
+  });
+  await worker.run();
+  assert.equal(claimCount, 0, 'shutdown interrupts maintenance retry without claiming work');
+}
+
 console.log('Persistent job worker scheduling tests passed.');
 
 function task(id, jobRunId, priority) {
