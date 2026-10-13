@@ -76,7 +76,13 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
       try {
         while (!stopRequested) {
           if (now() >= nextMaintenanceAt) {
-            await runMaintenance(input.repository, input.config, logger, now);
+            try {
+              await runMaintenance(input.repository, input.config, logger, now);
+            } catch (error) {
+              logger.warn({ err: error }, 'Persistent job worker maintenance failed; retrying');
+              await waitForPoll(input.config.pollIntervalMs);
+              continue;
+            }
             if (stopRequested) break;
             nextMaintenanceAt = now() + input.config.staleRecoveryIntervalMs;
           }

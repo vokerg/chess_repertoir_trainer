@@ -192,6 +192,8 @@ Heartbeat, completion, failure, and release writes require the exact task id, jo
 
 Workers heartbeat active tasks. Maintenance returns stale `RUNNING` tasks to `QUEUED`, clears their claim key, and updates the parent scheduler timestamp. This is infrastructure recovery after a lost process, not configurable business retry machinery.
 
+If stale recovery or orphan maintenance fails, the job worker logs a warning and retries maintenance after its polling interval before claiming more tasks. A maintenance database error does not terminate the shared worker process or stop its account-import and lifecycle loops. Shutdown interrupts the retry wait.
+
 ## Per-claim task execution timing
 
 `JobTask.startedAt` records when a worker most recently claimed that task successfully. Every successful claim overwrites it and clears `settledAt`. The claim timestamp is written inside the successful claim transaction, before executor work begins.
