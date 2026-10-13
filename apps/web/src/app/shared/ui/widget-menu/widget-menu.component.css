@@ -1,0 +1,68 @@
+:host {
+  display: block;
+}
+.widget-menu {
+  position: relative;
+  color: var(--ui-text);
+}
+summary {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  list-style: none;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
+  font-size: 0.85rem;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+summary:hover,
+.widget-menu[open] summary {
+  background: var(--ui-surface-muted);
+}
+summary:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--ui-focus-outline);
+  outline-offset: 3px;
+}
+.widget-options {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  width: max-content;
+  min-width: 12rem;
+  max-width: calc(100vw - 3rem);
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-overlay);
+  box-shadow: var(--ui-shadow-overlay);
+}
+legend {
+  padding: 0 0.25rem;
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+}
+label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+label:hover {
+  background: var(--ui-surface-muted);
+  border-radius: var(--ui-radius-control);
+}
+input {
+  accent-color: var(--ui-action-strong);
+  width: 1rem;
+  height: 1rem;
+}

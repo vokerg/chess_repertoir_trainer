@@ -1,6 +1,9 @@
 <section class="line-editor-page stack">
   @if (store.loading()) {
-    <app-panel title="Loading line editor" subtitle="Preparing the move tree, board position, and supporting evidence.">
+    <app-panel
+      title="Loading line editor"
+      subtitle="Preparing the move tree, board position, and supporting evidence."
+    >
       <p class="status-note" aria-live="polite">Loading editor...</p>
       @if (store.error(); as error) {
         <p class="status-error" role="alert">{{ error }}</p>
@@ -12,6 +15,7 @@
       subtitle="Build the repertoire tree, inspect position evidence, and annotate the selected move."
       [stats]="headerStats()"
       [actions]="headerActions()"
+      [widgets]="widgets()"
     />
 
     @if (store.error(); as error) {
@@ -20,6 +24,13 @@
 
     @if (store.tree(); as tree) {
       <app-line-editor-workbench
+        [engineVisible]="engineVisible()"
+        [movesVisible]="movesVisible()"
+        [gamesVisible]="gamesVisible()"
+        [notesVisible]="notesVisible()"
+        [evidenceVisible]="evidenceVisible()"
+        [evidenceTab]="evidenceTab()"
+        (evidenceTabChange)="evidenceTab.set($event)"
         [tree]="tree"
         [selectedNodeId]="store.selectedNodeId()"
         [preferredContinuations]="store.preferredContinuations()"

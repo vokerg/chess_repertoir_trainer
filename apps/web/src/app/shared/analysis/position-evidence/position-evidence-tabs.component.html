@@ -1,18 +1,18 @@
 <app-panel
-  class="opening-evidence-shell"
+  class="position-evidence-shell"
   title="Position evidence"
   subtitle="Switch sources without adding more panels to the page."
 >
-  <div class="opening-evidence-tabs" role="tablist" aria-label="Position evidence sources">
-    @for (tab of tabs; track tab.id; let index = $index) {
+  <div class="position-evidence-tabs" role="tablist" aria-label="Position evidence sources">
+    @for (tab of tabs(); track tab.id; let index = $index) {
       <button
         #tabButton
         type="button"
         role="tab"
-        [id]="'opening-evidence-tab-' + tab.id"
+        [id]="idPrefix() + '-tab-' + tab.id"
         [class.active]="activeTab() === tab.id"
         [attr.aria-selected]="activeTab() === tab.id"
-        aria-controls="opening-evidence-tab-panel"
+        [attr.aria-controls]="idPrefix() + '-tab-panel'"
         [attr.tabindex]="activeTab() === tab.id ? 0 : -1"
         (click)="selectTab(tab.id)"
         (keydown)="handleTabKeydown($event, index)"
@@ -23,10 +23,10 @@
   </div>
 
   <div
-    id="opening-evidence-tab-panel"
-    class="opening-evidence-tab-panel"
+    [id]="idPrefix() + '-tab-panel'"
+    class="position-evidence-tab-panel"
     role="tabpanel"
-    [attr.aria-labelledby]="'opening-evidence-tab-' + activeTab()"
+    [attr.aria-labelledby]="idPrefix() + '-tab-' + activeTab()"
   >
     <ng-content />
   </div>

@@ -31,8 +31,13 @@ describe('FreeAnalysisPageComponent', () => {
       tree: signal(null),
       currentFen: signal('startpos'),
     });
-    reintegrationStore = jasmine.createSpyObj<AnalysisReintegrationStore>('AnalysisReintegrationStore', ['openForTree']);
-    challengeStore = jasmine.createSpyObj<LichessBotChallengeStore>('LichessBotChallengeStore', ['openForFen']);
+    reintegrationStore = jasmine.createSpyObj<AnalysisReintegrationStore>(
+      'AnalysisReintegrationStore',
+      ['openForTree'],
+    );
+    challengeStore = jasmine.createSpyObj<LichessBotChallengeStore>('LichessBotChallengeStore', [
+      'openForFen',
+    ]);
     confirmDialog = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', ['confirm']);
 
     await TestBed.configureTestingModule({
@@ -79,29 +84,33 @@ describe('FreeAnalysisPageComponent', () => {
     expect(store.deleteSelectedSubtree).toHaveBeenCalled();
   });
 
-  it('orders the header actions with Masters between My games and Engine', () => {
-    const actions = page().headerActions();
-
-    expect(actions.map((action) => action.id)).toEqual([
-      'my-games',
-      'masters',
+  it('groups existing toggles in Widgets while keeping commands in the header', () => {
+    expect(
+      page()
+        .headerActions()
+        .map((action) => action.id),
+    ).toEqual(['challenge-lichess-bot', 'reintegrate']);
+    const widgets = page().widgets();
+    expect(widgets.map((widget) => widget.id)).toEqual([
       'engine',
-      'challenge-lichess-bot',
-      'reintegrate',
+      'moves',
+      'courses',
+      'games',
+      'masters',
     ]);
-    expect(actions[1].pressed).toBeFalse();
-
-    actions[1].run();
-
+    expect(widgets[4].pressed).toBeFalse();
+    widgets[4].run();
     expect(store.toggleMasters).toHaveBeenCalled();
   });
 
   function page(): {
     confirmDeleteSelectedSubtree(): Promise<void>;
+    widgets(): readonly { id: string; pressed: boolean; run: () => void }[];
     headerActions(): readonly { id: string; pressed?: boolean; run: () => void }[];
   } {
     return fixture.componentInstance as unknown as {
       confirmDeleteSelectedSubtree(): Promise<void>;
+      widgets(): readonly { id: string; pressed: boolean; run: () => void }[];
       headerActions(): readonly { id: string; pressed?: boolean; run: () => void }[];
     };
   }

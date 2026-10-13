@@ -1,7 +1,17 @@
+import { PositionEvidenceTabsComponent } from '../../../shared/analysis/position-evidence/position-evidence-tabs.component';
+import type {
+  PositionEvidenceTab,
+  PositionEvidenceTabOption,
+} from '../../../shared/analysis/position-evidence/position-evidence.models';
+import { LichessGamesExplorerWidgetComponent } from '../../../shared/lichess-games-explorer/lichess-games-explorer-widget.component';
+import { MastersExplorerWidgetComponent } from '../../../shared/masters-explorer/masters-explorer-widget.component';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
-import { emptyImportedGameFacets, ImportedGameFacetsResponse } from '../../../shared/games/game.models';
+import {
+  emptyImportedGameFacets,
+  ImportedGameFacetsResponse,
+} from '../../../shared/games/game.models';
 import { GameFilters } from '../../../shared/games/filters/game-filter.model';
 import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
 import { OpeningAnalysisResponse } from '../../../shared/games/position-moves/position-game-moves.models';
@@ -13,6 +23,9 @@ import { LineNotesEditorComponent } from './line-notes-editor.component';
   standalone: true,
   imports: [
     AnalysisWorkbenchComponent,
+    PositionEvidenceTabsComponent,
+    LichessGamesExplorerWidgetComponent,
+    MastersExplorerWidgetComponent,
     LineNotesEditorComponent,
     PositionGameMovesPanelComponent,
   ],
@@ -21,6 +34,17 @@ import { LineNotesEditorComponent } from './line-notes-editor.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LineEditorWorkbenchComponent {
+  readonly engineVisible = input(true);
+  readonly movesVisible = input(true);
+  readonly gamesVisible = input(true);
+  readonly notesVisible = input(true);
+  readonly evidenceVisible = input(true);
+  readonly evidenceTab = input<PositionEvidenceTab>('peers');
+  readonly evidenceTabChange = output<PositionEvidenceTab>();
+  readonly evidenceSources: readonly PositionEvidenceTabOption[] = [
+    { id: 'peers', label: 'Peers' },
+    { id: 'masters', label: 'Masters' },
+  ];
   readonly tree = input.required<LineTree>();
   readonly selectedNodeId = input.required<number>();
   readonly preferredContinuations = input<ReadonlyMap<number, number>>(new Map());

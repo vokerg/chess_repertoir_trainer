@@ -1,0 +1,12 @@
+<details #menu class="widget-menu" (keydown)="closeOnEscape($event)">
+  <summary>Widgets <span aria-hidden="true">⌄</span></summary>
+  <fieldset class="widget-options">
+    <legend>Show widgets</legend>
+    @for (widget of widgets(); track widget.id) {
+      <label>
+        <input type="checkbox" [checked]="widget.pressed" (change)="widget.run()" />
+        <span>{{ widget.label }}</span>
+      </label>
+    }
+  </fieldset>
+</details>

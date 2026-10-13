@@ -1,9 +1,12 @@
+import type { PositionEvidenceTab } from '../../../shared/analysis/position-evidence/position-evidence.models';
+import type { WidgetToggle } from '../../../shared/ui/widget-menu/widget-menu.component';
 import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
   HostListener,
   computed,
+  signal,
   inject,
   OnInit,
 } from '@angular/core';
@@ -52,6 +55,44 @@ export class LineEditorPageComponent implements OnInit {
     ];
   });
 
+  protected readonly evidenceTab = signal<PositionEvidenceTab>('peers');
+  protected readonly engineVisible = signal(true);
+  protected readonly movesVisible = signal(true);
+  protected readonly gamesVisible = signal(true);
+  protected readonly notesVisible = signal(true);
+  protected readonly evidenceVisible = signal(true);
+  protected readonly widgets = computed<readonly WidgetToggle[]>(() => [
+    {
+      id: 'engine',
+      label: 'Engine',
+      pressed: this.engineVisible(),
+      run: () => this.engineVisible.update((value) => !value),
+    },
+    {
+      id: 'moves',
+      label: 'Move tree',
+      pressed: this.movesVisible(),
+      run: () => this.movesVisible.update((value) => !value),
+    },
+    {
+      id: 'games',
+      label: 'Moves from my games',
+      pressed: this.gamesVisible(),
+      run: () => this.gamesVisible.update((value) => !value),
+    },
+    {
+      id: 'notes',
+      label: 'Move notes',
+      pressed: this.notesVisible(),
+      run: () => this.notesVisible.update((value) => !value),
+    },
+    {
+      id: 'evidence',
+      label: 'Position evidence',
+      pressed: this.evidenceVisible(),
+      run: () => this.evidenceVisible.update((value) => !value),
+    },
+  ]);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
     const line = this.store.line();
     if (!line) return [];
