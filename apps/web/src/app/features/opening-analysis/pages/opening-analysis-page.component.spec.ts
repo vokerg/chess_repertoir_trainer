@@ -47,19 +47,31 @@ describe('OpeningAnalysisPageComponent', () => {
     fixture = TestBed.createComponent(OpeningAnalysisPageComponent);
   });
 
-  it('keeps only Engine and Challenge bot in the header actions', () => {
+  it('groups visibility controls separately from header commands', () => {
     const actions = page().headerActions();
 
-    expect(actions.map((action) => action.id)).toEqual(['engine', 'challenge-lichess-bot']);
-    expect(actions[0].pressed).toBeTrue();
-
-    actions[0].run();
+    expect(actions.map((action) => action.id)).toEqual(['challenge-lichess-bot']);
+    const widgets = page().widgets();
+    expect(widgets.map((widget) => widget.id)).toEqual([
+      'engine',
+      'courses',
+      'games',
+      'evidence',
+      'openings',
+    ]);
+    expect(widgets[0].pressed).toBeTrue();
+    expect(widgets[4].pressed).toBeFalse();
+    widgets[0].run();
 
     expect(store.toggleEngine).toHaveBeenCalled();
   });
 
   it('keeps the approved three summary stats and derives the reusable move trail', () => {
-    expect(page().headerStats().map((stat) => stat.id)).toEqual(['games', 'score', 'wdl']);
+    expect(
+      page()
+        .headerStats()
+        .map((stat) => stat.id),
+    ).toEqual(['games', 'score', 'wdl']);
 
     history.set([
       { uci: 'd2d4', san: 'd4' },
@@ -76,11 +88,13 @@ describe('OpeningAnalysisPageComponent', () => {
 
   function page(): {
     headerActions(): readonly { id: string; pressed?: boolean; run: () => void }[];
+    widgets(): readonly { id: string; pressed: boolean; run: () => void }[];
     headerStats(): readonly { id: string }[];
     lineTrailMoves(): readonly { id: string | number; label: string; index: number }[];
   } {
     return fixture.componentInstance as unknown as {
       headerActions(): readonly { id: string; pressed?: boolean; run: () => void }[];
+      widgets(): readonly { id: string; pressed: boolean; run: () => void }[];
       headerStats(): readonly { id: string }[];
       lineTrailMoves(): readonly { id: string | number; label: string; index: number }[];
     };

@@ -1,9 +1,24 @@
-import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject } from '@angular/core';
+import type { WidgetToggle } from '../../../shared/ui/widget-menu/widget-menu.component';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  HostListener,
+  OnInit,
+  computed,
+  signal,
+  inject,
+} from '@angular/core';
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
 import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
-import { GameFilterBreakdownItem, GameFilterBreakdownPanelComponent } from '../../../shared/games/filter-breakdown/game-filter-breakdown-panel.component';
+import {
+  GameFilterBreakdownItem,
+  GameFilterBreakdownPanelComponent,
+} from '../../../shared/games/filter-breakdown/game-filter-breakdown-panel.component';
 import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
-import { scoreLabel, wdlLabel } from '../../../shared/games/position-moves/position-game-moves.helpers';
+import {
+  scoreLabel,
+  wdlLabel,
+} from '../../../shared/games/position-moves/position-game-moves.helpers';
 import { PositionTopGamesComponent } from '../../../shared/games/position-moves/position-top-games.component';
 import { PositionPerformancePanelComponent } from '../../../shared/games/position-performance/position-performance-panel.component';
 import { LichessGamesExplorerWidgetComponent } from '../../../shared/lichess-games-explorer/lichess-games-explorer-widget.component';
@@ -16,9 +31,13 @@ import {
   CopyableLineComponent,
   type CopyableLineSegment,
 } from '../../../shared/ui/copyable-line/copyable-line.component';
-import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
+import {
+  PageHeaderAction,
+  PageHeaderComponent,
+  PageHeaderStat,
+} from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
-import { OpeningEvidenceTabsComponent } from '../components/opening-evidence-tabs/opening-evidence-tabs.component';
+import { PositionEvidenceTabsComponent } from '../../../shared/analysis/position-evidence/position-evidence-tabs.component';
 import { OpeningAnalysisStore } from '../state/opening-analysis.store';
 
 @Component({
@@ -34,7 +53,7 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
     PositionTopGamesComponent,
     PageHeaderComponent,
     CopyableLineComponent,
-    OpeningEvidenceTabsComponent,
+    PositionEvidenceTabsComponent,
     PanelComponent,
     PositionPerformancePanelComponent,
     LichessBotChallengeDialogComponent,
@@ -49,7 +68,10 @@ export class OpeningAnalysisPageComponent implements OnInit {
   protected readonly challengeStore = inject(LichessBotChallengeStore);
   protected readonly scoreLabel = scoreLabel;
   protected readonly analysisQueryParams = computed(() => ({
-    moves: this.store.history().map((move) => move.uci).join(','),
+    moves: this.store
+      .history()
+      .map((move) => move.uci)
+      .join(','),
   }));
   protected readonly lineTrailMoves = computed<readonly CopyableLineSegment[]>(() =>
     this.store.history().map((move, index) => ({
@@ -68,14 +90,43 @@ export class OpeningAnalysisPageComponent implements OnInit {
     { id: 'score', label: 'Score', value: this.scoreLabel(this.store.wdl()) },
     { id: 'wdl', label: 'WDL', value: wdlLabel(this.store.wdl()) },
   ]);
-  protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
+  protected readonly coursesVisible = signal(true);
+  protected readonly gamesVisible = signal(true);
+  protected readonly evidenceVisible = signal(true);
+  protected readonly openingsVisible = signal(false);
+  protected readonly widgets = computed<readonly WidgetToggle[]>(() => [
     {
       id: 'engine',
-      kind: 'toggle',
       label: 'Engine',
       pressed: this.store.engineVisible(),
       run: () => this.store.toggleEngine(),
     },
+    {
+      id: 'courses',
+      label: 'Course suggestions',
+      pressed: this.coursesVisible(),
+      run: () => this.coursesVisible.update((value) => !value),
+    },
+    {
+      id: 'games',
+      label: 'Moves from my games',
+      pressed: this.gamesVisible(),
+      run: () => this.gamesVisible.update((value) => !value),
+    },
+    {
+      id: 'evidence',
+      label: 'Position evidence',
+      pressed: this.evidenceVisible(),
+      run: () => this.evidenceVisible.update((value) => !value),
+    },
+    {
+      id: 'openings',
+      label: 'My openings',
+      pressed: this.openingsVisible(),
+      run: () => this.openingsVisible.update((value) => !value),
+    },
+  ]);
+  protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
     buildChallengeBotHeaderAction({
       run: () => this.challengeStore.openForFen(this.store.currentFen()),
     }),
@@ -106,7 +157,8 @@ export class OpeningAnalysisPageComponent implements OnInit {
   protected onKeyDown(event: KeyboardEvent): void {
     const target = event.target as HTMLElement | null;
     const tag = target?.tagName?.toLowerCase();
-    if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return;
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable)
+      return;
 
     if (event.key === 'ArrowLeft') {
       event.preventDefault();

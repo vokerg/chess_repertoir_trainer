@@ -1,9 +1,11 @@
+import type { WidgetToggle } from '../../../shared/ui/widget-menu/widget-menu.component';
 import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
   HostListener,
   computed,
+  signal,
   inject,
   OnInit,
 } from '@angular/core';
@@ -66,28 +68,41 @@ export class FreeAnalysisPageComponent implements OnInit {
   protected readonly store = inject(FreeAnalysisStore);
   protected readonly reintegrationStore = inject(AnalysisReintegrationStore);
   protected readonly challengeStore = inject(LichessBotChallengeStore);
-  protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
+  protected readonly coursesVisible = signal(true);
+  protected readonly movesVisible = signal(true);
+  protected readonly widgets = computed<readonly WidgetToggle[]>(() => [
     {
-      id: 'my-games',
-      kind: 'toggle',
+      id: 'engine',
+      label: 'Engine',
+      pressed: this.store.engineVisible(),
+      run: () => this.store.toggleEngine(),
+    },
+    {
+      id: 'moves',
+      label: 'Move tree',
+      pressed: this.movesVisible(),
+      run: () => this.movesVisible.update((value) => !value),
+    },
+    {
+      id: 'courses',
+      label: 'Course suggestions',
+      pressed: this.coursesVisible(),
+      run: () => this.coursesVisible.update((value) => !value),
+    },
+    {
+      id: 'games',
       label: 'My games',
       pressed: this.store.myGamesOpen(),
       run: () => this.store.toggleMyGames(),
     },
     {
       id: 'masters',
-      kind: 'toggle',
       label: 'Masters',
       pressed: this.store.mastersOpen(),
       run: () => this.store.toggleMasters(),
     },
-    {
-      id: 'engine',
-      kind: 'toggle',
-      label: 'Engine',
-      pressed: this.store.engineVisible(),
-      run: () => this.store.toggleEngine(),
-    },
+  ]);
+  protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
     buildChallengeBotHeaderAction({
       disabled: !this.store.tree(),
       run: () => this.challengeStore.openForFen(this.store.currentFen()),

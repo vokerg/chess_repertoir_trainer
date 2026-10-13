@@ -19,6 +19,8 @@ import { InitialPositionInputComponent } from './initial-position-input.componen
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FreeAnalysisWorkbenchComponent {
+  readonly coursesVisible = input(true);
+  readonly movesVisible = input(true);
   readonly tree = input.required<FreeAnalysisTree>();
   readonly selectedNodeId = input.required<number>();
   readonly currentFen = input.required<string>();

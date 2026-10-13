@@ -1,15 +1,15 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { OpeningEvidenceTabsComponent } from './opening-evidence-tabs.component';
+import { PositionEvidenceTabsComponent } from './position-evidence-tabs.component';
 
-describe('OpeningEvidenceTabsComponent', () => {
-  let fixture: ComponentFixture<OpeningEvidenceTabsComponent>;
+describe('PositionEvidenceTabsComponent', () => {
+  let fixture: ComponentFixture<PositionEvidenceTabsComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [OpeningEvidenceTabsComponent],
+      imports: [PositionEvidenceTabsComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(OpeningEvidenceTabsComponent);
+    fixture = TestBed.createComponent(PositionEvidenceTabsComponent);
     fixture.componentRef.setInput('activeTab', 'performance');
     fixture.detectChanges();
   });
@@ -31,7 +31,7 @@ describe('OpeningEvidenceTabsComponent', () => {
       'false',
     ]);
     expect(tabs.map((tab) => tab.tabIndex)).toEqual([0, -1, -1, -1]);
-    expect(panel?.getAttribute('aria-labelledby')).toBe('opening-evidence-tab-performance');
+    expect(panel?.getAttribute('aria-labelledby')).toBe('position-evidence-tab-performance');
   });
 
   it('emits click selection and supports arrow, Home, and End keyboard navigation', () => {

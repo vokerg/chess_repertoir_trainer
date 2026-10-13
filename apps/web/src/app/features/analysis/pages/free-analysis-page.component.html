@@ -3,6 +3,7 @@
     title="Analysis"
     subtitle="Explore a position from FEN or an imported game."
     [actions]="headerActions()"
+    [widgets]="widgets()"
   />
 
   @if (store.error(); as error) {
@@ -15,6 +16,8 @@
     </app-panel>
   } @else if (store.tree(); as tree) {
     <app-free-analysis-workbench
+      [coursesVisible]="coursesVisible()"
+      [movesVisible]="movesVisible()"
       [tree]="tree"
       [selectedNodeId]="store.selectedNodeId()"
       [currentFen]="store.currentFen()"
