@@ -12,6 +12,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 const prisma = prismaModule.default;
 const suffix = randomUUID();
 let userId;
+let otherUserId;
 
 async function summarize(query = {}) {
   return (await ImportedGameQueryService.summarize(userId, query)).summary;
@@ -27,6 +28,14 @@ try {
     },
   });
   userId = user.id;
+  const otherUser = await prisma.appUser.create({
+    data: {
+      displayName: 'Other MCP user',
+      authProvider: 'test',
+      authSubject: `mcp-other-${suffix}`,
+    },
+  });
+  otherUserId = otherUser.id;
   const [lichess, chessCom] = await Promise.all([
     prisma.externalAccount.create({ data: { userId, provider: 'LICHESS', username: `lichess-${suffix}` } }),
     prisma.externalAccount.create({ data: { userId, provider: 'CHESS_COM', username: `chess-com-${suffix}` } }),
@@ -42,6 +51,7 @@ try {
   const games = await Promise.all([
     prisma.importedGame.create({ data: {
       ...base, accountId: lichess.id, provider: 'LICHESS', providerGameId: `g1-${suffix}`,
+      pgn: '[Event "MCP contract test"]\\n\\n1. e4',
       endedAt: new Date('2026-01-01T12:00:00Z'), resultForUser: 'WIN', userColor: 'WHITE',
       whiteRating: 1600, blackRating: 1500, speedCategory: 'rapid', openingEco: 'B20', openingName: 'Sicilian',
       latestAnalysisStatus: 'COMPLETED', latestWhiteAccuracy: 91,
@@ -157,11 +167,82 @@ try {
   assert.equal('providerGameId' in mcpGame, false);
   assert.equal('analysisRuns' in mcpGame, false);
   assert.equal('tags' in mcpGame, false);
+
+  // Cursor pagination and legacy result alias must remain consistent with the API filters.
+  const firstPage = await client.callTool({
+    name: 'search_imported_games',
+    arguments: { providers: ['LICHESS'], sort: 'endedAtAsc', limit: 1 },
+  });
+  assert.equal(firstPage.isError, undefined);
+  assert.equal(firstPage.structuredContent.items[0].id, games[0].id);
+  assert.equal(firstPage.structuredContent.pageInfo.hasMore, true);
+  const nextCursor = firstPage.structuredContent.pageInfo.nextCursor;
+  assert.ok(nextCursor);
+  const nextPage = await client.callTool({
+    name: 'search_imported_games',
+    arguments: { providers: ['LICHESS'], sort: 'endedAtAsc', limit: 1, cursor: nextCursor },
+  });
+  assert.equal(nextPage.structuredContent.items[0].id, games[1].id);
+  const wins = await client.callTool({
+    name: 'search_imported_games',
+    arguments: { providers: ['LICHESS'], result: ['WIN'] },
+  });
+  assert.deepEqual(wins.structuredContent.items.map((game) => game.id), [games[0].id]);
+
+  // The MCP detail projection retains compact plies, but never includes raw PGN or analysis lines.
+  const detail = await client.callTool({ name: 'get_imported_game', arguments: { gameId: games[0].id } });
+  assert.equal(detail.isError, undefined);
+  assert.equal(detail.structuredContent.game.pgnAvailable, true);
+  assert.equal(detail.structuredContent.game.plies.length, 1);
+  assert.equal(detail.structuredContent.game.plies[0].moveUci, 'e2e4');
+  assert.equal('pgn' in detail.structuredContent.game, false);
+  assert.equal('lines' in detail.structuredContent.game.plies[0], false);
+  const compactDetail = await client.callTool({
+    name: 'get_imported_game',
+    arguments: { gameId: games[0].id, includePlies: false },
+  });
+  assert.equal('plies' in compactDetail.structuredContent.game, false);
+  const pgn = await client.callTool({ name: 'get_imported_game_pgn', arguments: { gameId: games[0].id } });
+  assert.equal(pgn.structuredContent.pgn, '[Event "MCP contract test"]\\n\\n1. e4');
+  const facets = await client.callTool({ name: 'get_imported_game_facets', arguments: {} });
+  assert.equal(facets.structuredContent.accounts.length, 2);
+  assert.equal(facets.structuredContent.analysisStatuses.find(({ value }) => value === 'COMPLETED').count, 3);
+  const missingAnalysis = await client.callTool({
+    name: 'get_imported_game_analysis',
+    arguments: { gameId: games[0].id },
+  });
+  assert.equal(missingAnalysis.isError, true);
+  assert.equal(missingAnalysis.structuredContent.code, 'NOT_FOUND');
+
+  // Even a valid, explicitly bound *different* AppUser cannot inspect the first user's games.
+  const otherServer = createChessMcpServer({ error: () => {} }, otherUserId);
+  const otherClient = new Client({ name: 'mcp-user-ownership-regression', version: '1.0.0' });
+  const [otherClientTransport, otherServerTransport] = InMemoryTransport.createLinkedPair();
+  await otherServer.connect(otherServerTransport);
+  await otherClient.connect(otherClientTransport);
+  for (const name of ['get_imported_game', 'get_imported_game_pgn', 'get_imported_game_analysis']) {
+    const response = await otherClient.callTool({ name, arguments: { gameId: games[0].id } });
+    assert.equal(response.isError, true, `${name} must reject another user's game`);
+    assert.equal(response.structuredContent.code, 'NOT_FOUND');
+  }
+  const otherSearch = await otherClient.callTool({ name: 'search_imported_games', arguments: {} });
+  assert.deepEqual(otherSearch.structuredContent.items, []);
+  const otherSummary = await otherClient.callTool({ name: 'summarize_imported_games', arguments: {} });
+  assert.equal(otherSummary.structuredContent.summary.total, 0);
+  const otherFacets = await otherClient.callTool({ name: 'get_imported_game_facets', arguments: {} });
+  assert.deepEqual(otherFacets.structuredContent.accounts, []);
+  const otherOpening = await otherClient.callTool({ name: 'get_opening_analysis', arguments: { fen: 'startpos' } });
+  assert.equal(otherOpening.isError, undefined);
+  assert.equal(otherOpening.structuredContent.games.total, 0);
+  await otherClient.close();
+  await otherServer.close();
+
   await client.close();
   await server.close();
 
   console.log('Imported game summary aggregation tests passed.');
 } finally {
+  if (otherUserId) await prisma.appUser.delete({ where: { id: otherUserId } });
   if (userId) await prisma.appUser.delete({ where: { id: userId } });
   await prisma.$disconnect();
 }
