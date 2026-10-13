@@ -51,7 +51,7 @@ try {
   const games = await Promise.all([
     prisma.importedGame.create({ data: {
       ...base, accountId: lichess.id, provider: 'LICHESS', providerGameId: `g1-${suffix}`,
-      pgn: '[Event "MCP contract test"]\\n\\n1. e4',
+      pgn: '[Event "MCP contract test"]\n\n1. e4',
       endedAt: new Date('2026-01-01T12:00:00Z'), resultForUser: 'WIN', userColor: 'WHITE',
       whiteRating: 1600, blackRating: 1500, speedCategory: 'rapid', openingEco: 'B20', openingName: 'Sicilian',
       latestAnalysisStatus: 'COMPLETED', latestWhiteAccuracy: 91,
@@ -203,7 +203,7 @@ try {
   });
   assert.equal('plies' in compactDetail.structuredContent.game, false);
   const pgn = await client.callTool({ name: 'get_imported_game_pgn', arguments: { gameId: games[0].id } });
-  assert.equal(pgn.structuredContent.pgn, '[Event "MCP contract test"]\\n\\n1. e4');
+  assert.equal(pgn.structuredContent.pgn, '[Event "MCP contract test"]\n\n1. e4');
   const facets = await client.callTool({ name: 'get_imported_game_facets', arguments: {} });
   assert.equal(facets.structuredContent.accounts.length, 2);
   assert.equal(facets.structuredContent.analysisStatuses.find(({ value }) => value === 'COMPLETED').count, 3);
