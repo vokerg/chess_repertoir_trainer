@@ -204,9 +204,10 @@ try {
   assert.equal('plies' in compactDetail.structuredContent.game, false);
   const pgn = await client.callTool({ name: 'get_imported_game_pgn', arguments: { gameId: games[0].id } });
   assert.equal(pgn.structuredContent.pgn, '[Event "MCP contract test"]\n\n1. e4');
-  const facets = await client.callTool({ name: 'get_imported_game_facets', arguments: {} });
-  assert.equal(facets.structuredContent.accounts.length, 2);
-  assert.equal(facets.structuredContent.analysisStatuses.find(({ value }) => value === 'COMPLETED').count, 3);
+  const mcpFacets = await client.callTool({ name: 'get_imported_game_facets', arguments: {} });
+  assert.equal(mcpFacets.isError, undefined);
+  assert.equal(mcpFacets.structuredContent.accounts.length, 2);
+  assert.equal(mcpFacets.structuredContent.analysisStatuses.find(({ value }) => value === 'COMPLETED').count, 3);
   const missingAnalysis = await client.callTool({
     name: 'get_imported_game_analysis',
     arguments: { gameId: games[0].id },
