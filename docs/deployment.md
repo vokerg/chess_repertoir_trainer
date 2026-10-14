@@ -8,7 +8,7 @@ The hosted web/API stack is prepared for a split hobby deployment:
 - Render Web Service for the Fastify API;
 - Render Background Worker for persistent imported-game jobs and durable account imports;
 - Vercel for the Angular web app;
-- GitHub Actions for CI only.
+- GitHub Actions for CI and separately triggered Oracle Docker controls.
 
 The native Expo client is built from `apps/mobile` and connects to the same deployed API, but app-store distribution is not automated by the current repository.
 

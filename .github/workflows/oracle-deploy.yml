@@ -1,0 +1,91 @@
+name: Build & Deploy
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+concurrency:
+  group: oracle-application
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    env:
+      IMAGE: ghcr.io/vokerg/chess-repertoir-trainer
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Check prerequisites
+        env:
+          HOST: ${{ secrets.ORACLE_HOST }}
+          USER: ${{ secrets.ORACLE_USER }}
+          KEY: ${{ secrets.ORACLE_SSH_KEY }}
+          HOST_KEY: ${{ secrets.ORACLE_SSH_HOST_KEY }}
+          CLERK_KEY: ${{ vars.ORACLE_WEB_CLERK_PUBLISHABLE_KEY }}
+        run: |
+          : "${HOST:?Missing ORACLE_HOST}" "${USER:?Missing ORACLE_USER}"
+          : "${KEY:?Missing ORACLE_SSH_KEY}" "${HOST_KEY:?Missing ORACLE_SSH_HOST_KEY}"
+          [[ "$CLERK_KEY" == pk_test_* || "$CLERK_KEY" == pk_live_* ]] || { echo 'Set ORACLE_WEB_CLERK_PUBLISHABLE_KEY repository variable'; exit 1; }
+      - name: Validate deployment controls
+        run: |
+          bash -n deploy/oracle/*.sh
+          python3 deploy/oracle/test/control.test.py
+          python3 deploy/oracle/test/prune.test.py
+          python3 - <<'PYTHON'
+          import shutil, subprocess, tempfile
+          with tempfile.TemporaryDirectory() as directory:
+              shutil.copy('deploy/docker/compose.yml', directory + '/compose.yml')
+              shutil.copy('deploy/docker/stack.env.example', directory + '/stack.env')
+              subprocess.run(['docker', 'compose', '--project-directory', directory, '-f', directory + '/compose.yml', '-f', 'deploy/oracle/compose.yml', 'config', '--quiet'], check=True)
+          PYTHON
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Protect existing commit tag
+        run: |
+          if docker buildx imagetools inspect "$IMAGE:$GITHUB_SHA" >/dev/null 2>&1; then
+            echo 'Commit tag already published. Use Rollback to deploy it; tags are never overwritten by this workflow.'
+            exit 1
+          fi
+      - name: Build and publish ARM64 image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: ghcr.io/vokerg/chess-repertoir-trainer:${{ github.sha }}
+          build-args: |
+            WEB_API_BASE_URL=/api
+            WEB_CLERK_PUBLISHABLE_KEY=${{ vars.ORACLE_WEB_CLERK_PUBLISHABLE_KEY }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Verify published ARM64 runtime and Stockfish
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          docker pull "$IMAGE@$DIGEST"
+          timeout 90s docker run --rm --memory 1g --cpus 1 --user node -i --entrypoint node "$IMAGE@$DIGEST" < deploy/oracle/smoke.cjs
+      - name: Deploy and verify Oracle
+        uses: ./.github/actions/oracle
+        with:
+          operation: deploy
+          sha: ${{ github.sha }}
+          digest: ${{ steps.build.outputs.digest }}
+          host: ${{ secrets.ORACLE_HOST }}
+          user: ${{ secrets.ORACLE_USER }}
+          key: ${{ secrets.ORACLE_SSH_KEY }}
+          host-key: ${{ secrets.ORACLE_SSH_HOST_KEY }}
+          registry-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Record result
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          printf 'Build & Deploy: %s\n\nCommit: %s\n\nTag: %s:%s\n\nDigest: %s\n' "$RESULT" "$GITHUB_SHA" "$IMAGE" "$GITHUB_SHA" "$DIGEST" >> "$GITHUB_STEP_SUMMARY"

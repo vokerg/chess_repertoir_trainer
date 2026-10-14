@@ -1,0 +1,46 @@
+name: Oracle operation
+description: Run a serialized operation with pinned SSH host verification
+inputs:
+  operation:
+    required: true
+    description: deploy, rollback, start, stop or restart
+  selection:
+    default: all
+    description: Selected service
+  sha:
+    default: ''
+    description: Full image commit SHA
+  digest:
+    default: ''
+    description: Resolved registry digest
+  host:
+    required: true
+    description: Oracle SSH host
+  user:
+    required: true
+    description: Dedicated SSH user
+  key:
+    required: true
+    description: Dedicated SSH private key
+  host-key:
+    required: true
+    description: Trusted known_hosts entry
+  registry-token:
+    default: ''
+    description: Ephemeral GITHUB_TOKEN for private image pulls
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        OPERATION: ${{ inputs.operation }}
+        SELECTION: ${{ inputs.selection }}
+        SHA: ${{ inputs.sha }}
+        DIGEST: ${{ inputs.digest }}
+        ORACLE_HOST: ${{ inputs.host }}
+        ORACLE_USER: ${{ inputs.user }}
+        SSH_KEY: ${{ inputs.key }}
+        HOST_KEY: ${{ inputs.host-key }}
+        REGISTRY_TOKEN: ${{ inputs.registry-token }}
+        REGISTRY_USER: ${{ github.actor }}
+      run: bash deploy/oracle/remote.sh
