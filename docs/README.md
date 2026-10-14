@@ -37,7 +37,7 @@ Canonical documents in `docs/` describe current runtime architecture and operati
 - [OpenAPI](openapi.md): generated documentation rules.
 - [Repository hygiene](repository-hygiene.md): cleanup safety rules, transitional-debt ratchets, and validation expectations.
 - [Deployment](deployment.md): environment and hosting setup.
-- [Manual Docker deployment](docker-manual-deployment.md): Compose testing, multi-platform publishing, VM update, and rollback.
+- [Manual Docker deployment](docker-manual-deployment.md): Oracle prerequisites, manual GitHub Actions controls, shared-database safety, and recovery.
 - [Mobile development](mobile/development.md): Expo setup, device networking, validation, and release gates.
 - [MCP](mcp.md): backend MCP transport.
 - [Project working guides](skills/README.md): detailed human-readable change guides.

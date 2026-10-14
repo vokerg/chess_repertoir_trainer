@@ -1,0 +1,37 @@
+# Applied after the existing Docker Compose file; no public API/worker ports.
+name: chess-oracle
+x-bounded: &bounded
+  logging:
+    driver: json-file
+    options:
+      max-size: '10m'
+      max-file: '3'
+  pids_limit: 256
+services:
+  web:
+    <<: *bounded
+    cpus: 0.25
+    mem_limit: 256m
+    memswap_limit: 256m
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+  api:
+    <<: *bounded
+    command: [node, apps/api/dist/main.js]
+    cpus: 0.75
+    mem_limit: 1536m
+    memswap_limit: 1536m
+    environment:
+      NODE_OPTIONS: --max-old-space-size=1024
+  worker:
+    <<: *bounded
+    command: [node, apps/api/dist/worker.js]
+    cpus: 1.0
+    mem_limit: 3g
+    memswap_limit: 3g
+    stop_grace_period: 60s
+    environment:
+      NODE_OPTIONS: --max-old-space-size=1536

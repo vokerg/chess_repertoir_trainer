@@ -1,7 +1,7 @@
 name: chess-repertoire-trainer
 
 x-app-service: &app-service
-  image: "${IMAGE_REPOSITORY:-ghcr.io/vokerg/chess-repertoir-trainer}:${IMAGE_TAG:-latest}"
+  image: "${IMAGE_REFERENCE:-${IMAGE_REPOSITORY:-ghcr.io/vokerg/chess-repertoir-trainer}:${IMAGE_TAG:-latest}}"
   restart: unless-stopped
 
 services:
@@ -12,7 +12,7 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "${WEB_PORT:-8080}:80"
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-8080}:80"
 
   api:
     <<: *app-service

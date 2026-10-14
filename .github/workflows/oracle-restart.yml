@@ -1,0 +1,30 @@
+name: Restart
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: Oracle service selection (web also starts API for Start/Restart)
+        type: choice
+        options: [all, worker, api, web]
+        default: all
+permissions:
+  contents: read
+concurrency:
+  group: oracle-application
+  cancel-in-progress: false
+jobs:
+  restart:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/oracle
+        with:
+          operation: restart
+          selection: ${{ inputs.service }}
+          host: ${{ secrets.ORACLE_HOST }}
+          user: ${{ secrets.ORACLE_USER }}
+          key: ${{ secrets.ORACLE_SSH_KEY }}
+          host-key: ${{ secrets.ORACLE_SSH_HOST_KEY }}

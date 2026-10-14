@@ -1,218 +1,110 @@
-# Manual Docker deployment
+# Oracle manual deployment
 
-This guide describes the first manual Docker deployment path for the Angular web app, Fastify API, and persistent job worker. It is a parallel alternative to the existing Render/Vercel environment, not a replacement for it. Oracle Cloud infrastructure and automated deployment are intentionally outside this phase.
+Oracle is a parallel web/API/worker instance using the existing Dockerfile, Compose services and Neon database. Vercel, Render, DNS and database placement remain unchanged. The five Oracle workflows run only through `workflow_dispatch`. Existing CI still runs on pushes/PRs against its disposable test database.
 
-One multi-platform image contains the compiled web app, compiled API and shared packages, Prisma runtime, Node 22, and Nginx. Compose creates three containers from that image:
+## VM and first setup
 
-- `web` runs Nginx, serves Angular, and proxies HTTP requests to `api`;
-- `api` runs the existing Fastify start command on the internal port `3000`;
-- `worker` runs the existing persistent-worker command with WASM Stockfish and exposes no port.
+Verify tenancy status, home region, existing instances, storage and remaining free allocation before provisioning. Obtain approval before VM creation; never upgrade or create paid resources. As checked on 2026-10-14, [Oracle's current Always Free documentation](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) lists 1,500 A1 OCPU-hours / 9,000 GB-hours monthly (2 OCPUs / 12 GB total), plus 200 GB combined boot/block storage in the home region. Older 4 OCPU / 24 GB guides are no longer the documented Always Free allowance.
 
-Only `web` publishes a host port. Backend secrets are injected from `deploy/docker/stack.env` when Compose creates the API and worker containers. They are not Docker build arguments, image layers, or GHCR package data. The Clerk publishable key is public browser configuration and is embedded in Angular at image build time.
+Proposed VM, subject to console eligibility, existing usage and capacity: Ubuntu 24.04 ARM64, `VM.Standard.A1.Flex`, 2 OCPUs, 12 GB RAM, 50 GB boot volume. Reuse a suitable existing VM. Verify running state, public IP, SSH administrator key, `uname -m`, `/etc/os-release`, `free -h`, `df -h` and existing services before changes.
 
-## Prerequisites
+Review and run `sudo bash deploy/oracle/bootstrap.sh` on the approved dedicated VM. It installs Docker from the official Ubuntu repository if absent, checks Compose, enables Docker on reboot and creates `chess-deploy` plus `/opt/chess-oracle`. It refuses conflicting runtimes rather than removing software. Docker membership is root-equivalent: this is a dedicated deployment account, without sudo, for this VM. Bootstrap leaves firewall, SSH settings and existing daemon configuration untouched for review.
 
-- Docker Engine with the Compose and Buildx plugins;
-- a reachable PostgreSQL/Neon database with the required schema;
-- a public Clerk publishable key for the web build;
-- runtime Clerk, database, OAuth, and encryption values for `stack.env`.
+Generate a dedicated Ed25519 deployment key on a trusted administrator machine. Install its public key in `/home/chess-deploy/.ssh/authorized_keys`, owned by `chess-deploy`, mode 600; prefix the entry with `restrict` to disable forwarding, PTY and agent forwarding. Keep the administrator key separate for test tunnels. Store the private key only in Actions and a protected administrator backup; never commit it.
 
-Run commands from the repository root unless noted otherwise.
+OCI NSGs/security lists and the host firewall should permit SSH only from the administrator and deployment runner's controlled egress. Standard GitHub-hosted runners have changing egress addresses: a narrow allowlist requires an existing runner with fixed egress or approved private connectivity. Do not silently open SSH globally. Verify an active administrator session before changing rules; do not flush existing firewall rules. Keep password SSH and root login disabled. Do not expose ports 3000, 8080 or Docker Engine TCP.
 
-## Local build
+## Protected runtime environment
 
-Build only the workspaces included in the image:
+Copy `deploy/docker/stack.env.example` to `/opt/chess-oracle/stack.env`, owned by `chess-deploy`, mode **600**. API and worker share it; it stays on the VM. Never print resolved Compose configuration or upload runtime secrets to Actions. The image contains no backend environment file.
 
-```bash
-npm run build:domain
-npm run build:contracts
-npm run build:api
-npm run build:web
-```
+Use the existing Neon pooled URL with TLS and a connection budget covering Render, local workers and both Oracle processes. Retain the direct URL, but workflows never run migrations. Copy the existing `LICHESS_TOKEN_ENCRYPTION_KEY`, lifecycle identity/audit HMAC keys, versions and previous-key maps exactly. New keys would break shared-token decryption and identity protection.
 
-Build a local image. Use a valid publishable key from the Clerk application used for testing; never pass a private key or backend secret as a build argument.
+Keep `AUTH_MODE=clerk` with the existing Clerk issuer/JWKS/audience. Initial tunnel values are `http://localhost:8080` for Oracle-only `CORS_ORIGIN`, `WEB_APP_URL`, `CLERK_AUTHORIZED_PARTIES`, and `http://localhost:8080/api/auth/lichess/callback` for `LICHESS_OAUTH_REDIRECT_URI`. Verify Clerk accepts the test origin and the Lichess client permits this callback. Add allowed origins/callbacks without removing Vercel/Render entries. Production Clerk may require HTTPS/domain configuration: don't weaken authentication to enable localhost. The web image uses `/api` and the same Clerk application's public publishable key.
 
-```bash
-docker build \
-  --build-arg WEB_API_BASE_URL=/api \
-  --build-arg WEB_CLERK_PUBLISHABLE_KEY=pk_test_replace_me \
-  -t chess-repertoir-trainer:test .
-```
+Retain example worker timings; each shutdown timeout must be below the Oracle worker's 60-second grace period. Use `STOCKFISH_ENGINE=wasm`, keep `POSITION_CLEANUP_ENABLED=false`, and configure optional AI/MCP only when needed. Check enabled features against `.env.example` and the production environment. Worker startup can claim real production jobs and perform existing terminal-job retention; coordinate with the local worker before first launch.
 
-The build uses the existing API lifecycle, including Prisma client generation. It does not build or export the Expo application and does not install a native Stockfish executable.
+## GitHub configuration
 
-## Local Compose startup
+Required repository Actions secrets:
 
-Create the uncommitted runtime file and replace all placeholders with values for the selected database and Clerk application:
+- `ORACLE_HOST`: SSH hostname or IPv4 address, port 22.
+- `ORACLE_USER`: `chess-deploy`.
+- `ORACLE_SSH_KEY`: dedicated private deployment key.
+- `ORACLE_SSH_HOST_KEY`: complete trusted OpenSSH known_hosts entry for the host.
 
-```bash
-cp deploy/docker/stack.env.example deploy/docker/stack.env
-```
+Obtain the host public key/fingerprint through the OCI console or a trusted administrator session and compare it before setting the secret. `ssh-keyscan` alone does not establish trust. Strict host checking is always enabled. Use Settings → Secrets and variables → Actions, or `gh secret set NAME < protected-file`; never put credentials in arguments or overwrite unrelated secrets.
 
-Validate the resolved Compose model, then select the local image and start the stack:
+Set repository **variable** `ORACLE_WEB_CLERK_PUBLISHABLE_KEY` to the public `pk_test_...` or `pk_live_...` key. No Oracle password/MFA enters Actions. GHCR uses ephemeral `GITHUB_TOKEN`: Build & Deploy has `packages: write`; Rollback has `packages: read`; lifecycle jobs only have `contents: read`. For a pre-existing GHCR package, grant this repository Actions access. Private pulls use temporary remote Docker credentials deleted after the operation; no persistent registry PAT is required. An abruptly killed connection may leave a mode-700 `.incoming.*` directory: remove it after verifying no operation is active. Its Actions token expires automatically.
 
-```bash
-IMAGE_REPOSITORY=chess-repertoir-trainer IMAGE_TAG=test \
-  docker compose -f deploy/docker/compose.yml config --quiet
+Workflow files must reach the default branch to appear in Actions. Repository policy requires a reviewed PR and explicit approval to merge. Run from trusted branches only: workflow editors have deployment access.
 
-IMAGE_REPOSITORY=chess-repertoir-trainer IMAGE_TAG=test \
-  docker compose -f deploy/docker/compose.yml up -d
-```
+## Manual controls
 
-Compose defaults to `ghcr.io/vokerg/chess-repertoir-trainer:latest`. `IMAGE_REPOSITORY` is needed only for a differently named local image; `IMAGE_TAG` selects a local or published tag. `WEB_PORT` can override the default host port `8080`.
+Open GitHub → Actions, select the workflow and **Run workflow**:
 
-The quiet Compose validation avoids printing the resolved `env_file` values to the terminal. Omit `--quiet` only when you intentionally need to inspect the complete resolved model.
+| Workflow | Behavior |
+| --- | --- |
+| **Build & Deploy** | Builds the selected ref's exact full SHA on ARM64; publishes `ghcr.io/vokerg/chess-repertoir-trainer:<40-character-SHA>`; deploys all three services by resolved digest. |
+| **Stop** | Gracefully stops all, worker, API or web without removing containers. |
+| **Start** | Starts the saved release without rebuilding. Selecting web also starts its API dependency. |
+| **Restart** | Restarts selected services without a build, including a previously stopped selection. Web includes API. |
+| **Rollback** | Accepts a published full commit SHA, requires schema-compatibility acknowledgment, resolves its digest and recreates the complete stack. |
 
-Local service URLs:
+All operations share one concurrency group and a VM `flock`. Do not cancel an active deployment. GitHub can replace an older pending run if several queue up; check the run list before scheduling another.
 
-- Frontend: `http://localhost:8080/`
-- API health through Nginx: `http://localhost:8080/health`
-- OpenAPI: `http://localhost:8080/api/docs/openapi.json`
-- Angular deep-link check: `http://localhost:8080/games`
+Build & Deploy refuses an existing commit tag. If publication succeeded but SSH failed, use Rollback with that SHA to retry. Containers use `@sha256:...`, so a later tag change cannot change Start/Restart. The VM stores the chosen image/SHA in `deployment.env`, the prior version in `previous.env`, and successful deployments in `history.log`. Release Compose/control files live in `releases/<SHA>` with a `current` symlink. Version metadata is persisted before recreation so Start can recover an interrupted deployment. Failure reports do not trigger automatic rollback or migrations: inspect actual state before retrying. Rollback uses the current workflow's Compose settings and replaces all services together to avoid mixed API/worker images.
 
-The worker has no URL.
+`restart: unless-stopped` recovers crashes while honoring explicit stops across Docker/VM restarts. Pushes/merges never start Oracle. Build & Deploy and Rollback explicitly start all services. Start/Restart of one service does not start an unrelated worker. Stopping API alone can cause web proxy errors until API starts again.
 
-Inspect status and logs:
+## Breaking changes and shared Neon
 
-```bash
-IMAGE_REPOSITORY=chess-repertoir-trainer IMAGE_TAG=test \
-  docker compose -f deploy/docker/compose.yml ps
-IMAGE_REPOSITORY=chess-repertoir-trainer IMAGE_TAG=test \
-  docker compose -f deploy/docker/compose.yml logs api worker web
-```
+1. Run **Stop → worker**, or **all**, and verify successful shutdown. Stop local/other workers separately; Oracle controls cannot stop them.
+2. Review migrations against every deployed Render/Oracle API/worker version. There is no environment-isolated queue.
+3. Apply migrations only as a separately approved operation after backup and compatibility review.
+4. Merge code, manually run **Build & Deploy**, then verify health and a real approved job.
 
-The API should become `healthy`. Worker logs should contain `Persistent job worker started`. The `PORTS` column must show a host mapping only for `web`.
+**The existing Render setup documents `npm run db:migrate` in its build command.** If the live service uses that command and auto-deploys on merge, it can apply migrations before the manual step. Inspect Render settings and obtain approval for any production-setting change. Oracle workflows do not modify Render. CI's existing migration step targets disposable test PostgreSQL, not Neon.
 
-Verify environment boundaries without printing any secret value:
+Use expand/contract changes while versions differ. Drops, renames, mandatory fields, enum changes and lifecycle triggers can break older Prisma clients. For example, `20260621120000_subline_attempt_stats` drops Line/MoveNode fields and `20260608210000_remove_line_repertoire_updated_at` removes a column. Older images may be incompatible with the current schema. Rollback never reverses migrations or database state. Verify the deployed Render commit and Neon migration history before approving changes; repository inspection alone cannot establish compatibility.
+
+## Worker reliability and resources
+
+The existing worker runs JobTask, account import, preparation reconciliation, account/user lifecycle and optional position-cleanup loops. JobTask/import repositories use transactional PostgreSQL claims, `FOR UPDATE SKIP LOCKED`, work-key fencing, heartbeats and stale recovery. Lifecycle repositories also fence claims. SIGINT/SIGTERM stops all loops and waits for cleanup/Prisma disconnect, failing on timeout. Oracle runs Node directly under Compose init for signal delivery.
+
+This supports normal concurrent claiming, but does not promise unconditional exactly-once external effects after lease expiry, suspension or mixed-version execution. Local and Oracle workers consume the same production queue regardless of which API submitted a job. Initially stop the local worker before Oracle launch. Keep one Oracle worker; review side effects, matching stale thresholds and schema compatibility before concurrency.
+
+Stockfish loads `lite-single` WASM through Node worker threads, avoiding an x86 executable. Build & Deploy runs an isolated ARM64-image WASM analysis smoke test before connecting to the VM. Actual production-job analysis must still be tested. Initial bounds are worker 1 CPU / 3 GiB, API 0.75 CPU / 1.5 GiB, web 0.25 CPU / 256 MiB, bounded process counts, and three 10-MB logs per service. Concurrent loops can still hit these limits; monitor OOM/restarts and latency. These are initial bounds, not measured capacity. Oracle may reclaim idle free instances under its published policy.
+
+## Verification and operations
+
+Use the separate administrator SSH key (the deploy key disables tunnels):
 
 ```bash
-IMAGE_REPOSITORY=chess-repertoir-trainer IMAGE_TAG=test \
-  docker compose -f deploy/docker/compose.yml exec api \
-  node -e "console.log(Boolean(process.env.DATABASE_URL))"
-IMAGE_REPOSITORY=chess-repertoir-trainer IMAGE_TAG=test \
-  docker compose -f deploy/docker/compose.yml exec worker \
-  node -e "console.log(Boolean(process.env.DATABASE_URL), process.env.STOCKFISH_ENGINE)"
-IMAGE_REPOSITORY=chess-repertoir-trainer IMAGE_TAG=test \
-  docker compose -f deploy/docker/compose.yml exec web \
-  sh -c 'test -z "$DATABASE_URL"'
+ssh -L 8080:127.0.0.1:8080 ubuntu@VM_HOST
+curl --fail http://localhost:8080/
+curl --fail http://localhost:8080/health
 ```
 
-To exercise graceful SIGTERM handling, stop the backend processes and inspect their final logs. Compose allows 45 seconds, which is longer than the default worker shutdown budget.
+Deployment waits for API/web Compose health, then verifies worker survival without restarts for 20 seconds, both worker startup messages, and a read-only `SELECT 1` database probe. `/health` alone is liveness, not database readiness. Startup checks do not prove processing success: submit an approved test job and confirm completion/real WASM analysis, then test authenticated browser and OAuth flows. Workflows do not create test jobs in production.
+
+On the VM as `chess-deploy`:
 
 ```bash
-IMAGE_REPOSITORY=chess-repertoir-trainer IMAGE_TAG=test \
-  docker compose -f deploy/docker/compose.yml stop api worker
-IMAGE_REPOSITORY=chess-repertoir-trainer IMAGE_TAG=test \
-  docker compose -f deploy/docker/compose.yml logs --tail=50 api worker
-IMAGE_REPOSITORY=chess-repertoir-trainer IMAGE_TAG=test \
-  docker compose -f deploy/docker/compose.yml up -d api worker
+cd /opt/chess-oracle
+docker compose --env-file deployment.env -p chess-oracle -f current/compose.yml -f current/oracle.yml ps --all
+docker compose --env-file deployment.env -p chess-oracle -f current/compose.yml -f current/oracle.yml logs --tail 100 worker
+bash current/control.sh stop worker
+bash current/control.sh start worker
+free -h
+df -h
+docker system df
 ```
 
-Shut down the local stack:
+Inspect logs privately. For failed deployment, check secrets/variable, SSH allowlist and known_hosts, GHCR package access, disk, architecture, runtime placeholders, Clerk configuration and applied schema. Never paste stack.env or resolved Compose config into an issue. Start uses the cached deployed image; if it is absent, use Rollback to authenticate/pull again.
 
-```bash
-IMAGE_REPOSITORY=chess-repertoir-trainer IMAGE_TAG=test \
-  docker compose -f deploy/docker/compose.yml down
-```
+Logs rotate automatically. After successful deployment, scoped cleanup retains the three newest cached application images, the selected and previous images, every image referenced by any container (even stopped), and images tagged for other repositories. Removal is never forced; discovery failure skips cleanup. Monitor disk usage because failed deployments can leave extra images. Never prune Docker globally. Registry images remain available for rollback; archive older release metadata only after preserving rollback details.
 
-## Database migrations
+For VM replacement: approve a free replacement within aggregate quotas, rerun bootstrap, restore protected stack.env with the same stable keys, install a fresh deployment public key, update host/user/key/verified-host-key secrets, then use Rollback to pull a known compatible SHA. No migration/database restore is part of VM replacement. Preserve administrator access until validation passes.
 
-Containers do not run Prisma migrations during normal startup. While Docker and Render share Neon, the existing Render release may continue to own migrations.
-
-If a release requires a manual migration, coordinate ownership first and run the following release operation exactly once from the selected image:
-
-```bash
-IMAGE_TAG=<git-commit-sha> \
-  docker compose -f deploy/docker/compose.yml run --rm --no-deps --user root api \
-  npm run db:migrate --workspace=apps/api
-```
-
-The release container uses `root` because the existing migration lifecycle regenerates the Prisma client after applying migrations and therefore writes to its ephemeral `node_modules`. The long-running API and worker containers still run as the non-root `node` user. Do not run this command independently for the API and worker or on every container restart.
-
-## Manual multi-platform publishing to GHCR
-
-Create a GitHub personal access token with permission to write packages, or use another short-lived credential with equivalent access. Keep it outside the repository and pass it through standard input:
-
-```bash
-export GHCR_USER=<github-username>
-read -s GHCR_TOKEN
-printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-unset GHCR_TOKEN
-```
-
-Create or select a Buildx builder, capture the exact commit, then build and push both immutable and moving tags for `linux/amd64` and `linux/arm64`:
-
-```bash
-docker buildx create --name chess-trainer-builder --use 2>/dev/null || \
-  docker buildx use chess-trainer-builder
-docker buildx inspect --bootstrap
-
-GIT_COMMIT_SHA=$(git rev-parse HEAD)
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  --build-arg WEB_API_BASE_URL=/api \
-  --build-arg WEB_CLERK_PUBLISHABLE_KEY=pk_live_replace_me \
-  --tag ghcr.io/vokerg/chess-repertoir-trainer:latest \
-  --tag "ghcr.io/vokerg/chess-repertoir-trainer:${GIT_COMMIT_SHA}" \
-  --push .
-```
-
-The image name intentionally uses `chess-repertoir-trainer`, while the OCI source label points to the repository `vokerg/chess_repertoir_trainer`. After the first push, the package owner can change the GHCR package visibility to public in GitHub package settings. Until then, each machine that pulls it must authenticate without storing credentials in this repository.
-
-No GitHub Actions publishing or deployment workflow is part of this manual phase.
-
-## Manual deployment to a remote VM
-
-Install Docker Engine plus the Compose plugin on the VM. Copy `deploy/docker/compose.yml` and `deploy/docker/stack.env.example` to a deployment directory; application source code is not required. If the package is private, authenticate the VM to GHCR using the standard-input login method above.
-
-Create `stack.env` beside `compose.yml`, restrict it to its owner, and replace every placeholder. Production URLs should use the public HTTPS origin that terminates in front of port 80/`WEB_PORT`; database URLs should use the intended Neon pooled and direct endpoints.
-
-```bash
-cp stack.env.example stack.env
-chmod 600 stack.env
-editor stack.env
-```
-
-Pull and start an immutable commit-SHA release:
-
-```bash
-export IMAGE_TAG=<git-commit-sha>
-docker compose -f compose.yml pull
-docker compose -f compose.yml up -d
-docker compose -f compose.yml ps
-docker compose -f compose.yml logs --tail=100 api worker
-```
-
-Verify from the VM and from an external client as appropriate:
-
-```bash
-curl --fail http://127.0.0.1:${WEB_PORT:-8080}/health
-curl --fail http://127.0.0.1:${WEB_PORT:-8080}/api/docs/openapi.json >/dev/null
-docker compose -f compose.yml ps api worker
-docker compose -f compose.yml logs --tail=100 worker
-```
-
-API health is verified by both the Compose `healthy` state and `/health`. Worker health is verified by a running container plus the `Persistent job worker started` log entry; it intentionally has no HTTP health endpoint or published port.
-
-## Manual update and rollback
-
-Publish the new image first. On the VM, select its immutable tag, pull it, and recreate the services:
-
-```bash
-export IMAGE_TAG=<new-git-commit-sha>
-docker compose -f compose.yml pull
-docker compose -f compose.yml up -d
-docker compose -f compose.yml ps
-docker compose -f compose.yml logs --tail=100 api worker
-```
-
-If verification fails, roll back by selecting the previous commit-SHA tag and recreating the stack:
-
-```bash
-export IMAGE_TAG=<previous-git-commit-sha>
-docker compose -f compose.yml pull
-docker compose -f compose.yml up -d
-docker compose -f compose.yml ps
-```
-
-Rollback changes application containers only. A database migration may not be backward-compatible, so assess migration compatibility before every release and rollback.
+Public access requires a separately reviewed HTTPS origin, TLS termination/certificate renewal, OCI/host ingress for 443, and additive Clerk/CORS/Lichess changes. Keep the application upstream on loopback. Do not expose plain HTTP, change existing DNS or trust forwarded headers from arbitrary peers. Public HTTPS infrastructure is not provisioned by these files.
