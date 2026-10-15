@@ -113,6 +113,9 @@ describe('GameLibrariesPanelComponent', () => {
     fixture.componentInstance.libraries.set(LIBRARIES);
     fixture.componentInstance.busy.set(true);
     fixture.detectChanges();
+    // NgModel updates its disabled FormControl state asynchronously.
+    await fixture.whenStable();
+    fixture.detectChanges();
     expect(root.querySelector<HTMLInputElement>('input[name="name"]')!.disabled).toBeTrue();
     const buttons = root.querySelectorAll<HTMLButtonElement>('button');
     expect(Array.from(buttons).every((button) => button.disabled)).toBeTrue();
