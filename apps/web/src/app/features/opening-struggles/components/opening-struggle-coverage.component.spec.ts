@@ -35,7 +35,7 @@ describe('OpeningStruggleCoverageComponent', () => {
     expect(trigger.classList.contains('my_deviation')).toBeTrue();
     expect(trigger.getAttribute('aria-describedby')).toBe('course-coverage-WHITE-e2e4-e7e5-g1f3');
     expect(trigger.getAttribute('popovertarget')).toBe(tooltip.id);
-    expect(tooltip.id).toBe(trigger.getAttribute('aria-describedby'));
+    expect(trigger.getAttribute('aria-describedby')).toBe(tooltip.id);
     expect(tooltip.getAttribute('role')).toBe('tooltip');
     expect(tooltip.getAttribute('popover')).toBe('auto');
     expect(trigger.getAttribute('aria-label')).toBe(
