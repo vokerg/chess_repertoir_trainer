@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import type { CloudEvaluationResponse } from '@chess-trainer/contracts/lab';
-import { firstValueFrom, of, throwError } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { CloudEvaluationApiService } from '../data-access/cloud-evaluation-api.service';
 import { CloudEvaluationStore } from './cloud-evaluation.store';
 

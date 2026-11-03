@@ -98,7 +98,7 @@ export function createLichessCloudEvaluationClient(
   return {
     fetchPosition(input: string): Promise<CloudEvaluationResponse> {
       const { fen, normalizedFen } = parseCloudEvaluationFen(input);
-      return serialized(async () => {
+      return serialized<CloudEvaluationResponse>(async () => {
         if (nowMs() < blockedUntilMs) {
           throw new LichessCloudEvaluationError('Lichess Cloud Eval is temporarily rate limited.', 429);
         }

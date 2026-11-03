@@ -54,7 +54,7 @@
   border: 0;
   border-radius: var(--ui-radius-control);
   background: var(--ui-action-strong);
-  color: var(--ui-action-contrast);
+  color: var(--ui-surface);
   padding: 0.7rem 1rem;
   font-weight: 800;
   cursor: pointer;
