@@ -176,6 +176,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'lab/cloud-evaluation',
+    title: 'Lichess cloud evaluation | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/lab/pages/cloud-evaluation-page.component').then(
+        (m) => m.CloudEvaluationPageComponent,
+      ),
+  },
+  {
     path: 'lab/top-opponents',
     title: 'Top opponents | Chess Repertoire Trainer',
     canActivate: [authGuard],

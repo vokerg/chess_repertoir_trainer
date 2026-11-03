@@ -1,4 +1,4 @@
-import { Chess } from 'chess.js';
+import { Chess, type Square } from 'chess.js';
 import { z } from 'zod';
 import type { CloudEvaluationResponse } from '@chess-trainer/contracts/lab';
 import {
@@ -60,7 +60,7 @@ function legalStandardPv(fen: string, moves: string): string[] | null {
     if (!UCI_MOVE_RE.test(uci)) return null;
     const from = uci.slice(0, 2);
     let to = uci.slice(2, 4);
-    const piece = board.get(from as never);
+    const piece = board.get(from as Square);
     if (piece?.type === 'k') {
       const castles: Record<string, string> = {
         e1h1: 'g1', e1a1: 'c1', e8h8: 'g8', e8a8: 'c8',

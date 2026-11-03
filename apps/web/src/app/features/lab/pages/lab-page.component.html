@@ -9,6 +9,13 @@
     subtitle="These tools remain experimental. Open one report at a time without changing your core workflows."
   >
     <nav class="lab-menu-grid" aria-label="Lab experiments">
+      <a class="lab-menu-item" [routerLink]="['/lab/cloud-evaluation']">
+        <span class="lab-menu-copy">
+          <strong>Lichess cloud evaluation</strong>
+          <small>Look up engine evaluations and lines for a FEN without saving them.</small>
+        </span>
+        <span class="lab-menu-type">Lookup</span>
+      </a>
       <a class="lab-menu-item" [routerLink]="['/lab/top-opponents']">
         <span class="lab-menu-copy">
           <strong>Top opponents</strong>
