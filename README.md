@@ -97,7 +97,7 @@ Compact list projections and richer detail/report projections share selection se
 - Inspect tactical findings in game review and the Tactical Detections Lab.
 - Train missed-shot and blunder scenarios from the source position with persisted attempts and evaluation.
 - Use `/puzzles` for the persisted Lichess puzzle trainer with server-owned solutions and rated-result synchronization.
-- Use `/lab` for experimental or lower-level reports including top opponents, monthly games, training log, and tactical detections.
+- Use `/lab` for experimental or lower-level reports including top opponents, monthly games, training log, tactical detections, and a read-only [Lichess cloud evaluation lookup](docs/lichess-cloud-evaluation-lab.md).
 
 ### Activity Feed foundation
 

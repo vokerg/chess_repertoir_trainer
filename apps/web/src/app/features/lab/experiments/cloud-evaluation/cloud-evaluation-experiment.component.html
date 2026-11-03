@@ -1,0 +1,79 @@
+<app-panel
+  title="Lichess Cloud Evaluation"
+  subtitle="Look up an already analysed position on Lichess. Results are mapped to our PositionAnalysis fields, but are not saved."
+>
+  <div class="cloud-evaluation-tool">
+    <label class="fen-input" for="cloud-eval-fen">
+      <span>FEN</span>
+      <textarea
+        id="cloud-eval-fen"
+        rows="3"
+        spellcheck="false"
+        [value]="store.fen()"
+        [disabled]="store.loading()"
+        (input)="updateFen($event)"
+      ></textarea>
+    </label>
+    <div class="cloud-actions">
+      <button
+        type="button"
+        class="lookup-button"
+        [disabled]="store.loading() || !store.fen().trim()"
+        (click)="store.lookup()"
+      >
+        {{ store.loading() ? 'Looking up…' : 'Look up on Lichess' }}
+      </button>
+      <p>This is a read-only experiment. No local engine or database writes.</p>
+    </div>
+
+    @if (store.loading()) {
+      <p class="state-message" role="status">Requesting a cached evaluation from Lichess…</p>
+    }
+    @if (store.error(); as error) {
+      <p class="state-message state-message--error" role="alert">{{ error }}</p>
+    }
+    @if (store.result(); as result) {
+      @if (result.positionAnalysis; as analysis) {
+        <section class="evaluation-result" aria-label="Cloud evaluation result">
+          <div class="result-summary">
+            <div>
+              <span class="summary-label">Best move</span>
+              <strong>{{ analysis.bestMoveUci }}</strong>
+            </div>
+            <div>
+              <span class="summary-label">White evaluation</span>
+              <strong>{{ evaluationLabel(analysis.bestScoreCpWhite, analysis.bestMateWhite) }}</strong>
+            </div>
+            <div>
+              <span class="summary-label">Depth</span>
+              <strong>{{ result.depth }}</strong>
+            </div>
+            <div>
+              <span class="summary-label">Knodes</span>
+              <strong>{{ result.knodes }}</strong>
+            </div>
+          </div>
+          <h3>Engine lines</h3>
+          <ol class="principal-variations">
+            @for (line of analysis.lines; track line.multipv) {
+              <li>
+                <div class="variation-heading">
+                  <strong>PV {{ line.multipv }}</strong>
+                  <span>{{ evaluationLabel(line.scoreCpWhite, line.mateWhite) }}</span>
+                </div>
+                <code>{{ line.pvUci.join(' ') }}</code>
+              </li>
+            }
+          </ol>
+          <h3>Mapped response</h3>
+          <p class="format-description">PositionAnalysis-compatible fields (no database IDs), ready for future cache integration.</p>
+          <pre class="json-preview">{{ formattedResult() }}</pre>
+        </section>
+      } @else {
+        <p class="state-message" role="status">
+          Lichess has no cached evaluation for this position. No engine was started.
+        </p>
+      }
+    }
+  </div>
+</app-panel>

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {
+  cloudEvaluationResponseSchema,
   tacticalDetectionListResponseSchema,
   tacticalDetectionRunResponseSchema,
   trainingLogResponseSchema,
@@ -128,3 +129,16 @@ assert.equal(
 );
 
 console.log('Lab training/tactical contract tests passed.');
+
+const cloudMiss = { source: 'LICHESS_CLOUD', depth: null, knodes: null, positionAnalysis: null };
+assert.deepEqual(cloudEvaluationResponseSchema.parse(cloudMiss), cloudMiss);
+for (const invalid of [
+  { source: 'LICHESS_CLOUD', depth: null, knodes: null },
+  { ...cloudMiss, depth: -1 },
+  { ...cloudMiss, knodes: 1.5 },
+  { ...cloudMiss, source: 'STOCKFISH' },
+  { ...cloudMiss, positionAnalysis: { lines: [] } },
+]) {
+  assert.equal(cloudEvaluationResponseSchema.safeParse(invalid).success, false);
+}
+console.log('Cloud evaluation nullability and invalid-response contract tests passed.');
