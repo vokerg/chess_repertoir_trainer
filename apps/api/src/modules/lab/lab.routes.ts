@@ -1,6 +1,7 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
+  cloudEvaluationResponseSchema,
   courseExtensionCandidatesResponseSchema,
   monthlyGamesResponseSchema,
   tacticalDetectionListResponseSchema,
@@ -9,6 +10,7 @@ import {
   trainingLogResponseSchema,
 } from '@chess-trainer/contracts/lab';
 import { requireAuth } from '../../auth/request-auth';
+import { parseCloudEvaluationFen, lichessCloudEvaluationClient, LichessCloudEvaluationError } from './cloud-evaluation/lichess-cloud-evaluation.client';
 import { courseExtensionCandidatesQuerySchema } from './course-extension-candidates/course-extension-candidates.schema';
 import { getCourseExtensionCandidates } from './course-extension-candidates/course-extension-candidates.service';
 import { getMonthlyGames } from './monthly-games/monthly-games.service';
@@ -24,7 +26,7 @@ import { trainingLogQuerySchema } from './training-log/training-log.schema';
 import { getTrainingLog } from './training-log/training-log.service';
 import { getTopOpponents } from './top-opponents/top-opponents.service';
 import { messageResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
-import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
+import { apiErrorResponseSchema, validationErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const limitQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(200).default(50) });
 const monthlyGamesQuerySchema = z.object({
@@ -32,7 +34,41 @@ const monthlyGamesQuerySchema = z.object({
 });
 const labSchema = <T extends Record<string, unknown>>(operationId: string, summary: string, extra: T) => ({ operationId, tags: ['Lab'], summary, ...extra });
 
+const cloudEvaluationQuerySchema = z.object({ fen: z.string().trim().min(1).max(200) });
+
 const labModule: FastifyPluginAsyncZod = async (app) => {
+  app.get('/api/lab/cloud-evaluation', {
+    schema: labSchema('getLabCloudEvaluation', 'Look up Lichess Cloud Eval for one FEN without persisting it', {
+      querystring: cloudEvaluationQuerySchema,
+      response: {
+        200: cloudEvaluationResponseSchema,
+        400: apiErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        502: apiErrorResponseSchema,
+        503: apiErrorResponseSchema,
+      },
+    }),
+  }, async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+
+    try {
+      parseCloudEvaluationFen(request.query.fen);
+    } catch {
+      return reply.code(400).send({ error: 'The supplied FEN is invalid.' });
+    }
+
+    try {
+      return await lichessCloudEvaluationClient.fetchPosition(request.query.fen);
+    } catch (error) {
+      if (error instanceof LichessCloudEvaluationError) {
+        return reply.code(error.statusCode === 429 ? 503 : 502).send({ error: error.message });
+      }
+      request.log.error({ err: error }, 'Cloud Eval lookup failed');
+      return reply.code(502).send({ error: 'Cloud Eval lookup failed.' });
+    }
+  });
+
   app.get('/api/lab/top-opponents', {
     schema: labSchema('getTopOpponents', 'Get the most frequently faced opponents', {
       querystring: limitQuerySchema,
