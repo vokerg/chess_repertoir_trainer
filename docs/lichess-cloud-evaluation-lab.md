@@ -11,6 +11,9 @@ A single request fetches a cached evaluation only. A cache miss is returned as H
 with `positionAnalysis: null`. The backend never starts Stockfish and never persists
 a position or analysis. Upstream failures return HTTP 502, rate limiting returns 503.
 Outbound requests are serialized per backend process with a 60-second cooldown after 429.
+The 10-second timeout covers both connection and response-body reading. Full FENs,
+four-field FENs, and `startpos` are accepted; malformed queries return the centralized
+400 validation response, while invalid chess positions return 400 with an invalid-FEN message.
 
 ## Shared cache mapping
 

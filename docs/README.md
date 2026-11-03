@@ -12,6 +12,7 @@ Canonical documents in `docs/` describe current runtime architecture and operati
 - [Onboarding readiness](onboarding-readiness.md): persisted user disposition and the server-owned first-run/readiness projection over durable import and preparation evidence.
 - [Destructive data lifecycle foundation](data-lifecycle-foundation.md): durable preview/operation/fence/audit/tombstone persistence, commit-side write guards, opening provenance, and current execution boundary.
 - [Position analysis cache](position-analysis-cache.md): compact/rich analysis persistence.
+- [Lichess cloud evaluation Lab](lichess-cloud-evaluation-lab.md): authenticated, read-only cached evaluation lookup and position-analysis mapping.
 - [Persistent imported-game job processing](imported-game-job-processing.md): durable worker architecture and operational behavior.
 - [Data preparation execution](data-preparation-execution.md): durable preparation parent/batch admission, progressive reconciliation, control acknowledgement, and operational wake/stall behavior.
 - [Opening Explorer](opening-explorer.md): Masters and rated-game APIs, shared integration, and cache behavior.

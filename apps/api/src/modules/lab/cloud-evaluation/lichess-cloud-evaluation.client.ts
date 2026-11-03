@@ -108,79 +108,84 @@ export function createLichessCloudEvaluationClient(
         url.searchParams.set('multiPv', String(MAX_LINES));
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), timeoutMs);
-        let response: Response;
         try {
-          response = await fetchImpl(url, {
-            headers: { Accept: 'application/json' },
-            signal: controller.signal,
-          });
-        } catch (error) {
-          if (error instanceof Error && error.name === 'AbortError') {
-            throw new LichessCloudEvaluationError('Lichess Cloud Eval timed out.');
+          let response: Response;
+          try {
+            response = await fetchImpl(url, {
+              headers: { Accept: 'application/json' },
+              signal: controller.signal,
+            });
+          } catch {
+            if (controller.signal.aborted) {
+              throw new LichessCloudEvaluationError('Lichess Cloud Eval timed out.');
+            }
+            throw new LichessCloudEvaluationError('Could not reach Lichess Cloud Eval.');
           }
-          throw new LichessCloudEvaluationError('Could not reach Lichess Cloud Eval.');
+
+          if (response.status === 404) {
+            return { source: 'LICHESS_CLOUD', depth: null, knodes: null, positionAnalysis: null };
+          }
+          if (response.status === 429) {
+            blockedUntilMs = nowMs() + RATE_LIMIT_COOLDOWN_MS;
+            throw new LichessCloudEvaluationError('Lichess Cloud Eval is temporarily rate limited.', 429);
+          }
+          if (!response.ok) {
+            throw new LichessCloudEvaluationError('Lichess Cloud Eval returned HTTP ' + response.status + '.', response.status);
+          }
+
+          let raw: unknown;
+          try {
+            raw = await response.json();
+          } catch {
+            if (controller.signal.aborted) {
+              throw new LichessCloudEvaluationError('Lichess Cloud Eval timed out.');
+            }
+            throw new LichessCloudEvaluationError('Lichess Cloud Eval returned invalid JSON.');
+          }
+          const parsed = lichessCloudPayloadSchema.safeParse(raw);
+          if (!parsed.success) {
+            throw new LichessCloudEvaluationError('Lichess Cloud Eval returned an unexpected response.');
+          }
+
+          const lines: StoredEngineLine[] = [];
+          for (const pv of parsed.data.pvs) {
+            if (lines.length >= MAX_LINES) break;
+            if ((pv.cp === undefined) === (pv.mate === undefined)) continue;
+            if (pv.cp !== undefined && Math.abs(pv.cp) > 32767) continue;
+            if (pv.mate !== undefined && Math.abs(pv.mate) > 32767) continue;
+            const pvUci = legalStandardPv(fen, pv.moves);
+            if (!pvUci) continue;
+            lines.push({
+              multipv: lines.length + 1,
+              depth: parsed.data.depth,
+              moveUci: pvUci[0],
+              ...(pv.cp === undefined ? {} : { scoreCpWhite: pv.cp }),
+              ...(pv.mate === undefined ? {} : { mateWhite: pv.mate }),
+              pvUci,
+            });
+          }
+          if (!lines.length) {
+            throw new LichessCloudEvaluationError('Lichess Cloud Eval returned no valid engine lines.');
+          }
+
+          const best = lines[0];
+          return {
+            source: 'LICHESS_CLOUD',
+            depth: parsed.data.depth,
+            knodes: parsed.data.knodes,
+            positionAnalysis: {
+              fen,
+              normalizedFen,
+              bestMoveUci: best.moveUci!,
+              bestScoreCpWhite: best.scoreCpWhite ?? null,
+              bestMateWhite: best.mateWhite ?? null,
+              lines,
+              persistenceMode: 'rich',
+            },
+          };
         } finally {
           clearTimeout(timeout);
         }
-
-        if (response.status === 404) {
-          return { source: 'LICHESS_CLOUD', depth: null, knodes: null, positionAnalysis: null };
-        }
-        if (response.status === 429) {
-          blockedUntilMs = nowMs() + RATE_LIMIT_COOLDOWN_MS;
-          throw new LichessCloudEvaluationError('Lichess Cloud Eval is temporarily rate limited.', 429);
-        }
-        if (!response.ok) {
-          throw new LichessCloudEvaluationError('Lichess Cloud Eval returned HTTP ' + response.status + '.', response.status);
-        }
-
-        let raw: unknown;
-        try {
-          raw = await response.json();
-        } catch {
-          throw new LichessCloudEvaluationError('Lichess Cloud Eval returned invalid JSON.');
-        }
-        const parsed = lichessCloudPayloadSchema.safeParse(raw);
-        if (!parsed.success) {
-          throw new LichessCloudEvaluationError('Lichess Cloud Eval returned an unexpected response.');
-        }
-
-        const lines: StoredEngineLine[] = [];
-        for (const pv of parsed.data.pvs) {
-          if (lines.length >= MAX_LINES) break;
-          if ((pv.cp === undefined) === (pv.mate === undefined)) continue;
-          if (pv.cp !== undefined && Math.abs(pv.cp) > 32767) continue;
-          if (pv.mate !== undefined && Math.abs(pv.mate) > 32767) continue;
-          const pvUci = legalStandardPv(fen, pv.moves);
-          if (!pvUci) continue;
-          lines.push({
-            multipv: lines.length + 1,
-            depth: parsed.data.depth,
-            moveUci: pvUci[0],
-            ...(pv.cp === undefined ? {} : { scoreCpWhite: pv.cp }),
-            ...(pv.mate === undefined ? {} : { mateWhite: pv.mate }),
-            pvUci,
-          });
-        }
-        if (!lines.length) {
-          throw new LichessCloudEvaluationError('Lichess Cloud Eval returned no valid engine lines.');
-        }
-
-        const best = lines[0];
-        return {
-          source: 'LICHESS_CLOUD',
-          depth: parsed.data.depth,
-          knodes: parsed.data.knodes,
-          positionAnalysis: {
-            fen,
-            normalizedFen,
-            bestMoveUci: best.moveUci!,
-            bestScoreCpWhite: best.scoreCpWhite ?? null,
-            bestMateWhite: best.mateWhite ?? null,
-            lines,
-            persistenceMode: 'rich',
-          },
-        };
       });
     },
   };

@@ -159,4 +159,46 @@ const payload = {
 }
 
 assert.throws(() => parseCloudEvaluationFen('not a fen'));
+
+// A timeout must cover a stalled body as well as the initial connection, and
+// release the serialized queue so a subsequent lookup can recover.
+for (const stallBody of [false, true]) {
+  let requests = 0;
+  const client = createLichessCloudEvaluationClient({
+    timeoutMs: 20,
+    fetchImpl: async (_input, { signal }) => {
+      if (++requests > 1) return new Response(JSON.stringify(payload));
+      const stalled = () => new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+      });
+      return stallBody ? { ok: true, status: 200, json: stalled } : stalled();
+    },
+  });
+  const failed = client.fetchPosition(initial);
+  const recovered = client.fetchPosition(initial);
+  await assert.rejects(failed, (error) => error instanceof LichessCloudEvaluationError
+    && error.message === 'Lichess Cloud Eval timed out.');
+  assert.equal((await recovered).positionAnalysis.bestMoveUci, 'e2e4');
+}
+
+for (const invalidPayload of [
+  { ...payload, depth: -1 },
+  { ...payload, pvs: [{ moves: 'e2e4' }] },
+  { ...payload, pvs: [{ moves: 'e2e4', cp: 1, mate: 1 }] },
+  { ...payload, pvs: [{ moves: 'e2e4', cp: 32768 }] },
+  { ...payload, pvs: [{ moves: 'e2e4 invalid', cp: 1 }] },
+]) {
+  const client = createLichessCloudEvaluationClient({
+    fetchImpl: async () => new Response(JSON.stringify(invalidPayload)),
+  });
+  await assert.rejects(client.fetchPosition(initial), LichessCloudEvaluationError);
+}
+
+for (const response of [
+  () => { throw new Error('network failure'); },
+  () => new Response('{}', { status: 500 }),
+]) {
+  const client = createLichessCloudEvaluationClient({ fetchImpl: async () => response() });
+  await assert.rejects(client.fetchPosition(initial), LichessCloudEvaluationError);
+}
 console.log('Lichess cloud evaluation mapping, errors and throttling tests passed.');
