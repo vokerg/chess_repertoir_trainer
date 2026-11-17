@@ -143,6 +143,28 @@ JOB_WORKER_SHUTDOWN_TIMEOUT_MS=30000
 
 The stale timeout must remain more than twice the heartbeat interval. The platform shutdown grace period should be at least `JOB_WORKER_SHUTDOWN_TIMEOUT_MS`; that budget covers executor abort, retained cancellation leases, terminal-retention work, and Prisma disconnection. The worker exits unsuccessfully if complete cleanup exceeds the budget.
 
+### Optional scheduled scans for an idle worker
+
+Set `WORKER_IDLE_SCAN_INTERVAL_MS=900000` in the worker environment to opt in
+to quarter-hour scans. Supported values are 600000 through 3600000 ms. Leave
+the variable unset or empty for the existing poll cadence. The worker checks
+on startup, keeps its normal short delays for 30 seconds after work is processed,
+then waits until the next scan boundary. A job queued while the worker is idle
+can wait a full interval. Delayed retries and stale-claim recovery are checked
+on the next scan, so enable this only where that latency is acceptable.
+
+The background worker aligns its job, import, preparation, lifecycle and
+optional cleanup scans on the same boundaries. Progress wakes other sleeping
+loops in that process so they can pick up follow-on work. Hourly terminal
+retention still runs on its own timer. For Neon, set
+`max_idle_connection_lifetime=30` on the worker's Prisma database URL, retaining
+the other query parameters. Prisma owns connection expiry
+so a sleeping loop cannot disconnect another loop's active transaction.
+
+For rollout, account for every worker sharing the database, close idle test
+clients, and verify compute suspension in Neon's control plane. Unset the
+worker option and restart to restore fast polling.
+
 The account-import loop runs in the same worker process but uses its own PostgreSQL `ImportRun` claim/work-key lifecycle rather than `JobRun`/`JobTask`. Its initial single-executor defaults are:
 
 ```text

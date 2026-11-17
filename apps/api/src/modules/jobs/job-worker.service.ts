@@ -1,3 +1,4 @@
+import type { IdleScanSchedule } from '../../worker-idle-schedule';
 import type { JobWorkerConfig } from './job-worker.config';
 import type { JobWorkerRepository } from './job-worker.repository.prisma';
 import {
@@ -16,6 +17,7 @@ export interface CreateJobWorkerInput {
   repository: JobWorkerRepository;
   executors: JobTaskExecutorRegistry;
   config: JobWorkerConfig;
+  idleSchedule?: IdleScanSchedule;
   logger?: JobWorkerLogger;
   now?: () => number;
 }
@@ -80,7 +82,7 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
               await runMaintenance(input.repository, input.config, logger, now);
             } catch (error) {
               logger.warn({ err: error }, 'Persistent job worker maintenance failed; retrying');
-              await waitForPoll(input.config.pollIntervalMs);
+              await waitForIdle();
               continue;
             }
             if (stopRequested) break;
@@ -93,7 +95,7 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
               loggedEmptyRegistry = true;
               logger.info({}, 'No persistent job executors are registered; worker is idle');
             }
-            await waitForPoll(input.config.pollIntervalMs);
+            await waitForIdle();
             continue;
           }
           loggedEmptyRegistry = false;
@@ -131,7 +133,7 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
               break;
             }
             if (!claimedTask) {
-              await waitForPoll(input.config.pollIntervalMs);
+              await waitForIdle();
               continue;
             }
             slice = {
@@ -154,6 +156,7 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
             logger,
           );
 
+          input.idleSchedule?.noteWork();
           if (slice && slice.jobRunId === claimedTask.jobRunId) {
             slice.processed += 1;
             if (slice.processed >= input.config.sliceSize) {
@@ -341,6 +344,10 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
     } finally {
       if (activeController === controller) activeController = null;
     }
+  }
+
+  function waitForIdle(): Promise<void> {
+    return input.idleSchedule?.wait(input.config.pollIntervalMs) ?? waitForPoll(input.config.pollIntervalMs);
   }
 
   function waitForPoll(delayMs: number): Promise<void> {

@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { IdleScanSchedule, readIdleScanInterval } from './worker-idle-schedule';
 import prisma from './prisma';
 import { defaultAccountImportExecutorRegistry } from './modules/account-imports/account-import.executor';
 import { AccountImportLifecycleRepository } from './modules/account-imports/account-import.lifecycle.repository.prisma';
@@ -34,6 +35,8 @@ defaultAccountImportExecutorRegistry.register(ChessComAccountImportExecutor);
 defaultAccountImportExecutorRegistry.register(createLichessAccountImportExecutor());
 
 async function bootstrap() {
+  const idleInterval = readIdleScanInterval(process.env['WORKER_IDLE_SCAN_INTERVAL_MS']);
+  const idleSchedule = idleInterval === undefined ? undefined : new IdleScanSchedule(idleInterval);
   const config = loadJobWorkerConfig();
   const accountImportConfig = loadAccountImportWorkerConfig();
   const lifecycleConfig = loadAccountGameDataLifecycleWorkerConfig();
@@ -49,11 +52,13 @@ async function bootstrap() {
     repository: JobWorkerRepository,
     executors: defaultJobTaskExecutorRegistry,
     config,
+    idleSchedule,
   });
   const accountImportWorker = createAccountImportWorker({
     repository: AccountImportLifecycleRepository,
     executors: defaultAccountImportExecutorRegistry,
     config: accountImportConfig,
+    idleSchedule,
     reconcilePreparationHandoff: () => AccountImportPreparationHandoffRepository.reconcileNext(),
     reconcilePostCompletion: async () => (
       await drainAccountImportPostCompletion(
@@ -61,10 +66,10 @@ async function bootstrap() {
       )
     ) > 0,
   });
-  const preparationWorker = createPreparationReconciler({ config: preparationConfig });
-  const lifecycleWorker = createAccountGameDataLifecycleWorker({ config: lifecycleConfig });
-  const userLifecycleWorker = createUserDataLifecycleWorker({ config: lifecycleConfig });
-  const positionCleanupWorker = createPositionCleanupWorker({ config: positionCleanupConfig });
+  const preparationWorker = createPreparationReconciler({ config: preparationConfig, idleSchedule });
+  const lifecycleWorker = createAccountGameDataLifecycleWorker({ config: lifecycleConfig, idleSchedule });
+  const userLifecycleWorker = createUserDataLifecycleWorker({ config: lifecycleConfig, idleSchedule });
+  const positionCleanupWorker = createPositionCleanupWorker({ config: positionCleanupConfig, idleSchedule });
   let shuttingDown = false;
   let retentionTimer: NodeJS.Timeout | undefined;
   let retentionInFlight: Promise<void> | null = null;
@@ -120,6 +125,7 @@ async function bootstrap() {
   const shutdown = async (signal: NodeJS.Signals) => {
     if (shuttingDown) return;
     shuttingDown = true;
+    idleSchedule?.stop();
     if (retentionTimer) {
       clearInterval(retentionTimer);
       retentionTimer = undefined;
@@ -152,6 +158,7 @@ async function bootstrap() {
   } catch (error) {
     console.error('Persistent worker failed', error);
     process.exitCode = 1;
+    idleSchedule?.stop();
     worker.requestStop('Peer worker failed.');
     accountImportWorker.requestStop('Peer worker failed.');
     preparationWorker.requestStop();
