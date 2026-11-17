@@ -18,6 +18,7 @@ export interface CreateJobWorkerInput {
   executors: JobTaskExecutorRegistry;
   config: JobWorkerConfig;
   idleSchedule?: IdleScanSchedule;
+  runScheduledRetention?: () => Promise<void>;
   logger?: JobWorkerLogger;
   now?: () => number;
 }
@@ -80,6 +81,7 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
           if (now() >= nextMaintenanceAt) {
             try {
               await runMaintenance(input.repository, input.config, logger, now);
+              await input.runScheduledRetention?.();
             } catch (error) {
               logger.warn({ err: error }, 'Persistent job worker maintenance failed; retrying');
               await waitForIdle();

@@ -36,7 +36,6 @@ defaultAccountImportExecutorRegistry.register(createLichessAccountImportExecutor
 
 async function bootstrap() {
   const idleInterval = readIdleScanInterval(process.env['WORKER_IDLE_SCAN_INTERVAL_MS']);
-  const idleSchedule = idleInterval === undefined ? undefined : new IdleScanSchedule(idleInterval);
   const config = loadJobWorkerConfig();
   const accountImportConfig = loadAccountImportWorkerConfig();
   const lifecycleConfig = loadAccountGameDataLifecycleWorkerConfig();
@@ -48,11 +47,27 @@ async function bootstrap() {
     lifecycleConfig.shutdownTimeoutMs,
     positionCleanupConfig.shutdownTimeoutMs,
   );
+  let lastRetentionAt = 0;
+  const runRetentionIfDue = async (): Promise<void> => {
+    if (Date.now() - lastRetentionAt >= TERMINAL_RETENTION_INTERVAL_MS) {
+      await runTerminalRetention();
+    }
+  };
+  const idleSchedule: IdleScanSchedule | undefined = idleInterval === undefined
+    ? undefined
+    : new IdleScanSchedule(idleInterval, Date.now, {
+      workerCount: positionCleanupConfig.enabled ? 6 : 5,
+      release: async (): Promise<void> => {
+        await runRetentionIfDue();
+        await Promise.all([prisma.$disconnect(), positionCleanupWorker.disconnectIdle()]);
+      },
+    });
   const worker = createJobWorker({
     repository: JobWorkerRepository,
     executors: defaultJobTaskExecutorRegistry,
     config,
     idleSchedule,
+    runScheduledRetention: idleSchedule ? runRetentionIfDue : undefined,
   });
   const accountImportWorker = createAccountImportWorker({
     repository: AccountImportLifecycleRepository,
@@ -80,6 +95,7 @@ async function bootstrap() {
 
   const runTerminalRetention = (): Promise<void> => {
     if (retentionInFlight) return retentionInFlight;
+    lastRetentionAt = Date.now();
 
     const task = (async () => {
       const completedBefore = new Date(Date.now() - config.terminalRetentionDays * DAY_MS);
@@ -103,8 +119,10 @@ async function bootstrap() {
   };
 
   await runTerminalRetention();
-  retentionTimer = setInterval(() => void runTerminalRetention(), TERMINAL_RETENTION_INTERVAL_MS);
-  retentionTimer.unref();
+  if (!idleSchedule) {
+    retentionTimer = setInterval(() => void runTerminalRetention(), TERMINAL_RETENTION_INTERVAL_MS);
+    retentionTimer.unref();
+  }
 
   const jobWorkerPromise = worker.run();
   const accountImportWorkerPromise = accountImportWorker.run();

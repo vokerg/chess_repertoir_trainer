@@ -23,6 +23,7 @@ export interface PositionCleanupWorker {
   runOnce(): Promise<boolean>;
   requestStop(): void;
   close(): Promise<void>;
+  disconnectIdle(): Promise<void>;
 }
 
 const consoleLogger: PositionCleanupWorkerLogger = {
@@ -125,16 +126,21 @@ export function createPositionCleanupWorker(input: {
     return true;
   };
 
+  async function disconnectIdle(): Promise<void> {
+    const client = executeClient;
+    executeClient = null;
+    executeRepository = null;
+    if (client) await client.$disconnect();
+  }
+
   return {
     requestStop,
     runOnce,
+    disconnectIdle,
     async close() {
       if (closed) return;
       closed = true;
-      const client = executeClient;
-      executeClient = null;
-      executeRepository = null;
-      if (client) await client.$disconnect();
+      await disconnectIdle();
     },
     async run() {
       if (!input.config.enabled) {

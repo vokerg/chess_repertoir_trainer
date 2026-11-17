@@ -29,3 +29,26 @@ test('work wakes idle peers, keeps fast scans briefly, then returns to a shared 
   await stopped;
   await schedule.wait(1000);
 });
+
+test('Prisma release starts only when all enabled loops are idle', async () => {
+  let releases = 0;
+  let finish;
+  const schedule = new IdleScanSchedule(900_000, () => 42_000, {
+    workerCount: 2,
+    release: () => {
+      releases++;
+      return new Promise((resolve) => { finish = resolve; });
+    },
+  });
+  let resumed = false;
+  const first = schedule.wait(1000).then(() => { resumed = true; });
+  assert.equal(releases, 0);
+  const second = schedule.wait(1000);
+  assert.equal(releases, 1);
+  schedule.stop();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(resumed, false);
+  finish();
+  await Promise.all([first, second]);
+  assert.equal(resumed, true);
+});

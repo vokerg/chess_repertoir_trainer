@@ -155,11 +155,10 @@ on the next scan, so enable this only where that latency is acceptable.
 
 The background worker aligns its job, import, preparation, lifecycle and
 optional cleanup scans on the same boundaries. Progress wakes other sleeping
-loops in that process so they can pick up follow-on work. Hourly terminal
-retention still runs on its own timer. For Neon, set
-`max_idle_connection_lifetime=30` on the worker's Prisma database URL, retaining
-the other query parameters. Prisma owns connection expiry
-so a sleeping loop cannot disconnect another loop's active transaction.
+loops in that process so they can pick up follow-on work. When all enabled loops
+reach a long idle wait, the worker closes its Prisma connections. Terminal
+retention checks run at startup and during a maintenance pass or before an idle
+disconnect when the hourly interval is due. This avoids independent queries between scans.
 
 For rollout, account for every worker sharing the database, close idle test
 clients, and verify compute suspension in Neon's control plane. Unset the

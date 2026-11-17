@@ -16,11 +16,17 @@ export function readIdleScanInterval(value: string | undefined): number | undefi
 
 /** Co-schedule empty scans across loops and wake idle peers when work makes progress. */
 export class IdleScanSchedule {
+  private idleWorkers = 0;
+  private disconnecting?: Promise<void>;
   private activeUntil = 0;
   private nextWake = new AbortController();
   private stopped = false;
 
-  constructor(private readonly intervalMs: number, private readonly now = Date.now) {}
+  constructor(
+    private readonly intervalMs: number,
+    private readonly now = Date.now,
+    private readonly idlePool?: { workerCount: number; release: () => Promise<void> },
+  ) {}
 
   noteWork(): void {
     const now = this.now();
@@ -40,10 +46,27 @@ export class IdleScanSchedule {
 
   async wait(pollMs: number): Promise<void> {
     if (this.stopped) return;
+    const longWait = this.now() >= this.activeUntil;
+    const timer = sleep(this.delayMs(pollMs), undefined, { signal: this.nextWake.signal })
+      .catch((error: unknown) => {
+        if (!(error instanceof Error) || error.name !== 'AbortError') throw error;
+      });
+    if (longWait) this.idleWorkers++;
     try {
-      await sleep(this.delayMs(pollMs), undefined, { signal: this.nextWake.signal });
-    } catch (error) {
-      if (!(error instanceof Error) || error.name !== 'AbortError') throw error;
+      if (longWait && this.idlePool && this.idleWorkers === this.idlePool.workerCount) {
+        const release = this.idlePool.release();
+        this.disconnecting = release;
+        try {
+          await release;
+        } finally {
+          this.disconnecting = undefined;
+        }
+      }
+      await timer;
+      // An earlier wait can expire while the last loop is releasing Prisma.
+      await this.disconnecting;
+    } finally {
+      if (longWait) this.idleWorkers--;
     }
   }
 
