@@ -1,3 +1,4 @@
+import type { IdleScanSchedule } from '../../worker-idle-schedule';
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import {
@@ -49,6 +50,7 @@ export interface CreateAccountGameDataLifecycleWorkerInput {
   preparationRepository?: PreparationRepositoryBoundary;
   auditKeyring?: LifecycleHmacKeyring;
   config: AccountGameDataLifecycleWorkerConfig;
+  idleSchedule?: IdleScanSchedule;
   logger?: AccountGameDataLifecycleWorkerLogger;
   now?: () => number;
 }
@@ -174,7 +176,8 @@ export function createAccountGameDataLifecycleWorker(
           } catch (error) {
             logger.warn(safeErrorContext(error), 'Data lifecycle worker iteration failed');
           }
-          if (!didWork && !stopRequested) await waitForPoll(input.config.pollIntervalMs);
+          if (didWork) input.idleSchedule?.noteWork();
+          if (!didWork && !stopRequested) await waitForIdle();
         }
       } finally {
         running = false;
@@ -548,6 +551,10 @@ export function createAccountGameDataLifecycleWorker(
       aggregateCounts: operation.previewCounts,
       terminalResult: operation.terminalResult,
     });
+  }
+
+  function waitForIdle(): Promise<void> {
+    return input.idleSchedule?.wait(input.config.pollIntervalMs) ?? waitForPoll(input.config.pollIntervalMs);
   }
 
   function waitForPoll(delayMs: number): Promise<void> {

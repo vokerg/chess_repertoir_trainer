@@ -51,6 +51,7 @@ For live task readiness, ownership, branch, pull-request, and blocker state, ins
 - Shared HTTP wire shapes: Zod schemas in `packages/contracts`.
 - OpenAPI operations: Fastify route schemas.
 - Imported-game filters: repository predicates, especially `buildImportedGameWhere`.
+- Worker and API setup, including opt-in idle scans and rollback: [deployment runbook](docs/deployment.md#optional-scheduled-scans-for-an-idle-worker).
 - Current architecture: `docs/architecture.md` and topic documents indexed by `docs/README.md`.
 - Product capabilities and setup: `README.md`.
 - Daily development history: `CHANGELOG.md`.

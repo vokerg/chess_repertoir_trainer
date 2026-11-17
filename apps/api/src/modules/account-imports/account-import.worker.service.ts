@@ -1,3 +1,4 @@
+import type { IdleScanSchedule } from '../../worker-idle-schedule';
 import {
   AccountImportIncompleteCoverageError,
   type AccountImportLifecycleRepository,
@@ -20,6 +21,7 @@ export interface CreateAccountImportWorkerInput {
   repository: AccountImportLifecycleRepository;
   executors: AccountImportExecutorRegistry;
   config: AccountImportWorkerConfig;
+  idleSchedule?: IdleScanSchedule;
   logger?: AccountImportWorkerLogger;
   now?: () => number;
   reconcilePreparationHandoff?: () => Promise<boolean>;
@@ -94,6 +96,7 @@ export function createAccountImportWorker(input: CreateAccountImportWorkerInput)
             try {
               const reconciled = await input.reconcilePreparationHandoff();
               if (reconciled) {
+                input.idleSchedule?.noteWork();
                 logger.info({}, 'Account import preparation handoff reconciled');
               }
             } catch (error) {
@@ -120,7 +123,7 @@ export function createAccountImportWorker(input: CreateAccountImportWorkerInput)
               loggedEmptyRegistry = true;
               logger.info({}, 'No account import provider executors are registered; worker is idle');
             }
-            await waitForPoll(input.config.pollIntervalMs);
+            await waitForIdle();
             continue;
           }
           loggedEmptyRegistry = false;
@@ -130,12 +133,12 @@ export function createAccountImportWorker(input: CreateAccountImportWorkerInput)
             claimed = await input.repository.claimNextRun(supportedProviders);
           } catch (error) {
             logger.warn(safeErrorContext(error), 'Account import claim attempt failed');
-            await waitForPoll(input.config.pollIntervalMs);
+            await waitForIdle();
             continue;
           }
 
           if (!claimed) {
-            await waitForPoll(input.config.pollIntervalMs);
+            await waitForIdle();
             continue;
           }
 
@@ -154,6 +157,7 @@ export function createAccountImportWorker(input: CreateAccountImportWorkerInput)
           }
 
           await executeClaimedRun(claimed);
+          input.idleSchedule?.noteWork();
         }
       } finally {
         activeController = null;
@@ -490,6 +494,10 @@ export function createAccountImportWorker(input: CreateAccountImportWorkerInput)
       },
       'Account import stage timing',
     );
+  }
+
+  function waitForIdle(): Promise<void> {
+    return input.idleSchedule?.wait(input.config.pollIntervalMs) ?? waitForPoll(input.config.pollIntervalMs);
   }
 
   function waitForPoll(delayMs: number): Promise<void> {

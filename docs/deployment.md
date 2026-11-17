@@ -143,6 +143,41 @@ JOB_WORKER_SHUTDOWN_TIMEOUT_MS=30000
 
 The stale timeout must remain more than twice the heartbeat interval. The platform shutdown grace period should be at least `JOB_WORKER_SHUTDOWN_TIMEOUT_MS`; that budget covers executor abort, retained cancellation leases, terminal-retention work, and Prisma disconnection. The worker exits unsuccessfully if complete cleanup exceeds the budget.
 
+### Optional scheduled scans for an idle worker
+
+Use the same deployed revision and application database for the API and worker.
+Configure the API as described in [Render API setup](#render-api-setup),
+including its existing auth and provider settings. The API saves jobs in
+Postgres. The worker uses the existing [worker startup command](#render-persistent-job-worker-setup)
+and its database, provider, lifecycle and engine settings. Set the idle option
+on the worker service or container. If the API and worker share a local
+environment file, set it only on the worker command:
+
+```bash
+WORKER_IDLE_SCAN_INTERVAL_MS=900000 npm run dev:worker
+```
+
+Set `WORKER_IDLE_SCAN_INTERVAL_MS=900000` in the worker environment to opt in
+to quarter-hour scans. Supported values are 600000 through 3600000 ms. Leave
+the variable unset or empty for the existing poll cadence. The worker checks
+on startup, keeps its normal short delays for 30 seconds after work is processed,
+then waits until the next scan boundary. A job queued while the worker is idle
+can wait a full interval. Delayed retries and stale-claim recovery are checked
+on the next scan, so enable this only where that latency is acceptable.
+
+The background worker aligns its job, import, preparation, lifecycle and
+optional cleanup scans on the same boundaries. Progress wakes other sleeping
+loops in that process so they can pick up follow-on work. When all enabled loops
+reach a long idle wait, the worker closes its Prisma connections. Terminal
+retention checks run at startup and during a maintenance pass or before an idle
+disconnect when the hourly interval is due. This avoids independent queries between scans.
+
+For rollout, restart the worker with the option enabled and submit a normal
+import through the API. Confirm the job starts by the next scheduled scan
+and reaches completion. Account for every worker sharing the database, then
+close idle test clients and verify compute suspension in Neon's control plane.
+Unset the worker option and restart it to restore fast polling.
+
 The account-import loop runs in the same worker process but uses its own PostgreSQL `ImportRun` claim/work-key lifecycle rather than `JobRun`/`JobTask`. Its initial single-executor defaults are:
 
 ```text

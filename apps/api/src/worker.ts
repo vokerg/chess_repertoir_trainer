@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { IdleScanSchedule, readIdleScanInterval } from './worker-idle-schedule';
 import prisma from './prisma';
 import { defaultAccountImportExecutorRegistry } from './modules/account-imports/account-import.executor';
 import { AccountImportLifecycleRepository } from './modules/account-imports/account-import.lifecycle.repository.prisma';
@@ -34,6 +35,7 @@ defaultAccountImportExecutorRegistry.register(ChessComAccountImportExecutor);
 defaultAccountImportExecutorRegistry.register(createLichessAccountImportExecutor());
 
 async function bootstrap() {
+  const idleInterval = readIdleScanInterval(process.env['WORKER_IDLE_SCAN_INTERVAL_MS']);
   const config = loadJobWorkerConfig();
   const accountImportConfig = loadAccountImportWorkerConfig();
   const lifecycleConfig = loadAccountGameDataLifecycleWorkerConfig();
@@ -45,15 +47,33 @@ async function bootstrap() {
     lifecycleConfig.shutdownTimeoutMs,
     positionCleanupConfig.shutdownTimeoutMs,
   );
+  let lastRetentionAt = 0;
+  const runRetentionIfDue = async (): Promise<void> => {
+    if (Date.now() - lastRetentionAt >= TERMINAL_RETENTION_INTERVAL_MS) {
+      await runTerminalRetention();
+    }
+  };
+  const idleSchedule: IdleScanSchedule | undefined = idleInterval === undefined
+    ? undefined
+    : new IdleScanSchedule(idleInterval, Date.now, {
+      workerCount: positionCleanupConfig.enabled ? 6 : 5,
+      release: async (): Promise<void> => {
+        await runRetentionIfDue();
+        await Promise.all([prisma.$disconnect(), positionCleanupWorker.disconnectIdle()]);
+      },
+    });
   const worker = createJobWorker({
     repository: JobWorkerRepository,
     executors: defaultJobTaskExecutorRegistry,
     config,
+    idleSchedule,
+    runScheduledRetention: idleSchedule ? runRetentionIfDue : undefined,
   });
   const accountImportWorker = createAccountImportWorker({
     repository: AccountImportLifecycleRepository,
     executors: defaultAccountImportExecutorRegistry,
     config: accountImportConfig,
+    idleSchedule,
     reconcilePreparationHandoff: () => AccountImportPreparationHandoffRepository.reconcileNext(),
     reconcilePostCompletion: async () => (
       await drainAccountImportPostCompletion(
@@ -61,10 +81,10 @@ async function bootstrap() {
       )
     ) > 0,
   });
-  const preparationWorker = createPreparationReconciler({ config: preparationConfig });
-  const lifecycleWorker = createAccountGameDataLifecycleWorker({ config: lifecycleConfig });
-  const userLifecycleWorker = createUserDataLifecycleWorker({ config: lifecycleConfig });
-  const positionCleanupWorker = createPositionCleanupWorker({ config: positionCleanupConfig });
+  const preparationWorker = createPreparationReconciler({ config: preparationConfig, idleSchedule });
+  const lifecycleWorker = createAccountGameDataLifecycleWorker({ config: lifecycleConfig, idleSchedule });
+  const userLifecycleWorker = createUserDataLifecycleWorker({ config: lifecycleConfig, idleSchedule });
+  const positionCleanupWorker = createPositionCleanupWorker({ config: positionCleanupConfig, idleSchedule });
   let shuttingDown = false;
   let retentionTimer: NodeJS.Timeout | undefined;
   let retentionInFlight: Promise<void> | null = null;
@@ -75,6 +95,7 @@ async function bootstrap() {
 
   const runTerminalRetention = (): Promise<void> => {
     if (retentionInFlight) return retentionInFlight;
+    lastRetentionAt = Date.now();
 
     const task = (async () => {
       const completedBefore = new Date(Date.now() - config.terminalRetentionDays * DAY_MS);
@@ -98,8 +119,10 @@ async function bootstrap() {
   };
 
   await runTerminalRetention();
-  retentionTimer = setInterval(() => void runTerminalRetention(), TERMINAL_RETENTION_INTERVAL_MS);
-  retentionTimer.unref();
+  if (!idleSchedule) {
+    retentionTimer = setInterval(() => void runTerminalRetention(), TERMINAL_RETENTION_INTERVAL_MS);
+    retentionTimer.unref();
+  }
 
   const jobWorkerPromise = worker.run();
   const accountImportWorkerPromise = accountImportWorker.run();
@@ -120,6 +143,7 @@ async function bootstrap() {
   const shutdown = async (signal: NodeJS.Signals) => {
     if (shuttingDown) return;
     shuttingDown = true;
+    idleSchedule?.stop();
     if (retentionTimer) {
       clearInterval(retentionTimer);
       retentionTimer = undefined;
@@ -152,6 +176,7 @@ async function bootstrap() {
   } catch (error) {
     console.error('Persistent worker failed', error);
     process.exitCode = 1;
+    idleSchedule?.stop();
     worker.requestStop('Peer worker failed.');
     accountImportWorker.requestStop('Peer worker failed.');
     preparationWorker.requestStop();

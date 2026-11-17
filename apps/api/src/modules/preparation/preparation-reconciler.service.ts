@@ -1,3 +1,4 @@
+import type { IdleScanSchedule } from '../../worker-idle-schedule';
 import type { AccountImportLifecycleRepository } from '../account-imports/account-import.lifecycle.repository.prisma';
 import { AccountImportLifecycleRepository as accountImportLifecycleRepository } from '../account-imports/account-import.lifecycle.repository.prisma';
 import { JobRunRepository } from '../jobs/job-run.repository.prisma';
@@ -62,6 +63,7 @@ export interface PreparationReconcilerDependencies {
   importRepository?: AccountImportLifecycleRepository;
   jobControl?: PreparationJobControl;
   config?: PreparationConfig;
+  idleSchedule?: IdleScanSchedule;
   logger?: PreparationReconcilerLogger;
   now?: () => Date;
 }
@@ -113,7 +115,12 @@ export function createPreparationReconciler(
         }
 
         if (stopping) break;
-        await waitForWake(claimedInCycle > 0 ? config.reconcileActiveMs : config.reconcileIdleMs);
+        if (claimedInCycle > 0) {
+          dependencies.idleSchedule?.noteWork();
+          await waitForWake(config.reconcileActiveMs);
+        } else {
+          await (dependencies.idleSchedule?.wait(config.reconcileIdleMs) ?? waitForWake(config.reconcileIdleMs));
+        }
       }
     },
 

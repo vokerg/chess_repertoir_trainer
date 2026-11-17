@@ -1,3 +1,4 @@
+import type { IdleScanSchedule } from '../../worker-idle-schedule';
 import { randomUUID } from 'node:crypto';
 import { Prisma, PrismaClient } from '@prisma/client';
 import type { PositionCleanupConfig } from './position-cleanup.config';
@@ -22,6 +23,7 @@ export interface PositionCleanupWorker {
   runOnce(): Promise<boolean>;
   requestStop(): void;
   close(): Promise<void>;
+  disconnectIdle(): Promise<void>;
 }
 
 const consoleLogger: PositionCleanupWorkerLogger = {
@@ -32,6 +34,7 @@ const consoleLogger: PositionCleanupWorkerLogger = {
 
 export function createPositionCleanupWorker(input: {
   config: PositionCleanupConfig;
+  idleSchedule?: IdleScanSchedule;
   repository?: PositionCleanupRepositoryBoundary;
   logger?: PositionCleanupWorkerLogger;
   now?: () => number;
@@ -123,16 +126,21 @@ export function createPositionCleanupWorker(input: {
     return true;
   };
 
+  async function disconnectIdle(): Promise<void> {
+    const client = executeClient;
+    executeClient = null;
+    executeRepository = null;
+    if (client) await client.$disconnect();
+  }
+
   return {
     requestStop,
     runOnce,
+    disconnectIdle,
     async close() {
       if (closed) return;
       closed = true;
-      const client = executeClient;
-      executeClient = null;
-      executeRepository = null;
-      if (client) await client.$disconnect();
+      await disconnectIdle();
     },
     async run() {
       if (!input.config.enabled) {
@@ -150,7 +158,8 @@ export function createPositionCleanupWorker(input: {
           } catch (error) {
             logger.warn(safeContext(error), 'Position cleanup worker iteration failed before claim settlement');
           }
-          if (!didWork && !stopRequested) await waitForPoll(input.config.pollIntervalMs);
+          if (didWork) input.idleSchedule?.noteWork();
+          if (!didWork && !stopRequested) await waitForIdle();
         }
       } finally {
         running = false;
@@ -186,6 +195,10 @@ export function createPositionCleanupWorker(input: {
       executeRepository = createPositionCleanupRepository(executeClient);
     }
     return executeRepository;
+  }
+
+  function waitForIdle(): Promise<void> {
+    return input.idleSchedule?.wait(input.config.pollIntervalMs) ?? waitForPoll(input.config.pollIntervalMs);
   }
 
   function waitForPoll(delayMs: number): Promise<void> {
