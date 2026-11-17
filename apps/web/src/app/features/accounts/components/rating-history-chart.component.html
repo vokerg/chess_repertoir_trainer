@@ -57,14 +57,15 @@
         }
       </div>
 
-      <div class="chart-plot">
+      <div class="chart-plot" appObserveChartWidth (chartWidthChange)="plotWidthPixels.set($event)">
         <svg
           class="rating-svg"
-          [attr.viewBox]="viewBox"
+          [attr.viewBox]="viewBox()"
           role="group"
           tabindex="0"
           aria-label="Rating history line chart. Use arrow keys to inspect dates."
           (pointermove)="onPointerMove($event)"
+          (pointerdown)="onPointerMove($event)"
           (pointerleave)="clearHover()"
           (focus)="onChartFocus()"
           (blur)="clearHover()"

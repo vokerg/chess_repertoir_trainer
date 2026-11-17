@@ -163,8 +163,7 @@
   display: block;
   width: 100%;
   height: auto;
-  min-height: 300px;
-  touch-action: none;
+  touch-action: pan-y;
 }
 
 .rating-svg:focus-visible {

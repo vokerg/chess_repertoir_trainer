@@ -7,6 +7,7 @@
 .setup-backdrop {
   display: grid;
   place-items: center;
+  grid-template-columns: minmax(0, 1fr);
   width: 100%;
   height: 100%;
   padding: var(--space-4);
@@ -17,6 +18,7 @@
 
 .setup-dialog {
   width: min(940px, 100%);
+  min-width: 0;
   max-height: calc(100vh - 2 * var(--space-4));
   overflow: auto;
   padding: var(--space-5);
@@ -109,6 +111,7 @@ select,
 textarea,
 .fixed-starting-scope {
   width: 100%;
+  min-width: 0;
   min-height: 2.7rem;
   padding: 0 var(--space-3);
   border: 1px solid var(--ui-border);
@@ -157,6 +160,7 @@ textarea {
 }
 
 .side-group label {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -176,8 +180,12 @@ textarea {
 .side-group input,
 .persona-card input {
   position: absolute;
-  opacity: 0;
-  pointer-events: none;
+  inset: 0 auto auto 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  clip-path: inset(50%);
 }
 
 .custom-start-field {
@@ -199,6 +207,7 @@ textarea {
 }
 
 .persona-card {
+  position: relative;
   display: grid;
   align-content: start;
   gap: var(--space-2);
@@ -300,6 +309,8 @@ textarea {
 button:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
+.side-group label:has(input:focus-visible),
+.persona-card:has(input:focus-visible),
 input:focus-visible,
 .persona-card:focus-within,
 .side-group label:focus-within {
@@ -333,7 +344,7 @@ button:disabled {
 
   .setup-grid,
   .persona-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .profile-suggestion-note,
