@@ -19,8 +19,10 @@
     </header>
 
     <svg
+      appObserveChartWidth
+      (chartWidthChange)="viewboxWidth.set($event)"
       class="evaluation-graph"
-      viewBox="0 0 600 180"
+      [attr.viewBox]="viewBox()"
       role="group"
       aria-label="Imported game evaluation by move"
     >
@@ -41,14 +43,14 @@
         class="advantage-band advantage-band-positive"
         [attr.x]="horizontalPadding"
         y="12"
-        [attr.width]="viewboxWidth - horizontalPadding * 2"
+        [attr.width]="viewboxWidth() - horizontalPadding * 2"
         [attr.height]="zeroY - 12"
       />
       <rect
         class="advantage-band advantage-band-negative"
         [attr.x]="horizontalPadding"
         [attr.y]="zeroY"
-        [attr.width]="viewboxWidth - horizontalPadding * 2"
+        [attr.width]="viewboxWidth() - horizontalPadding * 2"
         [attr.height]="zeroY - 12"
       />
       <g class="move-grid" aria-hidden="true">
@@ -67,7 +69,7 @@
       <line
         class="zero-line"
         [attr.x1]="horizontalPadding"
-        [attr.x2]="viewboxWidth - horizontalPadding"
+        [attr.x2]="viewboxWidth() - horizontalPadding"
         [attr.y1]="zeroY"
         [attr.y2]="zeroY"
       />

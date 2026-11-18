@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ObserveChartWidthDirective } from '../../../shared/ui/responsive/observe-chart-width.directive';
 import { GameTree, GameTreeNode } from '../helpers/game-detail.models';
 
 interface EvaluationGraphPoint {
@@ -26,6 +27,7 @@ const MAX_SCORE_CP = 800;
 @Component({
   selector: 'app-game-evaluation-graph',
   standalone: true,
+  imports: [ObserveChartWidthDirective],
   templateUrl: './game-evaluation-graph.component.html',
   styleUrl: './game-evaluation-graph.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,7 +39,8 @@ export class GameEvaluationGraphComponent {
 
   readonly nodeSelected = output<number>();
 
-  protected readonly viewboxWidth = VIEWBOX_WIDTH;
+  protected readonly viewboxWidth = signal(VIEWBOX_WIDTH);
+  protected readonly viewBox = computed(() => `0 0 ${this.viewboxWidth()} ${VIEWBOX_HEIGHT}`);
   protected readonly horizontalPadding = HORIZONTAL_PADDING;
   protected readonly zeroY = VIEWBOX_HEIGHT / 2;
 
@@ -64,7 +67,7 @@ export class GameEvaluationGraphComponent {
     const firstPly = scores[0].plyNumber;
     const lastPly = scores[scores.length - 1].plyNumber;
     const plyRange = lastPly - firstPly;
-    const plotWidth = VIEWBOX_WIDTH - HORIZONTAL_PADDING * 2;
+    const plotWidth = this.viewboxWidth() - HORIZONTAL_PADDING * 2;
     const plotHeight = VIEWBOX_HEIGHT - VERTICAL_PADDING * 2;
 
     return scores.map((point) => {
@@ -72,7 +75,7 @@ export class GameEvaluationGraphComponent {
       const clampedScore = Math.max(-MAX_SCORE_CP, Math.min(MAX_SCORE_CP, perspectiveScore));
       const x =
         plyRange === 0
-          ? VIEWBOX_WIDTH / 2
+          ? this.viewboxWidth() / 2
           : HORIZONTAL_PADDING + ((point.plyNumber - firstPly) / plyRange) * plotWidth;
       const y =
         VERTICAL_PADDING + ((MAX_SCORE_CP - clampedScore) / (MAX_SCORE_CP * 2)) * plotHeight;
@@ -109,7 +112,7 @@ export class GameEvaluationGraphComponent {
     const points = this.points();
     if (points.length === 0) return [];
 
-    const tickCount = Math.min(5, points.length);
+    const tickCount = Math.min(this.viewboxWidth() < 340 ? 3 : 5, points.length);
     const indexes = Array.from({ length: tickCount }, (_, index) =>
       tickCount === 1 ? 0 : Math.round((index * (points.length - 1)) / (tickCount - 1)),
     );

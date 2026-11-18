@@ -6,6 +6,7 @@ import {
   RatingSpeed,
   RatingSpeedFilter,
 } from '../data-access/accounts.models';
+import { ObserveChartWidthDirective } from '../../../shared/ui/responsive/observe-chart-width.directive';
 import { RATING_RANGE_OPTIONS } from '../helpers/rating-history-ranges';
 import {
   TooltipData,
@@ -37,7 +38,7 @@ interface HighlightedRatingPoint {
 @Component({
   selector: 'app-rating-history-chart',
   standalone: true,
-  imports: [NgClass],
+  imports: [NgClass, ObserveChartWidthDirective],
   templateUrl: './rating-history-chart.component.html',
   styleUrl: './rating-history-chart.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,10 +59,15 @@ export class RatingHistoryChartComponent {
     { key: 'blitz', label: 'Blitz' },
     { key: 'rapid', label: 'Rapid' },
   ];
-  protected readonly width = 920;
-  protected readonly height = 380;
+  protected readonly plotWidthPixels = signal(920);
+  protected get width(): number {
+    return this.plotWidthPixels();
+  }
+  protected get height(): number {
+    return Math.max(260, Math.round(this.width * 380 / 920));
+  }
   protected readonly margin = { top: 18, right: 22, bottom: 42, left: 54 };
-  protected readonly viewBox = `0 0 ${this.width} ${this.height}`;
+  protected readonly viewBox = computed(() => `0 0 ${this.width} ${this.height}`);
   protected readonly plotBands = [0, 1, 2, 3] as const;
   protected readonly hoveredDate = signal<string | null>(null);
 

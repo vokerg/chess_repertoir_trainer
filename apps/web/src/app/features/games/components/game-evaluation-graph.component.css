@@ -102,7 +102,7 @@
 .move-grid text {
   fill: var(--ui-text-subtle);
   font-family: var(--ui-font-family-mono);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 700;
   text-anchor: middle;
 }
@@ -117,7 +117,7 @@
 .scale-label {
   fill: var(--ui-text-muted);
   font-family: var(--ui-font-family-mono);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   pointer-events: none;
 }
